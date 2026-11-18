@@ -17,7 +17,16 @@ import { fairbanksSyntheticCandidateCapture } from "./fixtures/fairbanks-candida
 function fixture(year = 2026, redline = false) {
 	const data = fairbanksSyntheticCandidateCapture(year);
 	const line = (text: string, top: number) => `<line xmin="60" ymin="${top}" xmax="550" ymax="${top + 8}">${text}</line>`;
-	const lines = (north = false, top = 100) => [north ? "CITY OF NORTH POLE" : "FAIRBANKS NORTH STAR BOROUGH", `PROPOSITION ${north ? "A" : "1"}`, "A CITIZENS’ INITIATIVE PROPOSITION ESTABLISHING LOCAL RULES", `Shall the ${north ? "City" : "Borough"} adopt the proposed ordinance for this municipal election?`, "A “YES” vote approves the proposed local ordinance.", "A “NO” vote retains the current local ordinance.", "YES", "NO"].map((text, index) => ({ text, top: top + index * 12 }));
+	const lines = (north = false, top = 100) => [
+		north ? "CITY OF NORTH POLE" : "FAIRBANKS NORTH STAR BOROUGH",
+		`PROPOSITION ${north ? "A" : "1"}`,
+		"A CITIZENS’ INITIATIVE PROPOSITION ESTABLISHING LOCAL RULES",
+		`Shall the ${north ? "City" : "Borough"} adopt the proposed ordinance for this municipal election?`,
+		"A “YES” vote approves the proposed local ordinance.",
+		"A “NO” vote retains the current local ordinance.",
+		"YES",
+		"NO"
+	].map((text, index) => ({ text, top: top + index * 12 }));
 	const borough = lines();
 	let north = lines(true, 400);
 	if (redline) {
@@ -37,7 +46,12 @@ function fixture(year = 2026, redline = false) {
 	data.capture.documents[1]!.text = `${data.capture.documents[1]!.text.split("\f").slice(0, 3).join("\f")}\f${north.map(item => item.text).join("\n")}\nEND OF BALLOT\f${borough.map(item => item.text).join("\n")}\nEND OF BALLOT\f`;
 	data.native.documents = data.documents;
 	data.native.prepared = readFairbanksBallotCandidates(data.capture, data.documents, data.now);
-	data.body = JSON.stringify({ schemaVersion: 1, type: "fairbanks-candidate-capture", capture: data.capture, native: data.native });
+	data.body = JSON.stringify({
+		schemaVersion: 1,
+		type: "fairbanks-candidate-capture",
+		capture: data.capture,
+		native: data.native
+	});
 	return data;
 }
 
@@ -86,7 +100,17 @@ test("Fairbanks marked-up charter context stays in the original document while t
 
 test("Fairbanks future City of Fairbanks questions use their own printed municipal audience", () => {
 	const data = fixture(2027);
-	const lines = ["CITY OF FAIRBANKS", "PROPOSITION B", "A CITIZENS’ INITIATIVE PROPOSITION ESTABLISHING LOCAL RULES", "Shall the City of Fairbanks adopt the proposed municipal ordinance?", "A YES VOTE APPROVES THE PROPOSED CITY ORDINANCE.", "A NO VOTE RETAINS THE CURRENT CITY ORDINANCE.", "YES", "NO", "END OF BALLOT"];
+	const lines = [
+		"CITY OF FAIRBANKS",
+		"PROPOSITION B",
+		"A CITIZENS’ INITIATIVE PROPOSITION ESTABLISHING LOCAL RULES",
+		"Shall the City of Fairbanks adopt the proposed municipal ordinance?",
+		"A YES VOTE APPROVES THE PROPOSED CITY ORDINANCE.",
+		"A NO VOTE RETAINS THE CURRENT CITY ORDINANCE.",
+		"YES",
+		"NO",
+		"END OF BALLOT"
+	];
 	const xml = lines.map((text, index) => `<line xmin="60" ymin="${100 + index * 12}" xmax="550" ymax="${108 + index * 12}">${text}</line>`).join("");
 	data.documents[1]!.bbox = data.documents[1]!.bbox.replace("</doc>", `<page width="792" height="792">${xml}</page></doc>`);
 	data.capture.documents[1]!.text += `${lines.join("\n")}\f`;
@@ -110,7 +134,18 @@ test("Fairbanks first collection holds an unclassified primary sample page even 
 	assert.throws(() => readFairbanksBallotQuestions(fairbanksSource(), data.capture, data.documents), /unclassified primary sample page/u);
 });
 
-for (const kind of ["missing-marker", "unknown-marker", "duplicate-marker", "scope", "wording", "effect", "choice", "paired-title", "native-bounds", "unassigned-text"]) {
+for (const kind of [
+	"missing-marker",
+	"unknown-marker",
+	"duplicate-marker",
+	"scope",
+	"wording",
+	"effect",
+	"choice",
+	"paired-title",
+	"native-bounds",
+	"unassigned-text"
+]) {
 	test(`Fairbanks question capture holds ${kind} changes`, () => {
 		const data = fixture();
 		const document = data.documents[0]!;
@@ -140,7 +175,17 @@ test("Fairbanks stored questions preserve legacy snapshots and reject tampered i
 	const legacy = JSON.parse(stored);
 	delete legacy.ballotQuestions;
 	assert.equal(parseBundledStateSnapshot(source, JSON.stringify(legacy), "automatic").ballotQuestions, undefined);
-	for (const kind of ["id", "audience", "text", "page", "choices", "duplicate", "applicability", "extra", "clock"]) {
+	for (const kind of [
+		"id",
+		"audience",
+		"text",
+		"page",
+		"choices",
+		"duplicate",
+		"applicability",
+		"extra",
+		"clock"
+	]) {
 		const value = JSON.parse(stored);
 		const question = value.ballotQuestions[0];
 		if (kind === "id") question.id = "a".repeat(24);
@@ -166,23 +211,48 @@ test("Fairbanks changed or disappearing questions retain the accepted snapshot a
 		await createStateBallotStorage(directory).write({ source, ...parsed });
 		const scratch = join(directory, "evidence");
 		await mkdir(scratch);
-		const body = await fetchFairbanksCandidateCapture(source, { scratchDirectory: scratch, discovery: JSON.stringify(data.capture), now: () => data.now, prepare: async () => data.native });
+		const body = await fetchFairbanksCandidateCapture(source, {
+			scratchDirectory: scratch,
+			discovery: JSON.stringify(data.capture),
+			now: () => data.now,
+			prepare: async () => data.native
+		});
 		const changed = structuredClone(data);
 		for (const document of changed.documents) document.bbox = document.bbox.replaceAll("ESTABLISHING LOCAL RULES", "REPEALING LOCAL RULES");
 		for (const [index, document] of changed.capture.documents.entries()) {
 			document.text = document.text.replaceAll("ESTABLISHING LOCAL RULES", "REPEALING LOCAL RULES");
-			const bytes = Buffer.concat([Buffer.from(document.body, "base64"), Buffer.from("\nSynthetic revised question publication")]);
+			const bytes = Buffer.concat([
+				Buffer.from(document.body, "base64"),
+				Buffer.from("\nSynthetic revised question publication")
+			]);
 			document.body = bytes.toString("base64");
 			document.sha256 = createHash("sha256").update(bytes).digest("hex");
 			changed.documents[index]!.sourceSha256 = document.sha256;
 		}
 		changed.native.prepared = readFairbanksBallotCandidates(changed.capture, changed.documents, changed.now);
-		changed.body = JSON.stringify({ schemaVersion: 1, type: "fairbanks-candidate-capture", capture: changed.capture, native: { ...changed.native, documents: changed.documents } });
+		changed.body = JSON.stringify({
+			schemaVersion: 1,
+			type: "fairbanks-candidate-capture",
+			capture: changed.capture,
+			native: { ...changed.native, documents: changed.documents }
+		});
 		assert.equal(readFairbanksCandidateCapture(changed.body, data.now).ballotQuestions.length, 2);
 		assert.throws(() => parseFairbanksCandidateCapture(source, changed.body, createStateCandidateRecord, data.now, { records: parsed.records, ballotQuestions: parsed.ballotQuestions }), /question changed or disappeared/u);
-		await assert.rejects(fetchFairbanksCandidateCapture(source, { scratchDirectory: scratch, discovery: JSON.stringify(changed.capture), now: () => data.now, prepare: async () => ({ ...changed.native, documents: changed.documents }) }), /question changed or disappeared/u);
+		await assert.rejects(fetchFairbanksCandidateCapture(source, {
+			scratchDirectory: scratch,
+			discovery: JSON.stringify(changed.capture),
+			now: () => data.now,
+			prepare: async () => ({ ...changed.native, documents: changed.documents })
+		}), /question changed or disappeared/u);
 		assert.equal(await readFile(join(scratch, "fairbanks-last-capture.json"), "utf8"), body);
-		const restarted = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => data.now + 5000, ttlMs: 1, refreshReviewedLegacy: true, fetchText: async () => changed.body });
+		const restarted = createStateBallotRepository({
+			sources: [source],
+			dataDirectory: directory,
+			now: () => data.now + 5000,
+			ttlMs: 1,
+			refreshReviewedLegacy: true,
+			fetchText: async () => changed.body
+		});
 		assert.deepEqual((await restarted.getSnapshot("AK", source.id))?.ballotQuestions, parsed.ballotQuestions);
 	}
 	finally { await rm(directory, { recursive: true, force: true }); }
@@ -197,18 +267,30 @@ test("Fairbanks explicit refresh adds native questions to a legacy snapshot with
 		const legacy = { source, ...parsed, ballotQuestions: undefined };
 		await createStateBallotStorage(directory).write(legacy);
 		let requests = 0;
-		const repository = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => data.now + 5000, ttlMs: 1, refreshReviewedLegacy: true, fetchText: async () => {
-			requests++;
-			return data.body;
-		} });
+		const repository = createStateBallotRepository({
+			sources: [source],
+			dataDirectory: directory,
+			now: () => data.now + 5000,
+			ttlMs: 1,
+			refreshReviewedLegacy: true,
+			fetchText: async () => {
+				requests++;
+				return data.body;
+			}
+		});
 		const upgraded = await repository.getSnapshot("AK", source.id);
 		assert.equal(upgraded?.ballotQuestions?.length, 2);
 		assert.equal(upgraded?.retrievedAt, legacy.retrievedAt);
 		assert.equal(upgraded?.sha256, legacy.sha256);
 		assert.equal(requests, 1);
-		const restarted = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => data.now + 10000, fetchText: async () => {
-			throw new Error("Stored public read must remain offline");
-		} });
+		const restarted = createStateBallotRepository({
+			sources: [source],
+			dataDirectory: directory,
+			now: () => data.now + 10000,
+			fetchText: async () => {
+				throw new Error("Stored public read must remain offline");
+			}
+		});
 		assert.deepEqual((await restarted.getSnapshot("AK", source.id))?.ballotQuestions, parsed.ballotQuestions);
 	}
 	finally { await rm(directory, { recursive: true, force: true }); }

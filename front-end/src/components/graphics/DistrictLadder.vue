@@ -17,11 +17,16 @@ const props = withDefaults(defineProps<{
 
 const orderedMatches = computed(() => {
 	return [...props.matches]
-		.map(match => ({ level: classifyDistrictLevel(match), match }))
+		.map(match => ({
+			level: classifyDistrictLevel(match),
+			match
+		}))
 		.sort((left, right) => left.level.order - right.level.order || left.match.label.localeCompare(right.match.label));
 });
 
-const sourceSystems = computed(() => [...new Set(props.matches.map(match => match.sourceSystem).filter(Boolean))]);
+const sourceSystems = computed(() => [
+	...new Set(props.matches.map(match => match.sourceSystem).filter(Boolean))
+]);
 
 const uncertaintyNote = computed(() => {
 	if (props.lookupInputKind === "zip")

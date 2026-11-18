@@ -13,8 +13,17 @@ import { nycFontFixture, nycUnicodeFixture, nycVisualFixture } from "./helpers/n
 
 test("NYC maps explicit single-byte source characters through the actual symbolic TrueType cmap", () => {
 	const source = nycUnicodeMappings(nycUnicodeFixture(), "AAAAAA+Arial");
-	assert.deepEqual([...source.keys()], [32, 65, 66, 192]);
-	assert.deepEqual([...nycSymbolFontMappings(nycFontFixture(), source)], [[1, "0020"], [2, "0041"], [3, "0042"], [4, "00c0"]]);
+	assert.deepEqual([
+		...source.keys()
+	], [32, 65, 66, 192]);
+	assert.deepEqual([
+		...nycSymbolFontMappings(nycFontFixture(), source)
+	], [
+		[1, "0020"],
+		[2, "0041"],
+		[3, "0042"],
+		[4, "00c0"]
+	]);
 	assert.throws(() => nycUnicodeMappings(nycUnicodeFixture().replace("<0041>", "<0042>"), "AAAAAA+Arial"), /review/u);
 	assert.throws(() => nycUnicodeMappings(nycUnicodeFixture().replace("4 beginbfrange", "3 beginbfrange"), "AAAAAA+Arial"), /review/u);
 	assert.throws(() => nycUnicodeMappings(nycUnicodeFixture().replace("<20> <20> <0020>", "<20> <20> <0000>"), "AAAAAA+Arial"), /review/u);
@@ -22,9 +31,16 @@ test("NYC maps explicit single-byte source characters through the actual symboli
 });
 
 test("NYC glyph approval tolerates subset inventory changes but not remapped outlines or components", () => {
-	const mappings = new Map([[1, "0020"], [2, "0041"], [3, "0042"], [4, "00c0"]]);
+	const mappings = new Map([
+		[1, "0020"],
+		[2, "0041"],
+		[3, "0042"],
+		[4, "00c0"]
+	]);
 	const original = chicagoFontProgram(nycFontFixture(), mappings, "nyc");
-	const catalog: Record<string, ChicagoGlyphApproval> = { [original.signature]: { glyphs: {}, components: original.components } };
+	const catalog: Record<string, ChicagoGlyphApproval> = {
+		[original.signature]: { glyphs: {}, components: original.components }
+	};
 	for (const glyph of original.characters) catalog[original.signature]!.glyphs[glyph.unicode] = [glyph.sha256];
 	validateChicagoFontProgram(chicagoFontProgram(nycFontFixture(true), mappings, "nyc"), catalog);
 	assert.throws(() => validateChicagoFontProgram(chicagoFontProgram(nycFontFixture(false, true), mappings, "nyc"), catalog), /review/u);
@@ -36,7 +52,11 @@ test("NYC glyph approval tolerates subset inventory changes but not remapped out
 });
 
 test("NYC font inspection rejects unsupported object envelopes and absent reviewed programs", () => {
-	for (const body of ["{}", "{\"qpdf\":[]}", " ".repeat(4 * 1024 * 1024 + 1)]) assert.throws(() => readNycPdfFontPrograms(body), /review/u);
+	for (const body of [
+		"{}",
+		"{\"qpdf\":[]}",
+		" ".repeat(4 * 1024 * 1024 + 1)
+	]) assert.throws(() => readNycPdfFontPrograms(body), /review/u);
 	assert.throws(() => inspectNycPdfFonts("{}"), /review/u);
 });
 

@@ -13,7 +13,9 @@ export function parseStateHtml(body: string) {
 
 export function stateHtmlDescendants(node: StateHtmlNode, predicate: (child: StateHtmlNode) => boolean): StateHtmlNode[] {
 	return (node.childNodes ?? []).flatMap(child => [
-		...(predicate(child) ? [child] : []),
+		...(predicate(child)
+			? [child]
+			: []),
 		...stateHtmlDescendants(child, predicate),
 	]);
 }

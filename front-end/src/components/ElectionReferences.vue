@@ -6,9 +6,16 @@ const props = defineProps<{ stateCode: string; data: ElectionReferencesResponse 
 const emit = defineEmits<{ retry: [] }>();
 const route = useRoute();
 const { formatDate } = useFormatters();
-const range = computed(() => props.data?.matched ? `${props.data.offset + 1}–${Math.min(props.data.offset + props.data.records.length, props.data.matched)} of ${props.data.matched}` : "0 references");
+const range = computed(() => props.data?.matched
+	? `${props.data.offset + 1}–${Math.min(props.data.offset + props.data.records.length, props.data.matched)} of ${props.data.matched}`
+	: "0 references");
 const hasReporting = computed(() => props.data?.records.some(record => record.source.kind === "news-report"));
-const sourceLabels = { "candidate-statement": "Candidate-provided", "news-report": "News report", "official-biography": "Official biography", "public-dataset": "Public dataset" };
+const sourceLabels = {
+	"candidate-statement": "Candidate-provided",
+	"news-report": "News report",
+	"official-biography": "Official biography",
+	"public-dataset": "Public dataset"
+};
 const retryRequested = ref(false);
 let retryControl: EventTarget | null = null;
 
@@ -28,7 +35,16 @@ watch(() => [props.pending, props.data, props.error], async () => {
 });
 
 async function changePage(offset: number) {
-	await navigateTo({ path: "/search", query: { ...route.query, type: "candidate", referenceOffset: offset ? String(offset) : undefined } });
+	await navigateTo({
+		path: "/search",
+		query: {
+			...route.query,
+			type: "candidate",
+			referenceOffset: offset
+				? String(offset)
+				: undefined
+		}
+	});
 }
 </script>
 

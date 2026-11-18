@@ -138,11 +138,15 @@ export function alabamaCountySource(election: AlabamaReferenceElection, county: 
 		ballotPreview: false,
 		snapshotStorage: "external",
 		documentUrls: [sample.url],
-		documentLinks: [{ label: "Sample ballot", url: sample.url }]
+		documentLinks: [
+			{ label: "Sample ballot", url: sample.url }
+		]
 	};
 }
 export function validateAlabamaSource(source: StateBallotSource, election?: AlabamaReferenceElection) {
-	const county = source.countyName?.endsWith(" County") ? source.countyName.slice(0, -7) : "";
+	const county = source.countyName?.endsWith(" County")
+		? source.countyName.slice(0, -7)
+		: "";
 	validateAlabamaCountyDocument(county, source.url, source.electionDate);
 	const expected: StateBallotSource = {
 		stateCode: "AL",
@@ -158,7 +162,9 @@ export function validateAlabamaSource(source: StateBallotSource, election?: Alab
 		ballotPreview: false,
 		snapshotStorage: "external",
 		documentUrls: [source.url],
-		documentLinks: [{ label: "Sample ballot", url: source.url }]
+		documentLinks: [
+			{ label: "Sample ballot", url: source.url }
+		]
 	};
 	if (JSON.stringify(source) !== JSON.stringify(expected))
 		throw new Error("The Alabama native source configuration requires review.");

@@ -40,7 +40,21 @@ function validDate(value: unknown): value is string {
 }
 export function nycSource(electionDate: string): StateBallotSource {
 	if (!validDate(electionDate)) return reject();
-	return { stateCode: "NY", id: electionDate === "2026-11-03" ? "ny-nyc-2026" : `ny-nyc-general-${electionDate}`, label: "New York City Board of Elections", electionDate, url: nycDiscoveryUrl, pageUrl: nycDiscoveryUrl, format: "nyc-pdf", snapshotStorage: "external", placeName: "New York city", defaultPriority: -20, scopeNotice: "Tentative list." };
+	return {
+		stateCode: "NY",
+		id: electionDate === "2026-11-03"
+			? "ny-nyc-2026"
+			: `ny-nyc-general-${electionDate}`,
+		label: "New York City Board of Elections",
+		electionDate,
+		url: nycDiscoveryUrl,
+		pageUrl: nycDiscoveryUrl,
+		format: "nyc-pdf",
+		snapshotStorage: "external",
+		placeName: "New York city",
+		defaultPriority: -20,
+		scopeNotice: "Tentative list."
+	};
 }
 export function validateNycSource(source: StateBallotSource) {
 	const expected = nycSource(source.electionDate);
@@ -52,7 +66,14 @@ export function validateNycDocumentUrl(value: string, electionDate: string) {
 	if (!validDate(electionDate) || url.href !== value || url.origin !== origin || url.username || url.password || url.search || url.hash || !path.startsWith(`/sites/default/files/pdf/candidates/${electionDate.slice(0, 4)}/`) || !path.endsWith(".pdf") || path.length > 600 || path.includes("\\") || containsControlCharacters(path) || path.split("/").some(item => item === "." || item === "..")) return reject();
 }
 export function validateNycElection(value: unknown): asserts value is NycElection {
-	if (!exact(value, ["electionId", "electionDate", "pageUrl", "nycDocuments"]) || value.electionId !== null || !validDate(value.electionDate) || value.pageUrl !== nycDiscoveryUrl || !Array.isArray(value.nycDocuments) || value.nycDocuments.length !== 1) return reject();
+	if (!exact(value, [
+		"electionId",
+		"electionDate",
+		"pageUrl",
+		"nycDocuments"
+	]) || value.electionId !== null || !validDate(value.electionDate) || value.pageUrl !== nycDiscoveryUrl || !Array.isArray(value.nycDocuments) || value.nycDocuments.length !== 1) {
+		return reject();
+	}
 	const document = value.nycDocuments[0];
 	if (!exact(document, ["url", "sha256"]) || typeof document.url !== "string" || !digest(document.sha256)) return reject();
 	validateNycDocumentUrl(document.url, value.electionDate);
@@ -64,9 +85,19 @@ export function nycPolicyFingerprint(body: string) {
 	const footers = descendants(dom, node => node.nodeName === "footer");
 	if (footers.length !== 1) return reject();
 	const text = (node: Parameters<typeof stateHtmlText>[0]) => stateHtmlText(node).replace(/\s+/gu, " ").trim();
-	const links = (node: Parameters<typeof stateHtmlText>[0]) => descendants(node, child => child.nodeName === "a").map(child => [text(child), new URL(attribute(child, "href"), origin).href]);
-	const legalLinks = descendants(dom, node => node.nodeName === "a" && /privacy|terms|copyright|licen[cs]e|disclaimer|polic(?:y|ies)/iu.test(`${text(node)} ${attribute(node, "href")}`)).map(node => [text(node), new URL(attribute(node, "href"), origin).href]);
-	return hash(JSON.stringify({ footerTexts: footers.map(text), footerLinks: footers.map(links), legalLinks }));
+	const links = (node: Parameters<typeof stateHtmlText>[0]) => descendants(node, child => child.nodeName === "a").map(child => [
+		text(child),
+		new URL(attribute(child, "href"), origin).href
+	]);
+	const legalLinks = descendants(dom, node => node.nodeName === "a" && /privacy|terms|copyright|licen[cs]e|disclaimer|polic(?:y|ies)/iu.test(`${text(node)} ${attribute(node, "href")}`)).map(node => [
+		text(node),
+		new URL(attribute(node, "href"), origin).href
+	]);
+	return hash(JSON.stringify({
+		footerTexts: footers.map(text),
+		footerLinks: footers.map(links),
+		legalLinks
+	}));
 }
 function instant(value: unknown, now: number): value is string {
 	return typeof value === "string" && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value && Date.parse(value) <= now;
@@ -78,7 +109,16 @@ function page(value: unknown, url: string, now: number): Page {
 export function readNycDiscovery(body: string, now = Date.now()) {
 	if (Buffer.byteLength(body) > 24 * 1024 * 1024) return reject();
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "robots", "home", "index", "documents"]) || value.schemaVersion !== 1 || value.type !== "nyc-candidate-discovery" || !Array.isArray(value.documents) || value.documents.length > 6) return reject();
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"robots",
+		"home",
+		"index",
+		"documents"
+	]) || value.schemaVersion !== 1 || value.type !== "nyc-candidate-discovery" || !Array.isArray(value.documents) || value.documents.length > 6) {
+		return reject();
+	}
 	const robots = page(value.robots, `${origin}/robots.txt`, now);
 	if (robots.sha256 !== nycRobotsSha256) return reject();
 	const home = page(value.home, `${origin}/`, now);
@@ -88,7 +128,24 @@ export function readNycDiscovery(body: string, now = Date.now()) {
 	if (offered.length !== value.documents.length) return reject();
 	const documents = value.documents.map((item, position) => {
 		const expected = offered[position]!;
-		if (!exact(item, ["url", "xml", "objects", "sha256", "retrievedAt", "proof"]) || item.url !== expected.pdfUrl || typeof item.xml !== "string" || typeof item.objects !== "string" || !digest(item.sha256) || !instant(item.retrievedAt, now) || !exact(item.proof, ["schemaVersion", "type", "sourceSha256", "xmlSha256", "objectsSha256", "fonts", "pages"]) || item.proof.schemaVersion !== 1 || item.proof.type !== "nyc-native-verification" || item.proof.sourceSha256 !== item.sha256 || item.proof.xmlSha256 !== hash(item.xml) || item.proof.objectsSha256 !== hash(item.objects) || !Array.isArray(item.proof.pages)) return reject();
+		if (!exact(item, [
+			"url",
+			"xml",
+			"objects",
+			"sha256",
+			"retrievedAt",
+			"proof"
+		]) || item.url !== expected.pdfUrl || typeof item.xml !== "string" || typeof item.objects !== "string" || !digest(item.sha256) || !instant(item.retrievedAt, now) || !exact(item.proof, [
+			"schemaVersion",
+			"type",
+			"sourceSha256",
+			"xmlSha256",
+			"objectsSha256",
+			"fonts",
+			"pages"
+		]) || item.proof.schemaVersion !== 1 || item.proof.type !== "nyc-native-verification" || item.proof.sourceSha256 !== item.sha256 || item.proof.xmlSha256 !== hash(item.xml) || item.proof.objectsSha256 !== hash(item.objects) || !Array.isArray(item.proof.pages)) {
+			return reject();
+		}
 		validateNycDocumentUrl(item.url, expected.electionDate);
 		if (JSON.stringify(inspectNycPdfFonts(item.objects)) !== JSON.stringify(item.proof.fonts)) return reject();
 		const native = nycNativePages(item.xml);
@@ -98,11 +155,38 @@ export function readNycDiscovery(body: string, now = Date.now()) {
 			const proof = proofs[index];
 			const columnLabelGlyphs = fields.filter(field => field.top >= 125 && field.top < 150 && ["Party\\Ind. Body", "Name", "Address"].includes(field.text)).reduce((sum, field) => sum + field.text.replace(/\s/gu, "").length, 0);
 			const suffix = fields.filter(field => /^Proposal Number [1-9]\d?, a Question: .+ - Citywide, # to be elected: 1$/u.test(field.text)).length * ", # to be elected: 1".replace(/\s/gu, "").length;
-			if (!exact(proof, ["page", "svgSha256", "fields", "nonspaceGlyphs", "fullInkClips", "clippedProposalSuffixGlyphs", "omittedProposalSuffixGlyphs", "intersectedColumnLabelGlyphs", "headerSeals", "rules"]) || proof.page !== index + 1 || !digest(proof.svgSha256) || proof.fields !== fields.length || proof.headerSeals !== Number(index > 0) || ["nonspaceGlyphs", "fullInkClips", "clippedProposalSuffixGlyphs", "omittedProposalSuffixGlyphs", "intersectedColumnLabelGlyphs", "rules"].some(key => !Number.isSafeInteger(proof[key]) || Number(proof[key]) < 0 || Number(proof[key]) > 40000) || Number(proof.nonspaceGlyphs) + Number(proof.omittedProposalSuffixGlyphs) !== fields.reduce((sum, field) => sum + field.text.replace(/\s/gu, "").length, 0) || Number(proof.omittedProposalSuffixGlyphs) + Number(proof.clippedProposalSuffixGlyphs) > suffix || Number(proof.intersectedColumnLabelGlyphs) > columnLabelGlyphs) return reject();
+			if (!exact(proof, [
+				"page",
+				"svgSha256",
+				"fields",
+				"nonspaceGlyphs",
+				"fullInkClips",
+				"clippedProposalSuffixGlyphs",
+				"omittedProposalSuffixGlyphs",
+				"intersectedColumnLabelGlyphs",
+				"headerSeals",
+				"rules"
+			]) || proof.page !== index + 1 || !digest(proof.svgSha256) || proof.fields !== fields.length || proof.headerSeals !== Number(index > 0) || [
+				"nonspaceGlyphs",
+				"fullInkClips",
+				"clippedProposalSuffixGlyphs",
+				"omittedProposalSuffixGlyphs",
+				"intersectedColumnLabelGlyphs",
+				"rules"
+			].some(key => !Number.isSafeInteger(proof[key]) || Number(proof[key]) < 0 || Number(proof[key]) > 40000) || Number(proof.nonspaceGlyphs) + Number(proof.omittedProposalSuffixGlyphs) !== fields.reduce((sum, field) => sum + field.text.replace(/\s/gu, "").length, 0) || Number(proof.omittedProposalSuffixGlyphs) + Number(proof.clippedProposalSuffixGlyphs) > suffix || Number(proof.intersectedColumnLabelGlyphs) > columnLabelGlyphs) {
+				return reject();
+			}
 		}
 		return item as unknown as Document;
 	});
-	const elections = documents.map((document, index) => ({ electionId: null, electionDate: offered[index]!.electionDate, pageUrl: nycDiscoveryUrl, nycDocuments: [{ url: document.url, sha256: document.sha256 }] } satisfies NycElection));
+	const elections = documents.map((document, index) => ({
+		electionId: null,
+		electionDate: offered[index]!.electionDate,
+		pageUrl: nycDiscoveryUrl,
+		nycDocuments: [
+			{ url: document.url, sha256: document.sha256 }
+		]
+	} satisfies NycElection));
 	for (const election of elections) validateNycElection(election);
 	return { index, documents, elections };
 }
@@ -113,15 +197,28 @@ export async function fetchNycCycleDiscovery(options: Options = {}) {
 	async function get(url: string) {
 		if (!first) await (options.sleep ?? wait)(1000);
 		first = false;
-		const response = await request(url, { allowedHosts: ["www.vote.nyc"], maxBytes: 12 * 1024 * 1024, timeoutMs: 30000 });
+		const response = await request(url, {
+			allowedHosts: ["www.vote.nyc"],
+			maxBytes: 12 * 1024 * 1024,
+			timeoutMs: 30000
+		});
 		await options.onResponse?.(url, response);
 		if (response.status !== 200) return reject();
 		return response;
 	}
 	async function text(url: string): Promise<Page> {
 		const response = await get(url);
-		if (response.body.length > 2 * 1024 * 1024 || !(url.endsWith("robots.txt") ? response.contentType === "text/plain" : response.contentType === "text/html")) return reject();
-		return { url, body: new TextDecoder("utf-8", { fatal: true }).decode(response.body), sha256: hash(response.body), retrievedAt: new Date(now()).toISOString() };
+		if (response.body.length > 2 * 1024 * 1024 || !(url.endsWith("robots.txt")
+			? response.contentType === "text/plain"
+			: response.contentType === "text/html")) {
+			return reject();
+		}
+		return {
+			url,
+			body: new TextDecoder("utf-8", { fatal: true }).decode(response.body),
+			sha256: hash(response.body),
+			retrievedAt: new Date(now()).toISOString()
+		};
 	}
 	const robots = await text(`${origin}/robots.txt`);
 	if (robots.sha256 !== nycRobotsSha256) return reject();
@@ -144,9 +241,23 @@ export async function fetchNycCycleDiscovery(options: Options = {}) {
 					const value = await verifyNycCandidatePdf(nycSource(offer.electionDate), response.body, createStateCandidateRecord);
 					return { xml: value.xml, proof: value.proof, objects: value.objects };
 				})();
-		documents.push({ url: offer.pdfUrl, xml: verified.xml, objects: verified.objects, proof: verified.proof, sha256: hash(response.body), retrievedAt });
+		documents.push({
+			url: offer.pdfUrl,
+			xml: verified.xml,
+			objects: verified.objects,
+			proof: verified.proof,
+			sha256: hash(response.body),
+			retrievedAt
+		});
 	}
-	const body = JSON.stringify({ schemaVersion: 1, type: "nyc-candidate-discovery", robots, home, index, documents });
+	const body = JSON.stringify({
+		schemaVersion: 1,
+		type: "nyc-candidate-discovery",
+		robots,
+		home,
+		index,
+		documents
+	});
 	readNycDiscovery(body, now());
 	return body;
 }
@@ -154,19 +265,33 @@ export async function fetchNycCandidateCapture(source: StateBallotSource, option
 	validateNycSource(source);
 	const discovery = options.discovery ?? await fetchNycCycleDiscovery(options);
 	readNycDiscovery(discovery, (options.now ?? Date.now)());
-	return JSON.stringify({ schemaVersion: 1, type: "nyc-candidate-capture", electionDate: source.electionDate, discovery: JSON.parse(discovery) });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "nyc-candidate-capture",
+		electionDate: source.electionDate,
+		discovery: JSON.parse(discovery)
+	});
 }
 export function nycCivilPublicationKey(value: string, electionDate: string) {
 	const date = nycPublicationDate(value, electionDate);
 	const time = / (\d{1,2}):([0-5]\d):([0-5]\d)(AM|PM)$/u.exec(value)!;
-	const hour = Number(time[1]) % 12 + (time[4] === "PM" ? 12 : 0);
+	const hour = Number(time[1]) % 12 + (time[4] === "PM"
+		? 12
+		: 0);
 	return `${date}T${String(hour).padStart(2, "0")}:${time[2]}:${time[3]}`;
 }
 export function parseNycCandidateCapture(source: StateBallotSource, body: string, factory: typeof import("./state-ballot-records.js").createStateCandidateRecord, now = Date.now(), previous?: StateBallotSnapshot) {
 	validateNycSource(source);
 	if (Buffer.byteLength(body) > 24 * 1024 * 1024) return reject();
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "electionDate", "discovery"]) || value.schemaVersion !== 1 || value.type !== "nyc-candidate-capture" || value.electionDate !== source.electionDate) return reject();
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"electionDate",
+		"discovery"
+	]) || value.schemaVersion !== 1 || value.type !== "nyc-candidate-capture" || value.electionDate !== source.electionDate) {
+		return reject();
+	}
 	const discovery = readNycDiscovery(JSON.stringify(value.discovery), now);
 	const position = discovery.elections.findIndex(election => election.electionDate === source.electionDate);
 	if (position < 0) {
@@ -176,6 +301,22 @@ export function parseNycCandidateCapture(source: StateBallotSource, body: string
 	const document = discovery.documents[position]!;
 	const result = readNycCandidateDocument(source, document.xml, factory);
 	if (result.asOfDate > document.retrievedAt.slice(0, 10) || (previous?.sourceAsOf && nycCivilPublicationKey(result.printedAt, source.electionDate) < nycCivilPublicationKey(previous.sourceAsOf, source.electionDate)) || previous?.records.some(record => !result.records.some(item => item.id === record.id)) || previous?.ballotQuestions?.some(question => !result.questions.some(item => item.id === question.id))) return reject();
-	const documents = [{ url: document.url, sha256: document.sha256, retrievedAt: document.retrievedAt, includedRecordCount: result.records.length }];
-	return { records: result.records, ballotQuestions: result.questions, sourceAsOfDate: result.asOfDate, sourceAsOf: result.printedAt, documents, retrievedAt: document.retrievedAt, sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), collectionIndexSha256: nycDocumentDigest(discovery.elections[position]!.nycDocuments) };
+	const documents = [
+		{
+			url: document.url,
+			sha256: document.sha256,
+			retrievedAt: document.retrievedAt,
+			includedRecordCount: result.records.length
+		}
+	];
+	return {
+		records: result.records,
+		ballotQuestions: result.questions,
+		sourceAsOfDate: result.asOfDate,
+		sourceAsOf: result.printedAt,
+		documents,
+		retrievedAt: document.retrievedAt,
+		sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+		collectionIndexSha256: nycDocumentDigest(discovery.elections[position]!.nycDocuments)
+	};
 }

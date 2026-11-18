@@ -40,11 +40,20 @@ export function readNycCandidateIndex(body: string): NycCandidatePublication[] {
 			catch {
 				return reject();
 			}
-			if (!format || offered.has(format) || target.origin !== "https://www.vote.nyc" || target.username || target.password || target.search || target.hash || !path.startsWith(`/sites/default/files/pdf/candidates/${date[2]}/`) || path.split("/").some(part => part === ".." || part === ".") || containsControlCharacters(path) || path.includes("\\") || !path.endsWith(format === "PDF" ? ".pdf" : ".rtf")) return reject();
+			if (!format || offered.has(format) || target.origin !== "https://www.vote.nyc" || target.username || target.password || target.search || target.hash || !path.startsWith(`/sites/default/files/pdf/candidates/${date[2]}/`) || path.split("/").some(part => part === ".." || part === ".") || containsControlCharacters(path) || path.includes("\\") || !path.endsWith(format === "PDF"
+				? ".pdf"
+				: ".rtf")) {
+				return reject();
+			}
 			offered.set(format, target.href);
 			linksRead++;
 		}
-		results.push({ electionDate, pageUrl: nycCandidateDiscoveryUrl, pdfUrl: offered.get("PDF")!, rtfUrl: offered.get("DOC")! });
+		results.push({
+			electionDate,
+			pageUrl: nycCandidateDiscoveryUrl,
+			pdfUrl: offered.get("PDF")!,
+			rtfUrl: offered.get("DOC")!
+		});
 	}
 	if (descendants(main[0]!, node => node.nodeName === "a" && /General Contest List/u.test(stateHtmlText(node))).length !== linksRead) return reject();
 	return results.sort((first, second) => first.electionDate.localeCompare(second.electionDate));

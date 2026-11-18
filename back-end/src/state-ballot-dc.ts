@@ -7,18 +7,37 @@ import { containsControlCharacters } from "./text-validation.js";
 
 interface Word { left: number; right: number; top: number; value: string }
 type Factory = (source: StateBallotSource, values: StateCandidateValues) => StateCandidateRecord | null;
-const parties = ["Republican", "Democrat", "Statehood Green", "Independent", "Libertarian", "One Home Party", "N/A"];
+const parties = [
+	"Republican",
+	"Democrat",
+	"Statehood Green",
+	"Independent",
+	"Libertarian",
+	"One Home Party",
+	"N/A"
+];
 const ancPattern = /^[1-8](?:\/[1-8])?[A-Z]\d{2}$/u;
 const clean = (value: string) => value.normalize("NFKC").replace(/\s+/gu, " ").trim();
 const joined = (words: Word[]) => clean(words.map(word => word.value).join(" "));
 
 function pages(body: string) {
-	if (Buffer.byteLength(body) > 4 * 1024 * 1024 || /<!ENTITY|<!DOCTYPE[^>]*\[/iu.test(body) || !body.trimEnd().endsWith("</html>") || [...body.matchAll(/<page\b/gu)].length !== [...body.matchAll(/<\/page>/gu)].length) throw new Error("The D.C. PDF text exceeds its reviewed bounds or is incomplete.");
+	if (Buffer.byteLength(body) > 4 * 1024 * 1024 || /<!ENTITY|<!DOCTYPE[^>]*\[/iu.test(body) || !body.trimEnd().endsWith("</html>") || [
+		...body.matchAll(/<page\b/gu)
+	].length !== [
+		...body.matchAll(/<\/page>/gu)
+	].length) {
+		throw new Error("The D.C. PDF text exceeds its reviewed bounds or is incomplete.");
+	}
 	const result = descendants(parseStateHtml(body), node => node.nodeName === "page").map((page) => {
 		if (Math.abs(Number(attribute(page, "width")) - 792) > 1 || Math.abs(Number(attribute(page, "height")) - 612) > 1) throw new Error("The D.C. publication page dimensions changed.");
 		const words = descendants(page, node => node.nodeName === "word").map((node) => {
 			if (["xmin", "xmax", "ymin"].some(name => !/^\d+(?:\.\d+)?$/u.test(attribute(node, name)))) throw new Error("The D.C. publication word coordinates are missing.");
-			return { left: Number(attribute(node, "xmin")), right: Number(attribute(node, "xmax")), top: Number(attribute(node, "ymin")), value: text(node) };
+			return {
+				left: Number(attribute(node, "xmin")),
+				right: Number(attribute(node, "xmax")),
+				top: Number(attribute(node, "ymin")),
+				value: text(node)
+			};
 		});
 		if (!words.length || words.length > 15000 || words.some(word => !Number.isFinite(word.left) || !Number.isFinite(word.right) || !Number.isFinite(word.top) || word.left < 0 || word.right > 793 || word.right < word.left || word.top < 0 || word.top > 613 || containsControlCharacters(word.value))) throw new Error("The D.C. publication word geometry changed.");
 		return words;
@@ -33,7 +52,10 @@ function rows(words: Word[]) {
 		if (!group || Math.abs(group.top - word.top) >= 1.8) groups.push(group = { top: word.top, words: [] });
 		group.words.push(word);
 	}
-	return groups.map(group => ({ ...group, words: group.words.sort((first, second) => first.left - second.left) }));
+	return groups.map(group => ({
+		...group,
+		words: group.words.sort((first, second) => first.left - second.left)
+	}));
 }
 function field(words: Word[], left: number, right: number) {
 	return clean(rows(words.filter(word => word.left >= left - 0.6 && word.left < right - 0.6)).map(row => joined(row.words)).join(" "));
@@ -44,25 +66,65 @@ function person(value: string) {
 }
 function candidateName(published: string, electionDate: string) {
 	const withdrawn = /^(.+?) \(withdrew (\d{1,2}\/\d{1,2}\/\d{2})\)$/u.exec(published);
-	if (!withdrawn) return { name: person(published), withdrawal: null };
+	if (!withdrawn) {
+		return {
+			name: person(published),
+			withdrawal: null
+		};
+	}
 	const [month, day, year] = withdrawn[2]!.split("/");
 	const date = `20${year}-${month!.padStart(2, "0")}-${day!.padStart(2, "0")}`;
 	if (!Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0, 10) !== date || withdrawn[2]!.slice(-2) !== electionDate.slice(2, 4) || date > electionDate) throw new Error("The D.C. withdrawal date requires review.");
-	return { name: person(withdrawn[1]!), withdrawal: `Withdrew ${withdrawn[2]}` };
+	return {
+		name: person(withdrawn[1]!),
+		withdrawal: `Withdrew ${withdrawn[2]}`
+	};
 }
 function officeValues(value: string): Omit<StateCandidateValues, "name" | "party"> {
 	const office = value.replace(/^Delegate to the U\.S\. House of Representatives$/u, "Delegate to the House of Representatives").replace(/^Chairman of the Council$/u, "Chairman of the Council of the District of Columbia");
 	const ward = /^Ward ([1-8]) Member of the (?:Council|State Board of Education)$/u.exec(office);
 	const anc = /^ANC (.+)$/u.exec(office);
 	if (anc && !ancPattern.test(anc[1]!)) throw new Error("The D.C. ANC-SMD label requires review.");
-	if (ward) return { office, scope: "local", district: ward[1]!, jurisdiction: `Ward ${ward[1]}` };
-	if (anc) return { office: "Advisory Neighborhood Commissioner", scope: "local", district: anc[1]!, jurisdiction: `ANC-SMD ${anc[1]}` };
-	if (!["Delegate to the House of Representatives", "Mayor of the District of Columbia", "Chairman of the Council of the District of Columbia", "At-Large Member of the Council", "Attorney General", "United States Senator", "United States Representative"].includes(office)) throw new Error("The D.C. office requires review.");
-	return { office: /^United States (?:Senator|Representative)$/u.test(office) ? `${office} (D.C. shadow delegation)` : office, scope: "statewide", district: "" };
+	if (ward) {
+		return {
+			office,
+			scope: "local",
+			district: ward[1]!,
+			jurisdiction: `Ward ${ward[1]}`
+		};
+	}
+	if (anc) {
+		return {
+			office: "Advisory Neighborhood Commissioner",
+			scope: "local",
+			district: anc[1]!,
+			jurisdiction: `ANC-SMD ${anc[1]}`
+		};
+	}
+	if (![
+		"Delegate to the House of Representatives",
+		"Mayor of the District of Columbia",
+		"Chairman of the Council of the District of Columbia",
+		"At-Large Member of the Council",
+		"Attorney General",
+		"United States Senator",
+		"United States Representative"
+	].includes(office)) {
+		throw new Error("The D.C. office requires review.");
+	}
+	return {
+		office: /^United States (?:Senator|Representative)$/u.test(office)
+			? `${office} (D.C. shadow delegation)`
+			: office,
+		scope: "statewide",
+		district: ""
+	};
 }
 function dateHeading(words: Word[], electionDate: string) {
 	const content = joined(rows(words.filter(word => word.top < 68)).flatMap(row => row.words));
-	const dates = [...content.matchAll(/November ([1-9]\d?), (20\d{2})/gu)];
+	const dates = [
+		...content.matchAll(/November ([1-9]\d?), (20\d{2})/gu)
+	];
 	if (dates.length !== 1 || `${dates[0]![2]}-11-${dates[0]![1]!.padStart(2, "0")}` !== electionDate || !content.includes("General Election")) throw new Error("The D.C. publication election identity changed.");
 }
 function generalRecords(body: string, electionDate: string) {
@@ -97,7 +159,12 @@ function generalRecords(body: string, electionDate: string) {
 			if (!office || closed) throw new Error("The D.C. candidate is outside an office block.");
 			const candidate = /^(.+) - (Republican|Democrat|Statehood Green|Independent)$/u.exec(value);
 			if (!candidate && !office.includes("State Board of Education")) throw new Error("The D.C. candidate party or row requires review.");
-			values.push({ name: person(candidate?.[1] ?? value), ...officeValues(office), party: candidate?.[2] ?? "", status: "General-election candidates in ballot order" });
+			values.push({
+				name: person(candidate?.[1] ?? value),
+				...officeValues(office),
+				party: candidate?.[2] ?? "",
+				status: "General-election candidates in ballot order"
+			});
 		}
 		counts.push(values.length - before);
 	}
@@ -124,7 +191,12 @@ function ancRecords(body: string, electionDate: string) {
 				continue;
 			}
 			const candidate = candidateName(published, electionDate);
-			values.push({ name: candidate.name, ...officeValues(`ANC ${start.value}`), party: "", status: candidate.withdrawal ?? "ANC candidates in ballot order" });
+			values.push({
+				name: candidate.name,
+				...officeValues(`ANC ${start.value}`),
+				party: "",
+				status: candidate.withdrawal ?? "ANC candidates in ballot order"
+			});
 		}
 		counts.push(values.length - before);
 	}
@@ -145,7 +217,12 @@ function writeInRecords(body: string, electionDate: string) {
 			const party = field(row.words, 258, 318);
 			if (!name || !office || !parties.includes(party)) throw new Error("The D.C. write-in row or party requires review.");
 			const candidate = candidateName(name, electionDate);
-			values.push({ name: candidate.name, ...officeValues(office), party, status: candidate.withdrawal ?? "Registered general-election write-in candidate" });
+			values.push({
+				name: candidate.name,
+				...officeValues(office),
+				party,
+				status: candidate.withdrawal ?? "Registered general-election write-in candidate"
+			});
 		}
 		counts.push(values.length - before);
 	}
@@ -157,12 +234,25 @@ export function readDcCandidateDocuments(source: StateBallotSource, documents: s
 	const general = generalRecords(documents[0]!, source.electionDate);
 	const anc = ancRecords(documents[1]!, source.electionDate);
 	const writeIns = writeInRecords(documents[2]!, source.electionDate);
-	const records = [...general.values, ...anc.values, ...writeIns.values].map((values) => {
-		const status = values.status!.startsWith("Withdrew ") ? "withdrawn" : values.status === "Registered general-election write-in candidate" ? "write-in" : "listed";
+	const records = [
+		...general.values,
+		...anc.values,
+		...writeIns.values
+	].map((values) => {
+		const status = values.status!.startsWith("Withdrew ")
+			? "withdrawn"
+			: values.status === "Registered general-election write-in candidate"
+				? "write-in"
+				: "listed";
 		const record = factory(source, { ...values, status });
 		if (!record) throw new Error("The D.C. candidate record is invalid.");
 		return { ...record, sourceStatus: values.status };
 	});
 	if (records.length > 3000 || new Set(records.map(record => record.id)).size !== records.length) throw new Error("The D.C. candidate inventory is excessive or duplicated.");
-	return { records, documentCounts: [general.values.length, anc.values.length, writeIns.values.length], pageCounts: [general.counts, anc.counts, writeIns.counts], vacancies: anc.vacancies };
+	return {
+		records,
+		documentCounts: [general.values.length, anc.values.length, writeIns.values.length],
+		pageCounts: [general.counts, anc.counts, writeIns.counts],
+		vacancies: anc.vacancies
+	};
 }

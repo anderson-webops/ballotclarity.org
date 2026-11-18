@@ -13,13 +13,22 @@ async function main() {
 	const supplied = JSON.parse((await readBoundedStateDataBytes(sourcePath, 16 * 1024)).toString("utf8")) as Partial<FultonMunicipalSource>;
 	assert(bytes.subarray(0, 5).toString("ascii") === "%PDF-" && supplied.bytes === bytes.length && supplied.sha256 === createHash("sha256").update(bytes).digest("hex"), "The municipal PDF does not match its original source capture.");
 	assert(typeof supplied.url === "string" && typeof supplied.retrievedAt === "string");
-	const source = { url: supplied.url, sha256: supplied.sha256, bytes: supplied.bytes, retrievedAt: supplied.retrievedAt };
+	const source = {
+		url: supplied.url,
+		sha256: supplied.sha256,
+		bytes: supplied.bytes,
+		retrievedAt: supplied.retrievedAt
+	};
 	const xml = await extractStateBallotPdfXml(bytes, await resolveStateBallotPdfXmlExtractor());
 	const inventory = prepareFultonMunicipalRunoff(xml, source);
-	process.stdout.write(format === "csv" ? fultonMunicipalRunoffCsv(inventory) : `${JSON.stringify(inventory, null, 2)}\n`);
+	process.stdout.write(format === "csv"
+		? fultonMunicipalRunoffCsv(inventory)
+		: `${JSON.stringify(inventory, null, 2)}\n`);
 }
 
 main().catch((error: unknown) => {
-	console.error(error instanceof Error ? error.message : "The municipal runoff preparation failed.");
+	console.error(error instanceof Error
+		? error.message
+		: "The municipal runoff preparation failed.");
 	process.exitCode = 1;
 });

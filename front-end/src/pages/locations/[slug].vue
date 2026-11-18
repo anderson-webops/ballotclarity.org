@@ -8,12 +8,23 @@ const nextElectionSlug = computed(() => jurisdiction.value?.nextElectionSlug);
 const { data: nextElectionData } = await useBallot(nextElectionSlug);
 
 if (jurisdiction.value && nextElectionData.value?.election.jurisdictionSlug === jurisdiction.value.slug) {
-	await navigateTo({ path: `/elections/${nextElectionData.value.election.slug}`, query: { ...useRoute().query, location: jurisdiction.value.slug } }, { redirectCode: 302 });
+	await navigateTo({
+		path: `/elections/${nextElectionData.value.election.slug}`,
+		query: {
+			...useRoute().query,
+			location: jurisdiction.value.slug
+		}
+	}, { redirectCode: 302 });
 }
 
 const registrationDeadline = computed(() => nextElectionData.value?.election.keyDates.find(item => item.label === "Registration deadline") ?? null);
 const earlyVotingDate = computed(() => nextElectionData.value?.election.keyDates.find(item => item.label === "Early voting opens") ?? null);
-const hasOfficeContact = computed(() => Boolean(jurisdiction.value && [jurisdiction.value.officialOffice.address, jurisdiction.value.officialOffice.phone, jurisdiction.value.officialOffice.email, jurisdiction.value.officialOffice.hours].some(value => value?.trim())));
+const hasOfficeContact = computed(() => Boolean(jurisdiction.value && [
+	jurisdiction.value.officialOffice.address,
+	jurisdiction.value.officialOffice.phone,
+	jurisdiction.value.officialOffice.email,
+	jurisdiction.value.officialOffice.hours
+].some(value => value?.trim())));
 
 watch([jurisdiction, nextElectionData], () => {
 	if (jurisdiction.value) {
@@ -64,7 +75,9 @@ usePageSeo({
 			}
 		: undefined,
 	path: `/locations/${jurisdictionSlug.value}`,
-	title: jurisdiction.value ? `${jurisdiction.value.displayName} Elections and Ballot Info` : "Location guide"
+	title: jurisdiction.value
+		? `${jurisdiction.value.displayName} Elections and Ballot Info`
+		: "Location guide"
 });
 </script>
 

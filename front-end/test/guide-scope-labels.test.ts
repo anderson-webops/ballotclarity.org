@@ -8,6 +8,14 @@ test("D.C. guide scope uses districtwide wording with either supported state ide
 });
 
 test("state guide labels remain unchanged outside D.C.", () => {
-	for (const state of [undefined, "", "AK", "Alaska", "VA", "Virginia", "Washington"])
+	for (const state of [
+		undefined,
+		"",
+		"AK",
+		"Alaska",
+		"VA",
+		"Virginia",
+		"Washington"
+	])
 		assert.deepEqual(fullAreaGuideLabels(state), { status: "Statewide information only", limitation: "Local races are not included." });
 });

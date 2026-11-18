@@ -18,7 +18,9 @@ const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwid
 const directoryApiQuery = computed(() => buildCivicDirectoryApiQuery(
 	buildLookupContextFromNationwideResult(activeNationwideLookupResult.value),
 	route.query,
-	isHydrated.value && hasGuideShellContext.value ? selectedLocation.value?.slug : undefined
+	isHydrated.value && hasGuideShellContext.value
+		? selectedLocation.value?.slug
+		: undefined
 ));
 const activeLookupQuery = computed(() => directoryApiQuery.value?.lookup
 	? { lookup: directoryApiQuery.value.lookup, selection: directoryApiQuery.value.selection }
@@ -52,8 +54,20 @@ if (import.meta.client) {
 		void refreshGuideData();
 	}, { immediate: true });
 }
-const emptyNationwideRepresentativesResponse: RepresentativesResponse = { districts: [], mode: "nationwide", note: "", representatives: [], updatedAt: "" };
-const emptyGuideRepresentativesResponse: RepresentativesResponse = { districts: [], mode: "guide", note: "", representatives: [], updatedAt: "" };
+const emptyNationwideRepresentativesResponse: RepresentativesResponse = {
+	districts: [],
+	mode: "nationwide",
+	note: "",
+	representatives: [],
+	updatedAt: ""
+};
+const emptyGuideRepresentativesResponse: RepresentativesResponse = {
+	districts: [],
+	mode: "guide",
+	note: "",
+	representatives: [],
+	updatedAt: ""
+};
 const apiUsesNationwide = computed(() => guideData.value?.mode === "nationwide");
 const showGuideDirectory = computed(() => hasGuideShellContext.value);
 const storeUsesNationwide = computed(() => lookupContextMatchesDirectoryRoute(activeNationwideLookupResult.value, route.query));
@@ -78,9 +92,13 @@ const directoryBundle = computed(() => {
 	return emptyNationwideRepresentativesResponse;
 });
 
-const directoryPending = computed(() => directoryUsesNationwide.value ? false : showGuideDirectory.value ? guidePending.value : false);
+const directoryPending = computed(() => directoryUsesNationwide.value
+	? false
+	: showGuideDirectory.value ? guidePending.value : false);
 const directoryError = computed(() => showGuideDirectory.value || directoryUsesNationwide.value
-	? directoryUsesNationwide.value && directoryBundle.value ? null : guideError.value
+	? directoryUsesNationwide.value && directoryBundle.value
+		? null
+		: guideError.value
 	: null);
 const directoryData = computed(() => directoryBundle.value);
 const groupedRepresentatives = computed(() => groupRepresentativeSummariesByGovernmentLevel(
@@ -107,11 +125,19 @@ const lookupPrompt = computed(() => activeLookupSummary.value.mode === "none"
 			title: "Refresh results for this page"
 		}
 );
-const directorySummary = computed(() => `${directoryData.value.representatives.length} current official${directoryData.value.representatives.length === 1 ? "" : "s"} across ${directoryData.value.districts.length} district match${directoryData.value.districts.length === 1 ? "" : "es"}.`);
+const directorySummary = computed(() => `${directoryData.value.representatives.length} current official${directoryData.value.representatives.length === 1
+	? ""
+	: "s"} across ${directoryData.value.districts.length} district match${directoryData.value.districts.length === 1
+	? ""
+	: "es"}.`);
 
 function buildLookupAwareTarget(path: string) {
-	if (route.query.area && directoryApiQuery.value?.area)
-		return { path, query: { area: directoryApiQuery.value.area } };
+	if (route.query.area && directoryApiQuery.value?.area) {
+		return {
+			path,
+			query: { area: directoryApiQuery.value.area }
+		};
+	}
 	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
 }
 

@@ -7,7 +7,19 @@ import test from "node:test";
 import { readAutomationRun, writeAutomationRun } from "../src/admin-operations.js";
 
 const baseTime = Date.parse("2026-11-02T00:00:00.000Z");
-const running = (time: number): AdminAutomationRun => ({ schemaVersion: 1, type: "ballot-automation-run", status: "running", startedAt: new Date(time).toISOString(), finishedAt: null, lastImportAt: null, lastSuccessAt: null, nextRunAt: null, results: [] });
+function running(time: number): AdminAutomationRun {
+	return {
+		schemaVersion: 1,
+		type: "ballot-automation-run",
+		status: "running",
+		startedAt: new Date(time).toISOString(),
+		finishedAt: null,
+		lastImportAt: null,
+		lastSuccessAt: null,
+		nextRunAt: null,
+		results: []
+	};
+}
 
 test("default automation reads validate the completed observation, not the time before asynchronous I/O", async (context) => {
 	const directory = await mkdtemp(join(tmpdir(), "ballot-automation-observation-"));

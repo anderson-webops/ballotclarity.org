@@ -30,7 +30,9 @@ function reject(): never {
 function bounded(body: string) {
 	if (Buffer.byteLength(body) > 2 * 1024 * 1024 || body.includes("\uFFFD")) return reject();
 	const document = parseStateHtml(body);
-	const pending = [{ node: document, depth: 0 }];
+	const pending = [
+		{ node: document, depth: 0 }
+	];
 	let visited = 0;
 	while (pending.length) {
 		const item = pending.pop()!;
@@ -54,12 +56,24 @@ export function readPimaPublicState(body: string): Record<string, unknown>[] {
 		else {
 			const escaped = literal[++position];
 			if (position >= literal.length - 1) return reject();
-			const simple: Record<string, string> = { "'": "'", "\"": "\"", "\\": "\\", "/": "/", "b": "\b", "f": "\f", "n": "\n", "r": "\r", "t": "\t" };
+			const simple: Record<string, string> = {
+				"'": "'",
+				"\"": "\"",
+				"\\": "\\",
+				"/": "/",
+				"b": "\b",
+				"f": "\f",
+				"n": "\n",
+				"r": "\r",
+				"t": "\t"
+			};
 			if (escaped && Object.hasOwn(simple, escaped)) {
 				decoded += simple[escaped];
 			}
 			else if (escaped === "u" || escaped === "x") {
-				const length = escaped === "u" ? 4 : 2;
+				const length = escaped === "u"
+					? 4
+					: 2;
 				const digits = literal.slice(position + 1, position + 1 + length);
 				if (digits.length !== length || !/^[a-f0-9]+$/iu.test(digits)) return reject();
 				decoded += String.fromCharCode(Number.parseInt(digits, 16));
@@ -72,7 +86,9 @@ export function readPimaPublicState(body: string): Record<string, unknown>[] {
 	}
 	const value: unknown = JSON.parse(decoded);
 	if (!value || typeof value !== "object" || Array.isArray(value)) return reject();
-	const pending: { value: unknown; depth: number }[] = [{ value, depth: 0 }];
+	const pending: { value: unknown; depth: number }[] = [
+		{ value, depth: 0 }
+	];
 	const objects: Record<string, unknown>[] = [];
 	let visited = 0;
 	while (pending.length) {
@@ -86,14 +102,26 @@ export function readPimaPublicState(body: string): Record<string, unknown>[] {
 }
 export function pimaPolicyFingerprint(body: string, region: "links" | "privacy" | "disclaimer") {
 	const document = bounded(body);
-	const links = [...new Set(readPimaPublicState(body).filter(value => typeof value.url === "string" && typeof value.displayName === "string" && publicLinkFields.test(`${value.displayName} ${value.url}`)).map(value => JSON.stringify([value.displayName, new URL(value.url as string, pimaDiscoveryUrl).href])))].sort();
+	const links = [
+		...new Set(readPimaPublicState(body).filter(value => typeof value.url === "string" && typeof value.displayName === "string" && publicLinkFields.test(`${value.displayName} ${value.url}`)).map(value => JSON.stringify([value.displayName, new URL(value.url as string, pimaDiscoveryUrl).href])))
+	].sort();
 	if (region === "links") return hash(JSON.stringify(links));
 	const regions = descendants(document, node => attribute(node, "id") === "mainWrapTS");
 	if (regions.length !== 1) return reject();
 	function text(node: StateHtmlNode): string {
-		if (["script", "style", "noscript", "template", "form"].includes(node.nodeName)) return "";
+		if ([
+			"script",
+			"style",
+			"noscript",
+			"template",
+			"form"
+		].includes(node.nodeName)) {
+			return "";
+		}
 		if (node.nodeName === "#text") return node.value ?? "";
-		return (node.nodeName === "a" ? ` ${attribute(node, "href")} ` : "") + (node.childNodes ?? []).map(text).join(" ");
+		return (node.nodeName === "a"
+			? ` ${attribute(node, "href")} `
+			: "") + (node.childNodes ?? []).map(text).join(" ");
 	}
 	const content = text(regions[0]!).replace(/\s+/gu, " ").trim();
 	if (content.length < 100) return reject();
@@ -108,14 +136,19 @@ export function validatePimaDocumentUrl(value: string) {
 }
 export function readPimaOfferedElections(body: string): PimaOfferedElection[] {
 	const document = bounded(body);
-	const links = descendants(document, node => node.nodeName === "a" && Boolean(attribute(node, "href"))).map(node => ({ label: stateHtmlText(node).replace(/\s+/gu, " ").trim(), url: new URL(attribute(node, "href"), pimaDiscoveryUrl) }));
+	const links = descendants(document, node => node.nodeName === "a" && Boolean(attribute(node, "href"))).map(node => ({
+		label: stateHtmlText(node).replace(/\s+/gu, " ").trim(),
+		url: new URL(attribute(node, "href"), pimaDiscoveryUrl)
+	}));
 	const objects = readPimaPublicState(body);
 	const elections: PimaOfferedElection[] = [];
 	for (const link of links.filter(link => /^20\d{2} General Election$/u.test(link.label))) {
 		const id = link.url.searchParams.get("contentId");
 		if (link.url.origin !== origin || link.url.pathname !== "/elections" || !id || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/u.test(id) || [...link.url.searchParams].length !== 1 || link.url.hash || link.url.username || link.url.password || link.url.port) return reject();
 		const events = objects.filter(value => value.id === id && value.contentTypeName === "event" && value.data && typeof value.data === "object" && !Array.isArray(value.data));
-		const data = [...new Set(events.map(event => JSON.stringify(event.data)))];
+		const data = [
+			...new Set(events.map(event => JSON.stringify(event.data)))
+		];
 		if (data.length !== 1) return reject();
 		const event = JSON.parse(data[0]!) as { title?: { en?: unknown }; eventdate?: { iv?: { startDate?: unknown } } };
 		const start = event.eventdate?.iv?.startDate;
@@ -124,13 +157,20 @@ export function readPimaOfferedElections(body: string): PimaOfferedElection[] {
 		if (!validDate(electionDate) || electionDate.slice(0, 4) !== link.label.slice(0, 4)) return reject();
 		const documents: PimaOfferedElection["documents"] = [];
 		for (const item of links.filter(item => item.label.startsWith(`${link.label} Official `))) {
-			const kind = item.label === `${link.label} Official Candidate List (PDF)` ? "candidates" : item.label === `${link.label} Official Write-In List (PDF)` ? "write-ins" : null;
+			const kind = item.label === `${link.label} Official Candidate List (PDF)`
+				? "candidates"
+				: item.label === `${link.label} Official Write-In List (PDF)`
+					? "write-ins"
+					: null;
 			if (!kind) return reject();
 			validatePimaDocumentUrl(item.url.href);
 			if (!documents.some(document => document.kind === kind && document.url === item.url.href)) documents.push({ kind, url: item.url.href });
 		}
 		if (documents.length > 2 || documents.filter(document => document.kind === "candidates").length > 1 || documents.filter(document => document.kind === "write-ins").length > 1 || (documents.length && !documents.some(document => document.kind === "candidates"))) return reject();
-		const election = { electionDate, documents: documents.sort((first, second) => first.kind.localeCompare(second.kind)) };
+		const election = {
+			electionDate,
+			documents: documents.sort((first, second) => first.kind.localeCompare(second.kind))
+		};
 		const previous = elections.find(item => item.electionDate === electionDate);
 		if (previous && JSON.stringify(previous) !== JSON.stringify(election)) return reject();
 		if (!previous) elections.push(election);
@@ -141,7 +181,15 @@ export function readPimaOfferedElections(body: string): PimaOfferedElection[] {
 export function readPimaCycleDiscovery(body: string, now = Date.now()) {
 	if (Buffer.byteLength(body) > 10 * 1024 * 1024 || !Number.isFinite(now)) return reject();
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "index", "policies", "redirects"]) || value.schemaVersion !== 1 || value.type !== "pima-election-discovery" || !Array.isArray(value.policies) || value.policies.length !== 4 || !Array.isArray(value.redirects) || value.redirects.length !== 2) return reject();
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"index",
+		"policies",
+		"redirects"
+	]) || value.schemaVersion !== 1 || value.type !== "pima-election-discovery" || !Array.isArray(value.policies) || value.policies.length !== 4 || !Array.isArray(value.redirects) || value.redirects.length !== 2) {
+		return reject();
+	}
 	function timestamp(value: unknown) {
 		if (typeof value !== "string" || !Number.isFinite(Date.parse(value)) || new Date(value).toISOString() !== value || Date.parse(value) > now) return reject();
 	}
@@ -151,19 +199,36 @@ export function readPimaCycleDiscovery(body: string, now = Date.now()) {
 		return value as unknown as Page;
 	}
 	const capturedPolicies = value.policies;
-	const policies = [page(capturedPolicies[0], `${origin}/robots.txt`), page(capturedPolicies[1], "https://content.civicplus.com/robots.txt"), ...policyPaths.map((path, index) => page(capturedPolicies[index + 2], origin + path))];
+	const policies = [
+		page(capturedPolicies[0], `${origin}/robots.txt`),
+		page(capturedPolicies[1], "https://content.civicplus.com/robots.txt"),
+		...policyPaths.map((path, index) => page(capturedPolicies[index + 2], origin + path))
+	];
 	if (hash(policies[0]!.body) !== pimaPolicyReceipts.robots || hash(policies[1]!.body) !== pimaPolicyReceipts.contentRobots) return reject();
 	const index = page(value.index, pimaDiscoveryUrl);
-	for (const item of [index, ...policies.slice(2)]) {
+	for (const item of [
+		index,
+		...policies.slice(2)
+	]) {
 		if (pimaPolicyFingerprint(item.body, "links") !== pimaPolicyReceipts.links) return reject();
 	}
 	for (const [position, name] of (["privacy", "disclaimer"] as const).entries()) {
 		if (pimaPolicyFingerprint(policies[position + 2]!.body, name) !== pimaPolicyReceipts[name]) return reject();
 		const redirect = value.redirects[position];
-		if (!exact(redirect, ["url", "status", "location", "retrievedAt"]) || redirect.url !== origin + offeredPolicyPaths[position] || redirect.status !== 301 || redirect.location !== policyPaths[position]) return reject();
+		if (!exact(redirect, [
+			"url",
+			"status",
+			"location",
+			"retrievedAt"
+		]) || redirect.url !== origin + offeredPolicyPaths[position] || redirect.status !== 301 || redirect.location !== policyPaths[position]) {
+			return reject();
+		}
 		timestamp(redirect.retrievedAt);
 	}
-	return { index, elections: readPimaOfferedElections(index.body) };
+	return {
+		index,
+		elections: readPimaOfferedElections(index.body)
+	};
 }
 export async function fetchPimaCycleDiscovery(options: Options = {}) {
 	const now = options.now ?? Date.now;
@@ -172,10 +237,19 @@ export async function fetchPimaCycleDiscovery(options: Options = {}) {
 	const policies: Page[] = [];
 	const redirects: Redirect[] = [];
 	async function capture(url: string): Promise<Page> {
-		const reply = await request(url, { allowedHosts: [new URL(url).hostname], maxBytes: 2 * 1024 * 1024, timeoutMs: 45000 });
+		const reply = await request(url, {
+			allowedHosts: [new URL(url).hostname],
+			maxBytes: 2 * 1024 * 1024,
+			timeoutMs: 45000
+		});
 		if (reply.status !== 200 || !["text/plain", "text/html"].includes(reply.contentType)) return reject();
 		const body = new TextDecoder("utf-8", { fatal: true }).decode(reply.body);
-		return { url, body, sha256: hash(body), retrievedAt: new Date(now()).toISOString() };
+		return {
+			url,
+			body,
+			sha256: hash(body),
+			retrievedAt: new Date(now()).toISOString()
+		};
 	}
 	policies.push(await capture(`${origin}/robots.txt`));
 	if (hash(policies[0]!.body) !== pimaPolicyReceipts.robots) return reject();
@@ -187,15 +261,30 @@ export async function fetchPimaCycleDiscovery(options: Options = {}) {
 	for (const [position, name] of (["privacy", "disclaimer"] as const).entries()) {
 		await sleep(20000);
 		const url = origin + offeredPolicyPaths[position];
-		const reply = await request(url, { allowedHosts: ["www.pima.gov"], maxBytes: 2 * 1024 * 1024, timeoutMs: 45000 });
+		const reply = await request(url, {
+			allowedHosts: ["www.pima.gov"],
+			maxBytes: 2 * 1024 * 1024,
+			timeoutMs: 45000
+		});
 		if (reply.status !== 301 || reply.location !== policyPaths[position]) return reject();
-		redirects.push({ url, status: 301, location: reply.location, retrievedAt: new Date(now()).toISOString() });
+		redirects.push({
+			url,
+			status: 301,
+			location: reply.location,
+			retrievedAt: new Date(now()).toISOString()
+		});
 		await sleep(20000);
 		const policy = await capture(origin + policyPaths[position]);
 		if (pimaPolicyFingerprint(policy.body, "links") !== pimaPolicyReceipts.links || pimaPolicyFingerprint(policy.body, name) !== pimaPolicyReceipts[name]) return reject();
 		policies.push(policy);
 	}
-	const body = JSON.stringify({ schemaVersion: 1, type: "pima-election-discovery", index, policies, redirects });
+	const body = JSON.stringify({
+		schemaVersion: 1,
+		type: "pima-election-discovery",
+		index,
+		policies,
+		redirects
+	});
 	readPimaCycleDiscovery(body, now());
 	return body;
 }

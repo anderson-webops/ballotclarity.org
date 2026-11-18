@@ -8,8 +8,12 @@ const escape = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<",
 const word = (value: string, left: number, top: number) => `<word xMin="${left}" xMax="${left + Math.min(180, value.length * 1.5)}" yMin="${top}" yMax="${top + 8}">${escape(value)}</word>`;
 
 export function pulaskiNoticeFixture(year = 2026) {
-	const day = year === 2028 ? 7 : 3;
-	const ordinal = year === 2028 ? "th" : "rd";
+	const day = year === 2028
+		? 7
+		: 3;
+	const ordinal = year === 2028
+		? "th"
+		: "rd";
 	const page = (index: number, rows: [string, number, number][]) => `<page width="612" height="1008">${rows.map(row => word(...row)).join("")}${word(`November ${day}${ordinal} General Election`, 200, 982)}${word(`Page ${index} of 3`, 525, 982)}</page>`;
 	return `<doc>${page(1, [
 		["NOTICE OF ELECTION", 220, 20],
@@ -35,13 +39,45 @@ export function pulaskiNoticeFixture(year = 2026) {
 		["Wrightsville Mayor", 420, 20],
 		["Example Mayor-IND", 420, 32],
 		["CONSTITUTIONAL AMENDMENTS (OR OTHER MEASURE) REFERRED TO THE PEOPLE BY THE GENERAL ASSEMBLY", 36, 700]
-	])}${page(3, [["CONSTITUTIONAL AMENDMENTS (OR OTHER MEASURE) REFERRED TO THE PEOPLE BY THE GENERAL ASSEMBLY", 36, 20]])}</doc>`;
+	])}${page(3, [
+		["CONSTITUTIONAL AMENDMENTS (OR OTHER MEASURE) REFERRED TO THE PEOPLE BY THE GENERAL ASSEMBLY", 36, 20]
+	])}</doc>`;
 }
 export function pulaskiDiscoveryFixture(year = 2026, pending = false) {
-	const day = year === 2028 ? 7 : 3;
+	const day = year === 2028
+		? 7
+		: 3;
 	const instant = `${year}-10-20T12:00:00.000Z`;
 	const noticeUrl = `${pulaskiDiscoveryUrl}wp-content/uploads/110${day}${year}_Notice-of-Election_v1.pdf`;
 	const calendarUrl = `${pulaskiDiscoveryUrl}wp-content/uploads/${year - 1}_${year}_Election-Dates_v1.pdf`;
-	const body = `<main><b>${year} GENERAL ELECTION</b>${pending ? "" : `<a href="${noticeUrl}">Notice of Election ${year} General</a>`}<a href="${calendarUrl}">Scheduled Election Dates</a></main>${footer}`;
-	return { schemaVersion: 1, type: "pulaski-discovery", policies: pulaskiPolicyReceipts, index: { url: pulaskiDiscoveryUrl, body, sha256: hash(body), retrievedAt: instant }, calendar: { url: calendarUrl, text: `${year} ELECTION DATES\nNovember ${day}, ${year}\nGeneral Election/Annual School Election Runoff\nwww.votepulaskiar.gov\f`, sha256: "a".repeat(64), retrievedAt: instant }, notices: pending ? [] : [{ url: noticeUrl, text: pulaskiNoticeFixture(year), sha256: "b".repeat(64), retrievedAt: instant }] };
+	const body = `<main><b>${year} GENERAL ELECTION</b>${pending
+		? ""
+		: `<a href="${noticeUrl}">Notice of Election ${year} General</a>`}<a href="${calendarUrl}">Scheduled Election Dates</a></main>${footer}`;
+	return {
+		schemaVersion: 1,
+		type: "pulaski-discovery",
+		policies: pulaskiPolicyReceipts,
+		index: {
+			url: pulaskiDiscoveryUrl,
+			body,
+			sha256: hash(body),
+			retrievedAt: instant
+		},
+		calendar: {
+			url: calendarUrl,
+			text: `${year} ELECTION DATES\nNovember ${day}, ${year}\nGeneral Election/Annual School Election Runoff\nwww.votepulaskiar.gov\f`,
+			sha256: "a".repeat(64),
+			retrievedAt: instant
+		},
+		notices: pending
+			? []
+			: [
+					{
+						url: noticeUrl,
+						text: pulaskiNoticeFixture(year),
+						sha256: "b".repeat(64),
+						retrievedAt: instant
+					}
+				]
+	};
 }

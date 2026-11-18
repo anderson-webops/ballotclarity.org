@@ -29,11 +29,27 @@ test("lookup-backed districts retain genuine government evidence", () => {
 	const context: ActiveNationwideLookupContext = {
 		actions: [],
 		detectedFromIp: false,
-		districtMatches: [{ districtCode: "033", districtType: "county", id: "county:033", label: "King County", sourceSystem: "U.S. Census Geocoder" }],
+		districtMatches: [
+			{
+				districtCode: "033",
+				districtType: "county",
+				id: "county:033",
+				label: "King County",
+				sourceSystem: "U.S. Census Geocoder"
+			}
+		],
 		electionLogistics: null,
 		guideAvailability: "not-published",
 		inputKind: "zip",
-		location: { coverageLabel: "Civic results available", displayName: "Seattle, Washington", lookupInput: "98101", lookupMode: "zip-preview", requiresOfficialConfirmation: true, slug: "seattle-wa", state: "WA" },
+		location: {
+			coverageLabel: "Civic results available",
+			displayName: "Seattle, Washington",
+			lookupInput: "98101",
+			lookupMode: "zip-preview",
+			requiresOfficialConfirmation: true,
+			slug: "seattle-wa",
+			state: "WA"
+		},
 		normalizedAddress: "98101",
 		representativeMatches: [],
 		resolvedAt: "2026-10-24T12:00:00.000Z",
@@ -50,8 +66,25 @@ test("lookup-backed districts retain genuine government evidence", () => {
 	assert.equal(alias.district.slug, response.district.slug);
 	assert.deepEqual(alias.sources, response.sources);
 	assert.equal(buildNationwideDistrictRecordResponse(context, "county-999"), null);
-	context.districtMatches.push({ id: "place:5363000", districtCode: "5363000", districtType: "Incorporated Place", label: "Seattle city", sourceSystem: "U.S. Census Geocoder" });
-	context.representativeMatches.push({ id: "controlled-mayor", name: "Mayor Fixture", officeTitle: "Mayor", officeDisplayLabel: "Mayor", officeType: "mayor", governmentLevel: "city", districtLabel: "Seattle city", sourceSystem: "Open States", openstatesUrl: "https://openstates.org/person/mayor-fixture", party: "Example" });
+	context.districtMatches.push({
+		id: "place:5363000",
+		districtCode: "5363000",
+		districtType: "Incorporated Place",
+		label: "Seattle city",
+		sourceSystem: "U.S. Census Geocoder"
+	});
+	context.representativeMatches.push({
+		id: "controlled-mayor",
+		name: "Mayor Fixture",
+		officeTitle: "Mayor",
+		officeDisplayLabel: "Mayor",
+		officeType: "mayor",
+		governmentLevel: "city",
+		districtLabel: "Seattle city",
+		sourceSystem: "Open States",
+		openstatesUrl: "https://openstates.org/person/mayor-fixture",
+		party: "Example"
+	});
 	const place = buildNationwideDistrictRecordResponse(context, "place-5363000");
 	assert.ok(place);
 	assert.equal(place.district.title, "Seattle city");

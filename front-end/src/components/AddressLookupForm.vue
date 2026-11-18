@@ -34,7 +34,9 @@ const lookupInput = ref<HTMLInputElement | null>(null);
 let activeRequest: AbortController | null = null;
 const shouldShowInlineResults = computed(() => props.showInlineResults !== false);
 const inputDescribedBy = computed(() => [
-	lookupResult.value && shouldShowInlineResults.value ? actionsId : "",
+	lookupResult.value && shouldShowInlineResults.value
+		? actionsId
+		: "",
 	errorMessage.value ? errorId : ""
 ].filter(Boolean).join(" ") || undefined);
 
@@ -55,7 +57,9 @@ function cancelLookup() {
 
 onBeforeUnmount(cancelLookup);
 
-defineExpose({ focusInput: () => lookupInput.value?.focus({ preventScroll: true }) });
+defineExpose({
+	focusInput: () => lookupInput.value?.focus({ preventScroll: true })
+});
 
 async function applyLookup(queryValue: string, selectionId?: string) {
 	cancelLookup();
@@ -78,7 +82,9 @@ async function applyLookup(queryValue: string, selectionId?: string) {
 		const response = await api<LocationLookupResponse>("/location", {
 			body: {
 				q: queryValue,
-				...(selectionId ? { selectionId } : {})
+				...(selectionId
+					? { selectionId }
+					: {})
 			},
 			method: "POST",
 			signal: request.signal

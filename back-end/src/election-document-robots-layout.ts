@@ -6,7 +6,13 @@ export type ElectionDocumentRobotsLayout = {
 	restrictiveGroups: readonly { agents: readonly string[]; unrelated?: true }[];
 };
 
-const unrelatedAgents = new Set(["baiduspider", "yandex", "siteimprove", "siteimprovebot", "siteimprovebot-crawler"]);
+const unrelatedAgents = new Set([
+	"baiduspider",
+	"yandex",
+	"siteimprove",
+	"siteimprovebot",
+	"siteimprovebot-crawler"
+]);
 
 export function validateReviewedRobotsLayout(layout: ElectionDocumentRobotsLayout) {
 	if (!layout || !("restrictiveGroups" in layout)) {
@@ -16,7 +22,11 @@ export function validateReviewedRobotsLayout(layout: ElectionDocumentRobotsLayou
 	if (Object.keys(layout).join(",") !== "restrictiveGroups" || !Array.isArray(layout.restrictiveGroups) || !layout.restrictiveGroups.length || layout.restrictiveGroups.length > 20) throw new Error("Election document collection stopped: robots-restrictive-group-review-required.");
 	const observed = new Set<string>();
 	for (const group of layout.restrictiveGroups) {
-		if (!group || Object.keys(group).sort().join(",") !== (group.unrelated === undefined ? "agents" : "agents,unrelated") || (group.unrelated !== undefined && group.unrelated !== true) || !Array.isArray(group.agents) || !group.agents.length || group.agents.length > 50) throw new Error("Election document collection stopped: robots-restrictive-group-review-required.");
+		if (!group || Object.keys(group).sort().join(",") !== (group.unrelated === undefined
+			? "agents"
+			: "agents,unrelated") || (group.unrelated !== undefined && group.unrelated !== true) || !Array.isArray(group.agents) || !group.agents.length || group.agents.length > 50) {
+			throw new Error("Election document collection stopped: robots-restrictive-group-review-required.");
+		}
 		for (const value of group.agents) {
 			if (typeof value !== "string" || (value !== "*" && !/^[\w-]{1,100}$/iu.test(value))) throw new Error("Election document collection stopped: robots-restrictive-group-review-required.");
 			const agent = value.toLowerCase();
@@ -75,7 +85,13 @@ export function reviewedWildcardRobotsGroup(body: string, layout?: ElectionDocum
 		const line = raw.split("#", 1)[0]!.trim();
 		if (!line) return [];
 		const separator = line.indexOf(":");
-		return [{ index, key: line.slice(0, separator).trim().toLowerCase(), value: line.slice(separator + 1).trim().toLowerCase() }];
+		return [
+			{
+				index,
+				key: line.slice(0, separator).trim().toLowerCase(),
+				value: line.slice(separator + 1).trim().toLowerCase()
+			}
+		];
 	});
 	const headers = directives.slice(0, agents.length + 1);
 	if (headers.length !== agents.length + 1 || headers.some((line, index) => line.key !== "user-agent" || line.value !== expected[index]) || directives.slice(agents.length + 1).some(line => line.key === "user-agent")) throw new Error("Election document collection stopped: robots-shared-group-changed.");

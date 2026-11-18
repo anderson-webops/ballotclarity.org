@@ -34,7 +34,14 @@ function completed(): AdminAutomationRun {
 		lastSuccessAt: timestamp,
 		lastImportAt: timestamp,
 		nextRunAt: null,
-		results: [{ sourceId: "nc-sbe-2026", status: "imported", records: 1, reason: null }]
+		results: [
+			{
+				sourceId: "nc-sbe-2026",
+				status: "imported",
+				records: 1,
+				reason: null
+			}
+		]
 	};
 }
 
@@ -133,7 +140,18 @@ test("durable automation receipts distinguish successful imports, actual schedul
 		const options = { candidates: null, references: null, dataDirectory: directory };
 		assert.equal((await buildAdminOperations({ ...options, now })).automation.status, "scheduled");
 		assert.equal((await buildAdminOperations({ ...options, now: now + 120000 })).automation.status, "overdue");
-		await writeAutomationRun(directory, { ...run, status: "failed", results: [{ sourceId: "nc-sbe-2026", status: "failed", records: 0, reason: "source-unavailable" }] }, now);
+		await writeAutomationRun(directory, {
+			...run,
+			status: "failed",
+			results: [
+				{
+					sourceId: "nc-sbe-2026",
+					status: "failed",
+					records: 0,
+					reason: "source-unavailable"
+				}
+			]
+		}, now);
 		assert.equal((await buildAdminOperations({ ...options, now })).automation.status, "failed");
 		await writeFile(automationRunPath(directory), "{}");
 		assert.equal((await buildAdminOperations({ ...options, now })).automation.status, "invalid");
@@ -142,9 +160,28 @@ test("durable automation receipts distinguish successful imports, actual schedul
 		await symlink(join(directory, "other.json"), automationRunPath(directory));
 		await assert.rejects(readAutomationRun(directory, now));
 		for (const value of [
-			{ ...completed(), lastSuccessAt: new Date(now + 1).toISOString() },
-			{ ...completed(), results: [...completed().results, ...completed().results] },
-			{ ...completed(), results: [{ sourceId: "nc-sbe-2026", status: "failed", records: 1, reason: null }] }
+			{
+				...completed(),
+				lastSuccessAt: new Date(now + 1).toISOString()
+			},
+			{
+				...completed(),
+				results: [
+					...completed().results,
+					...completed().results
+				]
+			},
+			{
+				...completed(),
+				results: [
+					{
+						sourceId: "nc-sbe-2026",
+						status: "failed",
+						records: 1,
+						reason: null
+					}
+				]
+			}
 		])
 			assert.throws(() => parseAutomationRun(value, now));
 	}
@@ -167,7 +204,11 @@ test("approved routine collection imports automatically, caches idempotently and
 			requests++;
 			return "election_dt,name_on_ballot,contest_name,party_candidate,county_name\n11/03/2026,Synthetic Candidate,US SENATE,DEM,\n";
 		};
-		const options = { environment, now: () => clock, fetchText };
+		const options = {
+			environment,
+			now: () => clock,
+			fetchText
+		};
 		const first = await refreshApprovedCandidateData(options);
 		assert.equal(first.status, "succeeded");
 		assert.equal(first.results[0]!.status, "imported");
@@ -224,7 +265,11 @@ test("Postgres review filtering and editorial note timestamps match SQLite", { s
 	let repository: Awaited<ReturnType<typeof createPostgresAdminRepository>> | null = null;
 	try {
 		await admin.query(`CREATE SCHEMA ${schema}`);
-		repository = await createPostgresAdminRepository({ databaseUrl: scoped.toString(), contentSeed: defaultContentSeed(), sourceMonitorSeed: demoAdminSourceMonitor.sources });
+		repository = await createPostgresAdminRepository({
+			databaseUrl: scoped.toString(),
+			contentSeed: defaultContentSeed(),
+			sourceMonitorSeed: demoAdminSourceMonitor.sources
+		});
 		const published = (await repository.listContent()).items.filter(item => item.status === "published" && item.published);
 		assert.ok(published.length);
 		assert.ok((await repository.listReview()).items.every(item => !published.some(record => record.id === item.id)));

@@ -20,7 +20,9 @@ function buildResult(inputKind: "address" | "zip", query: string) {
 			},
 		],
 		availability: null,
-		ballotContentPreviews: [{ id: "private-request-result" }],
+		ballotContentPreviews: [
+			{ id: "private-request-result" }
+		],
 		districtMatches: [],
 		election: null,
 		electionLogistics: {
@@ -29,7 +31,9 @@ function buildResult(inputKind: "address" | "zip", query: string) {
 			electionDay: "2026-11-03",
 			mailOnly: false,
 			name: "General election",
-			pollingLocations: [{ address: "Address-specific polling place", id: "polling:0", name: "Poll" }],
+			pollingLocations: [
+				{ address: "Address-specific polling place", id: "polling:0", name: "Poll" }
+			],
 		},
 		fromCache: false,
 		guideAvailability: "not-published" as const,

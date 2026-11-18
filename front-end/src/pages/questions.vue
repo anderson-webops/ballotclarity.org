@@ -5,16 +5,33 @@ import { groupBallotQuestions } from "~/utils/ballot-question-groups";
 const route = useRoute();
 const api = useApiClient();
 const { formatDate } = useFormatters();
-const state = computed(() => typeof route.query.state === "string" && /^[A-Z]{2}$/u.test(route.query.state) ? route.query.state : "");
-const source = computed(() => typeof route.query.source === "string" ? route.query.source : "");
+const state = computed(() => typeof route.query.state === "string" && /^[A-Z]{2}$/u.test(route.query.state)
+	? route.query.state
+	: "");
+const source = computed(() => typeof route.query.source === "string"
+	? route.query.source
+	: "");
 const { data, error, pending, refresh } = await useAsyncData(
 	() => `ballot-questions:${state.value}:${source.value}`,
-	() => state.value && source.value ? api<StateQuestionsResponse>(`/state-records/${state.value}/questions`, { query: { source: source.value } }) : Promise.resolve(null),
-	{ default: () => null }
+	() => state.value && source.value
+		? api<StateQuestionsResponse>(`/state-records/${state.value}/questions`, {
+				query: { source: source.value }
+			})
+		: Promise.resolve(null),
+	{
+		default: () => null
+	}
 );
 const groups = computed(() => groupBallotQuestions(data.value?.questions ?? []));
-const title = computed(() => data.value?.source.questionKind === "notice" ? "Election notices" : "Ballot questions");
-usePageSeo(() => ({ title: title.value, description: "Official election publications and their stated jurisdictions.", path: "/questions", robots: "noindex,follow" }));
+const title = computed(() => data.value?.source.questionKind === "notice"
+	? "Election notices"
+	: "Ballot questions");
+usePageSeo(() => ({
+	title: title.value,
+	description: "Official election publications and their stated jurisdictions.",
+	path: "/questions",
+	robots: "noindex,follow"
+}));
 </script>
 
 <template>

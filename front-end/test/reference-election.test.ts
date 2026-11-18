@@ -7,7 +7,14 @@ test("explicit reference elections preserve valid dates and reject malformed req
 	assert.equal(readReferenceElection(undefined), undefined);
 	assert.equal(readReferenceElection("2026-11-03"), "2026-11-03");
 	assert.equal(readReferenceElection("2026-11-03", "hi-sos-2026"), "");
-	for (const value of ["", "2026-02-30", "2026-11-03T00:00:00Z", ["2026-11-03"], null, 2026]) assert.equal(readReferenceElection(value), "");
+	for (const value of [
+		"",
+		"2026-02-30",
+		"2026-11-03T00:00:00Z",
+		["2026-11-03"],
+		null,
+		2026
+	]) assert.equal(readReferenceElection(value), "");
 });
 
 test("one election control keeps profile selection distinct from official source identities", () => {

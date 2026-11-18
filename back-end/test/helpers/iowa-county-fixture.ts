@@ -17,7 +17,9 @@ export function iowaCountyFixture(county: IowaSampleCounty = "Monona", date = "2
 	const instant = `${date.slice(0, 4)}-10-26T12:00:00.000Z`;
 	const now = Date.parse(instant) + 3600000;
 	const origin = iowaCountyOrigins[county];
-	const url = `${origin}/elections/${county === "Woodbury" ? "info/" : ""}${date.slice(0, 4)}_general_election_${date.replaceAll("-", "_")}/`;
+	const url = `${origin}/elections/${county === "Woodbury"
+		? "info/"
+		: ""}${date.slice(0, 4)}_general_election_${date.replaceAll("-", "_")}/`;
 	const source = iowaCountySource(county, date, url);
 	const link = {
 		url: `${origin}/files/sample_ballots/example_style_1.pdf`,
@@ -31,20 +33,32 @@ export function iowaCountyFixture(county: IowaSampleCounty = "Monona", date = "2
 	});
 	const anchor = `<a href="${url}">${date.slice(0, 4)} General Election</a>`;
 	const navigation
-		= county === "Monona" ? ["/auditor/upcoming_elections/", "/auditor/election_results/"] : ["/elections/past/"];
+		= county === "Monona"
+			? ["/auditor/upcoming_elections/", "/auditor/election_results/"]
+			: ["/elections/past/"];
 	const index = page(
 		iowaCountyDiscoveryUrls[county],
-		`<h1>${county === "Monona" ? "Elections &amp; Voting" : "Elections Upcoming Elections"}</h1>${navigation.map(target => `<a href="${target}">Election archive</a>`).join("")}`
+		`<h1>${county === "Monona"
+			? "Elections &amp; Voting"
+			: "Elections Upcoming Elections"}</h1>${navigation.map(target => `<a href="${target}">Election archive</a>`).join("")}`
 	);
 	const indexes = navigation.map((target, index) =>
 		page(
 			`${origin}${target}`,
-			`<h1>${county === "Woodbury" ? "Elections Past Elections" : index ? "Election Results" : "Upcoming Elections"}</h1>${index || county === "Woodbury" ? anchor : ""}`
+			`<h1>${county === "Woodbury"
+				? "Elections Past Elections"
+				: index ? "Election Results" : "Upcoming Elections"}</h1>${index || county === "Woodbury"
+				? anchor
+				: ""}`
 		)
 	);
 	const publication = page(
 		url,
-		`<h1>${county === "Woodbury" ? "Elections " : ""}${date.slice(0, 4)} General Election</h1><h3>November ${Number(date.slice(-2))}, ${date.slice(0, 4)}</h3>${pending ? "" : link.styles.map(style => `<a href="${link.url}">${style}</a>`).join("")}`
+		`<h1>${county === "Woodbury"
+			? "Elections "
+			: ""}${date.slice(0, 4)} General Election</h1><h3>November ${Number(date.slice(-2))}, ${date.slice(0, 4)}</h3>${pending
+			? ""
+			: link.styles.map(style => `<a href="${link.url}">${style}</a>`).join("")}`
 	);
 	const discovery = {
 		schemaVersion: 1,
@@ -57,7 +71,10 @@ export function iowaCountyFixture(county: IowaSampleCounty = "Monona", date = "2
 	};
 	const native = iowaCountyNativeFixture(county, date);
 	const objects = JSON.stringify({
-		pages: [{ object: "1 0 R" }, { object: "2 0 R" }],
+		pages: [
+			{ object: "1 0 R" },
+			{ object: "2 0 R" }
+		],
 		qpdf: [
 			{ jsonversion: 2 },
 			Object.fromEntries(
@@ -67,7 +84,9 @@ export function iowaCountyFixture(county: IowaSampleCounty = "Monona", date = "2
 						value: {
 							"/Type": "/Page",
 							"/MediaBox": [0, 0, 612, 1008],
-							"/CropBox": county === "Monona" ? [18.573, 66.596, 593.28, 974.929] : [0, 0, 612, 1008]
+							"/CropBox": county === "Monona"
+								? [18.573, 66.596, 593.28, 974.929]
+								: [0, 0, 612, 1008]
 						}
 					}
 				])
@@ -126,7 +145,9 @@ export function iowaCountyFixture(county: IowaSampleCounty = "Monona", date = "2
 		schemaVersion: 2,
 		type: "iowa-county-candidate-capture",
 		discovery,
-		documents: pending ? [] : [document]
+		documents: pending
+			? []
+			: [document]
 	};
 	return {
 		county,

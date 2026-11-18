@@ -23,7 +23,11 @@ const publicationUrl = "https://elect.hamiltontn.gov/Portals/12/HTML/GenSample.h
 const header = (title: string, word = "One", number = 1) => `<div class="contest-header"><div class="contest-title">${title}</div><div class="vote-for">Vote for ${word} (${number})</div></div>`;
 const oval = "<div class=\"voting-oval\" aria-hidden=\"true\"></div>";
 const blank = `<div role="listitem" class="write-in-row"><div class="write-in-label">Write-in</div>${oval}</div>`;
-const candidate = (name: string, party?: string) => `<div role="listitem" class="candidate-row">${party ? "<div class=\"candidate-info\">" : ""}<div class="candidate-name">${name}</div>${party ? `<div class="party-name">${party}</div></div>` : ""}${oval}</div>`;
+function candidate(name: string, party?: string) {
+	return `<div role="listitem" class="candidate-row">${party ? "<div class=\"candidate-info\">" : ""}<div class="candidate-name">${name}</div>${party
+		? `<div class="party-name">${party}</div></div>`
+		: ""}${oval}</div>`;
+}
 const choices = (labels = ["For", "Against"]) => `<div class="choices-list" role="list">${labels.map(label => `<div class="measure-choice-row" role="listitem"><div class="measure-choice-text">${label}</div>${oval}</div>`).join("")}</div>`;
 function fieldsFixture() {
 	return `<section class="ballot-page" id="page-1" aria-label="Ballot Page 1 of 1">
@@ -42,20 +46,57 @@ function dateFixture(date = source.electionDate) {
 }
 function snapshot() {
 	const parsed = parseFields();
-	const documents = [{ url: publicationUrl, sha256: "a".repeat(64), retrievedAt: "2026-10-27T05:00:00.000Z", includedRecordCount: parsed.records.length }];
+	const documents = [
+		{
+			url: publicationUrl,
+			sha256: "a".repeat(64),
+			retrievedAt: "2026-10-27T05:00:00.000Z",
+			includedRecordCount: parsed.records.length
+		}
+	];
 	const sha256 = hamiltonDocumentDigest(documents);
-	return { source, records: parsed.records, ballotQuestions: parsed.ballotQuestions, documents, sha256, collectionIndexSha256: sha256, retrievedAt: documents[0]!.retrievedAt };
+	return {
+		source,
+		records: parsed.records,
+		ballotQuestions: parsed.ballotQuestions,
+		documents,
+		sha256,
+		collectionIndexSha256: sha256,
+		retrievedAt: documents[0]!.retrievedAt
+	};
 }
 async function pendingDiscovery() {
 	const robots = (await readFile(new URL("fixtures/hamilton-robots.txt", import.meta.url), "utf8")).replace(/\r\n/gu, "\n");
 	const policies: Record<string, string> = JSON.parse(await readFile(new URL("fixtures/hamilton-policy.json", import.meta.url), "utf8"));
 	const calls: string[] = [];
-	const body = await fetchHamiltonCandidateDiscovery({ now: () => clock, sleep: async () => {}, requestDocument: async (url, options) => {
-		calls.push(url);
-		assert.deepEqual(options.allowedHosts, ["elect.hamiltontn.gov"]);
-		return { status: 200, contentType: url.endsWith("robots.txt") ? "text/plain" : "text/html", body: Buffer.from(url.endsWith("robots.txt") ? robots : url.endsWith("OpenRecordsPolicyandRequestForm.aspx") ? policies.openRecords! : url.endsWith("PublicCommentPolicy.aspx") ? policies.publicComment! : footer), etag: undefined };
-	} });
-	assert.deepEqual(calls, ["https://elect.hamiltontn.gov/robots.txt", "https://elect.hamiltontn.gov/", hamiltonDiscoveryUrl, ...hamiltonNotices.map(notice => notice.url)]);
+	const body = await fetchHamiltonCandidateDiscovery({
+		now: () => clock,
+		sleep: async () => {},
+		requestDocument: async (url, options) => {
+			calls.push(url);
+			assert.deepEqual(options.allowedHosts, ["elect.hamiltontn.gov"]);
+			return {
+				status: 200,
+				contentType: url.endsWith("robots.txt")
+					? "text/plain"
+					: "text/html",
+				body: Buffer.from(url.endsWith("robots.txt")
+					? robots
+					: url.endsWith("OpenRecordsPolicyandRequestForm.aspx")
+						? policies.openRecords!
+						: url.endsWith("PublicCommentPolicy.aspx")
+							? policies.publicComment!
+							: footer),
+				etag: undefined
+			};
+		}
+	});
+	assert.deepEqual(calls, [
+		"https://elect.hamiltontn.gov/robots.txt",
+		"https://elect.hamiltontn.gov/",
+		hamiltonDiscoveryUrl,
+		...hamiltonNotices.map(notice => notice.url)
+	]);
 	return body;
 }
 
@@ -64,7 +105,25 @@ test("Hamilton preserves printed candidates, parties, municipal context and blan
 	assert.equal(parsed.records.length, 4);
 	assert.equal(parsed.writeInRows, 3);
 	assert.equal(parsed.claims.length, 4);
-	assert.deepEqual(parsed.records.slice(0, 2).map(record => [record.name, record.party, record.scope, record.district]), [["Ada Example", "Democratic", "congressional", "3"], ["Bob Example", "Republican", "congressional", "3"]]);
+	assert.deepEqual(parsed.records.slice(0, 2).map(record => [
+		record.name,
+		record.party,
+		record.scope,
+		record.district
+	]), [
+		[
+			"Ada Example",
+			"Democratic",
+			"congressional",
+			"3"
+		],
+		[
+			"Bob Example",
+			"Republican",
+			"congressional",
+			"3"
+		]
+	]);
 	assert(parsed.records.slice(2).every(record => record.party === undefined && record.jurisdiction === "City of Example" && record.voteLimit === 2));
 	assert(parsed.records.every(record => record.status === "listed" && record.seats === undefined));
 	assert.deepEqual(parsed.claims.slice(0, 2).map(claim => claim.partyLabel), ["Democratic Party Nominee", "Republican Party Nominee"]);
@@ -111,7 +170,12 @@ test("unknown office, party, vote limits, choice labels and missing context hold
 	]) assert.throws(() => parseFields(changed), /review/u);
 });
 test("full-document validation never accepts an unreviewed stylesheet or embedded content", () => {
-	for (const suffix of ["", "<style>.candidate-name{display:none}</style>", "<script>alert(1)</script>", "<iframe src=\"https://example.org\"/>"])
+	for (const suffix of [
+		"",
+		"<style>.candidate-name{display:none}</style>",
+		"<script>alert(1)</script>",
+		"<iframe src=\"https://example.org\"/>"
+	])
 		assert.throws(() => readHamiltonBallotDocument(source, dateFixture() + suffix), /review/u);
 	assert.throws(() => readHamiltonPublicationDate(" ".repeat(2 * 1024 * 1024 + 1)), /review/u);
 	assert.throws(() => readHamiltonPublicationDate("<div>".repeat(70)), /review/u);
@@ -121,7 +185,13 @@ test("offered publication and legal fingerprints use exact public links", () => 
 	assert.equal(readHamiltonOfferedPublication(footer), null);
 	assert.equal(readHamiltonOfferedPublication(`${footer}<a href="${publicationUrl}">📄 GENERIC GENERAL ELECTION SAMPLE BALLOT</a>`), publicationUrl);
 	assert.notEqual(hamiltonPolicyFingerprint(footer.replace("Login", "New terms"), hamiltonDiscoveryUrl), hamiltonPolicySha256);
-	for (const url of [`${publicationUrl}?preview=1`, publicationUrl.replace("https:", "http:"), publicationUrl.replace("elect.hamiltontn.gov", "other.example"), publicationUrl.replace("GenSample", "%47enSample"), `${publicationUrl}#page-1`])
+	for (const url of [
+		`${publicationUrl}?preview=1`,
+		publicationUrl.replace("https:", "http:"),
+		publicationUrl.replace("elect.hamiltontn.gov", "other.example"),
+		publicationUrl.replace("GenSample", "%47enSample"),
+		`${publicationUrl}#page-1`
+	])
 		assert.throws(() => validateHamiltonDocumentUrl(url), /review/u);
 	assert.throws(() => readHamiltonOfferedPublication(`${footer}<a href="/privacy">Privacy</a>`), /review/u);
 	assert.throws(() => readHamiltonOfferedPublication(`${footer}<a href="${publicationUrl}">REVISED GENERAL ELECTION SAMPLE BALLOT</a>`), /review/u);
@@ -129,17 +199,28 @@ test("offered publication and legal fingerprints use exact public links", () => 
 test("policy or access failures stop collection without following a challenge", async () => {
 	for (const status of [301, 302, 403, 429, 503, 200]) {
 		let calls = 0;
-		await assert.rejects(fetchHamiltonCandidateDiscovery({ requestDocument: async () => {
-			calls++;
-			return { status, contentType: "text/plain", body: Buffer.from("User-agent: *\nDisallow: /\n"), location: "https://other.example/challenge", etag: undefined };
-		} }), /review/u);
+		await assert.rejects(fetchHamiltonCandidateDiscovery({
+			requestDocument: async () => {
+				calls++;
+				return {
+					status,
+					contentType: "text/plain",
+					body: Buffer.from("User-agent: *\nDisallow: /\n"),
+					location: "https://other.example/challenge",
+					etag: undefined
+				};
+			}
+		}), /review/u);
 		assert.equal(calls, 1);
 	}
 });
 test("an unpublished election stays empty and accepted content cannot be replaced by that state", async () => {
 	const body = await pendingDiscovery();
 	assert.deepEqual(readHamiltonCandidateDiscovery(body, clock).elections, []);
-	const capture = await fetchHamiltonCandidateCapture(source, { discovery: body, now: () => clock });
+	const capture = await fetchHamiltonCandidateCapture(source, {
+		discovery: body,
+		now: () => clock
+	});
 	assert.throws(() => parseHamiltonCandidateCapture(source, capture, clock), /no records yet/u);
 	assert.throws(() => parseHamiltonCandidateCapture(source, capture, clock, snapshot().records), /review/u);
 	assert.throws(() => parseHamiltonCandidateCapture(source, capture, clock, [], snapshot().ballotQuestions), /review/u);
@@ -158,14 +239,44 @@ test("source and future cycle contracts are additive and preserve Williamson Cou
 	assert.equal(configuredStateBallotSources.length, 88);
 	assert(configuredStateBallotSources.some(item => item.stateCode === "TN" && item.id !== source.id));
 	validateHamiltonSource(source);
-	for (const change of [{ countyName: "Other County" }, { retrievalPolicy: "manual-snapshot" }, { url: "https://other.example" }, { electionDate: "2026-11-04" }])
-		assert.throws(() => validateHamiltonSource({ ...source, ...change } as typeof source), /review/u);
+	for (const change of [
+		{ countyName: "Other County" },
+		{ retrievalPolicy: "manual-snapshot" },
+		{ url: "https://other.example" },
+		{ electionDate: "2026-11-04" }
+	]) {
+		assert.throws(() => validateHamiltonSource({
+			...source,
+			...change
+		} as typeof source), /review/u);
+	}
 	const future = hamiltonSource("2032-11-02");
-	const election = { electionId: null, electionDate: future.electionDate, pageUrl: future.pageUrl, hamiltonDocuments: [{ url: publicationUrl.replace("GenSample", "PublicGeneral2032"), sha256: "a".repeat(64) }] };
+	const election = {
+		electionId: null,
+		electionDate: future.electionDate,
+		pageUrl: future.pageUrl,
+		hamiltonDocuments: [
+			{
+				url: publicationUrl.replace("GenSample", "PublicGeneral2032"),
+				sha256: "a".repeat(64)
+			}
+		]
+	};
 	validateHamiltonElection(election);
 	assert.throws(() => validateHamiltonElection({ ...election, hamiltonDocuments: [] }), /review/u);
 	const family = getStateBallotCycleFamily(source.id);
-	const catalog = parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId: source.id, sourceConfigurationSha256: hash(JSON.stringify(family.source)), discovery: { url: hamiltonDiscoveryUrl, sha256: "a".repeat(64), retrievedAt: "2026-10-27T05:00:00.000Z" }, elections: [election] }, clock);
+	const catalog = parseStateBallotCycleCatalog({
+		schemaVersion: 1,
+		type: "state-ballot-cycle-catalog",
+		familyId: source.id,
+		sourceConfigurationSha256: hash(JSON.stringify(family.source)),
+		discovery: {
+			url: hamiltonDiscoveryUrl,
+			sha256: "a".repeat(64),
+			retrievedAt: "2026-10-27T05:00:00.000Z"
+		},
+		elections: [election]
+	}, clock);
 	assert.equal(stateBallotCycleSources(catalog, clock)[0]!.id, future.id);
 });
 test("stored questions, parties, document fingerprints and source fragments survive a fresh repository", async () => {
@@ -176,15 +287,38 @@ test("stored questions, parties, document fingerprints and source fragments surv
 		assert.deepEqual(parseBundledStateSnapshot(source, body, "automatic").ballotQuestions, stored.ballotQuestions);
 		await createStateBallotStorage(directory).write(stored);
 		let requests = 0;
-		const repository = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => clock, fetchText: async () => {
-			requests++;
-			throw new Error("offline");
-		} });
+		const repository = createStateBallotRepository({
+			sources: [source],
+			dataDirectory: directory,
+			now: () => clock,
+			fetchText: async () => {
+				requests++;
+				throw new Error("offline");
+			}
+		});
 		assert.deepEqual((await repository.getSnapshot("TN", source.id))!.records, stored.records);
 		assert.equal(requests, 0);
-		for (const change of [{ sourceAsOfDate: source.electionDate }, { collectionIndexSha256: "b".repeat(64) }, { ballotQuestions: [...stored.ballotQuestions, stored.ballotQuestions[0]] }])
-			assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify({ ...JSON.parse(body), ...change }), "automatic"), /review|duplicated/u);
-		for (const mutate of [(question: Record<string, unknown>) => question.choices = ["Yes", "Against"], (question: Record<string, unknown>) => question.officialText = "Changed wording", (question: Record<string, unknown>) => question.officialText = "Bad\tcontrol", (question: Record<string, unknown>) => question.pages = [2, 1], (question: Record<string, unknown>) => question.voterApplicabilityVerified = true]) {
+		for (const change of [
+			{ sourceAsOfDate: source.electionDate },
+			{
+				collectionIndexSha256: "b".repeat(64)
+			},
+			{
+				ballotQuestions: [...stored.ballotQuestions, stored.ballotQuestions[0]]
+			}
+		]) {
+			assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify({
+				...JSON.parse(body),
+				...change
+			}), "automatic"), /review|duplicated/u);
+		}
+		for (const mutate of [
+			(question: Record<string, unknown>) => question.choices = ["Yes", "Against"],
+			(question: Record<string, unknown>) => question.officialText = "Changed wording",
+			(question: Record<string, unknown>) => question.officialText = "Bad\tcontrol",
+			(question: Record<string, unknown>) => question.pages = [2, 1],
+			(question: Record<string, unknown>) => question.voterApplicabilityVerified = true
+		]) {
 			const changed = JSON.parse(body);
 			mutate(changed.ballotQuestions[0]);
 			assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify(changed), "automatic"), /review/u);
@@ -199,13 +333,31 @@ test("an accepted forthcoming publication disappearing preserves both catalog an
 	try {
 		const body = await pendingDiscovery();
 		const catalog = discoverStateBallotElectionCycles(body, source.id, clock);
-		catalog.elections = [{ electionId: null, electionDate: source.electionDate, pageUrl: hamiltonDiscoveryUrl, hamiltonDocuments: [{ url: publicationUrl, sha256: "a".repeat(64) }] }];
+		catalog.elections = [
+			{
+				electionId: null,
+				electionDate: source.electionDate,
+				pageUrl: hamiltonDiscoveryUrl,
+				hamiltonDocuments: [
+					{
+						url: publicationUrl,
+						sha256: "a".repeat(64)
+					}
+				]
+			}
+		];
 		const storage = createStateBallotStorage(directory);
 		await storage.write(snapshot());
 		await writeFile(join(directory, "cycles.json"), JSON.stringify(catalog));
 		const prior = await readFile(join(directory, `${source.id}.json`), "utf8");
 		const priorCatalog = await readFile(join(directory, "cycles.json"), "utf8");
-		await assert.rejects(syncStateBallotCycles({ familyId: source.id, catalogPath: join(directory, "cycles.json"), dataDirectory: directory, now: () => clock, fetchDiscovery: async () => body }), /disappeared|review/u);
+		await assert.rejects(syncStateBallotCycles({
+			familyId: source.id,
+			catalogPath: join(directory, "cycles.json"),
+			dataDirectory: directory,
+			now: () => clock,
+			fetchDiscovery: async () => body
+		}), /disappeared|review/u);
 		assert.equal(await readFile(join(directory, `${source.id}.json`), "utf8"), prior);
 		assert.equal(await readFile(join(directory, "cycles.json"), "utf8"), priorCatalog);
 	}

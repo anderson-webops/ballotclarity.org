@@ -147,9 +147,13 @@ export function buildDistrictMatches(geographies: Record<string, CensusGeography
 			id: `${districtType}:${districtCode || geography.GEOID || label}`,
 			label,
 			sourceSystem: "U.S. Census Geocoder",
-			congressionalSession: layerSession ? Number(layerSession) : undefined,
+			congressionalSession: layerSession
+				? Number(layerSession)
+				: undefined,
 			boundaryVintage: vintage,
-			stateFips: /^\d{2}$/u.test(geography.STATE ?? "") ? geography.STATE : undefined,
+			stateFips: /^\d{2}$/u.test(geography.STATE ?? "")
+				? geography.STATE
+				: undefined,
 		});
 	}
 
@@ -167,7 +171,12 @@ export function createCensusGeocoderClient({
 	vintage = process.env.CENSUS_GEOCODER_VINTAGE?.trim() || defaultVintage
 }: CensusGeocoderClientOptions = {}): CensusGeocoderClient {
 	const resolvedTimeoutMs = resolveFetchTimeoutMs(timeoutMs);
-	const resolveDistrictContext = createCensusDistrictContext({ benchmark, fetchImpl, now, timeoutMs: resolvedTimeoutMs });
+	const resolveDistrictContext = createCensusDistrictContext({
+		benchmark,
+		fetchImpl,
+		now,
+		timeoutMs: resolvedTimeoutMs
+	});
 
 	return {
 		async lookupAddress(address: string) {

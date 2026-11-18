@@ -18,13 +18,17 @@ const requestIdPattern = /^\w[\w.:-]{0,127}$/u;
 
 export function normalizeRequestId(value: string | null | undefined) {
 	const candidate = value?.trim() ?? "";
-	return requestIdPattern.test(candidate) ? candidate : randomUUID();
+	return requestIdPattern.test(candidate)
+		? candidate
+		: randomUUID();
 }
 
 export function sanitizeLogText(value: string | null | undefined, maximumLength: number) {
 	return Array.from(value ?? "", (character) => {
 		const codePoint = character.codePointAt(0) ?? 0;
-		return codePoint <= 31 || codePoint === 127 ? " " : character;
+		return codePoint <= 31 || codePoint === 127
+			? " "
+			: character;
 	})
 		.join("")
 		.trim()
@@ -33,7 +37,9 @@ export function sanitizeLogText(value: string | null | undefined, maximumLength:
 
 function resolveLogLevel() {
 	const configured = (process.env.LOG_LEVEL || "info").trim().toLowerCase() as LogLevel;
-	return configured in levelWeight ? configured : "info";
+	return configured in levelWeight
+		? configured
+		: "info";
 }
 
 export function createLogger(service: string) {

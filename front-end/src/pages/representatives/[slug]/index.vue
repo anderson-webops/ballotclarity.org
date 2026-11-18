@@ -33,7 +33,10 @@ function mergeSources(primarySources: Source[], fallbackSources: Source[]) {
 		return true;
 	});
 
-	return [...primarySources, ...additionalSources];
+	return [
+		...primarySources,
+		...additionalSources
+	];
 }
 
 function normalizePersonIdentity(value: string) {
@@ -105,8 +108,12 @@ const campaignLink = computed(() => {
 
 	return person.value.comparison.campaignWebsiteUrl || person.value.comparison.contactChannels[0]?.url || "";
 });
-const hasFunding = computed(() => person.value ? hasPersonFunding(person.value) : false);
-const hasInfluence = computed(() => person.value ? hasPersonInfluence(person.value) : false);
+const hasFunding = computed(() => person.value
+	? hasPersonFunding(person.value)
+	: false);
+const hasInfluence = computed(() => person.value
+	? hasPersonInfluence(person.value)
+	: false);
 const biography = computed(() => substantiveBiography(person.value));
 const hasBackground = computed(() => Boolean(person.value && (biography.value.length || person.value.topIssues.length || person.value.publicStatements.length)));
 const officeContext = computed(() => person.value?.officeContext ?? null);
@@ -116,17 +123,48 @@ const representativeLayoutKey = computed(() => person.value
 	: "representative-profile-empty");
 const breadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
-	{ label: layerBreadcrumbLink.value.label, to: buildLookupAwareTarget(layerBreadcrumbLink.value.to) },
+	{
+		label: layerBreadcrumbLink.value.label,
+		to: buildLookupAwareTarget(layerBreadcrumbLink.value.to)
+	},
 	{ label: person.value?.name ?? "Representative profile" }
 ]);
 const sectionLinks = computed(() => person.value
 	? [
 			{ href: "#at-a-glance", label: "At a glance" },
-			...(hasBackground.value ? [{ href: "#biography", label: "Bio" }] : []),
-			...(person.value.keyActions.length ? [{ href: "#actions", label: "Actions", badge: String(person.value.keyActions.length) }] : []),
-			...(hasFunding.value ? [{ href: "#funding", label: "Funding", badge: "Live" }] : []),
-			...(hasInfluence.value ? [{ href: "#influence", label: "Influence", badge: "Live" }] : []),
-			...(person.value.sources.length ? [{ href: "#sources", label: "Sources", badge: String(person.value.sources.length) }] : [])
+			...(hasBackground.value
+				? [
+						{ href: "#biography", label: "Bio" }
+					]
+				: []),
+			...(person.value.keyActions.length
+				? [
+						{
+							href: "#actions",
+							label: "Actions",
+							badge: String(person.value.keyActions.length)
+						}
+					]
+				: []),
+			...(hasFunding.value
+				? [
+						{ href: "#funding", label: "Funding", badge: "Live" }
+					]
+				: []),
+			...(hasInfluence.value
+				? [
+						{ href: "#influence", label: "Influence", badge: "Live" }
+					]
+				: []),
+			...(person.value.sources.length
+				? [
+						{
+							href: "#sources",
+							label: "Sources",
+							badge: String(person.value.sources.length)
+						}
+					]
+				: [])
 		]
 	: []);
 const officeContextFields = computed(() => {
@@ -163,11 +201,23 @@ const fundingHighlights = computed(() => {
 		return [];
 
 	return [
-		person.value.funding.committeeName ? { label: "Committee", value: person.value.funding.committeeName } : null,
-		person.value.funding.coverageLabel ? { label: "Coverage", value: person.value.funding.coverageLabel } : null,
-		typeof person.value.funding.totalSpent === "number" ? { label: "Disbursements", value: formatCurrency(person.value.funding.totalSpent) } : null,
+		person.value.funding.committeeName
+			? { label: "Committee", value: person.value.funding.committeeName }
+			: null,
+		person.value.funding.coverageLabel
+			? { label: "Coverage", value: person.value.funding.coverageLabel }
+			: null,
+		typeof person.value.funding.totalSpent === "number"
+			? {
+					label: "Disbursements",
+					value: formatCurrency(person.value.funding.totalSpent)
+				}
+			: null,
 		typeof person.value.funding.smallDonorShare === "number" && Number.isFinite(person.value.funding.smallDonorShare) && person.value.funding.smallDonorShare > 0
-			? { label: "Small-donor share", value: formatPercent(person.value.funding.smallDonorShare) }
+			? {
+					label: "Small-donor share",
+					value: formatPercent(person.value.funding.smallDonorShare)
+				}
 			: null,
 	].filter((item): item is { label: string; value: string } => Boolean(item));
 });
@@ -195,11 +245,33 @@ const influenceHighlights = computed(() => {
 		return [];
 
 	return [
-		influence.value.coverageLabel ? { label: "Coverage", value: influence.value.coverageLabel } : null,
-		influence.value.matchMode ? { label: "Match mode", value: formatInfluenceMatchMode(influence.value.matchMode) } : null,
-		typeof influence.value.reportCount === "number" ? { label: "Reports", value: String(influence.value.reportCount) } : null,
-		typeof influence.value.contributionCount === "number" ? { label: "Contribution items", value: String(influence.value.contributionCount) } : null,
-		typeof influence.value.totalMatched === "number" ? { label: "Total matched", value: formatCurrency(influence.value.totalMatched) } : null,
+		influence.value.coverageLabel
+			? { label: "Coverage", value: influence.value.coverageLabel }
+			: null,
+		influence.value.matchMode
+			? {
+					label: "Match mode",
+					value: formatInfluenceMatchMode(influence.value.matchMode)
+				}
+			: null,
+		typeof influence.value.reportCount === "number"
+			? {
+					label: "Reports",
+					value: String(influence.value.reportCount)
+				}
+			: null,
+		typeof influence.value.contributionCount === "number"
+			? {
+					label: "Contribution items",
+					value: String(influence.value.contributionCount)
+				}
+			: null,
+		typeof influence.value.totalMatched === "number"
+			? {
+					label: "Total matched",
+					value: formatCurrency(influence.value.totalMatched)
+				}
+			: null,
 	].filter((item): item is { label: string; value: string } => Boolean(item));
 });
 const reportIssueTo = computed(() => ({

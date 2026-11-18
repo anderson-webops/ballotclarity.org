@@ -19,11 +19,81 @@ export function bucksPolicyFingerprint(body: Uint8Array, format: Parameters<type
 	const normalized = new TextDecoder("utf-8", { fatal: true }).decode(body).replace(/href=(["'])(\/cdn-cgi\/l\/email-protection)#[a-f0-9]{6,2048}\1/giu, "href=$1$2$1");
 	return electionDocumentPolicyFingerprint(Buffer.from(normalized), format, address, regionId);
 }
-export const bucksRobotsLayout = { restrictiveGroups: [{ agents: ["Baiduspider"], unrelated: true }, { agents: ["Yandex"], unrelated: true }, { agents: ["*"] }, { agents: ["Siteimprove"], unrelated: true }, { agents: ["Siteimprovebot"], unrelated: true }, { agents: ["Siteimprovebot-crawler"], unrelated: true }, { agents: ["meta-webindexer", "meta-externalagent", "OAI-SearchBot", "GPTBot", "ClaudeBot", "Claude-SearchBot", "PerplexityBot", "Amazonbot", "Bytespider", "CCBot", "cohere-ai", "Reflectionbot", "LinkupBot", "ExaSearchBot", "YouBot", "DuckAssistBot", "serpstatbot", "AhrefsBot", "SemrushBot", "MJ12bot", "DotBot"] }] } as const;
+export const bucksRobotsLayout = {
+	restrictiveGroups: [
+		{
+			agents: ["Baiduspider"],
+			unrelated: true
+		},
+		{
+			agents: ["Yandex"],
+			unrelated: true
+		},
+		{
+			agents: ["*"]
+		},
+		{
+			agents: ["Siteimprove"],
+			unrelated: true
+		},
+		{
+			agents: ["Siteimprovebot"],
+			unrelated: true
+		},
+		{
+			agents: ["Siteimprovebot-crawler"],
+			unrelated: true
+		},
+		{
+			agents: [
+				"meta-webindexer",
+				"meta-externalagent",
+				"OAI-SearchBot",
+				"GPTBot",
+				"ClaudeBot",
+				"Claude-SearchBot",
+				"PerplexityBot",
+				"Amazonbot",
+				"Bytespider",
+				"CCBot",
+				"cohere-ai",
+				"Reflectionbot",
+				"LinkupBot",
+				"ExaSearchBot",
+				"YouBot",
+				"DuckAssistBot",
+				"serpstatbot",
+				"AhrefsBot",
+				"SemrushBot",
+				"MJ12bot",
+				"DotBot"
+			]
+		}
+	]
+} as const;
 const policyPages = [
-	{ id: "robots", url: `${bucksOrigin}/robots.txt`, format: "robots", sha256: "a9ddf1842cfd17cc3dcd5794e090689be3610b75ef8eddfb68390e3f436cb3f7" },
-	{ id: "copyright", url: `${bucksOrigin}/copyright`, format: "region", region: "contentarea", sha256: "170135ed43030dc6cfd935607f07841660b905ca83a0d6e86c760bbbe086bbb5", links: "f2b9dc455b75fcfe4d619b832462693a516aff6ccfd57130cbf2559933f60fbc" },
-	{ id: "privacy", url: `${bucksOrigin}/privacy`, format: "region", region: "mainWrapTS", sha256: "2c5e8ea0639684fdddc8cc6b32c16632c7a92e0e1630cacd757aefbe45d8e632", links: "f2b9dc455b75fcfe4d619b832462693a516aff6ccfd57130cbf2559933f60fbc" }
+	{
+		id: "robots",
+		url: `${bucksOrigin}/robots.txt`,
+		format: "robots",
+		sha256: "a9ddf1842cfd17cc3dcd5794e090689be3610b75ef8eddfb68390e3f436cb3f7"
+	},
+	{
+		id: "copyright",
+		url: `${bucksOrigin}/copyright`,
+		format: "region",
+		region: "contentarea",
+		sha256: "170135ed43030dc6cfd935607f07841660b905ca83a0d6e86c760bbbe086bbb5",
+		links: "f2b9dc455b75fcfe4d619b832462693a516aff6ccfd57130cbf2559933f60fbc"
+	},
+	{
+		id: "privacy",
+		url: `${bucksOrigin}/privacy`,
+		format: "region",
+		region: "mainWrapTS",
+		sha256: "2c5e8ea0639684fdddc8cc6b32c16632c7a92e0e1630cacd757aefbe45d8e632",
+		links: "f2b9dc455b75fcfe4d619b832462693a516aff6ccfd57130cbf2559933f60fbc"
+	}
 ] as const;
 export const bucksPolicyReceipts = policyPages.map(({ id, url, sha256 }) => ({ id, url, sha256 }));
 interface Page { url: string; body: string; sha256: string; retrievedAt: string }
@@ -68,7 +138,14 @@ function offered(index: string, notice: string) {
 }
 
 export function validateBucksElection(value: unknown): asserts value is BucksElection {
-	if (!bucksExact(value, ["electionId", "electionDate", "pageUrl", "bucksContentSha256"]) || value.electionId !== null || typeof value.electionDate !== "string" || !validBucksDate(value.electionDate)) return bucksReject();
+	if (!bucksExact(value, [
+		"electionId",
+		"electionDate",
+		"pageUrl",
+		"bucksContentSha256"
+	]) || value.electionId !== null || typeof value.electionDate !== "string" || !validBucksDate(value.electionDate)) {
+		return bucksReject();
+	}
 	if (value.pageUrl === null) {
 		if (value.bucksContentSha256 !== null) return bucksReject();
 	}
@@ -81,8 +158,20 @@ export function validateBucksElection(value: unknown): asserts value is BucksEle
 export function readBucksDiscovery(body: string, now = Date.now()) {
 	if (Buffer.byteLength(body) > 10 * 1024 * 1024) return bucksReject();
 	const value = JSON.parse(body);
-	if (!bucksExact(value, ["schemaVersion", "type", "policies", "index", "notice", "document"]) || value.schemaVersion !== 1 || value.type !== "bucks-candidate-capture" || JSON.stringify(value.policies) !== JSON.stringify(bucksPolicyReceipts)) return bucksReject();
-	for (const [name, url] of [["index", bucksIndexUrl], ["notice", bucksNoticeUrl]]) {
+	if (!bucksExact(value, [
+		"schemaVersion",
+		"type",
+		"policies",
+		"index",
+		"notice",
+		"document"
+	]) || value.schemaVersion !== 1 || value.type !== "bucks-candidate-capture" || JSON.stringify(value.policies) !== JSON.stringify(bucksPolicyReceipts)) {
+		return bucksReject();
+	}
+	for (const [name, url] of [
+		["index", bucksIndexUrl],
+		["notice", bucksNoticeUrl]
+	]) {
 		const page = value[name!];
 		if (!bucksExact(page, ["url", "body", "sha256", "retrievedAt"]) || page.url !== url || typeof page.body !== "string" || Buffer.byteLength(page.body) > maximumPageBytes || page.sha256 !== bucksHash(page.body)) return bucksReject();
 		timestamp(page.retrievedAt, now);
@@ -91,7 +180,15 @@ export function readBucksDiscovery(body: string, now = Date.now()) {
 	const selected = offered(capture.index.body, capture.notice.body);
 	const document = capture.document;
 	if (selected.offeredUrl) {
-		if (!bucksExact(document, ["url", "sha256", "retrievedAt", "tables", "redirect"]) || typeof document.url !== "string" || typeof document.sha256 !== "string" || !/^[a-f\d]{64}$/u.test(document.sha256)) return bucksReject();
+		if (!bucksExact(document, [
+			"url",
+			"sha256",
+			"retrievedAt",
+			"tables",
+			"redirect"
+		]) || typeof document.url !== "string" || typeof document.sha256 !== "string" || !/^[a-f\d]{64}$/u.test(document.sha256)) {
+			return bucksReject();
+		}
 		timestamp(document.retrievedAt, now);
 		validateBucksDocumentUrl(document.url, selected.electionDate, selected.offeredUrl);
 		if (document.url === selected.offeredUrl) {
@@ -99,7 +196,14 @@ export function readBucksDiscovery(body: string, now = Date.now()) {
 		}
 		else {
 			const redirect = document.redirect;
-			if (!bucksExact(redirect, ["url", "status", "location", "retrievedAt"]) || redirect.url !== selected.offeredUrl || redirect.status !== 301 || typeof redirect.location !== "string" || new URL(redirect.location, selected.offeredUrl).href !== document.url) return bucksReject();
+			if (!bucksExact(redirect, [
+				"url",
+				"status",
+				"location",
+				"retrievedAt"
+			]) || redirect.url !== selected.offeredUrl || redirect.status !== 301 || typeof redirect.location !== "string" || new URL(redirect.location, selected.offeredUrl).href !== document.url) {
+				return bucksReject();
+			}
 			if (Date.parse(timestamp(redirect.retrievedAt, now)) > Date.parse(document.retrievedAt)) return bucksReject();
 		}
 		readBucksCandidateTables(document.tables);
@@ -107,7 +211,12 @@ export function readBucksDiscovery(body: string, now = Date.now()) {
 	else if (document !== null || selected.electionDate <= new Date(now).toISOString().slice(0, 10)) {
 		return bucksReject();
 	}
-	const election: BucksElection = { electionId: null, electionDate: selected.electionDate, pageUrl: document?.url ?? null, bucksContentSha256: document?.sha256 ?? null };
+	const election: BucksElection = {
+		electionId: null,
+		electionDate: selected.electionDate,
+		pageUrl: document?.url ?? null,
+		bucksContentSha256: document?.sha256 ?? null
+	};
 	validateBucksElection(election);
 	return { ...capture, election };
 }
@@ -126,7 +235,20 @@ export function parseBucksCandidateCapture(source: StateBallotSource, body: stri
 	for (const record of records) {
 		if (record!.office === "Governor / Lieutenant Governor") record!.ballotDesignation = "Joint ticket";
 	}
-	return { records: records as StateCandidateRecord[], retrievedAt: capture.document.retrievedAt, sha256: capture.document.sha256, collectionIndexSha256: capture.document.sha256, documents: [{ url: capture.document.url, sha256: capture.document.sha256, retrievedAt: capture.document.retrievedAt, includedRecordCount: records.length }] };
+	return {
+		records: records as StateCandidateRecord[],
+		retrievedAt: capture.document.retrievedAt,
+		sha256: capture.document.sha256,
+		collectionIndexSha256: capture.document.sha256,
+		documents: [
+			{
+				url: capture.document.url,
+				sha256: capture.document.sha256,
+				retrievedAt: capture.document.retrievedAt,
+				includedRecordCount: records.length
+			}
+		]
+	};
 }
 
 interface FetchOptions { requestDocument?: typeof RequestDocument; wait?: (milliseconds: number) => Promise<void>; now?: () => number; extractTables?: (body: Buffer) => Promise<StateBallotTablePage[]>; discovery?: string }
@@ -141,19 +263,44 @@ export async function fetchBucksCycleDiscovery(options: FetchOptions = {}) {
 			if (!robots.allowed(url)) return bucksReject();
 			await wait(Math.max(20_000, robots.delay));
 		}
-		const response = await request(url, { allowedHosts: ["www.buckscounty.gov"], maxBytes: pdf ? 8 * 1024 * 1024 : maximumPageBytes, timeoutMs: 25000 });
+		const response = await request(url, {
+			allowedHosts: ["www.buckscounty.gov"],
+			maxBytes: pdf
+				? 8 * 1024 * 1024
+				: maximumPageBytes,
+			timeoutMs: 25000
+		});
 		if (!pdf && response.status !== 200) return bucksReject();
-		return { response, url, sha256: bucksHash(response.body), retrievedAt: new Date(now()).toISOString() };
+		return {
+			response,
+			url,
+			sha256: bucksHash(response.body),
+			retrievedAt: new Date(now()).toISOString()
+		};
 	};
 	for (const policy of policyPages) {
 		const page = await get(policy.url);
-		if (bucksPolicyFingerprint(page.response.body, policy.format, policy.url, "region" in policy ? policy.region : undefined) !== policy.sha256 || ("links" in policy && bucksPolicyFingerprint(page.response.body, "links", policy.url) !== policy.links)) return bucksReject();
+		if (bucksPolicyFingerprint(page.response.body, policy.format, policy.url, "region" in policy
+			? policy.region
+			: undefined) !== policy.sha256 || ("links" in policy && bucksPolicyFingerprint(page.response.body, "links", policy.url) !== policy.links)) {
+			return bucksReject();
+		}
 		if (policy.id === "robots") robots = electionDocumentRobotsPolicy(page.response.body, [], [], undefined, undefined, bucksRobotsLayout);
 	}
 	const noticePage = await get(bucksNoticeUrl);
 	const indexPage = await get(bucksIndexUrl);
-	const notice: Page = { url: bucksNoticeUrl, body: noticePage.response.body.toString("utf8"), sha256: noticePage.sha256, retrievedAt: noticePage.retrievedAt };
-	const index: Page = { url: bucksIndexUrl, body: indexPage.response.body.toString("utf8"), sha256: indexPage.sha256, retrievedAt: indexPage.retrievedAt };
+	const notice: Page = {
+		url: bucksNoticeUrl,
+		body: noticePage.response.body.toString("utf8"),
+		sha256: noticePage.sha256,
+		retrievedAt: noticePage.retrievedAt
+	};
+	const index: Page = {
+		url: bucksIndexUrl,
+		body: indexPage.response.body.toString("utf8"),
+		sha256: indexPage.sha256,
+		retrievedAt: indexPage.retrievedAt
+	};
 	const selected = offered(index.body, notice.body);
 	let document: Document | null = null;
 	if (selected.offeredUrl) {
@@ -163,7 +310,12 @@ export async function fetchBucksCycleDiscovery(options: FetchOptions = {}) {
 			const canonical = new URL(page.response.location, selected.offeredUrl).href;
 			validateBucksDocumentUrl(canonical, selected.electionDate, selected.offeredUrl);
 			if (canonical === selected.offeredUrl) return bucksReject();
-			redirect = { url: selected.offeredUrl, status: 301, location: page.response.location, retrievedAt: page.retrievedAt };
+			redirect = {
+				url: selected.offeredUrl,
+				status: 301,
+				location: page.response.location,
+				retrievedAt: page.retrievedAt
+			};
 			page = await get(canonical, true);
 		}
 		if (page.response.status !== 200 || !/^application\/pdf(?:;|$)/iu.test(page.response.contentType ?? "") || !page.response.body.subarray(0, 5).equals(Buffer.from("%PDF-"))) return bucksReject();
@@ -173,9 +325,22 @@ export async function fetchBucksCycleDiscovery(options: FetchOptions = {}) {
 			await extractStateBallotPdfText(bytes, textExecutable, undefined, "layout", 20);
 			return extractStateBallotPdfTables(bytes, { textExecutable, svgExecutable });
 		});
-		document = { url: page.url, sha256: page.sha256, retrievedAt: page.retrievedAt, tables: await extract(page.response.body), redirect };
+		document = {
+			url: page.url,
+			sha256: page.sha256,
+			retrievedAt: page.retrievedAt,
+			tables: await extract(page.response.body),
+			redirect
+		};
 	}
-	const body = JSON.stringify({ schemaVersion: 1, type: "bucks-candidate-capture", policies: bucksPolicyReceipts, index, notice, document });
+	const body = JSON.stringify({
+		schemaVersion: 1,
+		type: "bucks-candidate-capture",
+		policies: bucksPolicyReceipts,
+		index,
+		notice,
+		document
+	});
 	readBucksDiscovery(body, now());
 	return body;
 }

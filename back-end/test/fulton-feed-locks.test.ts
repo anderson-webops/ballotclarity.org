@@ -11,10 +11,30 @@ import { withFultonOfficeholderLock } from "../src/fulton-officeholder-storage.j
 import { withMagistrateCourtLock } from "../src/magistrate-court-storage.js";
 
 const feeds = [
-	{ module: "fulton-officeholder-storage", method: "withFultonOfficeholderLock", filename: ".fulton-board.lock", lock: withFultonOfficeholderLock },
-	{ module: "fulton-county-officeholder-storage", method: "withFultonCountyOfficeholderLock", filename: ".fulton-county-offices.lock", lock: withFultonCountyOfficeholderLock },
-	{ module: "court-directory-storage", method: "withCourtDirectoryLock", filename: ".court-directory.lock", lock: withCourtDirectoryLock },
-	{ module: "magistrate-court-storage", method: "withMagistrateCourtLock", filename: ".magistrate-court.lock", lock: withMagistrateCourtLock },
+	{
+		module: "fulton-officeholder-storage",
+		method: "withFultonOfficeholderLock",
+		filename: ".fulton-board.lock",
+		lock: withFultonOfficeholderLock
+	},
+	{
+		module: "fulton-county-officeholder-storage",
+		method: "withFultonCountyOfficeholderLock",
+		filename: ".fulton-county-offices.lock",
+		lock: withFultonCountyOfficeholderLock
+	},
+	{
+		module: "court-directory-storage",
+		method: "withCourtDirectoryLock",
+		filename: ".court-directory.lock",
+		lock: withCourtDirectoryLock
+	},
+	{
+		module: "magistrate-court-storage",
+		method: "withMagistrateCourtLock",
+		filename: ".magistrate-court.lock",
+		lock: withMagistrateCourtLock
+	},
 ] as const;
 
 for (const feed of feeds) {
@@ -25,7 +45,15 @@ for (const feed of feeds) {
 		await writeFile(snapshot, "Original capture and import clocks\n", { mode: 0o600 });
 		const url = new URL(`../src/${feed.module}.ts`, import.meta.url).href;
 		const code = `import { ${feed.method} } from ${JSON.stringify(url)}; await ${feed.method}(${JSON.stringify(directory)}, async () => { process.send('held'); setInterval(() => {}, 1000); await new Promise(() => {}); });`;
-		const child = spawn(process.execPath, ["--import", "tsx", "--input-type=module", "-e", code], { stdio: ["ignore", "ignore", "pipe", "ipc"] });
+		const child = spawn(process.execPath, [
+			"--import",
+			"tsx",
+			"--input-type=module",
+			"-e",
+			code
+		], {
+			stdio: ["ignore", "ignore", "pipe", "ipc"]
+		});
 		let errors = "";
 		child.stderr!.on("data", value => errors += String(value));
 		context.after(async () => {
@@ -35,7 +63,9 @@ for (const feed of feeds) {
 				await stopped;
 			}
 		});
-		assert.equal((await once(child, "message", { signal: AbortSignal.timeout(10000) }))[0], "held", errors);
+		assert.equal((await once(child, "message", {
+			signal: AbortSignal.timeout(10000)
+		}))[0], "held", errors);
 		const marker = await readFile(join(directory, feed.filename));
 		await assert.rejects(feed.lock(directory, async () => assert.fail("A competing owner must remain excluded.")));
 		const stopped = once(child, "exit");

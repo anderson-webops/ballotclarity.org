@@ -44,7 +44,9 @@ export function isZipLookupLoggingEnabled(value = process.env.BALLOTCLARITY_ZIP_
 
 export function normalizeZipLookupLogInput(rawInput: string) {
 	const normalized = rawInput.trim();
-	return exactZip5Pattern.test(normalized) ? normalized : null;
+	return exactZip5Pattern.test(normalized)
+		? normalized
+		: null;
 }
 
 function resolveZip5ForLookupLog(rawInput: string, lookupResponse: LocationLookupResponse) {
@@ -108,7 +110,9 @@ export function resolveZipLookupLogMaxBytes(
 	value: number | string | null | undefined = process.env.BALLOTCLARITY_ZIP_LOOKUP_LOG_MAX_BYTES,
 	fallback = defaultZipLookupLogMaxBytes,
 ) {
-	const parsed = typeof value === "number" ? value : Number(value);
+	const parsed = typeof value === "number"
+		? value
+		: Number(value);
 	const normalized = Math.floor(parsed);
 
 	return Number.isSafeInteger(normalized) && normalized > 0

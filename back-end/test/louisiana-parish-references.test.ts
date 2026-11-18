@@ -17,15 +17,46 @@ import { createStateCandidateRecord } from "../src/state-ballot-records.js";
 import { configuredStateBallotSources } from "../src/state-ballot-registry.js";
 
 const electionDate = "2030-12-14";
-const publication = { parish: "Caddo", url: "https://powercoalition.org/wp-content/uploads/2030/11/Caddo-SampleBallot-Printable-DEC-2030.pdf", pages: [1, 2] };
+const publication = {
+	parish: "Caddo",
+	url: "https://powercoalition.org/wp-content/uploads/2030/11/Caddo-SampleBallot-Printable-DEC-2030.pdf",
+	pages: [1, 2]
+};
 function reference(name: string, office: string, sourcePage: number): ParishCandidateReference {
-	return { parish: publication.parish, electionDate, id: hash(`${publication.parish}\n${electionDate}\n${office}\n${name}\nNo Party`).slice(0, 24), name, office, statedParty: "No Party", sourcePage, sourceStatus: "unofficial-reference", sourceUrl: publication.url, sourceSha256: hash("original PDF"), capturedAt: "2026-11-14T08:00:00.000Z" };
+	return {
+		parish: publication.parish,
+		electionDate,
+		id: hash(`${publication.parish}\n${electionDate}\n${office}\n${name}\nNo Party`).slice(0, 24),
+		name,
+		office,
+		statedParty: "No Party",
+		sourcePage,
+		sourceStatus: "unofficial-reference",
+		sourceUrl: publication.url,
+		sourceSha256: hash("original PDF"),
+		capturedAt: "2026-11-14T08:00:00.000Z"
+	};
 }
 function fixture() {
-	return buildParishReferenceCollection(electionDate, publication, [reference("Example Person", "U.S.Representative, 5th Congressional District", 1), { ...reference("Another Person", "Council Members at Large, City of Example", 2), voteFor: 2 }]);
+	return buildParishReferenceCollection(electionDate, publication, [
+		reference("Example Person", "U.S.Representative, 5th Congressional District", 1),
+		{
+			...reference("Another Person", "Council Members at Large, City of Example", 2),
+			voteFor: 2
+		}
+	]);
 }
 function catalog() {
-	return { schemaVersion: 1, type: "louisiana-parish-reference-catalog", editions: [{ electionDate, publications: [publication] }] };
+	return {
+		schemaVersion: 1,
+		type: "louisiana-parish-reference-catalog",
+		editions: [
+			{
+				electionDate,
+				publications: [publication]
+			}
+		]
+	};
 }
 
 test("parish references retain literal offices, parties, seat counts and exact original page provenance", () => {
@@ -38,23 +69,76 @@ test("parish references retain literal offices, parties, seat counts and exact o
 	assert.equal(snapshot.documents[1]!.url, `${publication.url}#page=2`);
 	assert.equal(snapshot.records[0]!.scope, "congressional");
 	assert(snapshot.records.every(record => !record.jurisdiction && !record.officialCandidate));
-	const page = buildElectionReferencePages([{ source, snapshot }], { search: "caddo", scope: "all", limit: 50, offset: 0 });
+	const page = buildElectionReferencePages([
+		{ source, snapshot }
+	], {
+		search: "caddo",
+		scope: "all",
+		limit: 50,
+		offset: 0
+	});
 	assert.equal(page.matched, 2);
 	assert.equal(page.records[0]!.source.kind, "public-dataset");
 	assert.match(page.records[0]!.source.title, /unofficial/u);
 });
 
 test("parish reference preparation holds changed identities, mixed evidence and unsupported page assignments", () => {
-	const records = [reference("Example", "Mayor, City of Example", 1)];
-	const sourcePublication = { ...publication, pages: [1] };
-	for (const changed of [{ name: "Different" }, { electionDate: "2030-12-15" }, { parish: "Winn" }, { sourceStatus: "official" }, { sourceUrl: "https://example.com/a.pdf" }, { statedParty: "Guessed party" }, { sourcePage: 3 }, { voteFor: 0 }, { sourceSha256: "bad" }, { capturedAt: "2031-01-01T00:00:00.000Z" }]) assert.throws(() => buildParishReferenceCollection(electionDate, sourcePublication, [{ ...records[0]!, ...changed }]));
+	const records = [
+		reference("Example", "Mayor, City of Example", 1)
+	];
+	const sourcePublication = {
+		...publication,
+		pages: [1]
+	};
+	for (const changed of [
+		{ name: "Different" },
+		{ electionDate: "2030-12-15" },
+		{ parish: "Winn" },
+		{ sourceStatus: "official" },
+		{ sourceUrl: "https://example.com/a.pdf" },
+		{ statedParty: "Guessed party" },
+		{ sourcePage: 3 },
+		{ voteFor: 0 },
+		{ sourceSha256: "bad" },
+		{ capturedAt: "2031-01-01T00:00:00.000Z" }
+	]) {
+		assert.throws(() => buildParishReferenceCollection(electionDate, sourcePublication, [
+			{
+				...records[0]!,
+				...changed
+			}
+		]));
+	}
 	assert.throws(() => buildParishReferenceCollection(electionDate, sourcePublication, [records[0]!, records[0]!]));
 	assert.throws(() => buildParishReferenceCollection(electionDate, publication, records), /contribute/u);
 });
 
 test("parish catalogs support dated future editions while holding duplicates and publisher changes", () => {
 	assert.equal(parseParishReferenceCatalog(catalog()).length, 1);
-	for (const changed of [{ parish: "Unknown" }, { url: publication.url.replace("https:", "http:") }, { url: publication.url.replace("powercoalition.org", "sos.la.gov") }, { pages: [2, 1] }, { pages: [1, 1] }, { pages: [] }, { pages: [51] }]) assert.throws(() => parishReferenceSource(electionDate, { ...publication, ...changed }));
+	for (const changed of [
+		{ parish: "Unknown" },
+		{
+			url: publication.url.replace("https:", "http:")
+		},
+		{
+			url: publication.url.replace("powercoalition.org", "sos.la.gov")
+		},
+		{
+			pages: [2, 1]
+		},
+		{
+			pages: [1, 1]
+		},
+		{ pages: [] },
+		{
+			pages: [51]
+		}
+	]) {
+		assert.throws(() => parishReferenceSource(electionDate, {
+			...publication,
+			...changed
+		}));
+	}
 	assert.throws(() => parishReferenceSource("2030-02-30", publication));
 	const duplicated = catalog();
 	duplicated.editions[0]!.publications.push(publication);
@@ -80,9 +164,24 @@ test("external parish catalogs are explicit, owner-private and additive to exist
 
 test("unofficial parish references cannot implicitly bind to a matching official candidate", () => {
 	const { source, snapshot } = fixture();
-	const officialSource = { ...configuredStateBallotSources.find(source => source.id === "la-st-charles-sample-2026")!, electionDate };
-	const candidate = createStateCandidateRecord(officialSource, { name: snapshot.records[0]!.name, office: snapshot.records[0]!.office, party: "", status: "listed", scope: "congressional", district: "5" })!;
-	assert.deepEqual(matchingCandidateReferences({ source: officialSource, records: [candidate], retrievedAt: snapshot.retrievedAt, sha256: "0".repeat(64) }, candidate, [snapshot], [source]), []);
+	const officialSource = {
+		...configuredStateBallotSources.find(source => source.id === "la-st-charles-sample-2026")!,
+		electionDate
+	};
+	const candidate = createStateCandidateRecord(officialSource, {
+		name: snapshot.records[0]!.name,
+		office: snapshot.records[0]!.office,
+		party: "",
+		status: "listed",
+		scope: "congressional",
+		district: "5"
+	})!;
+	assert.deepEqual(matchingCandidateReferences({
+		source: officialSource,
+		records: [candidate],
+		retrievedAt: snapshot.retrievedAt,
+		sha256: "0".repeat(64)
+	}, candidate, [snapshot], [source]), []);
 });
 
 test("the actual parish reference route, detail data and search honor current-election expiry", async (context) => {
@@ -94,12 +193,18 @@ test("the actual parish reference route, detail data and search honor current-el
 	await createElectionReferenceStorage(directory).write(source, snapshot);
 	let clock = Date.parse(`${electionDate}T12:00:00Z`);
 	context.mock.method(Date, "now", () => clock);
-	const repository = createElectionReferenceRepository({ dataDirectory: directory, catalogPath, now: () => clock });
+	const repository = createElectionReferenceRepository({
+		dataDirectory: directory,
+		catalogPath,
+		now: () => clock
+	});
 	const app = express();
 	registerElectionReferenceRoutes(app, repository);
 	const server = app.listen(0, "127.0.0.1");
 	await once(server, "listening");
-	context.after(() => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())));
+	context.after(() => new Promise<void>((resolve, reject) => server.close(error => error
+		? reject(error)
+		: resolve())));
 	const address = server.address();
 	assert(address && typeof address !== "string");
 	const url = `http://127.0.0.1:${address.port}/api/election-references/LA?q=Caddo&scope=all`;
@@ -110,14 +215,21 @@ test("the actual parish reference route, detail data and search honor current-el
 		assert.equal(response.status, 200);
 		const body = await response.json();
 		assert.equal(body.available, instant < cutoff);
-		assert.equal(body.records.length, instant < cutoff ? 2 : 0);
+		assert.equal(body.records.length, instant < cutoff
+			? 2
+			: 0);
 		const historical = await fetch(`${url}&source=${source.id}`);
 		assert.equal(historical.status, 200);
 		assert.equal((await historical.json()).records.length, 2);
 	}
 	assert.deepEqual((await (await fetch(`${url.split("?")[0]}/catalog`)).json()).elections, [electionDate]);
 	clock = cutoff - 1;
-	const search = await searchRetainedRecords({ query: "Caddo", stateCode: "LA", candidates: null, references: repository });
+	const search = await searchRetainedRecords({
+		query: "Caddo",
+		stateCode: "LA",
+		candidates: null,
+		references: repository
+	});
 	assert.equal(search.incomplete, false);
 	assert.equal(search.items.length, 2);
 	assert.match(search.items[0]!.href, /kind=reference/u);

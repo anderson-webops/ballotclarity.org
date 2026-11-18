@@ -12,11 +12,45 @@ function reject(detail: string): never {
 }
 const nameValid = (value: string) => value.length >= 1 && value.length <= 200 && /\p{L}/u.test(value) && /^[\p{L}\p{M} .,'’\u0022&-]+$/u.test(value);
 function geography(office: string): Pick<StateCandidateValues, "scope" | "district" | "jurisdiction" | "termYears"> {
-	if (["United States Senator", "Governor & Lieutenant Governor", "Attorney General", "Secretary of State", "Comptroller", "Treasurer"].includes(office)) return { scope: "statewide", district: "" };
+	if ([
+		"United States Senator",
+		"Governor & Lieutenant Governor",
+		"Attorney General",
+		"Secretary of State",
+		"Comptroller",
+		"Treasurer"
+	].includes(office)) {
+		return { scope: "statewide", district: "" };
+	}
 	const numbered = /^(U\.S\. Representative|State Senator|State Representative), ([1-9]\d{0,2})(?:st|nd|rd|th) District$/u.exec(office);
-	if (numbered) return { scope: numbered[1] === "U.S. Representative" ? "congressional" : numbered[1] === "State Senator" ? "state-senate" : "state-house", district: numbered[2] };
-	if (/^Metropolitan Water Reclamation District Commissioners (?:Full 6-Year Term|Unexpired 2-Year Term)$/u.test(office)) return { scope: "local", district: "", termYears: office.includes("Full") ? 6 : 2 };
-	if (["President of County Board", "County Clerk", "County Sheriff", "County Treasurer", "County Assessor"].includes(office) || /^(?:County Commissioner|Board of Review), [1-9]\d?(?:st|nd|rd|th) District$/u.test(office)) return { scope: "local", district: "", jurisdiction: "Cook County, Illinois" };
+	if (numbered) {
+		return {
+			scope: numbered[1] === "U.S. Representative"
+				? "congressional"
+				: numbered[1] === "State Senator"
+					? "state-senate"
+					: "state-house",
+			district: numbered[2]
+		};
+	}
+	if (/^Metropolitan Water Reclamation District Commissioners (?:Full 6-Year Term|Unexpired 2-Year Term)$/u.test(office)) {
+		return {
+			scope: "local",
+			district: "",
+			termYears: office.includes("Full")
+				? 6
+				: 2
+		};
+	}
+	if ([
+		"President of County Board",
+		"County Clerk",
+		"County Sheriff",
+		"County Treasurer",
+		"County Assessor"
+	].includes(office) || /^(?:County Commissioner|Board of Review), [1-9]\d?(?:st|nd|rd|th) District$/u.test(office)) {
+		return { scope: "local", district: "", jurisdiction: "Cook County, Illinois" };
+	}
 	if (/^(?:Judge of the (?:Appellate|Circuit) Court|Judge, [1-9]\d?(?:st|nd|rd|th) Subcircuit) \((?:Vacancy of [\p{L} .’'-]+|Converted from Associate Judgeship of [\p{L} .’'-]+)\)$/u.test(office)) return { scope: "local", district: "" };
 	if (office === "President of the Chicago Board of Education" || /^Member of the Chicago Board of Education, Subdistrict (?:[1-9]|10)[AB]$/u.test(office)) return { scope: "local", district: "", jurisdiction: "Chicago Public Schools District 299" };
 	return reject("office vocabulary");
@@ -102,15 +136,26 @@ export function readChicagoBallotDocument(source: StateBallotSource, body: strin
 					continue;
 				}
 				if (row.length === 2 && row[0]!.text === "Write-in" && row[0]!.left === 170 && row[1]!.text === "N/A" && office && voteLimit) continue;
-				const ballot = row.length === 3 ? /^\(([1-9]\d{0,2})\)$/u.exec(row[0]!.text) : null;
-				const person = row.length === 3 ? /^(.+) \(([^()]+)\)$/u.exec(row[1]!.text) : null;
+				const ballot = row.length === 3
+					? /^\(([1-9]\d{0,2})\)$/u.exec(row[0]!.text)
+					: null;
+				const person = row.length === 3
+					? /^(.+) \(([^()]+)\)$/u.exec(row[1]!.text)
+					: null;
 				if (!office || !voteLimit || !ballot || !person || row[1]!.left !== 170 || row[2]!.left !== 735 || row[2]!.text !== "Candidate" || !nameValid(person[1]!) || person[2]!.length > 80 || !/^[\p{L}\p{M} .,'’&-]+$/u.test(person[2]!)) return reject(`candidate row on page ${page} at ${row[0]!.top}`);
 				if ((office === "Governor & Lieutenant Governor") !== person[1]!.includes(" & ")) return reject("printed ticket pairing");
 				const numbers = ballotNumbers.get(office) ?? new Set<number>();
 				if (numbers.has(Number(ballot[1]))) return reject("repeated ballot position");
 				numbers.add(Number(ballot[1]));
 				ballotNumbers.set(office, numbers);
-				const record = factory(source, { name: person[1]!, office, party: person[2]!, status: "listed", ...geography(office), sourceDistrictLabel: office });
+				const record = factory(source, {
+					name: person[1]!,
+					office,
+					party: person[2]!,
+					status: "listed",
+					...geography(office),
+					sourceDistrictLabel: office
+				});
 				if (!record) return reject("candidate identity");
 				record.sourceStatus = "Candidate";
 				record.ballotDesignation = `Ballot number ${ballot[1]}`;
@@ -118,7 +163,15 @@ export function readChicagoBallotDocument(source: StateBallotSource, body: strin
 				records.push(record);
 				officeRows++;
 				candidateCount++;
-				claims.push({ recordId: record.id, page, officeLabel: office, partyLabel: person[2]!, ballotNumbers: [Number(ballot[1])] });
+				claims.push({
+					recordId: record.id,
+					page,
+					officeLabel: office,
+					partyLabel: person[2]!,
+					ballotNumbers: [
+						Number(ballot[1])
+					]
+				});
 			}
 			else if (section === "retention") {
 				if (row.length === 1 && /^Judge, (?:Appellate|Circuit) Court \(Retention\)$/u.test(text)) {
@@ -130,21 +183,39 @@ export function readChicagoBallotDocument(source: StateBallotSource, body: strin
 					retention.name = text;
 					continue;
 				}
-				const number = row.length === 2 ? /^\(([1-9]\d{0,2})\)$/u.exec(row[0]!.text) : null;
+				const number = row.length === 2
+					? /^\(([1-9]\d{0,2})\)$/u.exec(row[0]!.text)
+					: null;
 				if (!retention?.name || !number || !["Yes", "No"].includes(row[1]!.text)) return reject(`retention choice on page ${page} at ${row[0]!.top}`);
 				if (row[1]!.text === "Yes" && !retention.yes) {
 					retention.yes = Number(number[1]);
 					continue;
 				}
 				if (row[1]!.text !== "No" || Number(number[1]) !== retention.yes + 1 || !retention.yes) return reject("retention choice order");
-				const record = factory(source, { name: retention.name, office: `${retention.office}: ${retention.name}`, party: "", status: "listed", scope: "local", sourceDistrictLabel: retention.office });
+				const record = factory(source, {
+					name: retention.name,
+					office: `${retention.office}: ${retention.name}`,
+					party: "",
+					status: "listed",
+					scope: "local",
+					sourceDistrictLabel: retention.office
+				});
 				if (!record) return reject("retention identity");
 				record.sourceStatus = "Judicial retention";
 				record.ballotDesignation = `Judicial retention; Yes ${retention.yes}; No ${number[1]}`;
 				record.voteLimit = 1;
 				records.push(record);
 				retentionCount++;
-				claims.push({ recordId: record.id, page: retention.page, officeLabel: retention.office, partyLabel: "", ballotNumbers: [retention.yes, Number(number[1])] });
+				claims.push({
+					recordId: record.id,
+					page: retention.page,
+					officeLabel: retention.office,
+					partyLabel: "",
+					ballotNumbers: [
+						retention.yes,
+						Number(number[1])
+					]
+				});
 				retention = null;
 			}
 			else {
@@ -170,8 +241,22 @@ export function readChicagoBallotDocument(source: StateBallotSource, body: strin
 					}
 					if (text !== "No" || choice !== "Yes") return reject("question choice order");
 					const officialText = question.slice(1, -1);
-					const id = createHash("sha256").update(JSON.stringify([source.id, source.electionDate, audience, officialText])).digest("hex").slice(0, 24);
-					questions.push({ id, audience, title, officialText, choices: ["Yes", "No"], pages: [...questionPages], explicitlyAdvisory: title.startsWith("ADVISORY QUESTION"), voterApplicabilityVerified: false });
+					const id = createHash("sha256").update(JSON.stringify([
+						source.id,
+						source.electionDate,
+						audience,
+						officialText
+					])).digest("hex").slice(0, 24);
+					questions.push({
+						id,
+						audience,
+						title,
+						officialText,
+						choices: ["Yes", "No"],
+						pages: [...questionPages],
+						explicitlyAdvisory: title.startsWith("ADVISORY QUESTION"),
+						voterApplicabilityVerified: false
+					});
 					title = "";
 					question = "";
 					choice = "";
@@ -201,5 +286,15 @@ export function readChicagoBallotDocument(source: StateBallotSource, body: strin
 		questionCounts.push(questions.length - beforeQuestions);
 	}
 	if (!asOf || !headingSeen || introduction.size !== 2 || !records.length || !questions.length || section !== "questions" || retention || question || title || choice || audienceOpen || new Set(records.map(record => record.id)).size !== records.length || new Set(questions.map(item => item.id)).size !== questions.length) return reject("complete document inventory");
-	return { records, claims, questions, asOf, asOfDate, candidatePages, retentionPages, questionCounts, pageCount: pages.length };
+	return {
+		records,
+		claims,
+		questions,
+		asOf,
+		asOfDate,
+		candidatePages,
+		retentionPages,
+		questionCounts,
+		pageCount: pages.length
+	};
 }

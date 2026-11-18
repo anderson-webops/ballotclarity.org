@@ -17,7 +17,9 @@ function isLocalSiteUrl(siteUrl: string) {
 export default defineEventHandler((event): string => {
 	const runtimeConfig = useRuntimeConfig(event);
 	const configuredSiteUrl = String(runtimeConfig.public.siteUrl || productionSiteUrl).replace(trailingSlashesPattern, "");
-	const siteUrl = isLocalSiteUrl(configuredSiteUrl) ? productionSiteUrl : configuredSiteUrl;
+	const siteUrl = isLocalSiteUrl(configuredSiteUrl)
+		? productionSiteUrl
+		: configuredSiteUrl;
 	const expires = new Date(Date.now() + securityTxtTtlMs).toISOString();
 	const contactUrl = new URL("/contact", `${siteUrl}/`).toString();
 	const canonicalUrl = new URL("/.well-known/security.txt", `${siteUrl}/`).toString();

@@ -101,7 +101,13 @@ async function main() {
 			if (!source) throw new Error("Each reference import must match a configured reviewed collection.");
 			const snapshot = parseElectionReferenceSnapshot(source, body);
 			await storage.write(source, snapshot);
-			console.log(JSON.stringify({ state: source.stateCode, sourceId: source.id, action: "imported", references: snapshot.recordCount, retrievedAt: snapshot.retrievedAt }));
+			console.log(JSON.stringify({
+				state: source.stateCode,
+				sourceId: source.id,
+				action: "imported",
+				references: snapshot.recordCount,
+				retrievedAt: snapshot.retrievedAt
+			}));
 		}
 		return;
 	}
@@ -116,6 +122,8 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-	console.error(error instanceof Error ? error.message : "Election reference management failed.");
+	console.error(error instanceof Error
+		? error.message
+		: "Election reference management failed.");
 	process.exitCode = 1;
 });

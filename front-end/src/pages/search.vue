@@ -1,19 +1,40 @@
 <script setup lang="ts">
 const route = useRoute();
 const directory = computed(() => route.query.type === "candidate");
-const searchInput = ref(typeof route.query.q === "string" ? route.query.q : "");
-const activeQuery = computed(() => directory.value ? "" : typeof route.query.q === "string" ? route.query.q : "");
+const searchInput = ref(typeof route.query.q === "string"
+	? route.query.q
+	: "");
+const activeQuery = computed(() => directory.value
+	? ""
+	: typeof route.query.q === "string"
+		? route.query.q
+		: "");
 const { data, error, pending, refresh } = await useSearchResults(activeQuery);
 
-watch(() => route.query.q, value => searchInput.value = typeof value === "string" ? value : "");
+watch(() => route.query.q, value => searchInput.value = typeof value === "string"
+	? value
+	: "");
 
 async function submitSearch() {
 	const query = searchInput.value.trim();
 	if (query === activeQuery.value) return refresh();
-	await navigateTo({ path: "/search", query: query ? { q: query } : {} });
+	await navigateTo({
+		path: "/search",
+		query: query
+			? { q: query }
+			: {}
+	});
 }
 
-usePageSeo(() => ({ description: "Search candidates, representatives, districts and election information.", path: "/search", title: directory.value ? "Directory" : activeQuery.value ? `Search: ${activeQuery.value}` : "Search" }));
+usePageSeo(() => ({
+	description: "Search candidates, representatives, districts and election information.",
+	path: "/search",
+	title: directory.value
+		? "Directory"
+		: activeQuery.value
+			? `Search: ${activeQuery.value}`
+			: "Search"
+}));
 </script>
 
 <template>

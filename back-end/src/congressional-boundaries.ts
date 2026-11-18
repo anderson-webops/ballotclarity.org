@@ -16,7 +16,9 @@ export function generalElectionCongress(electionDate: string) {
 		return null;
 	const firstMonday = 1 + (8 - new Date(Date.UTC(year, 10, 1)).getUTCDay()) % 7;
 	const generalDate = `${year}-11-${String(firstMonday + 1).padStart(2, "0")}`;
-	return electionDate === generalDate ? Math.floor((year - 1789) / 2) + 2 : null;
+	return electionDate === generalDate
+		? Math.floor((year - 1789) / 2) + 2
+		: null;
 }
 
 export function isCongressionalDistrict(match: LocationDistrictMatch) {
@@ -24,7 +26,9 @@ export function isCongressionalDistrict(match: LocationDistrictMatch) {
 }
 
 export function currentCongressionalBoundarySession(congress: number, stateFips?: string) {
-	return congress === 120 && stateFips === "29" ? 119 : congress;
+	return congress === 120 && stateFips === "29"
+		? 119
+		: congress;
 }
 
 export function matchesCurrentCongress(match: LocationDistrictMatch, congress: number, contextCongress?: number) {
@@ -41,7 +45,9 @@ export function electionDistrictMatches(
 	const congress = generalElectionCongress(electionDate);
 	return [
 		...currentMatches.filter(match => !isCongressionalDistrict(match)),
-		...(stateCode === "MO" && congress === 120 ? currentMatches : electionMatches ?? currentMatches).filter((match) => {
+		...(stateCode === "MO" && congress === 120
+			? currentMatches
+			: electionMatches ?? currentMatches).filter((match) => {
 			if (!isCongressionalDistrict(match) || congress === null || !Number.isInteger(match.congressionalSession))
 				return false;
 			if (stateCode === "MO" && congress === 120)

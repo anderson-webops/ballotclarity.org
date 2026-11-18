@@ -12,7 +12,11 @@ const classes = (node: StateHtmlNode) => attribute(node, "class").split(/\s+/u).
 const has = (node: StateHtmlNode, name: string) => classes(node).includes(name);
 const children = (node: StateHtmlNode) => (node.childNodes ?? []).filter(child => child.nodeName !== "#comment" && !(child.nodeName === "#text" && !child.value?.trim()));
 export const hamiltonStyleSha256 = "45bd5f78307465cdd28d56ac7009688aaa1d786551957f6fff8e4d11cdc0bd62";
-export const hamiltonChoicePairs = [["Yes", "No"], ["For the amendment", "Against the amendment"], ["For", "Against"]] as const;
+export const hamiltonChoicePairs = [
+	["Yes", "No"],
+	["For the amendment", "Against the amendment"],
+	["For", "Against"]
+] as const;
 interface Contest {
 	title: string;
 	voteLimit: number;
@@ -55,7 +59,9 @@ function bounded(body: string) {
 	if (Buffer.byteLength(body) > 2 * 1024 * 1024 || body.includes("\uFFFD"))
 		return reject("ballot size or encoding");
 	const dom = parseStateHtml(body);
-	const pending = [{ node: dom, depth: 0 }];
+	const pending = [
+		{ node: dom, depth: 0 }
+	];
 	let count = 0;
 	while (pending.length) {
 		const item = pending.pop()!;
@@ -77,7 +83,9 @@ export function readHamiltonPublicationDate(body: string) {
 	const titles = descendants(dom, node => node.nodeName === "title");
 	const headers = descendants(dom, node => attribute(node, "class") === "p1-title-col center");
 	const accessible = descendants(dom, node => attribute(node, "class") === "sr-only");
-	const title = titles.length === 1 ? /^Official Sample Ballot - State & Federal General Election - November ([2-8]), (20\d{2})$/u.exec(text(titles[0]!)) : null;
+	const title = titles.length === 1
+		? /^Official Sample Ballot - State & Federal General Election - November ([2-8]), (20\d{2})$/u.exec(text(titles[0]!))
+		: null;
 	if (!title || headers.length !== 1 || accessible.length !== 1)
 		return reject("publication identity");
 	const date = hamiltonGeneralDate(title[1]!, title[2]!);
@@ -89,14 +97,37 @@ function office(title: string, jurisdiction: string | undefined) {
 	if (title === "Governor" || title === "United States Senate")
 		return { scope: "statewide" as const, district: "" };
 	const match = /^(United States House of Representatives|Tennessee Senate|Tennessee House of Representatives), District ([1-9]\d?)$/u.exec(title);
-	if (match)
-		return { scope: (match[1]!.startsWith("United") ? "congressional" : match[1] === "Tennessee Senate" ? "state-senate" : "state-house") as StateContestScope, district: match[2]! };
-	if (jurisdiction && ["Commissioner", "Mayor", "City Council", "City Court Clerk", "Town Council", "Alderman"].includes(title))
+	if (match) {
+		return {
+			scope: (match[1]!.startsWith("United")
+				? "congressional"
+				: match[1] === "Tennessee Senate"
+					? "state-senate"
+					: "state-house") as StateContestScope,
+			district: match[2]!
+		};
+	}
+	if (jurisdiction && [
+		"Commissioner",
+		"Mayor",
+		"City Council",
+		"City Court Clerk",
+		"Town Council",
+		"Alderman"
+	].includes(title)) {
 		return { scope: "local" as const, district: "", jurisdiction };
+	}
 	return reject("office label");
 }
 export function hamiltonQuestionId(source: StateBallotSource, question: Pick<StateBallotQuestion, "audience" | "title" | "officialText" | "choices">) {
-	return hash(JSON.stringify([source.id, source.electionDate, question.audience, question.title, question.officialText, question.choices])).slice(0, 24);
+	return hash(JSON.stringify([
+		source.id,
+		source.electionDate,
+		question.audience,
+		question.title,
+		question.officialText,
+		question.choices
+	])).slice(0, 24);
 }
 export function readHamiltonBallotFields(source: StateBallotSource, pages: readonly StateHtmlNode[]) {
 	if (source.stateCode !== "TN" || hamiltonGeneralDate(source.electionDate.slice(8), source.electionDate.slice(0, 4)) !== source.electionDate || !pages.length || pages.length > 20)
@@ -110,7 +141,19 @@ export function readHamiltonBallotFields(source: StateBallotSource, pages: reado
 		sha256: string;
 	}[] = [];
 	let jurisdiction: string | undefined, contest: Contest | undefined;
-	const numbers = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"];
+	const numbers = [
+		"",
+		"One",
+		"Two",
+		"Three",
+		"Four",
+		"Five",
+		"Six",
+		"Seven",
+		"Eight",
+		"Nine",
+		"Ten"
+	];
 	let candidateRows = 0;
 	let measureRows = 0;
 	let writeInRows = 0;
@@ -125,13 +168,18 @@ export function readHamiltonBallotFields(source: StateBallotSource, pages: reado
 		for (const [columnIndex, column] of columns.entries()) {
 			for (const node of children(column)) {
 				if (has(node, "column-footer")) {
-					if (contest || columnIndex !== 2 || footers++ || text(node) !== `SAMPLE PAGE ${pageIndex + 1} OF ${pages.length} ${pageIndex + 1 === pages.length ? "END OF BALLOT" : "BALLOT CONTINUES"}`)
+					if (contest || columnIndex !== 2 || footers++ || text(node) !== `SAMPLE PAGE ${pageIndex + 1} OF ${pages.length} ${pageIndex + 1 === pages.length
+						? "END OF BALLOT"
+						: "BALLOT CONTINUES"}`) {
 						return reject("page footer");
+					}
 					continue;
 				}
 				if (has(node, "municipality-box")) {
 					const match = /^(City|Town) of ([\p{L} .'-]+) Municipal$/u.exec(text(node));
-					const next = match ? `${match[1]} of ${match[2]}` : "";
+					const next = match
+						? `${match[1]} of ${match[2]}`
+						: "";
 					if (!next || (contest && contest.jurisdiction !== next) || (has(node, "print-only") && jurisdiction !== next))
 						return reject("municipal context");
 					jurisdiction = next;
@@ -142,17 +190,37 @@ export function readHamiltonBallotFields(source: StateBallotSource, pages: reado
 						return reject("unfinished contest");
 					const titles = descendants(node, child => attribute(child, "class") === "contest-title");
 					const votes = descendants(node, child => attribute(child, "class") === "vote-for");
-					const vote = votes.length === 1 ? /^Vote for (One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten) \(([1-9]|10)\)$/u.exec(text(votes[0]!)) : null;
+					const vote = votes.length === 1
+						? /^Vote for (One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten) \(([1-9]|10)\)$/u.exec(text(votes[0]!))
+						: null;
 					if (titles.length !== 1 || !vote || numbers[Number(vote[2])] !== vote[1])
 						return reject("contest instructions");
 					const title = text(titles[0]!);
 					const question = /^(?:Constitutional Amendment #[1-9]\d?|Charter Amendment [1-9]\d?|Charter Referendum|General Obligation Bond Referendum)$/u.test(title);
 					if (question && (!title.startsWith("Constitutional") && !jurisdiction))
 						return reject("question jurisdiction");
-					const context = question ? { district: "", ...(title.startsWith("Constitutional") ? {} : { jurisdiction }) } : office(title, jurisdiction);
+					const context = question
+						? {
+								district: "",
+								...(title.startsWith("Constitutional")
+									? {}
+									: { jurisdiction })
+							}
+						: office(title, jurisdiction);
 					if ("scope" in context && context.scope !== "local")
 						jurisdiction = undefined;
-					contest = { title, voteLimit: Number(vote[2]), question, paragraphs: [], summary: [], collecting: !title.startsWith("Constitutional"), summaryLabelSeen: false, questionLabelSeen: false, pages: [pageIndex + 1], ...context };
+					contest = {
+						title,
+						voteLimit: Number(vote[2]),
+						question,
+						paragraphs: [],
+						summary: [],
+						collecting: !title.startsWith("Constitutional"),
+						summaryLabelSeen: false,
+						questionLabelSeen: false,
+						pages: [pageIndex + 1],
+						...context
+					};
 					headers++;
 					continue;
 				}
@@ -212,17 +280,29 @@ export function readHamiltonBallotFields(source: StateBallotSource, pages: reado
 					const officialText = contest.paragraphs.join("\n\n");
 					if (officialText.length < 30 || officialText.length > 5000 || (contest.title.startsWith("Constitutional") && !contest.questionLabelSeen))
 						return reject("question wording length");
-					const question = { audience: contest.jurisdiction ?? "Tennessee", title: contest.title, officialText, choices: choices as [
-						string,
-						string
-					], pages: contest.pages, explicitlyAdvisory: false, voterApplicabilityVerified: false as const };
+					const question = {
+						audience: contest.jurisdiction ?? "Tennessee",
+						title: contest.title,
+						officialText,
+						choices: choices as [
+							string,
+							string
+						],
+						pages: contest.pages,
+						explicitlyAdvisory: false,
+						voterApplicabilityVerified: false as const
+					};
 					const id = hamiltonQuestionId(source, question);
 					if (ballotQuestions.some(item => item.id === id))
 						return reject("duplicate question");
 					ballotQuestions.push({ id, ...question });
 					if (contest.summary.length) {
 						const summary = contest.summary.join("\n\n");
-						summaryEvidence.push({ questionId: id, characters: summary.length, sha256: hash(summary) });
+						summaryEvidence.push({
+							questionId: id,
+							characters: summary.length,
+							sha256: hash(summary)
+						});
 					}
 					measureRows += rows.length;
 				}
@@ -242,18 +322,63 @@ export function readHamiltonBallotFields(source: StateBallotSource, pages: reado
 							return reject("candidate row order");
 						const nameNodes = descendants(row, child => has(child, "candidate-name"));
 						const partyNodes = descendants(row, child => attribute(child, "class") === "party-name");
-						const name = nameNodes.length === 1 ? text(nameNodes[0]!) : "";
-						const partyLabel = partyNodes.length === 1 ? text(partyNodes[0]!) : undefined;
+						const name = nameNodes.length === 1
+							? text(nameNodes[0]!)
+							: "";
+						const partyLabel = partyNodes.length === 1
+							? text(partyNodes[0]!)
+							: undefined;
 						if (!name || name.length > 200 || !/^[\p{L}\p{M} .,'’"()-]+$/u.test(name) || !/\p{L}/u.test(name) || descendants(row, child => has(child, "candidate-info")).length !== (partyLabel ? 1 : 0) || partyNodes.length > 1 || text(row) !== [name, partyLabel].filter(Boolean).join(" "))
 							return reject("candidate name or party columns");
-						const party = partyLabel === "Republican Party Nominee" ? "Republican" : partyLabel === "Democratic Party Nominee" ? "Democratic" : partyLabel === "Independent Candidate" ? "Independent" : undefined;
+						const party = partyLabel === "Republican Party Nominee"
+							? "Republican"
+							: partyLabel === "Democratic Party Nominee"
+								? "Democratic"
+								: partyLabel === "Independent Candidate"
+									? "Independent"
+									: undefined;
 						if ((partyLabel && !party) || (contest.scope !== "local" && !party) || (contest.scope === "local" && partyLabel))
 							return reject("source party label");
-						const id = hash(JSON.stringify([source.id, source.electionDate, contest.title, contest.district, contest.jurisdiction ?? "", name, party ?? ""])).slice(0, 24);
+						const id = hash(JSON.stringify([
+							source.id,
+							source.electionDate,
+							contest.title,
+							contest.district,
+							contest.jurisdiction ?? "",
+							name,
+							party ?? ""
+						])).slice(0, 24);
 						if (records.some(record => record.id === id))
 							return reject("duplicate candidate");
-						records.push({ id, name, office: contest.title, scope: contest.scope, district: contest.district, status: "listed", ...(party ? { party } : {}), ...(contest.jurisdiction ? { jurisdiction: contest.jurisdiction } : {}), voteLimit: contest.voteLimit });
-						claims.push({ recordId: id, name, office: contest.title, district: contest.district, ...(contest.jurisdiction ? { jurisdiction: contest.jurisdiction } : {}), ...(partyLabel ? { partyLabel } : {}), page: pageIndex + 1, voteLimit: contest.voteLimit });
+						records.push({
+							id,
+							name,
+							office: contest.title,
+							scope: contest.scope,
+							district: contest.district,
+							status: "listed",
+							...(party
+								? { party }
+								: {}),
+							...(contest.jurisdiction
+								? { jurisdiction: contest.jurisdiction }
+								: {}),
+							voteLimit: contest.voteLimit
+						});
+						claims.push({
+							recordId: id,
+							name,
+							office: contest.title,
+							district: contest.district,
+							...(contest.jurisdiction
+								? { jurisdiction: contest.jurisdiction }
+								: {}),
+							...(partyLabel
+								? { partyLabel }
+								: {}),
+							page: pageIndex + 1,
+							voteLimit: contest.voteLimit
+						});
 						names++;
 					}
 					if (!names || blanks !== contest.voteLimit)
@@ -269,15 +394,33 @@ export function readHamiltonBallotFields(source: StateBallotSource, pages: reado
 	}
 	if (contest || !records.length || records.length > 1000 || ballotQuestions.length > 100 || headers !== ballotQuestions.length + new Set(records.map(record => JSON.stringify([record.office, record.district, record.jurisdiction]))).size || pages.reduce((sum, page) => sum + descendants(page, node => has(node, "candidate-row")).length, 0) !== candidateRows || pages.reduce((sum, page) => sum + descendants(page, node => has(node, "measure-choice-row")).length, 0) !== measureRows || pages.reduce((sum, page) => sum + descendants(page, node => has(node, "write-in-row")).length, 0) !== writeInRows)
 		return reject("complete contest inventory");
-	return { records, ballotQuestions, claims, summaryEvidence, candidateRows, measureRows, writeInRows };
+	return {
+		records,
+		ballotQuestions,
+		claims,
+		summaryEvidence,
+		candidateRows,
+		measureRows,
+		writeInRows
+	};
 }
 export function readHamiltonBallotDocument(source: StateBallotSource, body: string) {
 	if (readHamiltonPublicationDate(body) !== source.electionDate)
 		return reject("configured election date");
 	const dom = bounded(body);
 	const styles = descendants(dom, node => node.nodeName === "style").map(node => (node.childNodes ?? []).map(node => node.value ?? "").join("").replace(/\/\*[\s\S]*?\*\//gu, "").replace(/\s+/gu, " ").trim());
-	if (hash(JSON.stringify(styles)) !== hamiltonStyleSha256 || descendants(dom, node => ["iframe", "embed", "object", "img", "svg", "form", "input", "link"].includes(node.nodeName)).length)
+	if (hash(JSON.stringify(styles)) !== hamiltonStyleSha256 || descendants(dom, node => [
+		"iframe",
+		"embed",
+		"object",
+		"img",
+		"svg",
+		"form",
+		"input",
+		"link"
+	].includes(node.nodeName)).length) {
 		return reject("publication style or embedded content");
+	}
 	const scripts = descendants(dom, node => node.nodeName === "script");
 	if (scripts.length > 1)
 		return reject("script inventory");
@@ -294,9 +437,64 @@ export function readHamiltonBallotDocument(source: StateBallotSource, body: stri
 		if (regions.map(node => attribute(node, "class")).join(",") !== (index ? "columns-container" : "p1-header-title-box,p1-instructions-box,p1-columns-container") || children(regions.at(-1)!).some(node => attribute(node, "class") !== "ballot-column") || children(regions.at(-1)!).length !== 3)
 			return reject("complete page frame");
 	}
-	const knownClasses = new Set(["sr-only", "ballot-page", "ballot-frame", "p1-header-title-box", "p1-title-col left", "p1-title-col center", "p1-title-col right", "p1-instructions-box", "p1-instructions-title", "p1-instructions-text", "p1-commission-text", "p1-columns-container", "ballot-column", "contest-header top-of-col", "contest-title", "vote-for", "choices-list", "candidate-row dense", "candidate-info", "candidate-name", "party-name", "voting-oval", "write-in-row dense", "write-in-label", "amendment-block dense", "amendment-section-label", "amendment-p dense", "amendment-indent dense", "amendment-block dense split-continuation", "measure-choice-row", "measure-choice-text", "contest-header", "column-footer", "columns-container", "candidate-row", "write-in-row", "municipality-box", "candidate-name single-line", "municipality-box top-of-col", "municipality-box top-of-col print-only", "amendment-block", "amendment-p"]);
-	const inlineStyles: Record<string, string[]> = { "span": ["display:inline-block; width:16px; height:10px; border:1.5px solid #000; border-radius:50%; vertical-align:middle; background-color:#000;"], "div.amendment-p dense": ["margin-left: 6pt;", "font-weight: bold; margin-top: 4pt; margin-bottom: 2pt;"], "div.amendment-block dense split-continuation": ["padding-top: 2pt;", "padding-top: 3pt;"], "div.contest-header": ["margin-top: 2pt;", "margin-top: 1.5pt;", "margin-top: 4pt;"] };
-	const leaves = ["candidate-name", "party-name", "contest-title", "vote-for", "measure-choice-text", "write-in-label"];
+	const knownClasses = new Set([
+		"sr-only",
+		"ballot-page",
+		"ballot-frame",
+		"p1-header-title-box",
+		"p1-title-col left",
+		"p1-title-col center",
+		"p1-title-col right",
+		"p1-instructions-box",
+		"p1-instructions-title",
+		"p1-instructions-text",
+		"p1-commission-text",
+		"p1-columns-container",
+		"ballot-column",
+		"contest-header top-of-col",
+		"contest-title",
+		"vote-for",
+		"choices-list",
+		"candidate-row dense",
+		"candidate-info",
+		"candidate-name",
+		"party-name",
+		"voting-oval",
+		"write-in-row dense",
+		"write-in-label",
+		"amendment-block dense",
+		"amendment-section-label",
+		"amendment-p dense",
+		"amendment-indent dense",
+		"amendment-block dense split-continuation",
+		"measure-choice-row",
+		"measure-choice-text",
+		"contest-header",
+		"column-footer",
+		"columns-container",
+		"candidate-row",
+		"write-in-row",
+		"municipality-box",
+		"candidate-name single-line",
+		"municipality-box top-of-col",
+		"municipality-box top-of-col print-only",
+		"amendment-block",
+		"amendment-p"
+	]);
+	const inlineStyles: Record<string, string[]> = {
+		"span": ["display:inline-block; width:16px; height:10px; border:1.5px solid #000; border-radius:50%; vertical-align:middle; background-color:#000;"],
+		"div.amendment-p dense": ["margin-left: 6pt;", "font-weight: bold; margin-top: 4pt; margin-bottom: 2pt;"],
+		"div.amendment-block dense split-continuation": ["padding-top: 2pt;", "padding-top: 3pt;"],
+		"div.contest-header": ["margin-top: 2pt;", "margin-top: 1.5pt;", "margin-top: 4pt;"]
+	};
+	const leaves = [
+		"candidate-name",
+		"party-name",
+		"contest-title",
+		"vote-for",
+		"measure-choice-text",
+		"write-in-label"
+	];
 	for (const node of descendants(dom, node => node.nodeName !== "#text" && node.nodeName !== "#comment")) {
 		const className = attribute(node, "class");
 		const style = attribute(node, "style");
@@ -305,8 +503,11 @@ export function readHamiltonBallotDocument(source: StateBallotSource, body: stri
 			return reject("hidden or changed ballot fields");
 		if (attribute(node, "aria-hidden") && className !== "voting-oval" && !(node.nodeName === "span" && !className && style === inlineStyles.span![0]))
 			return reject("hidden ballot content");
-		if (style && !inlineStyles[node.nodeName + (className ? `.${className}` : "")]?.includes(style))
+		if (style && !inlineStyles[node.nodeName + (className
+			? `.${className}`
+			: "")]?.includes(style)) {
 			return reject("inline ballot styling");
+		}
 		if (classes(node).some(name => leaves.includes(name)) && children(node).some(child => child.nodeName !== "#text" && !(child.nodeName === "br" && !(child.attrs ?? []).length)))
 			return reject("nested candidate or choice text");
 		if (has(node, "amendment-p") || has(node, "amendment-indent")) {

@@ -9,11 +9,23 @@ import { prepareLafayetteBallotResearch, readLafayetteBallotResearch } from "../
 
 const electionDate = "2030-12-14";
 const question = (area: string, mills: string, firstYear = 2031, lastYear = 2040) => `Shall the ${area} of Lafayette, State of Louisiana (the "${area}"), continue to levy a ${mills} mills tax on all property subject to taxation (an estimated $1,000,000 reasonably expected at this time to be collected from the levy of the tax for an entire year), for a period of 10 years, beginning with the year ${firstYear} and ending with the year ${lastYear}, for the purpose of maintaining public facilities?`;
-const questions = [question("Parish", "2.11"), question("Parish", "3.22"), question("City", "1.25")];
+const questions = [
+	question("Parish", "2.11"),
+	question("Parish", "3.22"),
+	question("City", "1.25")
+];
 function fixture() {
 	const rates = [2.11, 3.22, 1.25];
-	const guide = `December 14, 2030 Ballot Guide\n${questions.map((body, index) => `${index < 2 ? "Parishwide" : "City of Lafayette"} Proposition No. ${index < 2 ? index + 1 : 1}\nExample ${index + 1}\n\n${rates[index]} mills | 10 years | 2031–2040\nOfficial ballot question: “${body}”\n`).join("\n")}`;
-	const government = `<title>Lafayette Consolidated Government</title><h1>December 14, 2030</h1><p>Resolution No. PR-XXX-2030</p>${questions.map((body, index) => `<details class="prop-detail"><summary>Prop. ${index < 2 ? 2 - index : 1} of ${index < 2 ? 2 : 1} - Example ${rates[index]} mills · 2031–2040</summary><p class="ballot-question">${body}</p></details>`).join("")}`;
+	const guide = `December 14, 2030 Ballot Guide\n${questions.map((body, index) => `${index < 2
+		? "Parishwide"
+		: "City of Lafayette"} Proposition No. ${index < 2
+		? index + 1
+		: 1}\nExample ${index + 1}\n\n${rates[index]} mills | 10 years | 2031–2040\nOfficial ballot question: “${body}”\n`).join("\n")}`;
+	const government = `<title>Lafayette Consolidated Government</title><h1>December 14, 2030</h1><p>Resolution No. PR-XXX-2030</p>${questions.map((body, index) => `<details class="prop-detail"><summary>Prop. ${index < 2
+		? 2 - index
+		: 1} of ${index < 2
+		? 2
+		: 1} - Example ${rates[index]} mills · 2031–2040</summary><p class="ballot-question">${body}</p></details>`).join("")}`;
 	return { guide, government };
 }
 
@@ -29,7 +41,14 @@ test("Lafayette research reconciles exact questions independently of conflicting
 	assert.equal(result.officialCertificationVerified, false);
 	assert.equal(result.personalApplicabilityVerified, false);
 	assert(result.rows.every(row => row.canonicalPropositionNumber === null));
-	assert.deepEqual(result.rows[0]!.fiscal, { kind: "property-tax-continuation", mills: 2.11, years: 10, firstYear: 2031, lastYear: 2040, estimatedAnnualRevenueDollars: 1_000_000 });
+	assert.deepEqual(result.rows[0]!.fiscal, {
+		kind: "property-tax-continuation",
+		mills: 2.11,
+		years: 10,
+		firstYear: 2031,
+		lastYear: 2040,
+		estimatedAnnualRevenueDollars: 1_000_000
+	});
 	assert.equal(result.rows[2]!.area, "City of Lafayette");
 	assert.deepEqual(readLafayetteBallotResearch(guide, government, electionDate), result);
 });
@@ -38,15 +57,51 @@ test("source drift, missing questions, ambiguous numbering and unsafe CSV titles
 	const { guide, government } = fixture();
 	for (const [changedGuide, changedGovernment, selectedDate] of [
 		[guide, government, "2030-12-15"],
-		[guide, government.replace("December 14, 2030", "December 15, 2030"), electionDate],
-		[guide.replace("2.11 mills", "2.12 mills"), government, electionDate],
-		[guide, government.replace("1,000,000", "1,,000,000"), electionDate],
-		[guide.replace("Example 1", "=HYPERLINK(example)"), government, electionDate],
-		[guide.replace("Parishwide Proposition No. 2", "Parishwide Proposition No. 1"), government, electionDate],
-		[guide, government.replace("Prop. 2 of 2", "Prop. 1 of 2"), electionDate],
-		[guide, government.replace(questions[1]!, questions[0]!), electionDate],
-		[guide, government.replace("prop-detail", "unknown-template"), electionDate],
-		[guide.repeat(2), government, electionDate],
+		[
+			guide,
+			government.replace("December 14, 2030", "December 15, 2030"),
+			electionDate
+		],
+		[
+			guide.replace("2.11 mills", "2.12 mills"),
+			government,
+			electionDate
+		],
+		[
+			guide,
+			government.replace("1,000,000", "1,,000,000"),
+			electionDate
+		],
+		[
+			guide.replace("Example 1", "=HYPERLINK(example)"),
+			government,
+			electionDate
+		],
+		[
+			guide.replace("Parishwide Proposition No. 2", "Parishwide Proposition No. 1"),
+			government,
+			electionDate
+		],
+		[
+			guide,
+			government.replace("Prop. 2 of 2", "Prop. 1 of 2"),
+			electionDate
+		],
+		[
+			guide,
+			government.replace(questions[1]!, questions[0]!),
+			electionDate
+		],
+		[
+			guide,
+			government.replace("prop-detail", "unknown-template"),
+			electionDate
+		],
+		[
+			guide.repeat(2),
+			government,
+			electionDate
+		],
 	]) assert.throws(() => readLafayetteBallotResearch(changedGuide!, changedGovernment!, selectedDate!));
 	assert.throws(() => readLafayetteBallotResearch("x".repeat(4 * 1024 * 1024 + 1), government, electionDate));
 	const invalidTerm = questions[0]!.replace("2040", "2041");
@@ -61,7 +116,13 @@ test("bond authorization, interest ceiling and first-year reference rate remain 
 	const changedGuide = guide.replace(questions[0]!, bond).replace("2.11 mills | 10 years | 2031–2040", "Up to $77 million | Repayment over up to 30 years");
 	const changedGovernment = government.replace(questions[0]!, bond).replace("2.11 mills · 2031–2040", "Up to $77,000,000 · continuing 1.85 mills");
 	const result = readLafayetteBallotResearch(changedGuide, changedGovernment, electionDate);
-	assert.deepEqual(result.rows[0]!.fiscal, { kind: "bond-authorization", maximumBondDollars: 77_000_000, maximumYears: 30, maximumAnnualInterestPercent: 7, firstYearReferencedMills: 1.85 });
+	assert.deepEqual(result.rows[0]!.fiscal, {
+		kind: "bond-authorization",
+		maximumBondDollars: 77_000_000,
+		maximumYears: 30,
+		maximumAnnualInterestPercent: 7,
+		firstYearReferencedMills: 1.85
+	});
 	assert.equal(result.rows[0]!.fiscal.estimatedAnnualRevenueDollars, undefined);
 });
 
@@ -89,8 +150,20 @@ test("bounded offline preparation pins originals, preserves clocks and refuses o
 	const planPath = join(directory, "plan.json");
 	await writeFile(pdfPath, pdf);
 	await writeFile(htmlPath, government);
-	const pin = (path: string, body: string | Buffer, url: string) => ({ path, sha256: createHash("sha256").update(body).digest("hex"), url, capturedAt: "2026-11-14T00:00:00.000Z" });
-	const plan = { schemaVersion: 1, type: "lafayette-ballot-research-preparation", electionDate, guide: pin(pdfPath, pdf, "https://www.oneacadiana.org/wp-content/uploads/GeauxVote_Dec2030_BallotGuide-FINAL-v2.pdf"), governmentPage: pin(htmlPath, government, "https://www.lafayettela.info/"), outputDirectory: join(directory, "output") };
+	const pin = (path: string, body: string | Buffer, url: string) => ({
+		path,
+		sha256: createHash("sha256").update(body).digest("hex"),
+		url,
+		capturedAt: "2026-11-14T00:00:00.000Z"
+	});
+	const plan = {
+		schemaVersion: 1,
+		type: "lafayette-ballot-research-preparation",
+		electionDate,
+		guide: pin(pdfPath, pdf, "https://www.oneacadiana.org/wp-content/uploads/GeauxVote_Dec2030_BallotGuide-FINAL-v2.pdf"),
+		governmentPage: pin(htmlPath, government, "https://www.lafayettela.info/"),
+		outputDirectory: join(directory, "output")
+	};
 	await writeFile(planPath, JSON.stringify(plan));
 	const result = await prepareLafayetteBallotResearch(planPath, async () => guide);
 	assert.equal(result.measures, 3);
@@ -103,12 +176,34 @@ test("bounded offline preparation pins originals, preserves clocks and refuses o
 	assert.equal(report.imported, undefined);
 	await assert.rejects(prepareLafayetteBallotResearch(planPath, async () => guide), /EEXIST/u);
 	assert.deepEqual(await readFile(join(plan.outputDirectory, "research.json")), original);
-	for (const guidePin of [{ ...plan.guide, sha256: "0".repeat(64) }, { ...plan.guide, url: plan.guide.url.replace("Dec2030", "Dec2026") }, { ...plan.guide, url: plan.guide.url.replace("www.oneacadiana.org", "example.org") }, { ...plan.guide, capturedAt: "2099-01-01T00:00:00.000Z" }]) {
-		await writeFile(planPath, JSON.stringify({ ...plan, guide: guidePin, outputDirectory: join(directory, "rejected") }));
+	for (const guidePin of [
+		{
+			...plan.guide,
+			sha256: "0".repeat(64)
+		},
+		{
+			...plan.guide,
+			url: plan.guide.url.replace("Dec2030", "Dec2026")
+		},
+		{
+			...plan.guide,
+			url: plan.guide.url.replace("www.oneacadiana.org", "example.org")
+		},
+		{ ...plan.guide, capturedAt: "2099-01-01T00:00:00.000Z" }
+	]) {
+		await writeFile(planPath, JSON.stringify({
+			...plan,
+			guide: guidePin,
+			outputDirectory: join(directory, "rejected")
+		}));
 		await assert.rejects(prepareLafayetteBallotResearch(planPath, async () => guide));
 	}
 	const alias = join(directory, "alias.pdf");
 	await symlink(pdfPath, alias);
-	await writeFile(planPath, JSON.stringify({ ...plan, guide: { ...plan.guide, path: alias }, outputDirectory: join(directory, "symlink-rejected") }));
+	await writeFile(planPath, JSON.stringify({
+		...plan,
+		guide: { ...plan.guide, path: alias },
+		outputDirectory: join(directory, "symlink-rejected")
+	}));
 	await assert.rejects(prepareLafayetteBallotResearch(planPath, async () => guide));
 });

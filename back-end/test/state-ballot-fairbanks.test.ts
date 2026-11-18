@@ -34,7 +34,10 @@ test("Fairbanks normalizes evidence-derived municipal candidates without voter, 
 	assert.equal(result.records.find(record => record.name === "Morgan Lane")?.voteLimit, 2);
 	assert.equal(new Set(result.records.map(record => record.jurisdiction)).size, 3);
 	assert.equal(buildStateBallotPreview({ source, ...result }, { districtMatches: [] }), null);
-	assert.deepEqual(stateRecordDocumentLinks(source, { source, ...result }), [{ label: "Sample ballot", url: source.documentUrls![1] }, { label: "Election office", url: source.pageUrl }]);
+	assert.deepEqual(stateRecordDocumentLinks(source, { source, ...result }), [
+		{ label: "Sample ballot", url: source.documentUrls![1] },
+		{ label: "Election office", url: source.pageUrl }
+	]);
 	assert.equal(configuredStateBallotSources.find(item => item.id === "ak-doe-2026")?.retrievalPolicy, "manual-snapshot");
 });
 
@@ -47,7 +50,12 @@ test("Fairbanks discovery follows printed future dates and offered URLs with no 
 	}
 	data.capture.index.sha256 = hash(data.capture.index.body);
 	data.native.prepared = readFairbanksBallotCandidates(data.capture, data.documents, data.now);
-	data.body = JSON.stringify({ schemaVersion: 1, type: "fairbanks-candidate-capture", capture: data.capture, native: data.native });
+	data.body = JSON.stringify({
+		schemaVersion: 1,
+		type: "fairbanks-candidate-capture",
+		capture: data.capture,
+		native: data.native
+	});
 	const body = JSON.stringify(data.capture);
 	const catalog = discoverStateBallotElectionCycles(body, source.id, data.now);
 	const future = stateBallotCycleSources(catalog, data.now)[0]!;
@@ -56,7 +64,13 @@ test("Fairbanks discovery follows printed future dates and offered URLs with no 
 	assert.equal(getStateBallotCycleFamily(source.id).format, "fairbanks-pdf");
 	assert.equal(parseFairbanksCandidateCapture(future, data.body, createStateCandidateRecord, data.now).records.length, 5);
 	assert.throws(() => parseFairbanksCandidateCapture(source, data.body, createStateCandidateRecord, data.now), /agreement/u);
-	assert.throws(() => parseStateBallotCycleCatalog({ ...catalog, elections: [...catalog.elections, ...catalog.elections] }, data.now), /duplicated/u);
+	assert.throws(() => parseStateBallotCycleCatalog({
+		...catalog,
+		elections: [
+			...catalog.elections,
+			...catalog.elections
+		]
+	}, data.now), /duplicated/u);
 	const changed = structuredClone(catalog);
 	changed.elections[0]!.fairbanksDocuments![0]!.url = "https://example.com/ballot.pdf";
 	assert.throws(() => parseStateBallotCycleCatalog(changed, data.now), /inventory/u);
@@ -89,14 +103,22 @@ test("Fairbanks collection uses external policy renewal and accepts real acquisi
 				clock += 500;
 				const document = data.capture.documents.find(document => document.url === String(url));
 				assert.ok(document);
-				return { status: 200, contentType: "application/pdf", body: Buffer.from(document.body, "base64"), etag: undefined };
+				return {
+					status: 200,
+					contentType: "application/pdf",
+					body: Buffer.from(document.body, "base64"),
+					etag: undefined
+				};
 			},
 			extractor: async (bytes) => {
 				const document = data.capture.documents.find(document => document.body === bytes.toString("base64"));
 				assert.ok(document);
 				return document.text;
 			},
-			prepare: async (capture, _directory, now) => ({ ...data.native, prepared: readFairbanksBallotCandidates(capture, data.documents, now) })
+			prepare: async (capture, _directory, now) => ({
+				...data.native,
+				prepared: readFairbanksBallotCandidates(capture, data.documents, now)
+			})
 		});
 		assert.equal(requests, 5);
 		assert.equal(readFairbanksCandidateCapture(body, clock).prepared.records.length, 5);
@@ -110,13 +132,30 @@ test("Fairbanks collection uses external policy renewal and accepts real acquisi
 
 test("Fairbanks source configuration keeps exact publisher, municipality and stored-reader boundaries", () => {
 	validateFairbanksSource(Object.fromEntries(Object.entries(source).reverse()) as typeof source);
-	for (const altered of [{ ...source, stateCode: "GA" }, { ...source, countyName: "Anchorage" }, { ...source, ballotPreview: undefined }, { ...source, snapshotStorage: undefined }, { ...source, extra: true }, { ...source, documentUrls: [...source.documentUrls!].reverse() }]) assert.throws(() => validateFairbanksSource(altered as typeof source), /review/u);
+	for (const altered of [
+		{ ...source, stateCode: "GA" },
+		{ ...source, countyName: "Anchorage" },
+		{ ...source, ballotPreview: undefined },
+		{ ...source, snapshotStorage: undefined },
+		{ ...source, extra: true },
+		{
+			...source,
+			documentUrls: [...source.documentUrls!].reverse()
+		}
+	]) assert.throws(() => validateFairbanksSource(altered as typeof source), /review/u);
 	assert.throws(() => fairbanksSource("2027-10-06"), /review/u);
 	assert.throws(() => fairbanksSource("2027-10-05", ["https://example.com/ballot.pdf", source.documentUrls![1]!]), /review/u);
 });
 
 test("Fairbanks capture rejects altered bytes, native facts, geometry, missing rows and unknown evidence", () => {
-	for (const kind of ["pdf", "prepared", "geometry", "mark", "extra", "tools"]) {
+	for (const kind of [
+		"pdf",
+		"prepared",
+		"geometry",
+		"mark",
+		"extra",
+		"tools"
+	]) {
 		const data = JSON.parse(fixture().body);
 		if (kind === "pdf") data.capture.documents[0].sha256 = "0".repeat(64);
 		if (kind === "prepared") data.native.prepared.records[0].name = "Different Person";
@@ -146,8 +185,16 @@ test("Fairbanks private collection retains original clocks and reuses exact unch
 		assert.equal(first, data.body);
 		const later = structuredClone(data.capture);
 		const checkedAt = new Date(data.now + 1000).toISOString();
-		for (const page of [...later.policies, later.index, ...later.documents]) page.checkedAt = page.capturedAt = checkedAt;
-		const second = await fetchFairbanksCandidateCapture(source, { ...options, discovery: JSON.stringify(later), now: () => data.now + 1000 });
+		for (const page of [
+			...later.policies,
+			later.index,
+			...later.documents
+		]) page.checkedAt = page.capturedAt = checkedAt;
+		const second = await fetchFairbanksCandidateCapture(source, {
+			...options,
+			discovery: JSON.stringify(later),
+			now: () => data.now + 1000
+		});
 		const accepted = readFairbanksCandidateCapture(second, data.now + 1000);
 		assert.equal(conversions, 1);
 		assert.ok(accepted.capture.documents.every(document => document.capturedAt === data.capture.documents[0]!.capturedAt && document.checkedAt === checkedAt));
@@ -155,9 +202,17 @@ test("Fairbanks private collection retains original clocks and reuses exact unch
 		const evidenceFiles = (await readdir(directory)).filter(name => name.startsWith("fairbanks-candidates-"));
 		assert.equal(evidenceFiles.length, 1);
 		assert.equal(await readFile(join(directory, evidenceFiles[0]!), "utf8"), first);
-		assert.equal(await fetchFairbanksCandidateCapture(source, { ...options, discovery: JSON.stringify(later), now: () => data.now + 1000 }), second);
+		assert.equal(await fetchFairbanksCandidateCapture(source, {
+			...options,
+			discovery: JSON.stringify(later),
+			now: () => data.now + 1000
+		}), second);
 		assert.equal(conversions, 1);
-		await assert.rejects(fetchFairbanksCandidateCapture(source, { ...options, discovery: JSON.stringify(fixture(2027).capture), now: () => fixture(2027).now }), /selection/u);
+		await assert.rejects(fetchFairbanksCandidateCapture(source, {
+			...options,
+			discovery: JSON.stringify(fixture(2027).capture),
+			now: () => fixture(2027).now
+		}), /selection/u);
 		assert.equal(await readFile(join(directory, "fairbanks-last-capture.json"), "utf8"), second);
 	}
 	finally {
@@ -172,7 +227,12 @@ test("Fairbanks disappearance and converter failure preserve the complete accept
 	const directory = await temporary();
 	try {
 		const data = fixture();
-		const options = { discovery: JSON.stringify(data.capture), scratchDirectory: directory, now: () => data.now, prepare: async () => data.native };
+		const options = {
+			discovery: JSON.stringify(data.capture),
+			scratchDirectory: directory,
+			now: () => data.now,
+			prepare: async () => data.native
+		};
 		const first = await fetchFairbanksCandidateCapture(source, options);
 		const next = fixture();
 		const raw = "%PDF-1.7\nSynthetic changed municipal publication";
@@ -185,7 +245,11 @@ test("Fairbanks disappearance and converter failure preserve the complete accept
 		page.svg = page.svg.replace(fairbanksOval(222, 280), "");
 		next.native.prepared = readFairbanksBallotCandidates(next.capture, next.documents, next.now);
 		assert.equal(next.native.prepared.records.length, 4);
-		await assert.rejects(fetchFairbanksCandidateCapture(source, { ...options, discovery: JSON.stringify(next.capture), prepare: async () => next.native }), /disappeared/u);
+		await assert.rejects(fetchFairbanksCandidateCapture(source, {
+			...options,
+			discovery: JSON.stringify(next.capture),
+			prepare: async () => next.native
+		}), /disappeared/u);
 		await assert.rejects(fetchFairbanksCandidateCapture(source, {
 			...options,
 			discovery: JSON.stringify(next.capture),
@@ -247,7 +311,10 @@ test("Fairbanks snapshot persistence failure keeps serving the prior accepted re
 	try {
 		const data = fixture(2027);
 		const future = fairbanksSource(data.electionDate);
-		const snapshot = { source: future, ...parseFairbanksCandidateCapture(future, data.body, createStateCandidateRecord, data.now) };
+		const snapshot = {
+			source: future,
+			...parseFairbanksCandidateCapture(future, data.body, createStateCandidateRecord, data.now)
+		};
 		const storage = createStateBallotStorage(directory);
 		await storage.write(snapshot);
 		const files = await readdir(directory);
@@ -278,7 +345,11 @@ test("Fairbanks snapshot persistence failure keeps serving the prior accepted re
 		assert.deepEqual(await readFile(`${target}.preserved`), previous);
 		await rm(target, { recursive: true });
 		await rename(`${target}.preserved`, target);
-		assert.equal((await createStateBallotRepository({ sources: [future], dataDirectory: directory, now: () => data.now }).getSnapshot("AK", future.id))?.records.length, 5);
+		assert.equal((await createStateBallotRepository({
+			sources: [future],
+			dataDirectory: directory,
+			now: () => data.now
+		}).getSnapshot("AK", future.id))?.records.length, 5);
 	}
 	finally {
 		await rm(directory, {
@@ -292,15 +363,35 @@ test("Fairbanks snapshots round-trip offline and archived without browser-trigge
 	const directory = await temporary();
 	try {
 		const data = fixture();
-		const snapshot = { source, ...parseFairbanksCandidateCapture(source, data.body, createStateCandidateRecord, data.now) };
+		const snapshot = {
+			source,
+			...parseFairbanksCandidateCapture(source, data.body, createStateCandidateRecord, data.now)
+		};
 		const storage = createStateBallotStorage(directory);
 		await storage.write(snapshot);
 		const body = serializeStoredStateSnapshot(snapshot);
 		assert.deepEqual(parseBundledStateSnapshot(source, body, "automatic").records, JSON.parse(JSON.stringify(snapshot.records)));
-		for (const field of ["collectionIndexSha256", "jurisdiction", "scope", "party", "termYears", "voteLimit"]) {
+		for (const field of [
+			"collectionIndexSha256",
+			"jurisdiction",
+			"scope",
+			"party",
+			"termYears",
+			"voteLimit"
+		]) {
 			const altered = JSON.parse(body);
-			if (field === "collectionIndexSha256") altered[field] = "0".repeat(64);
-			else altered.records[0][field] = { jurisdiction: "Anchorage", scope: "statewide", party: "Democratic", termYears: 12, voteLimit: 50 }[field];
+			if (field === "collectionIndexSha256") {
+				altered[field] = "0".repeat(64);
+			}
+			else {
+				altered.records[0][field] = {
+					jurisdiction: "Anchorage",
+					scope: "statewide",
+					party: "Democratic",
+					termYears: 12,
+					voteLimit: 50
+				}[field];
+			}
 			assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify(altered), "automatic"), /review|invalid/u, field);
 		}
 		let requests = 0;
@@ -330,13 +421,23 @@ test("Fairbanks transport and format failures retain available last-good snapsho
 	try {
 		const data = fixture(2027);
 		const future = fairbanksSource(data.electionDate);
-		const snapshot = { source: future, ...parseFairbanksCandidateCapture(future, data.body, createStateCandidateRecord, data.now) };
+		const snapshot = {
+			source: future,
+			...parseFairbanksCandidateCapture(future, data.body, createStateCandidateRecord, data.now)
+		};
 		await createStateBallotStorage(directory).write(snapshot);
 		for (const failure of ["transport", "format"]) {
-			const repository = createStateBallotRepository({ sources: [future], dataDirectory: directory, ttlMs: 1, now: () => data.now + 3600000, collectionIndexSha256: { [future.id]: snapshot.collectionIndexSha256 }, fetchText: async () => {
-				if (failure === "transport") throw new Error("Publisher unavailable");
-				return "{}";
-			} });
+			const repository = createStateBallotRepository({
+				sources: [future],
+				dataDirectory: directory,
+				ttlMs: 1,
+				now: () => data.now + 3600000,
+				collectionIndexSha256: { [future.id]: snapshot.collectionIndexSha256 },
+				fetchText: async () => {
+					if (failure === "transport") throw new Error("Publisher unavailable");
+					return "{}";
+				}
+			});
 			assert.deepEqual((await repository.getSnapshot("AK", future.id))?.records, JSON.parse(JSON.stringify(snapshot.records)));
 			assert.ok((await repository.inspectSources!())[0]?.failure);
 		}
@@ -353,7 +454,14 @@ test("Fairbanks future-cycle synchronization preserves accepted catalogs through
 	const directory = await temporary();
 	try {
 		const data = fixture(2027);
-		const options = { familyId: source.id, catalogPath: join(directory, "catalog.json"), dataDirectory: join(directory, "snapshots"), fetchDiscovery: async () => JSON.stringify(data.capture), fetchCandidates: async () => data.body, now: () => data.now };
+		const options = {
+			familyId: source.id,
+			catalogPath: join(directory, "catalog.json"),
+			dataDirectory: join(directory, "snapshots"),
+			fetchDiscovery: async () => JSON.stringify(data.capture),
+			fetchCandidates: async () => data.body,
+			now: () => data.now
+		};
 		const result = await syncStateBallotCycles(options);
 		assert.deepEqual(result.results.map(item => item.status), ["available"]);
 		assert.equal(result.results[0]!.records, 5);
@@ -364,12 +472,19 @@ test("Fairbanks future-cycle synchronization preserves accepted catalogs through
 				throw new Error("Publisher unavailable");
 			}
 		}), /Publisher unavailable/u);
-		await assert.rejects(syncStateBallotCycles({ ...options, fetchDiscovery: async () => JSON.stringify(fixture().capture) }), /active.*disappeared/u);
+		await assert.rejects(syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => JSON.stringify(fixture().capture)
+		}), /active.*disappeared/u);
 		const altered = structuredClone(data.capture);
 		const bytes = "%PDF-1.7\nSynthetic updated publication";
 		altered.documents[0]!.body = Buffer.from(bytes).toString("base64");
 		altered.documents[0]!.sha256 = hash(bytes);
-		await assert.rejects(syncStateBallotCycles({ ...options, fetchDiscovery: async () => JSON.stringify(altered), fetchCandidates: async () => "{}" }), /collection failed/u);
+		await assert.rejects(syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => JSON.stringify(altered),
+			fetchCandidates: async () => "{}"
+		}), /collection failed/u);
 		assert.equal(await readFile(options.catalogPath, "utf8"), accepted);
 		const repeated = await syncStateBallotCycles(options);
 		assert.equal(repeated.results[0]!.records, 5);

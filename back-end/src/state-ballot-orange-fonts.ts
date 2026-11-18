@@ -17,7 +17,9 @@ export function orangeUnicodeMappings(body: string, name: string) {
 	if (!envelope) return reject();
 	const lower = Number.parseInt(envelope[1]!, 16);
 	const upper = Number.parseInt(envelope[2]!, 16);
-	const entries = [...envelope[4]!.matchAll(/<([\da-f]{2})> <([\da-f]{2})> <([\da-f]{4})>/giu)];
+	const entries = [
+		...envelope[4]!.matchAll(/<([\da-f]{2})> <([\da-f]{2})> <([\da-f]{4})>/giu)
+	];
 	if (lower > upper || entries.length !== Number(envelope[3]) || !entries.length || entries.length > 224 || envelope[4]!.replace(/<[\da-f]{2}> <[\da-f]{2}> <[\da-f]{4}>/giu, "").trim()) return reject();
 	const mappings = new Map<number, string>();
 	const decoder = new TextDecoder("windows-1252");
@@ -28,7 +30,13 @@ export function orangeUnicodeMappings(body: string, name: string) {
 		mappings.set(code, entry[3]!.toLowerCase());
 	}
 	if (!mappings.has(lower) || !mappings.has(upper) || Math.max(...mappings.keys()) !== upper) return reject();
-	return { mappings, declaredCodeSpace: [lower, upper], mappingsOutsideDeclaredCodeSpace: [...mappings.keys()].filter(code => code < lower || code > upper).length };
+	return {
+		mappings,
+		declaredCodeSpace: [lower, upper],
+		mappingsOutsideDeclaredCodeSpace: [
+			...mappings.keys()
+		].filter(code => code < lower || code > upper).length
+	};
 }
 export function readOrangePdfFontPrograms(body: string) {
 	if (Buffer.byteLength(body) > 8 * 1024 * 1024) return reject();
@@ -59,7 +67,18 @@ export function readOrangePdfFontPrograms(body: string) {
 			pending.push(...item);
 		}
 		else if (plain(item)) {
-			if (Object.keys(item).some(key => ["/JS", "/JavaScript", "/OpenAction", "/AA", "/AcroForm", "/XFA", "/Encrypt", "/Annots"].includes(key))) return reject();
+			if (Object.keys(item).some(key => [
+				"/JS",
+				"/JavaScript",
+				"/OpenAction",
+				"/AA",
+				"/AcroForm",
+				"/XFA",
+				"/Encrypt",
+				"/Annots"
+			].includes(key))) {
+				return reject();
+			}
 			pending.push(...Object.values(item));
 		}
 	}
@@ -78,15 +97,42 @@ export function readOrangePdfFontPrograms(body: string) {
 			if (references.has(reference)) continue;
 			references.add(reference);
 			const font = resolved(reference);
-			if (!plain(font) || font["/Type"] !== "/Font" || font["/Subtype"] !== "/TrueType" || Object.keys(font).some(key => !["/BaseFont", "/FirstChar", "/FontDescriptor", "/LastChar", "/Name", "/Subtype", "/ToUnicode", "/Type", "/Widths"].includes(key))) return reject();
+			if (!plain(font) || font["/Type"] !== "/Font" || font["/Subtype"] !== "/TrueType" || Object.keys(font).some(key => ![
+				"/BaseFont",
+				"/FirstChar",
+				"/FontDescriptor",
+				"/LastChar",
+				"/Name",
+				"/Subtype",
+				"/ToUnicode",
+				"/Type",
+				"/Widths"
+			].includes(key))) {
+				return reject();
+			}
 			const name = resolved(font["/BaseFont"]);
 			const descriptor = resolved(font["/FontDescriptor"]);
 			const widths = resolved(font["/Widths"]);
-			if (typeof name !== "string" || !/^\/[A-Z]{6}\+Arial(?:-BoldItalic|-Unicode-MS-Bold|-Italic|-Bold)?$/u.test(name) || !plain(descriptor) || descriptor["/Type"] !== "/FontDescriptor" || resolved(descriptor["/FontName"]) !== name || descriptor["/Flags"] !== (name.endsWith("Italic") ? 69 : 5) || descriptor["/ItalicAngle"] !== (name.endsWith("Italic") ? -12 : 0) || descriptor["/FontFile"] || descriptor["/FontFile3"] || !Number.isInteger(font["/FirstChar"]) || !Number.isInteger(font["/LastChar"]) || Number(font["/FirstChar"]) < 32 || Number(font["/LastChar"]) > 255 || !Array.isArray(widths) || widths.length !== Number(font["/LastChar"]) - Number(font["/FirstChar"]) + 1 || widths.some(value => typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 4000)) return reject();
+			if (typeof name !== "string" || !/^\/[A-Z]{6}\+Arial(?:-BoldItalic|-Unicode-MS-Bold|-Italic|-Bold)?$/u.test(name) || !plain(descriptor) || descriptor["/Type"] !== "/FontDescriptor" || resolved(descriptor["/FontName"]) !== name || descriptor["/Flags"] !== (name.endsWith("Italic")
+				? 69
+				: 5) || descriptor["/ItalicAngle"] !== (name.endsWith("Italic")
+				? -12
+				: 0) || descriptor["/FontFile"] || descriptor["/FontFile3"] || !Number.isInteger(font["/FirstChar"]) || !Number.isInteger(font["/LastChar"]) || Number(font["/FirstChar"]) < 32 || Number(font["/LastChar"]) > 255 || !Array.isArray(widths) || widths.length !== Number(font["/LastChar"]) - Number(font["/FirstChar"]) + 1 || widths.some(value => typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 4000)) {
+				return reject();
+			}
 			const mapping = orangeUnicodeMappings(stream(font["/ToUnicode"]).toString("ascii"), name.slice(1));
-			if ([...mapping.mappings.keys()].some(code => code < Number(font["/FirstChar"]) || code > Number(font["/LastChar"]) || !widths[code - Number(font["/FirstChar"])])) return reject();
+			if ([
+				...mapping.mappings.keys()
+			].some(code => code < Number(font["/FirstChar"]) || code > Number(font["/LastChar"]) || !widths[code - Number(font["/FirstChar"])])) {
+				return reject();
+			}
 			const bytes = stream(descriptor["/FontFile2"]);
-			programs.push({ name, program: chicagoFontProgram(bytes, nycSymbolFontMappings(bytes, mapping.mappings), "nyc"), declaredCodeSpace: mapping.declaredCodeSpace, mappingsOutsideDeclaredCodeSpace: mapping.mappingsOutsideDeclaredCodeSpace });
+			programs.push({
+				name,
+				program: chicagoFontProgram(bytes, nycSymbolFontMappings(bytes, mapping.mappings), "nyc"),
+				declaredCodeSpace: mapping.declaredCodeSpace,
+				mappingsOutsideDeclaredCodeSpace: mapping.mappingsOutsideDeclaredCodeSpace
+			});
 		}
 	}
 	if (programs.length !== 5 || new Set(programs.map(item => item.name.replace(/^\/[A-Z]{6}\+/u, ""))).size !== 5) return reject();
@@ -95,5 +141,9 @@ export function readOrangePdfFontPrograms(body: string) {
 export function inspectOrangePdfFonts(body: string) {
 	const programs = readOrangePdfFontPrograms(body);
 	for (const item of programs) validateChicagoFontProgram(item.program, orangeGlyphApprovals);
-	return { fonts: programs.length, mappedCharacters: programs.reduce((sum, item) => sum + item.program.characters.length, 0), mappingsOutsideDeclaredCodeSpace: programs.reduce((sum, item) => sum + item.mappingsOutsideDeclaredCodeSpace, 0) };
+	return {
+		fonts: programs.length,
+		mappedCharacters: programs.reduce((sum, item) => sum + item.program.characters.length, 0),
+		mappingsOutsideDeclaredCodeSpace: programs.reduce((sum, item) => sum + item.mappingsOutsideDeclaredCodeSpace, 0)
+	};
 }

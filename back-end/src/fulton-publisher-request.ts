@@ -6,7 +6,12 @@ import { setTimeout } from "node:timers/promises";
 import { acquireStateBallotAutomationLock } from "./state-ballot-automation-lock.js";
 import { assertExternalStateDataDirectory, readBoundedStateDataBytes } from "./state-ballot-storage.js";
 
-export const fultonPublisherRequestPolicy = { minimumIntervalMs: 11000, maximumWaitMs: 30000, maximumInitializationWaitMs: 2000, maximumEntries: 16 } as const;
+export const fultonPublisherRequestPolicy = {
+	minimumIntervalMs: 11000,
+	maximumWaitMs: 30000,
+	maximumInitializationWaitMs: 2000,
+	maximumEntries: 16
+} as const;
 interface Options { directory?: string; now?: () => number; pause?: (milliseconds: number) => Promise<unknown>; maximumWaitMs?: number }
 interface Attempt { schemaVersion: 1; publisher: "fultoncountyga.gov"; lastStartedAt: string; finishedAt: string | null; attempts: number }
 
@@ -36,7 +41,10 @@ async function persist(directory: string, attempt: Attempt) {
 async function complete(directory: string, attempt: Attempt, now: () => number) {
 	const finishedAt = now();
 	if (!Number.isSafeInteger(finishedAt) || finishedAt < Date.parse(attempt.lastStartedAt) || finishedAt > 8640000000000000) throw new Error("The Fulton request completion clock requires review.");
-	await persist(directory, { ...attempt, finishedAt: new Date(finishedAt).toISOString() });
+	await persist(directory, {
+		...attempt,
+		finishedAt: new Date(finishedAt).toISOString()
+	});
 }
 
 async function inventory(directory: string) {
@@ -103,14 +111,22 @@ export async function coordinateFultonPublisherRequest<Result>(work: () => Promi
 		catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
 		if (initialized && !previous) throw new Error("The Fulton request journal is missing and requires review.");
 		if (previous) {
-			const after = previous.finishedAt === null ? now() : Date.parse(previous.finishedAt);
+			const after = previous.finishedAt === null
+				? now()
+				: Date.parse(previous.finishedAt);
 			const remaining = after + fultonPublisherRequestPolicy.minimumIntervalMs - now();
 			if (remaining > 0) await (options.pause ?? setTimeout)(remaining);
 			if (now() < after + fultonPublisherRequestPolicy.minimumIntervalMs) throw new Error("The Fulton publisher interval has not elapsed.");
 		}
 		const startedAt = now();
 		if (!Number.isSafeInteger(startedAt) || startedAt < 0 || startedAt > 8640000000000000) throw new Error("The Fulton request clock requires review.");
-		const attempt: Attempt = { schemaVersion: 1, publisher: "fultoncountyga.gov", lastStartedAt: new Date(startedAt).toISOString(), finishedAt: null, attempts: (previous?.attempts ?? 0) + 1 };
+		const attempt: Attempt = {
+			schemaVersion: 1,
+			publisher: "fultoncountyga.gov",
+			lastStartedAt: new Date(startedAt).toISOString(),
+			finishedAt: null,
+			attempts: (previous?.attempts ?? 0) + 1
+		};
 		await persist(canonical, attempt);
 		if (!initialized) {
 			const marker = await open(join(canonical, "initialized"), "wx", 0o600);

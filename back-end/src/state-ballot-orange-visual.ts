@@ -20,8 +20,13 @@ function rgb(value: string) {
 	return match.slice(1).map(value => Math.round(Number(value) * 255 / 100));
 }
 function contrast(first: number[], second: number[]) {
-	const luminance = (color: number[]) => color.map(value => value / 255).map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4).reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index]!, 0);
-	const values = [luminance(first), luminance(second)].sort((left, right) => left - right);
+	const luminance = (color: number[]) => color.map(value => value / 255).map(value => value <= 0.04045
+		? value / 12.92
+		: ((value + 0.055) / 1.055) ** 2.4).reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index]!, 0);
+	const values = [
+		luminance(first),
+		luminance(second)
+	].sort((left, right) => left - right);
 	return (values[1]! + 0.05) / (values[0]! + 0.05);
 }
 function attributes(node: StateHtmlNode, allowed: string[]) {
@@ -30,7 +35,9 @@ function attributes(node: StateHtmlNode, allowed: string[]) {
 export function inspectOrangeProofVisual(native: readonly OrangeProofField[], svg: string, page: number, approvals: Catalog = orangeSvgGlyphApprovals) {
 	if (!native.length || !Number.isInteger(page) || page < 1 || page > 256 || Buffer.byteLength(svg) > 2 * 1024 * 1024 || !svg.trimEnd().endsWith("</svg>")) return reject("page bounds");
 	const dom = parseStateHtml(svg);
-	const bounded = [{ node: dom, depth: 0 }];
+	const bounded = [
+		{ node: dom, depth: 0 }
+	];
 	let nodes = 0;
 	while (bounded.length) {
 		const item = bounded.pop()!;
@@ -47,8 +54,19 @@ export function inspectOrangeProofVisual(native: readonly OrangeProofField[], sv
 		attributes(node, ["id"]);
 		if (node.nodeName !== "g" || paths.length > 1 || descendants(node, child => !["#text", "path"].includes(child.nodeName)).length) return reject("glyph definition");
 		for (const path of paths) attributes(path, ["d"]);
-		const path = paths[0] ? attribute(paths[0], "d") : "";
-		return [attribute(node, "id"), { path, sha256: createHash("sha256").update(path).digest("hex"), bounds: path.trim() ? glyphBounds(path) : [0, 0, 0, 0] }] as const;
+		const path = paths[0]
+			? attribute(paths[0], "d")
+			: "";
+		return [
+			attribute(node, "id"),
+			{
+				path,
+				sha256: createHash("sha256").update(path).digest("hex"),
+				bounds: path.trim()
+					? glyphBounds(path)
+					: [0, 0, 0, 0]
+			}
+		] as const;
 	}));
 	const clips = new Map(identified.filter(node => node.nodeName.toLowerCase() === "clippath").map((node) => {
 		attributes(node, ["id"]);
@@ -57,19 +75,48 @@ export function inspectOrangeProofVisual(native: readonly OrangeProofField[], sv
 		attributes(paths[0]!, ["d", "clip-rule"]);
 		const shapes = orangeRuleShapes(attribute(paths[0]!, "d"));
 		if (shapes.length !== 1 || !shapes[0]!.closed) return reject("clip rectangle");
-		return [attribute(node, "id"), shapes[0]!.box] as const;
+		return [
+			attribute(node, "id"),
+			shapes[0]!.box
+		] as const;
 	}));
 	const images = new Map<string, number>(identified.filter(node => node.nodeName === "image").map((node) => {
-		attributes(node, ["id", "x", "y", "width", "height", "href"]);
+		attributes(node, [
+			"id",
+			"x",
+			"y",
+			"width",
+			"height",
+			"href"
+		]);
 		const match = /^data:image\/png;base64,([A-Za-z0-9+/]*={0,2})$/u.exec(attribute(node, "href"));
 		if (!match || attribute(node, "x") !== "0" || attribute(node, "y") !== "0" || attribute(node, "width") !== "93" || attribute(node, "height") !== "93" || createHash("sha256").update(Buffer.from(match[1]!, "base64")).digest("hex") !== "f153e7f1bab63717802dc8dd7c995c34da3f47a7bc90942ba0198c49980f9622") return reject("header seal");
-		return [attribute(node, "id"), 0] as const;
+		return [
+			attribute(node, "id"),
+			0
+		] as const;
 	}));
 	if (identified.length !== definitions.size + clips.size + images.size || images.size !== Number(page === 1)) return reject("definition inventory");
-	const fields = native.map(field => ({ ...field, box: [field.left / 1.5, field.top / 1.5, (field.left + field.width) / 1.5, (field.top + field.height) / 1.5], glyphs: [] as Glyph[] }));
+	const fields = native.map(field => ({
+		...field,
+		box: [
+			field.left / 1.5,
+			field.top / 1.5,
+			(field.left + field.width) / 1.5,
+			(field.top + field.height) / 1.5
+		],
+		glyphs: [] as Glyph[]
+	}));
 	const paints: { box: number[]; paint: number; color: number[]; stroke: boolean }[] = [];
 	const reinforcements: { commands: ReturnType<typeof orangePathCommands>; paint: number }[] = [];
-	const pending = [{ node: root, clipping: [] as number[][], color: [0, 0, 0], parent: undefined as StateHtmlNode | undefined }];
+	const pending = [
+		{
+			node: root,
+			clipping: [] as number[][],
+			color: [0, 0, 0],
+			parent: undefined as StateHtmlNode | undefined
+		}
+	];
 	let visited = 0;
 	let paint = 0;
 	while (pending.length) {
@@ -79,7 +126,9 @@ export function inspectOrangeProofVisual(native: readonly OrangeProofField[], sv
 		if (++visited > 60000) return reject("node bounds");
 		if (tag === "defs") {
 			attributes(node, []);
-			const children = (node.childNodes ?? []).flatMap(child => child.nodeName === "g" && !child.attrs?.length ? child.childNodes ?? [] : [child]);
+			const children = (node.childNodes ?? []).flatMap(child => child.nodeName === "g" && !child.attrs?.length
+				? child.childNodes ?? []
+				: [child]);
 			if (children.some(child => child.nodeName !== "#text" && !identified.includes(child))) return reject("definition structure");
 			continue;
 		}
@@ -95,8 +144,18 @@ export function inspectOrangeProofVisual(native: readonly OrangeProofField[], sv
 			if (tag !== "g" || !/^url\(#clip-\d+\)$/u.test(clip) || !box || clipping.length >= 8) return reject("clip reference");
 			clipping.push(box);
 		}
-		const color = attribute(node, "fill") && attribute(node, "fill") !== "none" ? rgb(attribute(node, "fill")) : item.color;
-		if (tag === "svg") attributes(node, ["xmlns", "xlink", "width", "height", "viewBox"]);
+		const color = attribute(node, "fill") && attribute(node, "fill") !== "none"
+			? rgb(attribute(node, "fill"))
+			: item.color;
+		if (tag === "svg") {
+			attributes(node, [
+				"xmlns",
+				"xlink",
+				"width",
+				"height",
+				"viewBox"
+			]);
+		}
 		if (tag === "g") {
 			attributes(node, ["fill", "fill-opacity", "clip-path"]);
 			if (attribute(node, "fill") === "none") return reject("hidden text fill");
@@ -112,7 +171,13 @@ export function inspectOrangeProofVisual(native: readonly OrangeProofField[], sv
 				const matches = fields.filter(field => left >= field.box[0]! - 0.75 && left < field.box[2]! + 0.75 && top >= field.box[1]! - 0.75 && top <= field.box[3]! + 0.75).sort((first, second) => second.left - first.left);
 				if (!matches.length || (matches.length > 1 && matches[0]!.left === matches[1]!.left)) return reject("glyph assignment");
 				const field = matches[0]!;
-				const expected = [1, 13, 14].includes(field.font) ? [0, 0, 255] : [3, 4].includes(field.font) ? [255, 255, 255] : field.font === 6 ? [128, 0, 0] : [0, 0, 0];
+				const expected = [1, 13, 14].includes(field.font)
+					? [0, 0, 255]
+					: [3, 4].includes(field.font)
+							? [255, 255, 255]
+							: field.font === 6
+								? [128, 0, 0]
+								: [0, 0, 0];
 				if (color.join(",") !== expected.join(",")) return reject("text color");
 				for (const use of uses) {
 					attributes(use, ["href", "x", "y"]);
@@ -121,7 +186,18 @@ export function inspectOrangeProofVisual(native: readonly OrangeProofField[], sv
 					const baseline = Number(attribute(use, "y"));
 					if (![origin, baseline].every(Number.isFinite) || Math.abs(baseline - top) > 0.01 || origin < field.box[0]! - 0.75 || origin > field.box[2]! + 0.75) return reject("glyph position");
 					if (definition.bounds[2]! <= definition.bounds[0]! || definition.bounds[3]! <= definition.bounds[1]!) continue;
-					field.glyphs.push({ left: origin, top: baseline, ink: definition.bounds.map((value, index) => value + (index % 2 ? baseline : origin)), clipping, sha256: definition.sha256, path: definition.path, paint: ++paint, color });
+					field.glyphs.push({
+						left: origin,
+						top: baseline,
+						ink: definition.bounds.map((value, index) => value + (index % 2
+							? baseline
+							: origin)),
+						clipping,
+						sha256: definition.sha256,
+						path: definition.path,
+						paint: ++paint,
+						color
+					});
 				}
 			}
 		}
@@ -132,7 +208,12 @@ export function inspectOrangeProofVisual(native: readonly OrangeProofField[], sv
 				const match = /^matrix\(([\d.]+), 0, 0, ([\d.]+), ([\d.]+), ([\d.]+)\)$/u.exec(attribute(node, "transform"));
 				if (!match || images.get(reference)) return reject("seal placement");
 				const [horizontal, vertical, left, top] = match.slice(1).map(Number);
-				const box = [left!, top!, left! + horizontal! * 93, top! + vertical! * 93];
+				const box = [
+					left!,
+					top!,
+					left! + horizontal! * 93,
+					top! + vertical! * 93
+				];
 				if (horizontal! < 0.2905 || horizontal! > 0.2907 || vertical! < 0.2716 || vertical! > 0.2718 || left! < 24.4 || left! > 24.6 || top! < 23 || top! > 23.3 || fields.some(field => overlaps(box, field.box))) return reject("seal bounds");
 				images.set(reference, 1);
 			}
@@ -143,19 +224,54 @@ export function inspectOrangeProofVisual(native: readonly OrangeProofField[], sv
 		}
 		if (tag === "path") {
 			const stroke = attribute(node, "fill") === "none";
-			attributes(node, stroke ? ["fill", "stroke-width", "stroke-linecap", "stroke-linejoin", "stroke", "stroke-opacity", "stroke-miterlimit", "d"] : ["fill-rule", "fill", "fill-opacity", "d"]);
+			attributes(node, stroke
+				? [
+						"fill",
+						"stroke-width",
+						"stroke-linecap",
+						"stroke-linejoin",
+						"stroke",
+						"stroke-opacity",
+						"stroke-miterlimit",
+						"d"
+					]
+				: [
+						"fill-rule",
+						"fill",
+						"fill-opacity",
+						"d"
+					]);
 			if (stroke) {
 				if (attribute(node, "stroke") !== "rgb(0%, 0%, 0%)" || attribute(node, "stroke-opacity") !== "1" || attribute(node, "stroke-linejoin") !== "miter" || attribute(node, "stroke-miterlimit") !== "10") return reject("stroke paint");
 				if (attribute(node, "stroke-width") === "0.3" && attribute(node, "stroke-linecap") === "butt") {
-					reinforcements.push({ commands: orangePathCommands(attribute(node, "d")), paint: ++paint });
+					reinforcements.push({
+						commands: orangePathCommands(attribute(node, "d")),
+						paint: ++paint
+					});
 				}
 				else {
 					if (!["0.12", "0.5", "1"].includes(attribute(node, "stroke-width")) || attribute(node, "stroke-linecap") !== "square") return reject("rule stroke");
 					const width = Number(attribute(node, "stroke-width"));
 					for (const shape of orangeRuleShapes(attribute(node, "d"))) {
 						const [left, top, right, bottom] = shape.box;
-						const segments = shape.closed ? [[left!, top!, right!, top!], [left!, bottom!, right!, bottom!], [left!, top!, left!, bottom!], [right!, top!, right!, bottom!]] : [shape.box];
-						for (const segment of segments) paints.push({ box: segment.map((value, index) => value + (index < 2 ? -width / 2 : width / 2)), paint: ++paint, color: [0, 0, 0], stroke: true });
+						const segments = shape.closed
+							? [
+									[left!, top!, right!, top!],
+									[left!, bottom!, right!, bottom!],
+									[left!, top!, left!, bottom!],
+									[right!, top!, right!, bottom!]
+								]
+							: [shape.box];
+						for (const segment of segments) {
+							paints.push({
+								box: segment.map((value, index) => value + (index < 2
+									? -width / 2
+									: width / 2)),
+								paint: ++paint,
+								color: [0, 0, 0],
+								stroke: true
+							});
+						}
 					}
 				}
 			}
@@ -163,11 +279,25 @@ export function inspectOrangeProofVisual(native: readonly OrangeProofField[], sv
 				if (color[0] !== color[1] || color[1] !== color[2]) return reject("background paint");
 				for (const shape of orangeRuleShapes(attribute(node, "d"))) {
 					if (!shape.closed) return reject("background rectangle");
-					paints.push({ box: shape.box, paint: ++paint, color, stroke: false });
+					paints.push({
+						box: shape.box,
+						paint: ++paint,
+						color,
+						stroke: false
+					});
 				}
 			}
 		}
-		for (const child of [...node.childNodes ?? []].reverse()) pending.push({ node: child, clipping, color, parent: node });
+		for (const child of [
+			...node.childNodes ?? []
+		].reverse()) {
+			pending.push({
+				node: child,
+				clipping,
+				color,
+				parent: node
+			});
+		}
 	}
 	const clippedSourceDistrictLabels: { left: number; top: number; visibleCharacters: number; renderedCharacters: number; sourceCharacters: number }[] = [];
 	let nonspaceGlyphs = 0;
@@ -195,7 +325,15 @@ export function inspectOrangeProofVisual(native: readonly OrangeProofField[], sv
 			if (contrast(glyph.color, covering?.color ?? [255, 255, 255]) < 4.5 || intersecting.some(item => item.paint > (covering?.paint ?? 0) && contrast(glyph.color, item.color) < 4.5)) return reject(`substantive contrast on page ${page}, font ${field.font}`);
 			nonspaceGlyphs++;
 		}
-		if (cropped || partialInkFrom !== undefined) clippedSourceDistrictLabels.push({ left: field.left, top: field.top, visibleCharacters: partialInkFrom ?? field.glyphs.length, renderedCharacters: field.glyphs.length, sourceCharacters: characters.length });
+		if (cropped || partialInkFrom !== undefined) {
+			clippedSourceDistrictLabels.push({
+				left: field.left,
+				top: field.top,
+				visibleCharacters: partialInkFrom ?? field.glyphs.length,
+				renderedCharacters: field.glyphs.length,
+				sourceCharacters: characters.length
+			});
+		}
 	}
 	const captions = fields.filter(field => field.font === 5);
 	if (reinforcements.length !== captions.length) return reject("caption stroke inventory");
@@ -203,6 +341,19 @@ export function inspectOrangeProofVisual(native: readonly OrangeProofField[], sv
 		const expected = field.glyphs.flatMap(glyph => orangePathCommands(glyph.path, glyph.left, glyph.top));
 		if (!orangeStrokeMatches(reinforcements[index]!.commands, expected)) return reject("caption stroke outline");
 	}
-	if ([...images.values()].some(count => count !== 1)) return reject("seal inventory");
-	return { svgSha256: createHash("sha256").update(svg).digest("hex"), fields: fields.length, nonspaceGlyphs, fullInkClips, captionStrokes: captions.length, clippedSourceDistrictLabels, sourceDistrictLabelsApprovedForBallotMatching: false as const, headerSeals: images.size };
+	if ([
+		...images.values()
+	].some(count => count !== 1)) {
+		return reject("seal inventory");
+	}
+	return {
+		svgSha256: createHash("sha256").update(svg).digest("hex"),
+		fields: fields.length,
+		nonspaceGlyphs,
+		fullInkClips,
+		captionStrokes: captions.length,
+		clippedSourceDistrictLabels,
+		sourceDistrictLabelsApprovedForBallotMatching: false as const,
+		headerSeals: images.size
+	};
 }

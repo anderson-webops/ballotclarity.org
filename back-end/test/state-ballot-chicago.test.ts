@@ -46,7 +46,10 @@ test("Chicago keeps repeated question text separate for each printed audience", 
 	assert.equal(result.questions.length, 2);
 	assert.notEqual(result.questions[0]!.id, result.questions[1]!.id);
 	assert.equal(result.questions[0]!.officialText, result.questions[1]!.officialText);
-	assert.deepEqual(result.questions.map(question => question.pages), [[1], [2]]);
+	assert.deepEqual(result.questions.map(question => question.pages), [
+		[1],
+		[2]
+	]);
 	assert(result.questions.every(question => question.explicitlyAdvisory && !question.voterApplicabilityVerified));
 	assert.throws(() => parse(chicagoFixture(2026, true).replace("the 2nd Ward", "the 1st Ward")), /inventory/u);
 });
@@ -59,7 +62,14 @@ test("Chicago reuses matching future dates without guessing publication or certi
 });
 
 test("Chicago holds changed status, incomplete choices, duplicate ballot positions and unknown offices", () => {
-	for (const body of [chicagoFixture().replace(">Candidate</text>", ">Pending</text>"), chicagoFixture().replace("(202)", "(203)"), chicagoFixture().replace("(2)", "(1)"), chicagoFixture().replace("United States Senator", "Unknown office"), chicagoFixture().replace("Page 1 of 1", "Page 1 of 2"), chicagoFixture().replace("Candidate Filings in Ballot Order, November 3, 2026", "Other election")]) assert.throws(() => parse(body), /review/u);
+	for (const body of [
+		chicagoFixture().replace(">Candidate</text>", ">Pending</text>"),
+		chicagoFixture().replace("(202)", "(203)"),
+		chicagoFixture().replace("(2)", "(1)"),
+		chicagoFixture().replace("United States Senator", "Unknown office"),
+		chicagoFixture().replace("Page 1 of 1", "Page 1 of 2"),
+		chicagoFixture().replace("Candidate Filings in Ballot Order, November 3, 2026", "Other election")
+	]) assert.throws(() => parse(body), /review/u);
 });
 
 test("Chicago native boundaries reject images, nonfooter Arial text and invalid geometry", () => {
@@ -82,14 +92,27 @@ test("Chicago visual verification conserves every visible field and rejects hidd
 });
 
 test("Chicago font approval survives subset changes and binds letters to actual glyph programs", () => {
-	const mappings = new Map([[1, "0020"], [2, "0041"], [3, "0042"], [4, "00c0"]]);
+	const mappings = new Map([
+		[1, "0020"],
+		[2, "0041"],
+		[3, "0042"],
+		[4, "00c0"]
+	]);
 	const original = chicagoFontProgram(chicagoFontFixture(), mappings);
-	const approved: Record<string, ChicagoGlyphApproval> = { [original.signature]: { glyphs: {}, components: original.components } };
+	const approved: Record<string, ChicagoGlyphApproval> = {
+		[original.signature]: { glyphs: {}, components: original.components }
+	};
 	for (const character of original.characters) approved[original.signature]!.glyphs[character.unicode] = [character.sha256];
 	validateChicagoFontProgram(original, approved);
-	const subset = chicagoFontProgram(chicagoFontFixture(true), new Map([[1, "0020"], [2, "0041"]]));
+	const subset = chicagoFontProgram(chicagoFontFixture(true), new Map([
+		[1, "0020"],
+		[2, "0041"]
+	]));
 	validateChicagoFontProgram(subset, approved);
-	const reordered = chicagoFontProgram(chicagoFontFixture(false, true), new Map([[2, "0042"], [3, "0041"]]));
+	const reordered = chicagoFontProgram(chicagoFontFixture(false, true), new Map([
+		[2, "0042"],
+		[3, "0041"]
+	]));
 	validateChicagoFontProgram(reordered, approved);
 	assert.throws(() => validateChicagoFontProgram(chicagoFontProgram(chicagoFontFixture(false, true), mappings), approved), /review/u);
 	const composite = structuredClone(original);
@@ -104,6 +127,11 @@ test("Chicago Unicode maps reject conflicting, multi-codepoint and control-chara
 	const prefix = "/CIDInit /ProcSet findresource begin 12 dict begin begincmap /CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def /CMapName /Adobe-Identity-UCS def /CMapType 2 def 1 begincodespacerange <0000> <FFFF> endcodespacerange ";
 	const suffix = " endcmap CMapName currentdict /CMap defineresource pop end end";
 	assert.equal(chicagoUnicodeMappings(`${prefix}1 beginbfchar <0002> <0041> endbfchar${suffix}`).get(2), "0041");
-	for (const middle of ["2 beginbfchar <0002> <0041> <0002> <0042> endbfchar", "1 beginbfchar <0002> <0000> endbfchar", "1 beginbfchar <0002> <00410042> endbfchar", "1 beginbfrange <0001> <0002> <0041> endbfrange"]) assert.throws(() => chicagoUnicodeMappings(prefix + middle + suffix), /review/u);
+	for (const middle of [
+		"2 beginbfchar <0002> <0041> <0002> <0042> endbfchar",
+		"1 beginbfchar <0002> <0000> endbfchar",
+		"1 beginbfchar <0002> <00410042> endbfchar",
+		"1 beginbfrange <0001> <0002> <0041> endbfrange"
+	]) assert.throws(() => chicagoUnicodeMappings(prefix + middle + suffix), /review/u);
 	assert.throws(() => inspectChicagoPdfFonts("{\"qpdf\":[]}"), /review/u);
 });

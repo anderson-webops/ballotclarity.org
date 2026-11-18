@@ -21,15 +21,107 @@ function fixture() {
 	const capture = "%PDF-1.7\nIsolated source fixture\n";
 	const documentUrl = "https://www.eac.gov/isolated-fixture.pdf";
 	const capturedAt = "2026-10-22T12:00:00.000Z";
-	const source = { id: "fixture-source", title: "Official fixture", publisher: "Isolated official publisher", authority: "official-government", type: "official record", sourceSystem: "Isolated source", date: "", url: `${documentUrl}#page=1` };
+	const source = {
+		id: "fixture-source",
+		title: "Official fixture",
+		publisher: "Isolated official publisher",
+		authority: "official-government",
+		type: "official record",
+		sourceSystem: "Isolated source",
+		date: "",
+		url: `${documentUrl}#page=1`
+	};
 	const measure = structuredClone(buildSeedCoverageSnapshot().measures[0]!);
-	for (const field of ["currentPractice", "proposedChanges", "yesHighlights", "noHighlights", "implementationTimeline", "fiscalSummary", "potentialImpacts", "supportArguments", "opposeArguments", "argumentsAndConsiderations", "whatWeKnow", "whatWeDoNotKnow"] as const) measure[field] = [];
-	Object.assign(measure, { slug: "nd-fixture-measure", contestSlug: "nd-fixture-contest", title: "Approval threshold", location: "North Dakota", summary: "Change the approval threshold.", plainLanguageExplanation: "", yesMeaning: "Change the threshold.", noMeaning: "Retain the threshold.", updatedAt: capturedAt, sources: [source], freshness: { contentLastVerifiedAt: capturedAt, dataLastUpdatedAt: capturedAt, nextReviewAt: "2026-10-24T12:00:00.000Z", status: "incomplete", statusLabel: "Partial sourced explanation", statusNote: "" } });
-	const draft = { schemaVersion: 1, type: "state-measure-draft", stateCode: "ND", electionDate: "2026-11-03", reviewedAt: capturedAt, publicationApproved: false, automaticImportApproved: false, measures: [measure], documents: { analysis: { url: documentUrl, sha256: hash(capture), capturedAt, publicationDate: null, reviewedPages: [1] } }, unresolvedFields: [{ field: "scope", status: "unresolved" }], unmappedQuestions: [{ type: "advisory-question", voteOptions: ["A", "B", "C"] }] };
+	for (const field of [
+		"currentPractice",
+		"proposedChanges",
+		"yesHighlights",
+		"noHighlights",
+		"implementationTimeline",
+		"fiscalSummary",
+		"potentialImpacts",
+		"supportArguments",
+		"opposeArguments",
+		"argumentsAndConsiderations",
+		"whatWeKnow",
+		"whatWeDoNotKnow"
+	] as const) measure[field] = [];
+	Object.assign(measure, {
+		slug: "nd-fixture-measure",
+		contestSlug: "nd-fixture-contest",
+		title: "Approval threshold",
+		location: "North Dakota",
+		summary: "Change the approval threshold.",
+		plainLanguageExplanation: "",
+		yesMeaning: "Change the threshold.",
+		noMeaning: "Retain the threshold.",
+		updatedAt: capturedAt,
+		sources: [source],
+		freshness: {
+			contentLastVerifiedAt: capturedAt,
+			dataLastUpdatedAt: capturedAt,
+			nextReviewAt: "2026-10-24T12:00:00.000Z",
+			status: "incomplete",
+			statusLabel: "Partial sourced explanation",
+			statusNote: ""
+		}
+	});
+	const draft = {
+		schemaVersion: 1,
+		type: "state-measure-draft",
+		stateCode: "ND",
+		electionDate: "2026-11-03",
+		reviewedAt: capturedAt,
+		publicationApproved: false,
+		automaticImportApproved: false,
+		measures: [measure],
+		documents: {
+			analysis: {
+				url: documentUrl,
+				sha256: hash(capture),
+				capturedAt,
+				publicationDate: null,
+				reviewedPages: [1]
+			}
+		},
+		unresolvedFields: [
+			{ field: "scope", status: "unresolved" }
+		],
+		unmappedQuestions: [
+			{
+				type: "advisory-question",
+				voteOptions: ["A", "B", "C"]
+			}
+		]
+	};
 	const documentPath = join(directory, "capture.pdf");
 	const draftPath = join(directory, "draft.json");
 	writeFileSync(documentPath, capture);
-	const plan = { schemaVersion: 1, type: "state-measure-guide-preparation", baseSnapshot: null as null | { path: string; sha256: string }, inputs: [{ path: draftPath, sha256: "", stateCode: "ND", electionDate: "2026-11-03", summaryAsExplanation: true, documents: [{ key: "analysis", path: documentPath, url: documentUrl, sha256: hash(capture), capturedAt }] }], outputDirectory: join(directory, "prepared"), outputName: "measure-review" };
+	const plan = {
+		schemaVersion: 1,
+		type: "state-measure-guide-preparation",
+		baseSnapshot: null as null | { path: string; sha256: string },
+		inputs: [
+			{
+				path: draftPath,
+				sha256: "",
+				stateCode: "ND",
+				electionDate: "2026-11-03",
+				summaryAsExplanation: true,
+				documents: [
+					{
+						key: "analysis",
+						path: documentPath,
+						url: documentUrl,
+						sha256: hash(capture),
+						capturedAt
+					}
+				]
+			}
+		],
+		outputDirectory: join(directory, "prepared"),
+		outputName: "measure-review"
+	};
 	const planPath = join(directory, "plan.json");
 	function save() {
 		const body = `${JSON.stringify(draft)}\n`;
@@ -38,7 +130,17 @@ function fixture() {
 		writeFileSync(planPath, JSON.stringify(plan));
 	}
 	save();
-	return { directory, draft, plan, planPath, draftPath, documentPath, save, read: (name: string) => JSON.parse(readFileSync(join(plan.outputDirectory, `measure-review-${name}.json`), "utf8")), dispose: () => rmSync(directory, { recursive: true, force: true }) };
+	return {
+		directory,
+		draft,
+		plan,
+		planPath,
+		draftPath,
+		documentPath,
+		save,
+		read: (name: string) => JSON.parse(readFileSync(join(plan.outputDirectory, `measure-review-${name}.json`), "utf8")),
+		dispose: () => rmSync(directory, { recursive: true, force: true })
+	};
 }
 
 function primaryFixture() {
@@ -56,11 +158,21 @@ function primaryFixture() {
 	function saveBase() {
 		const body = `${JSON.stringify(base)}\n`;
 		writeFileSync(basePath, body);
-		workspace.plan.baseSnapshot = { path: basePath, sha256: hash(body) };
+		workspace.plan.baseSnapshot = {
+			path: basePath,
+			sha256: hash(body)
+		};
 		workspace.save();
 	}
 	saveBase();
-	return { ...workspace, base, basePath, primaryAugmentation, jurisdiction, saveBase };
+	return {
+		...workspace,
+		base,
+		basePath,
+		primaryAugmentation,
+		jurisdiction,
+		saveBase
+	};
 }
 
 function fiscalFixture() {
@@ -68,7 +180,18 @@ function fiscalFixture() {
 	workspace.plan.inputs[0]!.summaryAsExplanation = false;
 	Reflect.deleteProperty(workspace.plan, "primaryAugmentation");
 	const originalMeasure = structuredClone(workspace.draft.measures[0]!);
-	workspace.base.election!.contests.push({ slug: originalMeasure.contestSlug, title: originalMeasure.title, office: "Local measure", jurisdiction: "Ballot measure", type: "measure", description: "", roleGuide: { summary: "", whyItMatters: "", decisionAreas: [] }, measures: [structuredClone(originalMeasure)] });
+	workspace.base.election!.contests.push({
+		slug: originalMeasure.contestSlug,
+		title: originalMeasure.title,
+		office: "Local measure",
+		jurisdiction: "Ballot measure",
+		type: "measure",
+		description: "",
+		roleGuide: { summary: "", whyItMatters: "", decisionAreas: [] },
+		measures: [
+			structuredClone(originalMeasure)
+		]
+	});
 	workspace.base.measures.push(structuredClone(originalMeasure));
 	workspace.base.sources.push(...structuredClone(originalMeasure.sources));
 	const fiscalSupplement = { ...workspace.primaryAugmentation, measureSlug: originalMeasure.slug };
@@ -77,22 +200,70 @@ function fiscalFixture() {
 	const body = "%PDF-1.7\nIsolated fiscal source fixture\n";
 	const path = join(workspace.directory, "fiscal.pdf");
 	writeFileSync(path, body);
-	const source = { id: "fixture-fiscal-source", title: "Official fiscal fixture", publisher: "Isolated publisher", authority: "official-government" as const, type: "official record" as const, sourceSystem: "Isolated fiscal notice", date: "", url: `${url}#page=2` };
+	const source = {
+		id: "fixture-fiscal-source",
+		title: "Official fiscal fixture",
+		publisher: "Isolated publisher",
+		authority: "official-government" as const,
+		type: "official record" as const,
+		sourceSystem: "Isolated fiscal notice",
+		date: "",
+		url: `${url}#page=2`
+	};
 	const capturedAt = "2026-10-22T13:00:00.000Z";
-	Object.assign(workspace.draft.documents, { fiscal: { url, sha256: hash(body), capturedAt, publicationDate: null, reviewedPages: [2] } });
-	workspace.plan.inputs[0]!.documents.push({ key: "fiscal", path, url, sha256: hash(body), capturedAt });
+	Object.assign(workspace.draft.documents, {
+		fiscal: {
+			url,
+			sha256: hash(body),
+			capturedAt,
+			publicationDate: null,
+			reviewedPages: [2]
+		}
+	});
+	workspace.plan.inputs[0]!.documents.push({
+		key: "fiscal",
+		path,
+		url,
+		sha256: hash(body),
+		capturedAt
+	});
 	workspace.draft.measures[0]!.sources.push(source);
-	workspace.draft.measures[0]!.fiscalSummary = [{ id: "fixture-maximum-principal", label: "Maximum principal", value: "$123.00", scope: "School bonds", horizon: "2028", note: "", sources: [source] }];
+	workspace.draft.measures[0]!.fiscalSummary = [
+		{
+			id: "fixture-maximum-principal",
+			label: "Maximum principal",
+			value: "$123.00",
+			scope: "School bonds",
+			horizon: "2028",
+			note: "",
+			sources: [source]
+		}
+	];
 	workspace.saveBase();
 	return { ...workspace, fiscalSupplement, originalMeasure };
 }
 
 function countyAreaFixture() {
 	const workspace = fixture();
-	const countyAreaScope = { kind: "county-excluding-municipalities", stateCode: "ND", countyName: "Cass County", excludedMunicipalities: ["Fargo"], matching: "reference-only" };
-	const jurisdiction = { jurisdictionType: "county-area", name: "Cass County outside Fargo", slug: "nd-cass-outside-fargo", countyAreaScope };
-	Object.assign(workspace.draft, { jurisdiction: structuredClone(jurisdiction) });
-	Object.assign(workspace.plan.inputs[0]!, { jurisdiction: structuredClone(jurisdiction) });
+	const countyAreaScope = {
+		kind: "county-excluding-municipalities",
+		stateCode: "ND",
+		countyName: "Cass County",
+		excludedMunicipalities: ["Fargo"],
+		matching: "reference-only"
+	};
+	const jurisdiction = {
+		jurisdictionType: "county-area",
+		name: "Cass County outside Fargo",
+		slug: "nd-cass-outside-fargo",
+		countyAreaScope
+	};
+	Object.assign(workspace.draft, {
+		jurisdiction: structuredClone(jurisdiction)
+	});
+	Object.assign(workspace.plan.inputs[0]!, {
+		jurisdiction: structuredClone(jurisdiction)
+	});
 	workspace.draft.measures[0]!.location = "Cass County outside Fargo, North Dakota";
 	workspace.save();
 	return { ...workspace, jurisdiction };
@@ -121,7 +292,10 @@ test("fiscal supplementation preserves the pinned primary, all nonfiscal fields 
 		assert.equal(workspace.read("manifest").existingNonfiscalMeasureFieldsPreserved, true);
 		assert.equal(workspace.read("manifest").primaryReplacementApproved, false);
 		assert.equal(readCoverageSnapshotMetadata(join(workspace.plan.outputDirectory, "measure-review-coverage.json")).status, "unknown");
-		workspace.plan.baseSnapshot = { path: join(workspace.plan.outputDirectory, "measure-review-coverage.json"), sha256: hash(readFileSync(join(workspace.plan.outputDirectory, "measure-review-coverage.json"))) };
+		workspace.plan.baseSnapshot = {
+			path: join(workspace.plan.outputDirectory, "measure-review-coverage.json"),
+			sha256: hash(readFileSync(join(workspace.plan.outputDirectory, "measure-review-coverage.json")))
+		};
 		workspace.plan.outputDirectory = join(workspace.directory, "repeat");
 		workspace.save();
 		await prepareStateMeasureGuideFiles(workspace.planPath, now);
@@ -147,8 +321,33 @@ test("fiscal supplementation targets additional statewide guides and future date
 			Reflect.deleteProperty(workspace.draft, "jurisdiction");
 			Reflect.deleteProperty(workspace.plan.inputs[0]!, "jurisdiction");
 			Object.assign(workspace.fiscalSupplement, { electionSlug: `nd-fixture-${electionDate}`, jurisdictionSlug: "nd-statewide-fixture" });
-			const jurisdiction = { ...structuredClone(workspace.base.jurisdiction!), slug: workspace.fiscalSupplement.jurisdictionSlug, state: "North Dakota", name: "North Dakota", displayName: "North Dakota", jurisdictionType: "state" as const };
-			workspace.base.additionalGuides = [{ election: { ...structuredClone(workspace.base.election!), slug: workspace.fiscalSupplement.electionSlug, jurisdictionSlug: jurisdiction.slug, date: electionDate, contests: [contest] }, jurisdiction, location: { ...structuredClone(workspace.base.location!), slug: jurisdiction.slug, state: "North Dakota", displayName: "North Dakota" }, coverageLimits: ["Selected statewide measures"] }];
+			const jurisdiction = {
+				...structuredClone(workspace.base.jurisdiction!),
+				slug: workspace.fiscalSupplement.jurisdictionSlug,
+				state: "North Dakota",
+				name: "North Dakota",
+				displayName: "North Dakota",
+				jurisdictionType: "state" as const
+			};
+			workspace.base.additionalGuides = [
+				{
+					election: {
+						...structuredClone(workspace.base.election!),
+						slug: workspace.fiscalSupplement.electionSlug,
+						jurisdictionSlug: jurisdiction.slug,
+						date: electionDate,
+						contests: [contest]
+					},
+					jurisdiction,
+					location: {
+						...structuredClone(workspace.base.location!),
+						slug: jurisdiction.slug,
+						state: "North Dakota",
+						displayName: "North Dakota"
+					},
+					coverageLimits: ["Selected statewide measures"]
+				}
+			];
 			workspace.saveBase();
 			await prepareStateMeasureGuideFiles(workspace.planPath, now);
 			const merged = workspace.read("coverage");
@@ -189,17 +388,39 @@ test("fiscal supplementation reproduces an existing explicit explanation mapping
 });
 
 test("fiscal supplementation holds wording, vote meaning, freshness, identity and citation changes", async () => {
-	for (const mode of ["ballotSummary", "yesMeaning", "noMeaning", "summary", "freshness", "source", "root", "duplicate", "prior-fiscal"]) {
+	for (const mode of [
+		"ballotSummary",
+		"yesMeaning",
+		"noMeaning",
+		"summary",
+		"freshness",
+		"source",
+		"root",
+		"duplicate",
+		"prior-fiscal"
+	]) {
 		const workspace = fiscalFixture();
 		try {
 			const measure = workspace.draft.measures[0]!;
-			if (["ballotSummary", "yesMeaning", "noMeaning", "summary"].includes(mode)) Reflect.set(measure, mode, "Changed existing claim.");
+			if ([
+				"ballotSummary",
+				"yesMeaning",
+				"noMeaning",
+				"summary"
+			].includes(mode)) {
+				Reflect.set(measure, mode, "Changed existing claim.");
+			}
 			if (mode === "freshness") measure.freshness.contentLastVerifiedAt = "2026-10-22T14:00:00.000Z";
 			if (mode === "source") measure.sources.shift();
 			if (mode === "root") workspace.base.measures.at(-1)!.summary = "Conflicting root copy.";
 			if (mode === "duplicate") workspace.base.election!.contests.push(structuredClone(workspace.base.election!.contests.at(-1)!));
 			if (mode === "prior-fiscal") {
-				workspace.base.election!.contests.at(-1)!.measures![0]!.fiscalSummary = [{ ...structuredClone(measure.fiscalSummary[0]!), value: "$99.00" }];
+				workspace.base.election!.contests.at(-1)!.measures![0]!.fiscalSummary = [
+					{
+						...structuredClone(measure.fiscalSummary[0]!),
+						value: "$99.00"
+					}
+				];
 				workspace.base.measures.at(-1)!.fiscalSummary = structuredClone(workspace.base.election!.contests.at(-1)!.measures![0]!.fiscalSummary);
 			}
 			workspace.saveBase();
@@ -211,7 +432,18 @@ test("fiscal supplementation holds wording, vote meaning, freshness, identity an
 });
 
 test("fiscal supplementation refuses unsafe rows, uncited facts and conflicting source identities", async () => {
-	for (const mode of ["empty", "duplicate-id", "extra-row-field", "blank-value", "no-citation", "unbound-citation", "unofficial", "source-collision", "too-many", "long-id"]) {
+	for (const mode of [
+		"empty",
+		"duplicate-id",
+		"extra-row-field",
+		"blank-value",
+		"no-citation",
+		"unbound-citation",
+		"unofficial",
+		"source-collision",
+		"too-many",
+		"long-id"
+	]) {
 		const workspace = fiscalFixture();
 		try {
 			const measure = workspace.draft.measures[0]!;
@@ -221,10 +453,19 @@ test("fiscal supplementation refuses unsafe rows, uncited facts and conflicting 
 			if (mode === "extra-row-field") Object.assign(row, { approved: true });
 			if (mode === "blank-value") row.value = "";
 			if (mode === "no-citation") row.sources = [];
-			if (mode === "unbound-citation") row.sources = [{ ...row.sources[0]!, id: "unbound-fiscal-source" }];
+			if (mode === "unbound-citation") {
+				row.sources = [
+					{ ...row.sources[0]!, id: "unbound-fiscal-source" }
+				];
+			}
 			if (mode === "unofficial") row.sources[0]!.authority = "candidate-campaign";
 			if (mode === "source-collision") workspace.base.sources.push({ ...row.sources[0]!, publisher: "Conflicting publisher" });
-			if (mode === "too-many") measure.fiscalSummary = Array.from({ length: 101 }, (_, index) => ({ ...structuredClone(row), id: `fiscal-${index}` }));
+			if (mode === "too-many") {
+				measure.fiscalSummary = Array.from({ length: 101 }, (_, index) => ({
+					...structuredClone(row),
+					id: `fiscal-${index}`
+				}));
+			}
 			if (mode === "long-id") row.id = "f".repeat(202);
 			workspace.saveBase();
 			await assert.rejects(prepareStateMeasureGuideFiles(workspace.planPath, now));
@@ -235,12 +476,32 @@ test("fiscal supplementation refuses unsafe rows, uncited facts and conflicting 
 });
 
 test("fiscal supplementation requires exact target scope and a pinned, unambiguous single input", async () => {
-	for (const mode of ["no-base", "two-inputs", "two-measures", "both-modes", "approval", "election", "jurisdiction", "measure", "state", "date", "kind", "name", "duplicate-scope"]) {
+	for (const mode of [
+		"no-base",
+		"two-inputs",
+		"two-measures",
+		"both-modes",
+		"approval",
+		"election",
+		"jurisdiction",
+		"measure",
+		"state",
+		"date",
+		"kind",
+		"name",
+		"duplicate-scope"
+	]) {
 		const workspace = fiscalFixture();
 		try {
 			if (mode === "no-base") workspace.plan.baseSnapshot = null;
 			if (mode === "two-inputs") workspace.plan.inputs.push(structuredClone(workspace.plan.inputs[0]!));
-			if (mode === "two-measures") workspace.draft.measures.push({ ...structuredClone(workspace.draft.measures[0]!), slug: "other-measure", contestSlug: "other-contest" });
+			if (mode === "two-measures") {
+				workspace.draft.measures.push({
+					...structuredClone(workspace.draft.measures[0]!),
+					slug: "other-measure",
+					contestSlug: "other-contest"
+				});
+			}
 			if (mode === "both-modes") Object.assign(workspace.plan, { primaryAugmentation: workspace.primaryAugmentation });
 			if (mode === "approval") Object.assign(workspace.fiscalSupplement, { approved: true });
 			if (mode === "election") workspace.fiscalSupplement.electionSlug = "other-election";
@@ -250,9 +511,38 @@ test("fiscal supplementation requires exact target scope and a pinned, unambiguo
 			if (mode === "date") workspace.base.election!.date = "2030-11-05";
 			if (mode === "kind") workspace.base.jurisdiction!.jurisdictionType = "city";
 			if (mode === "name") workspace.base.jurisdiction!.name = "Another County";
-			if (mode === "duplicate-scope") workspace.base.additionalGuides = [{ election: { ...structuredClone(workspace.base.election!), slug: "same-scope-alias", jurisdictionSlug: "same-area-alias", contests: [] }, jurisdiction: { ...structuredClone(workspace.base.jurisdiction!), slug: "same-area-alias" }, location: { ...structuredClone(workspace.base.location!), slug: "same-area-alias" } }];
-			if (["state", "date", "kind", "name", "duplicate-scope"].includes(mode)) workspace.saveBase();
-			else workspace.save();
+			if (mode === "duplicate-scope") {
+				workspace.base.additionalGuides = [
+					{
+						election: {
+							...structuredClone(workspace.base.election!),
+							slug: "same-scope-alias",
+							jurisdictionSlug: "same-area-alias",
+							contests: []
+						},
+						jurisdiction: {
+							...structuredClone(workspace.base.jurisdiction!),
+							slug: "same-area-alias"
+						},
+						location: {
+							...structuredClone(workspace.base.location!),
+							slug: "same-area-alias"
+						}
+					}
+				];
+			}
+			if ([
+				"state",
+				"date",
+				"kind",
+				"name",
+				"duplicate-scope"
+			].includes(mode)) {
+				workspace.saveBase();
+			}
+			else {
+				workspace.save();
+			}
 			await assert.rejects(prepareStateMeasureGuideFiles(workspace.planPath, now));
 			assert.equal(existsSync(workspace.plan.outputDirectory), false, mode);
 		}
@@ -279,13 +569,58 @@ test("optional native-question binding pins complete wording and refuses drift b
 		workspace.plan.inputs[0]!.stateCode = "GA";
 		workspace.draft.measures[0]!.location = "Georgia";
 		workspace.draft.measures[0]!.ballotSummary = "Shall a stated approval threshold be changed?";
-		const question = { audience: "Fulton County consolidated sample ballot", title: "Synthetic approval threshold", officialText: workspace.draft.measures[0]!.ballotSummary, choices: ["Yes", "No"], pages: [1], explicitlyAdvisory: false, voterApplicabilityVerified: false };
-		const documents = source.documentUrls!.map((url, index) => ({ url, sha256: hash(`Synthetic document ${index}`), retrievedAt: "2026-10-22T12:00:00.000Z", includedRecordCount: index ? 0 : 1 }));
-		const snapshot = { schemaVersion: 1, sourceId: source.id, stateCode: "GA", electionDate: source.electionDate, sourceUrl: source.pageUrl, retrievalPolicy: "automatic", retrievedAt: documents[0]!.retrievedAt, sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), recordCount: 1, records: [{ id: "1".repeat(24), name: "Synthetic Candidate", office: "Governor", district: "", scope: "statewide", status: "listed" }], documents, ballotQuestions: [{ ...question, id: fultonQuestionId(source, question as Parameters<typeof fultonQuestionId>[1]) }] };
+		const question = {
+			audience: "Fulton County consolidated sample ballot",
+			title: "Synthetic approval threshold",
+			officialText: workspace.draft.measures[0]!.ballotSummary,
+			choices: ["Yes", "No"],
+			pages: [1],
+			explicitlyAdvisory: false,
+			voterApplicabilityVerified: false
+		};
+		const documents = source.documentUrls!.map((url, index) => ({
+			url,
+			sha256: hash(`Synthetic document ${index}`),
+			retrievedAt: "2026-10-22T12:00:00.000Z",
+			includedRecordCount: index ? 0 : 1
+		}));
+		const snapshot = {
+			schemaVersion: 1,
+			sourceId: source.id,
+			stateCode: "GA",
+			electionDate: source.electionDate,
+			sourceUrl: source.pageUrl,
+			retrievalPolicy: "automatic",
+			retrievedAt: documents[0]!.retrievedAt,
+			sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+			recordCount: 1,
+			records: [
+				{
+					id: "1".repeat(24),
+					name: "Synthetic Candidate",
+					office: "Governor",
+					district: "",
+					scope: "statewide",
+					status: "listed"
+				}
+			],
+			documents,
+			ballotQuestions: [
+				{
+					...question,
+					id: fultonQuestionId(source, question as Parameters<typeof fultonQuestionId>[1])
+				}
+			]
+		};
 		const snapshotPath = join(workspace.directory, "native.json");
 		const body = JSON.stringify(snapshot);
 		writeFileSync(snapshotPath, body);
-		const binding = { path: snapshotPath, sha256: hash(body), sourceId: source.id, electionSlugs: ["ga-statewide-measures-2026-11-03"] };
+		const binding = {
+			path: snapshotPath,
+			sha256: hash(body),
+			sourceId: source.id,
+			electionSlugs: ["ga-statewide-measures-2026-11-03"]
+		};
 		Object.assign(workspace.plan, { questionSnapshot: binding });
 		workspace.save();
 		await prepareStateMeasureGuideFiles(workspace.planPath, now);
@@ -338,7 +673,14 @@ test("county-area preparation preserves exclusions, reference-only scope and ori
 });
 
 test("county-area preparation rejects dropped or changed exclusions and broader jurisdiction kinds", async () => {
-	for (const change of ["scope", "municipality", "matching", "kind", "state", "name"]) {
+	for (const change of [
+		"scope",
+		"municipality",
+		"matching",
+		"kind",
+		"state",
+		"name"
+	]) {
 		const workspace = countyAreaFixture();
 		try {
 			const jurisdiction = JSON.parse(JSON.stringify(workspace.jurisdiction));
@@ -364,7 +706,10 @@ test("partial-county content appends beside a whole-county guide without replaci
 		const before = JSON.stringify(base);
 		const basePath = join(workspace.directory, "base.json");
 		writeFileSync(basePath, before);
-		workspace.plan.baseSnapshot = { path: basePath, sha256: hash(before) };
+		workspace.plan.baseSnapshot = {
+			path: basePath,
+			sha256: hash(before)
+		};
 		workspace.save();
 		await prepareStateMeasureGuideFiles(workspace.planPath, now);
 		const result = parseCoverageSnapshot(workspace.read("coverage"));
@@ -376,7 +721,10 @@ test("partial-county content appends beside a whole-county guide without replaci
 		const changed = structuredClone(result);
 		delete changed.additionalGuides![0]!.jurisdiction.countyAreaScope;
 		assert.throws(() => parseCoverageSnapshot(changed), /County-area/u);
-		workspace.plan.baseSnapshot = { path: join(workspace.plan.outputDirectory, "measure-review-coverage.json"), sha256: hash(readFileSync(join(workspace.plan.outputDirectory, "measure-review-coverage.json"))) };
+		workspace.plan.baseSnapshot = {
+			path: join(workspace.plan.outputDirectory, "measure-review-coverage.json"),
+			sha256: hash(readFileSync(join(workspace.plan.outputDirectory, "measure-review-coverage.json")))
+		};
 		workspace.plan.outputDirectory = join(workspace.directory, "duplicate");
 		const renamed = { ...workspace.jurisdiction, slug: "nd-same-county-renamed" };
 		Object.assign(workspace.draft, { jurisdiction: renamed });
@@ -413,7 +761,13 @@ test("explicit primary augmentation adds only reviewed measure content and prese
 		assert.equal(workspace.read("manifest").existingPrimaryMetadataPreserved, true);
 		for (const key of ["publicationApproved", "automaticImportApproved", "primaryReplacementApproved"]) assert.equal(workspace.read("manifest")[key], false);
 		assert.equal(workspace.read("workflows")[0].status, "draft");
-		for (const key of ["publishedAt", "reviewedAt", "reviewer", "reviewRecommendation", "reviewNotes"]) assert.equal(workspace.read("workflows")[0][key], undefined);
+		for (const key of [
+			"publishedAt",
+			"reviewedAt",
+			"reviewer",
+			"reviewRecommendation",
+			"reviewNotes"
+		]) assert.equal(workspace.read("workflows")[0][key], undefined);
 		assert.equal(readCoverageSnapshotMetadata(join(workspace.plan.outputDirectory, "measure-review-coverage.json")).status, "unknown");
 		assert.equal(readFileSync(workspace.basePath, "utf8"), before);
 		assert.ok(readFileSync(join(workspace.plan.outputDirectory, "measure-review-provenance.csv"), "utf8").includes(workspace.primaryAugmentation.electionSlug));
@@ -422,7 +776,20 @@ test("explicit primary augmentation adds only reviewed measure content and prese
 });
 
 test("primary augmentation requires the pinned primary target and matching state, date, kind and name", async () => {
-	for (const mode of ["no-base", "no-election", "no-jurisdiction", "no-location", "two-inputs", "target", "jurisdiction", "approval", "state", "date", "kind", "name"]) {
+	for (const mode of [
+		"no-base",
+		"no-election",
+		"no-jurisdiction",
+		"no-location",
+		"two-inputs",
+		"target",
+		"jurisdiction",
+		"approval",
+		"state",
+		"date",
+		"kind",
+		"name"
+	]) {
 		const workspace = primaryFixture();
 		try {
 			if (mode === "no-base") workspace.plan.baseSnapshot = null;
@@ -486,7 +853,10 @@ test("repeating primary augmentation cannot duplicate a measure or mutate the re
 		await prepareStateMeasureGuideFiles(workspace.planPath, now);
 		const snapshotPath = join(workspace.plan.outputDirectory, "measure-review-coverage.json");
 		const original = readFileSync(snapshotPath, "utf8");
-		workspace.plan.baseSnapshot = { path: snapshotPath, sha256: hash(original) };
+		workspace.plan.baseSnapshot = {
+			path: snapshotPath,
+			sha256: hash(original)
+		};
 		workspace.plan.outputDirectory = join(workspace.directory, "repeat");
 		workspace.save();
 		await assert.rejects(prepareStateMeasureGuideFiles(workspace.planPath, now), /cannot replace an existing contest or measure/u);
@@ -499,7 +869,18 @@ test("repeating primary augmentation cannot duplicate a measure or mutate the re
 test("primary augmentation refuses an ambiguous second guide with the primary scope", async () => {
 	const workspace = primaryFixture();
 	try {
-		workspace.base.additionalGuides = [{ jurisdiction: { ...workspace.base.jurisdiction!, slug: "duplicate-county" }, election: { ...workspace.base.election!, slug: "duplicate-election", jurisdictionSlug: "duplicate-county", contests: [] }, location: { ...workspace.base.location!, slug: "duplicate-county" } }];
+		workspace.base.additionalGuides = [
+			{
+				jurisdiction: { ...workspace.base.jurisdiction!, slug: "duplicate-county" },
+				election: {
+					...workspace.base.election!,
+					slug: "duplicate-election",
+					jurisdictionSlug: "duplicate-county",
+					contests: []
+				},
+				location: { ...workspace.base.location!, slug: "duplicate-county" }
+			}
+		];
 		workspace.saveBase();
 		await assert.rejects(prepareStateMeasureGuideFiles(workspace.planPath, now), /one unambiguous primary/u);
 		assert.equal(existsSync(workspace.plan.outputDirectory), false);
@@ -556,7 +937,9 @@ test("large non-PDF captures, oversized PDFs and oversized JSON drafts stay reje
 	for (const kind of ["non-pdf", "oversized-pdf", "oversized-draft"]) {
 		const workspace = fixture();
 		try {
-			const body = Buffer.alloc((kind === "oversized-pdf" ? 33 : 13) * 1024 * 1024, " ");
+			const body = Buffer.alloc((kind === "oversized-pdf"
+				? 33
+				: 13) * 1024 * 1024, " ");
 			if (kind === "oversized-pdf") body.write("%PDF-1.7\n");
 			if (kind === "oversized-draft") {
 				workspace.save();
@@ -641,7 +1024,13 @@ test("local measure preparation preserves its exact area instead of assigning it
 });
 
 test("native local and district guides retain exact jurisdiction kinds", async () => {
-	for (const jurisdictionType of ["township", "village", "school-district", "intermediate-school-district", "special-district"]) {
+	for (const jurisdictionType of [
+		"township",
+		"village",
+		"school-district",
+		"intermediate-school-district",
+		"special-district"
+	]) {
 		const workspace = fixture();
 		try {
 			const jurisdiction = { jurisdictionType, name: "Example", slug: `nd-example-${jurisdictionType}` };
@@ -664,7 +1053,10 @@ test("two local areas in the same state and election remain separate", async () 
 	const first = fixture();
 	const second = fixture();
 	try {
-		for (const [workspace, name, slug] of [[first, "Example", "nd-example"], [second, "Another", "nd-another"]] as const) {
+		for (const [workspace, name, slug] of [
+			[first, "Example", "nd-example"],
+			[second, "Another", "nd-another"]
+		] as const) {
 			const jurisdiction = { jurisdictionType: "county", name, slug };
 			Object.assign(workspace.plan.inputs[0]!, { jurisdiction });
 			Object.assign(workspace.draft, { jurisdiction });
@@ -702,17 +1094,37 @@ test("independent-city preparation preserves its county-equivalent identity and 
 });
 
 test("local scope cannot be dropped, changed, malformed or silently promoted", async () => {
-	for (const mutation of ["missing-plan-scope", "wrong-name", "wrong-type", "foreign-slug", "wrong-location"]) {
+	for (const mutation of [
+		"missing-plan-scope",
+		"wrong-name",
+		"wrong-type",
+		"foreign-slug",
+		"wrong-location"
+	]) {
 		const workspace = fixture();
 		try {
 			const jurisdiction = { jurisdictionType: "town", name: "Example", slug: "nd-example" };
 			Object.assign(workspace.draft, { jurisdiction });
-			Object.assign(workspace.plan.inputs[0]!, { jurisdiction: { ...jurisdiction } });
+			Object.assign(workspace.plan.inputs[0]!, {
+				jurisdiction: { ...jurisdiction }
+			});
 			workspace.draft.measures[0]!.location = "Example, North Dakota";
 			if (mutation === "missing-plan-scope") Reflect.deleteProperty(workspace.plan.inputs[0]!, "jurisdiction");
-			if (mutation === "wrong-name") Object.assign(workspace.plan.inputs[0]!, { jurisdiction: { ...jurisdiction, name: "Elsewhere" } });
-			if (mutation === "wrong-type") Object.assign(workspace.plan.inputs[0]!, { jurisdiction: { ...jurisdiction, jurisdictionType: "state" } });
-			if (mutation === "foreign-slug") Object.assign(workspace.plan.inputs[0]!, { jurisdiction: { ...jurisdiction, slug: "me-example" } });
+			if (mutation === "wrong-name") {
+				Object.assign(workspace.plan.inputs[0]!, {
+					jurisdiction: { ...jurisdiction, name: "Elsewhere" }
+				});
+			}
+			if (mutation === "wrong-type") {
+				Object.assign(workspace.plan.inputs[0]!, {
+					jurisdiction: { ...jurisdiction, jurisdictionType: "state" }
+				});
+			}
+			if (mutation === "foreign-slug") {
+				Object.assign(workspace.plan.inputs[0]!, {
+					jurisdiction: { ...jurisdiction, slug: "me-example" }
+				});
+			}
 			if (mutation === "wrong-location") workspace.draft.measures[0]!.location = "North Dakota";
 			workspace.save();
 			await assert.rejects(() => prepareStateMeasureGuideFiles(workspace.planPath, now));
@@ -737,10 +1149,17 @@ test("an existing local scope cannot be appended under a different slug", async 
 		const body = JSON.stringify(base);
 		const path = join(workspace.directory, "local-base.json");
 		writeFileSync(path, body);
-		workspace.plan.baseSnapshot = { path, sha256: hash(body) };
+		workspace.plan.baseSnapshot = {
+			path,
+			sha256: hash(body)
+		};
 		workspace.plan.outputDirectory = join(workspace.directory, "duplicate");
-		Object.assign(workspace.plan.inputs[0]!, { jurisdiction: { ...jurisdiction, slug: "nd-new-alias" } });
-		Object.assign(workspace.draft, { jurisdiction: { ...jurisdiction, slug: "nd-new-alias" } });
+		Object.assign(workspace.plan.inputs[0]!, {
+			jurisdiction: { ...jurisdiction, slug: "nd-new-alias" }
+		});
+		Object.assign(workspace.draft, {
+			jurisdiction: { ...jurisdiction, slug: "nd-new-alias" }
+		});
 		workspace.save();
 		await assert.rejects(() => prepareStateMeasureGuideFiles(workspace.planPath, now), /replacement/u);
 		assert.equal(existsSync(workspace.plan.outputDirectory), false);
@@ -770,7 +1189,13 @@ test("document-center PDF citations must identify a reviewed page", async () => 
 });
 
 test("native binary labels survive preparation and CSV export", async () => {
-	for (const ballotOptions of [{ yes: "For", no: "Against" }, { yes: "Approve", no: "Reject" }, { yes: "YES/FOR", no: "NO/AGAINST" }, { yes: "For the Measure", no: "Against the Measure" }, { yes: "Yes, to approve", no: "No, to reject" }]) {
+	for (const ballotOptions of [
+		{ yes: "For", no: "Against" },
+		{ yes: "Approve", no: "Reject" },
+		{ yes: "YES/FOR", no: "NO/AGAINST" },
+		{ yes: "For the Measure", no: "Against the Measure" },
+		{ yes: "Yes, to approve", no: "No, to reject" }
+	]) {
 		const workspace = fixture();
 		try {
 			workspace.draft.measures[0]!.ballotOptions = ballotOptions;
@@ -834,7 +1259,9 @@ test("a newly selected state retains access holds without granting retrieval or 
 		workspace.plan.inputs[0]!.stateCode = "TN";
 		workspace.draft.stateCode = "TN";
 		Object.assign(workspace.draft.measures[0]!, { location: "Tennessee", slug: "tn-fixture-measure", contestSlug: "tn-fixture-contest" });
-		workspace.draft.unresolvedFields = [{ field: "publisherPolicy", status: "Linked policy redirect; automatic collection remains unapproved." }];
+		workspace.draft.unresolvedFields = [
+			{ field: "publisherPolicy", status: "Linked policy redirect; automatic collection remains unapproved." }
+		];
 		workspace.save();
 		const result = await prepareStateMeasureGuideFiles(workspace.planPath, now);
 		assert.equal(result.publisherRequests, 0);
@@ -856,12 +1283,23 @@ test("pinned base preparation preserves primary fields without inheriting approv
 		const body = `${JSON.stringify(base)}\n`;
 		const path = join(workspace.directory, "base.json");
 		writeFileSync(path, body);
-		workspace.plan.baseSnapshot = { path, sha256: hash(body) };
+		workspace.plan.baseSnapshot = {
+			path,
+			sha256: hash(body)
+		};
 		workspace.save();
 		const result = await prepareStateMeasureGuideFiles(workspace.planPath, now);
 		assert.equal(result.files, 8);
 		const merged = workspace.read("coverage");
-		for (const key of ["election", "jurisdiction", "location", "candidates", "measures", "sources", "dataSources"] as const) assert.deepEqual(merged[key], base[key]);
+		for (const key of [
+			"election",
+			"jurisdiction",
+			"location",
+			"candidates",
+			"measures",
+			"sources",
+			"dataSources"
+		] as const) assert.deepEqual(merged[key], base[key]);
 		assert.equal(merged.additionalGuides.length, 1);
 		assert.deepEqual(readFileSync(path, "utf8"), body);
 		assert.equal(readCoverageSnapshotMetadata(join(workspace.plan.outputDirectory, "measure-review-coverage.json")).status, "unknown");
@@ -974,11 +1412,25 @@ test("source CLI prepares an offline packet and rejects extra command arguments"
 	const workspace = fixture();
 	try {
 		const cli = fileURLToPath(new URL("../src/prepare-state-measure-guides.ts", import.meta.url));
-		const result = spawnSync(process.execPath, ["--import", "tsx", cli, workspace.planPath], { cwd: resolve(fileURLToPath(new URL("../..", import.meta.url))), encoding: "utf8" });
+		const result = spawnSync(process.execPath, [
+			"--import",
+			"tsx",
+			cli,
+			workspace.planPath
+		], {
+			cwd: resolve(fileURLToPath(new URL("../..", import.meta.url))),
+			encoding: "utf8"
+		});
 		assert.equal(result.status, 0, result.stderr);
 		assert.equal(JSON.parse(result.stdout).imported, false);
 		assert.equal(JSON.parse(result.stdout).publicationApproved, false);
-		assert.notEqual(spawnSync(process.execPath, ["--import", "tsx", cli, workspace.planPath, "publish"], { encoding: "utf8" }).status, 0);
+		assert.notEqual(spawnSync(process.execPath, [
+			"--import",
+			"tsx",
+			cli,
+			workspace.planPath,
+			"publish"
+		], { encoding: "utf8" }).status, 0);
 	}
 	finally { workspace.dispose(); }
 });

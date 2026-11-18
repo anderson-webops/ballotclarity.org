@@ -42,7 +42,9 @@ test("district directory representative badge links directly to one representati
 	assert.equal(buildDistrictRepresentativeBadgeHref([], "/districts/congressional-7"), undefined);
 	assert.equal(
 		buildDistrictRepresentativeBadgeHref(
-			[createRepresentativeSummary({ href: "/representatives/rich-mccormick" })],
+			[
+				createRepresentativeSummary({ href: "/representatives/rich-mccormick" })
+			],
 			"/districts/congressional-7"
 		),
 		"/representatives/rich-mccormick"
@@ -97,7 +99,9 @@ test("district directory representative badge titles stay specific to the distri
 	assert.equal(
 		buildDistrictRepresentativeBadgeTitle(
 			{ title: "Fulton County" },
-			[createRepresentativeSummary({ name: "Robb Pitts" })]
+			[
+				createRepresentativeSummary({ name: "Robb Pitts" })
+			]
 		),
 		"Open Robb Pitts for Fulton County"
 	);

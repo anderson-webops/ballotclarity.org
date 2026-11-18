@@ -6,8 +6,26 @@ import { createHash } from "node:crypto";
 import { nycNativePages, nycNativeRows } from "./state-ballot-nyc-native.js";
 
 type Factory = (source: StateBallotSource, values: StateCandidateValues) => StateCandidateRecord | null;
-export const nycBoroughs = ["New York", "Bronx", "Kings", "Queens", "Richmond"] as const;
-const officeRoots = ["Governor/Lieutenant Governor", "State Comptroller", "Attorney General", "Surrogate", "Justice of the Supreme Court", "Judge of the Civil Court - County", "Representative in Congress", "State Senator", "Member of the City Council", "Member of the Assembly", "Judge of the Civil Court - District"];
+export const nycBoroughs = [
+	"New York",
+	"Bronx",
+	"Kings",
+	"Queens",
+	"Richmond"
+] as const;
+const officeRoots = [
+	"Governor/Lieutenant Governor",
+	"State Comptroller",
+	"Attorney General",
+	"Surrogate",
+	"Justice of the Supreme Court",
+	"Judge of the Civil Court - County",
+	"Representative in Congress",
+	"State Senator",
+	"Member of the City Council",
+	"Member of the Assembly",
+	"Judge of the Civil Court - District"
+];
 function reject(detail: string): never {
 	throw new Error(`The NYC ${detail} requires review.`);
 }
@@ -27,7 +45,14 @@ export function nycOfficeGeography(label: string): Pick<StateCandidateValues, "s
 	const district = /^(Representative in Congress|State Senator|Member of the Assembly) - ([1-9]\d{0,2})(?:st|nd|rd|th) (Congressional|Senatorial|Assembly) District$/u.exec(label);
 	if (district) {
 		if (["Congressional", "Senatorial", "Assembly"].indexOf(district[3]!) !== ["Representative in Congress", "State Senator", "Member of the Assembly"].indexOf(district[1]!)) return reject("district type");
-		return { scope: district[1] === "Representative in Congress" ? "congressional" : district[1] === "State Senator" ? "state-senate" : "state-house", district: district[2] };
+		return {
+			scope: district[1] === "Representative in Congress"
+				? "congressional"
+				: district[1] === "State Senator"
+					? "state-senate"
+					: "state-house",
+			district: district[2]
+		};
 	}
 	if (/^Member of the City Council - [1-9]\d?(?:st|nd|rd|th) Council District$/u.test(label)) return { scope: "local", district: "", jurisdiction: "New York City" };
 	const judicial = /^Justice of the Supreme Court - ([1-9]\d?(?:st|nd|rd|th) Judicial District)$/u.exec(label);
@@ -84,12 +109,29 @@ export function readNycCandidateDocument(source: StateBallotSource, body: string
 			total = Number(footer[2]);
 			if (total < 2 || total > 60) return reject("printed section size");
 			declared = new Set();
-			sections.push({ borough, firstPage: page, lastPage: page, printedPages: total, candidateLines: 0, questions: 0 });
+			sections.push({
+				borough,
+				firstPage: page,
+				lastPage: page,
+				printedPages: total,
+				candidateLines: 0,
+				questions: 0
+			});
 		}
 		if (Number(footer[1]) !== ++number || Number(footer[2]) !== total || number > total) return reject("printed page sequence");
 		sections[section]!.lastPage = page;
 		const header = fields.filter(field => field.top < 125);
-		const expected = ["THE CONTEST LIST", electionLabel, boroughFields[0]!.text, "TENTATIVE", "SUBJECT TO CHANGE", "BOARD OF ELECTIONS", "IN THE CITY OF NEW YORK", "PRINTED AS OF:", printed].sort();
+		const expected = [
+			"THE CONTEST LIST",
+			electionLabel,
+			boroughFields[0]!.text,
+			"TENTATIVE",
+			"SUBJECT TO CHANGE",
+			"BOARD OF ELECTIONS",
+			"IN THE CITY OF NEW YORK",
+			"PRINTED AS OF:",
+			printed
+		].sort();
 		if (header.some(field => !field.bold) || JSON.stringify(header.map(field => field.text).sort()) !== JSON.stringify(expected)) return reject("page identity or tentative status");
 		const columns = fields.filter(field => field.top >= 125 && field.top < 150);
 		if (columns.length !== 3 || columns.map(field => `${field.left}:${field.text}:${field.bold}`).join("|") !== "26:Party\\Ind. Body:false|260:Name:false|575:Address:false") return reject("column identity");
@@ -109,17 +151,30 @@ export function readNycCandidateDocument(source: StateBallotSource, body: string
 		if (!declared.size) return reject("missing office introduction");
 		for (const row of nycNativeRows(content)) {
 			const first = row[0]!;
-			const heading = row.length === 1 && first.left === 17 && first.bold ? /^(.+), # to be elected: ([1-9]\d?)$/u.exec(first.text) : null;
+			const heading = row.length === 1 && first.left === 17 && first.bold
+				? /^(.+), # to be elected: ([1-9]\d?)$/u.exec(first.text)
+				: null;
 			if (heading) {
 				finishOffice();
 				const key = JSON.stringify([borough, heading[1]]);
 				if (seenOffices.has(key)) return reject("repeated office");
 				seenOffices.add(key);
-				office = { label: heading[1]!, seats: Number(heading[2]), rows: 0 };
+				office = {
+					label: heading[1]!,
+					seats: Number(heading[2]),
+					rows: 0
+				};
 				const proposal = /^Proposal Number ([1-9]\d?), a Question: (.+) - Citywide$/u.exec(office.label);
 				if (proposal) {
 					if (office.seats !== 1) return reject("proposal selection count");
-					question = { borough, page, number: Number(proposal[1]), title: proposal[2]!, text: "", choices: [] };
+					question = {
+						borough,
+						page,
+						number: Number(proposal[1]),
+						title: proposal[2]!,
+						text: "",
+						choices: []
+					};
 				}
 				else {
 					nycOfficeGeography(office.label);
@@ -148,10 +203,23 @@ export function readNycCandidateDocument(source: StateBallotSource, body: string
 			const partyLabel = row[0]!.text;
 			const name = row[1]!.text;
 			if (partyLabel.length > 100 || !/\p{L}/u.test(partyLabel) || name.length > 250 || !/\p{L}/u.test(name) || /[<>\\]/u.test(partyLabel + name) || office.label.startsWith("Governor/Lieutenant Governor") !== name.includes(" / ")) return reject("candidate or printed ticket identity");
-			const key = JSON.stringify([borough, office.label, partyLabel, name]);
+			const key = JSON.stringify([
+				borough,
+				office.label,
+				partyLabel,
+				name
+			]);
 			if (seenLines.has(key)) return reject("repeated candidate line");
 			seenLines.add(key);
-			lines.push({ borough, page, officeLabel: office.label, seats: office.seats, name, partyLabel, row: ++office.rows });
+			lines.push({
+				borough,
+				page,
+				officeLabel: office.label,
+				seats: office.seats,
+				name,
+				partyLabel,
+				row: ++office.rows
+			});
 			sections[section]!.candidateLines++;
 		}
 	}
@@ -169,7 +237,15 @@ export function readNycCandidateDocument(source: StateBallotSource, body: string
 	const claims: (Line & { recordId: string })[] = [];
 	const records: StateCandidateRecord[] = [];
 	for (const { line, parties, lines } of groups.values()) {
-		const record = factory(source, { name: line.name, office: line.officeLabel, party: parties.join(" / "), status: "listed", ...nycOfficeGeography(line.officeLabel), seats: line.seats, sourceDistrictLabel: line.officeLabel });
+		const record = factory(source, {
+			name: line.name,
+			office: line.officeLabel,
+			party: parties.join(" / "),
+			status: "listed",
+			...nycOfficeGeography(line.officeLabel),
+			seats: line.seats,
+			sourceDistrictLabel: line.officeLabel
+		});
 		if (!record) return reject("candidate record");
 		record.sourceStatus = "Tentative";
 		records.push(record);
@@ -185,8 +261,33 @@ export function readNycCandidateDocument(source: StateBallotSource, body: string
 	const questions: StateBallotQuestion[] = [...groupedQuestions].map(([number, values]) => {
 		if (values.length !== nycBoroughs.length) return reject("incomplete citywide proposal inventory");
 		const first = values[0]!;
-		return { id: digest([source.id, source.electionDate, number, first.title, first.text]), audience: "New York City", title: `Proposal ${number}: ${first.title}`, officialText: first.text, choices: ["Yes", "No"], pages: values.map(value => value.page), explicitlyAdvisory: false, voterApplicabilityVerified: false };
+		return {
+			id: digest([
+				source.id,
+				source.electionDate,
+				number,
+				first.title,
+				first.text
+			]),
+			audience: "New York City",
+			title: `Proposal ${number}: ${first.title}`,
+			officialText: first.text,
+			choices: ["Yes", "No"],
+			pages: values.map(value => value.page),
+			explicitlyAdvisory: false,
+			voterApplicabilityVerified: false
+		};
 	});
 	if (new Set(records.map(record => record.id)).size !== records.length) return reject("unique candidate inventory");
-	return { records, claims, questions, questionOccurrences: occurrences, sections, asOfDate, printedAt: printed, tentative: true as const, pages: pages.length };
+	return {
+		records,
+		claims,
+		questions,
+		questionOccurrences: occurrences,
+		sections,
+		asOfDate,
+		printedAt: printed,
+		tentative: true as const,
+		pages: pages.length
+	};
 }

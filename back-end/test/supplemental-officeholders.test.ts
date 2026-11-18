@@ -7,9 +7,27 @@ import { listSupplementalOfficeholdersForDistrictMatches, mergeRepresentativeMat
 import { createReviewedFixtureRepository } from "./helpers/reviewed-state-fixtures.js";
 
 const districts: LocationDistrictMatch[] = [
-	{ id: "congressional:3", districtType: "congressional", districtCode: "3", label: "Congressional 3", sourceSystem: "Controlled fixture" },
-	{ id: "state-senate:24", districtType: "state-senate", districtCode: "24", label: "State Senate 24", sourceSystem: "Controlled fixture" },
-	{ id: "state-house:44", districtType: "state-house", districtCode: "44", label: "State House 44", sourceSystem: "Controlled fixture" },
+	{
+		id: "congressional:3",
+		districtType: "congressional",
+		districtCode: "3",
+		label: "Congressional 3",
+		sourceSystem: "Controlled fixture"
+	},
+	{
+		id: "state-senate:24",
+		districtType: "state-senate",
+		districtCode: "24",
+		label: "State Senate 24",
+		sourceSystem: "Controlled fixture"
+	},
+	{
+		id: "state-house:44",
+		districtType: "state-house",
+		districtCode: "44",
+		label: "State House 44",
+		sourceSystem: "Controlled fixture"
+	},
 ];
 
 test("supplemental officials require the same state, not only a matching district number", () => {
@@ -30,7 +48,16 @@ test("supplemental matching stays unavailable without a usable explicit state", 
 });
 
 test("state-scoped supplemental merging preserves provider matches without attaching another state's record", () => {
-	const provider: LocationRepresentativeMatch = { id: "controlled:oregon", name: "Controlled Oregon Official", districtLabel: "State Senate 24", officeTitle: "State Senator", governmentLevel: null, officeDisplayLabel: "State Senator", officeType: null, sourceSystem: "Controlled fixture" };
+	const provider: LocationRepresentativeMatch = {
+		id: "controlled:oregon",
+		name: "Controlled Oregon Official",
+		districtLabel: "State Senate 24",
+		officeTitle: "State Senator",
+		governmentLevel: null,
+		officeDisplayLabel: "State Senator",
+		officeType: null,
+		sourceSystem: "Controlled fixture"
+	};
 	assert.deepEqual(mergeRepresentativeMatchesWithSupplementalRecords([provider], districts, "OR"), [provider]);
 	assert.ok(mergeRepresentativeMatchesWithSupplementalRecords([], districts, "UT").some(match => match.id === "supplemental:keven-stratton"));
 	assert.equal(mergeRepresentativeMatchesWithSupplementalRecords([], districts, "UT").find(match => match.id === "supplemental:keven-stratton")?.officialWebsiteUrl, undefined);
@@ -48,11 +75,33 @@ test("Oregon lookup, saved context and linked district/official directories neve
 		ldaClient: null,
 		openFecClient: null,
 		openStatesClient: null,
-		stateBallotRepository: await createReviewedFixtureRepository(context, { now: () => Date.parse("2026-10-21T12:00:00Z"), fetchText: async () => { throw new Error("No external request"); } }),
-		zipLookupLogger: { enabled: false, logPath: ":memory:", async record() {} },
-		addressEnrichmentService: { async lookupAddress() {
-			return { benchmark: "Public_AR_Current", countyFips: "051", districtMatches: districts, electionDistrictMatches: districts.filter(match => match.districtType === "congressional").map(match => ({ ...match, congressionalSession: 120 })), fromCache: false, latitude: 0, longitude: 0, normalizedAddress: "100 Controlled Review St, Portland, OR 97214", representativeMatches: [], state: "OR", vintage: "Current_Current", zip5: "97214" };
-		} },
+		stateBallotRepository: await createReviewedFixtureRepository(context, {
+			now: () => Date.parse("2026-10-21T12:00:00Z"),
+			fetchText: async () => { throw new Error("No external request"); }
+		}),
+		zipLookupLogger: {
+			enabled: false,
+			logPath: ":memory:",
+			async record() {}
+		},
+		addressEnrichmentService: {
+			async lookupAddress() {
+				return {
+					benchmark: "Public_AR_Current",
+					countyFips: "051",
+					districtMatches: districts,
+					electionDistrictMatches: districts.filter(match => match.districtType === "congressional").map(match => ({ ...match, congressionalSession: 120 })),
+					fromCache: false,
+					latitude: 0,
+					longitude: 0,
+					normalizedAddress: "100 Controlled Review St, Portland, OR 97214",
+					representativeMatches: [],
+					state: "OR",
+					vintage: "Current_Current",
+					zip5: "97214"
+				};
+			}
+		},
 	});
 	const server = app.listen(0, "127.0.0.1");
 	await once(server, "listening");
@@ -60,18 +109,28 @@ test("Oregon lookup, saved context and linked district/official directories neve
 	assert.ok(address && typeof address === "object");
 	const base = `http://127.0.0.1:${address.port}`;
 	try {
-		const response = await fetch(`${base}/api/location`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ q: "100 Controlled Review St, Portland, OR 97214" }) });
+		const response = await fetch(`${base}/api/location`, {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ q: "100 Controlled Review St, Portland, OR 97214" })
+		});
 		assert.equal(response.status, 200);
 		const lookup = await response.json();
 		assert.deepEqual(lookup.representativeMatches, []);
 		assert.equal(lookup.ballotContentPreviews[0].candidateCount, 12);
 		const cookie = response.headers.getSetCookie().map(value => value.split(";", 1)[0]).join("; ");
-		const active = await (await fetch(`${base}/api/location/active`, { headers: { cookie } })).json();
+		const active = await (await fetch(`${base}/api/location/active`, {
+			headers: { cookie }
+		})).json();
 		assert.deepEqual(active.representativeMatches, []);
-		const district = await (await fetch(`${base}/api/districts/state-senate-24`, { headers: { cookie } })).json();
+		const district = await (await fetch(`${base}/api/districts/state-senate-24`, {
+			headers: { cookie }
+		})).json();
 		assert.equal(district.mode, "nationwide");
 		assert.deepEqual(district.representatives, []);
-		const directory = await (await fetch(`${base}/api/representatives`, { headers: { cookie } })).json();
+		const directory = await (await fetch(`${base}/api/representatives`, {
+			headers: { cookie }
+		})).json();
 		assert.equal(directory.mode, "nationwide");
 		assert.deepEqual(directory.representatives, []);
 	}

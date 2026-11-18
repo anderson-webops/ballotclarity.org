@@ -79,7 +79,10 @@ test("Texas retains the original reviewed source and adds a separately validated
 	assert.equal(original.format, "reviewed-pdf");
 	assert.equal(original.retrievalPolicy, "manual-snapshot");
 	assert.equal(
-		legacyReviewedStateBallotSource({ ...source, documentUrls: [...source.documentUrls!].reverse() }),
+		legacyReviewedStateBallotSource({
+			...source,
+			documentUrls: [...source.documentUrls!].reverse()
+		}),
 		null
 	);
 	const catalog = discoverStateBallotElectionCycles(body(), source.id, now);
@@ -113,8 +116,19 @@ test("latest Texas boundary holds protect retained snapshots while keeping all c
 	const congressional = retained.records.find(record => record.scope === "congressional")!;
 	const house = retained.records.find(record => record.scope === "state-house")!;
 	assert.ok(congressional);
-	const lookup = { districtMatches: [congressional, house].map(record => ({ id: `${record.scope}:${record.district}`, districtType: record.scope, districtCode: record.district, label: record.district, sourceSystem: "Unverified boundary vintage" })) };
-	for (const snapshot of [retained, { ...retained, source }]) {
+	const lookup = {
+		districtMatches: [congressional, house].map(record => ({
+			id: `${record.scope}:${record.district}`,
+			districtType: record.scope,
+			districtCode: record.district,
+			label: record.district,
+			sourceSystem: "Unverified boundary vintage"
+		}))
+	};
+	for (const snapshot of [
+		retained,
+		{ ...retained, source }
+	]) {
 		const preview = buildStateBallotPreview(snapshot, lookup)!;
 		const displayedIds = new Set(preview.contests.flatMap(contest => contest.candidates.map(candidate => candidate.id)));
 		assert.ok(retained.records.filter(record => record.scope === "congressional").every(record => !displayedIds.has(record.id)));
@@ -216,7 +230,9 @@ test("Texas policy drift stops before candidate acquisition and a captured disco
 			extractor: async () => "unused",
 			requestText: async (url) => {
 				requests.push(url);
-				return url.endsWith("robots.txt") ? "" : "changed policy";
+				return url.endsWith("robots.txt")
+					? ""
+					: "changed policy";
 			}
 		}),
 		/policy|layout/u

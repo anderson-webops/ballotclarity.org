@@ -10,7 +10,12 @@ definePageMeta({
 const { data: session } = await useAdminSession("admin-sources-session");
 const { data, error, pending, refresh } = await useAdminSourceMonitor();
 const canManageSources = computed(() => session.value?.role === "admin" && Boolean(session.value.mfaEnabledAt));
-const healthOptions: AdminSourceHealth[] = ["healthy", "review-soon", "stale", "incident"];
+const healthOptions: AdminSourceHealth[] = [
+	"healthy",
+	"review-soon",
+	"stale",
+	"incident"
+];
 const savingId = ref<string | null>(null);
 const feedbackMessage = ref("");
 const feedbackTone = ref<"error" | "success">("success");

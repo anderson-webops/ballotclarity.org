@@ -21,7 +21,9 @@ import type {
 type DateFormatter = (value: string) => string;
 
 function uniqueSources(sources: Source[]) {
-	return [...new Map(sources.map(source => [source.id, source])).values()];
+	return [
+		...new Map(sources.map(source => [source.id, source])).values()
+	];
 }
 
 function stableSourceId(prefix: string, value: string) {
@@ -31,7 +33,9 @@ function stableSourceId(prefix: string, value: string) {
 function sourceDate(value: string | undefined) {
 	const normalizedValue = value || new Date().toISOString();
 
-	return normalizedValue.includes("T") ? normalizedValue.slice(0, 10) : normalizedValue;
+	return normalizedValue.includes("T")
+		? normalizedValue.slice(0, 10)
+		: normalizedValue;
 }
 
 function buildLookupSources(input: {
@@ -82,7 +86,9 @@ function buildLookupSources(input: {
 		sources.push({
 			authority: isOpenStates
 				? "nonprofit-provider"
-				: /official|congress\.gov|government/i.test(match.sourceSystem) ? "official-government" : "open-data",
+				: /official|congress\.gov|government/i.test(match.sourceSystem)
+					? "official-government"
+					: "open-data",
 			// Prefer the provider's own record date; only fall back to when this lookup retrieved it.
 			date: sourceDate(match.updatedAt ?? input.resolvedAt),
 			id: stableSourceId("lookup-representative-source", `${match.id}-${match.sourceSystem}`),
@@ -122,7 +128,9 @@ export function buildLookupProvenanceSummary(input: {
 				? "A full address gives the strongest district match."
 				: "ZIP-only lookup remains approximate inside shared postal areas.",
 			label: "Lookup type",
-			value: input.inputKind === "address" ? "Address matched" : "ZIP matched"
+			value: input.inputKind === "address"
+				? "Address matched"
+				: "ZIP matched"
 		},
 		{
 			detail: "These districts decide which offices and ballot questions apply to you.",
@@ -151,7 +159,9 @@ export function buildLookupProvenanceSummary(input: {
 		badges.set("Cached lookup", { label: "Cached lookup", tone: "neutral" });
 
 	return {
-		badges: [...badges.values()],
+		badges: [
+			...badges.values()
+		],
 		items,
 		note: "Each match is labeled with the data source it came from.",
 		sources,
@@ -199,10 +209,16 @@ export function buildCandidateFinanceCategoryBreakdown(candidate: Candidate, for
 		totalsByCategory.set(funder.category, (totalsByCategory.get(funder.category) ?? 0) + funder.amount);
 
 	const totalRaised = candidate.funding.totalRaised;
-	const itemizedTotal = [...totalsByCategory.values()].reduce((sum, amount) => sum + amount, 0);
+	const itemizedTotal = [
+		...totalsByCategory.values()
+	].reduce((sum, amount) => sum + amount, 0);
 	const unitemizedAmount = Math.max(totalRaised - itemizedTotal, 0);
-	const shareOfTotal = (amount: number) => totalRaised > 0 ? Math.round((amount / totalRaised) * 100) : 0;
-	const categories = [...totalsByCategory.entries()]
+	const shareOfTotal = (amount: number) => totalRaised > 0
+		? Math.round((amount / totalRaised) * 100)
+		: 0;
+	const categories = [
+		...totalsByCategory.entries()
+	]
 		.map(([label, amount]) => ({ amount, label, note: `${shareOfTotal(amount)}% of total raised.` }))
 		.sort((left, right) => right.amount - left.amount);
 
@@ -232,7 +248,10 @@ export function buildContestComparisonMatrix(contest: Contest): ComparisonMatrix
 	const columns: ComparisonMatrixColumn[] = contest.type === "candidate"
 		? (contest.candidates ?? []).map(candidate => ({
 				badges: [
-					{ label: candidate.incumbent ? "Incumbent" : "Not incumbent", tone: candidate.incumbent ? "accent" : "neutral" },
+					{
+						label: candidate.incumbent ? "Incumbent" : "Not incumbent",
+						tone: candidate.incumbent ? "accent" : "neutral"
+					},
 					{ label: candidate.comparison.ballotStatus.label, tone: "neutral" }
 				],
 				id: candidate.slug,
@@ -242,7 +261,12 @@ export function buildContestComparisonMatrix(contest: Contest): ComparisonMatrix
 			}))
 		: (contest.measures ?? []).map(measure => ({
 				badges: [
-					{ label: measure.freshness.statusLabel, tone: measure.freshness.status === "up-to-date" ? "accent" : "neutral" }
+					{
+						label: measure.freshness.statusLabel,
+						tone: measure.freshness.status === "up-to-date"
+							? "accent"
+							: "neutral"
+					}
 				],
 				id: measure.slug,
 				label: measure.title,
@@ -288,7 +312,9 @@ export function buildContestComparisonMatrix(contest: Contest): ComparisonMatrix
 				cells: (contest.candidates ?? []).map(candidate => ({
 					columnId: candidate.slug,
 					sources: candidate.keyActions.flatMap(action => action.sources),
-					value: `${candidate.keyActions.length} documented action${candidate.keyActions.length === 1 ? "" : "s"}`
+					value: `${candidate.keyActions.length} documented action${candidate.keyActions.length === 1
+						? ""
+						: "s"}`
 				})),
 				id: "actions",
 				label: "Documented actions",
@@ -345,7 +371,9 @@ export function buildContestComparisonMatrix(contest: Contest): ComparisonMatrix
 		columns,
 		note: "Read across a row to compare. This is not a scorecard and does not rank anyone.",
 		rows,
-		title: contest.type === "candidate" ? "Compare the candidates side by side" : "Compare the measures side by side",
+		title: contest.type === "candidate"
+			? "Compare the candidates side by side"
+			: "Compare the measures side by side",
 		uncertainty: contest.type === "candidate"
 			? "Some candidates will have thinner questionnaire or action coverage than others."
 			: "Measure rows can still change as more official explanatory material or fiscal notes are added."

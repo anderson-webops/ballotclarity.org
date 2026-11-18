@@ -9,8 +9,14 @@ export function orangePathCommands(body: string, left = 0, top = 0): OrangePathC
 	for (let position = 0; position < tokens.length;) {
 		const kind = tokens[position++]!;
 		if (!["M", "L", "C", "Z"].includes(kind)) return reject();
-		const count = kind === "C" ? 6 : kind === "Z" ? 0 : 2;
-		const values = tokens.slice(position, position + count).map((value, index) => Number(value) + (index % 2 ? top : left));
+		const count = kind === "C"
+			? 6
+			: kind === "Z"
+				? 0
+				: 2;
+		const values = tokens.slice(position, position + count).map((value, index) => Number(value) + (index % 2
+			? top
+			: left));
 		if (values.length !== count || values.some(value => !Number.isFinite(value))) return reject();
 		result.push({ kind, values });
 		position += count;
@@ -24,7 +30,15 @@ export function orangeRuleShapes(body: string) {
 	let points: number[][] = [];
 	const complete = (closed: boolean) => {
 		if (points.length !== (closed ? 4 : 2) || new Set(points.map(point => point.join(","))).size !== points.length || points.some((point, index) => (index > 0 || closed) && point[0] !== points[(index + points.length - 1) % points.length]![0] && point[1] !== points[(index + points.length - 1) % points.length]![1]) || (closed && (new Set(points.map(point => point[0])).size !== 2 || new Set(points.map(point => point[1])).size !== 2))) return reject();
-		result.push({ box: [Math.min(...points.map(point => point[0]!)), Math.min(...points.map(point => point[1]!)), Math.max(...points.map(point => point[0]!)), Math.max(...points.map(point => point[1]!))], closed });
+		result.push({
+			box: [
+				Math.min(...points.map(point => point[0]!)),
+				Math.min(...points.map(point => point[1]!)),
+				Math.max(...points.map(point => point[0]!)),
+				Math.max(...points.map(point => point[1]!))
+			],
+			closed
+		});
 		points = [];
 	};
 	for (const command of commands) {

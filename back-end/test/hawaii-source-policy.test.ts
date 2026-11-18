@@ -26,12 +26,21 @@ test("Hawaii's publisher hold prevents retrieval and does not reapprove an old a
 	delete previous.retrievalPolicy;
 	delete previous.snapshotStorage;
 	const body = JSON.stringify({ page: "<select name=\"ctl00$cphFooter$ddlElection\"><option selected value=\"94\">2026 Candidate Report</option></select><input type=\"submit\" name=\"ctl00$cphFooter$rdgSearch$ctl00$ctl02$ctl00$ExportToCsvButton\"><p>1 items in 1 pages</p>", records: "Contests,Party,BallotName,Status,Website\n\"U.S. REPRESENTATIVE, DIST I\",Example,Example Candidate,In General," });
-	const snapshot = { source: previous, retrievedAt: "2026-10-22T12:00:00.000Z", sha256: createHash("sha256").update(body).digest("hex"), records: parseStateCandidateRecords(previous, body) };
+	const snapshot = {
+		source: previous,
+		retrievedAt: "2026-10-22T12:00:00.000Z",
+		sha256: createHash("sha256").update(body).digest("hex"),
+		records: parseStateCandidateRecords(previous, body)
+	};
 	const storage = createStateBallotStorage(directory);
-	const repository = createStateBallotRepository({ sources: [held], dataDirectory: directory, fetchText: async () => {
-		requests++;
-		throw new Error("No automatic fallback.");
-	} });
+	const repository = createStateBallotRepository({
+		sources: [held],
+		dataDirectory: directory,
+		fetchText: async () => {
+			requests++;
+			throw new Error("No automatic fallback.");
+		}
+	});
 	assert.equal(await repository.getSnapshot("HI", held.id), null);
 	await storage.write(snapshot);
 	const filename = join(directory, `${held.id}.json`);

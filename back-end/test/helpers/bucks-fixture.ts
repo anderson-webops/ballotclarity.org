@@ -18,14 +18,56 @@ export function bucksFixture(electionDate = "2026-11-03") {
 	const pdf = Buffer.from("%PDF-controlled-bucks-fixture");
 	const columns = [50, 499, 619, 814, 924];
 	const cells: StateBallotTablePage["cells"] = [];
-	const add = (column: number, top: number, bottom: number, text: string) => cells.push({ bounds: [columns[column]!, top, columns[column + 1]!, bottom], text, logicalText: text });
-	for (const [index, label] of ["Election:", "Vote for:", "Candidate's Name:", "Political Party:"].entries()) add(index, 54, 69, label);
+	const add = (column: number, top: number, bottom: number, text: string) => cells.push({
+		bounds: [
+			columns[column]!,
+			top,
+			columns[column + 1]!,
+			bottom
+		],
+		text,
+		logicalText: text
+	});
+	for (const [index, label] of [
+		"Election:",
+		"Vote for:",
+		"Candidate's Name:",
+		"Political Party:"
+	].entries()) add(index, 54, 69, label);
 	let top = 69;
 	for (const group of [
-		{ label: "Pennsylvania Governor and Lieutenant Governor - 4 Year Term (Vote for 1)", ticket: true, rows: [["Alex Sample, For Governor", "Democratic"], ["Blair Example, For Lieutenant Governor", "Democratic"], ["Casey Sample, For Governor", "Republican"], ["Devon Example, For Lieutenant Governor", "Republican"]] },
-		{ label: "1st Congressional District - Representative in U.S. Congress - 2 Year Term (Vote for 1)", rows: [["Evan Sample", "Democratic"], ["Finley Example", "Republican"]] },
-		{ label: "6th Senatorial District - Senator in the General Assembly - 4 Year Term (Vote for 1)", rows: [["Gray Sample", "Democratic"], ["Harper Example", "Republican"]] },
-		{ label: "18th Legislative District - Representative in the General Assembly - 2 Year Term (Vote for 1)", rows: [["Indigo Sample", "Forward Independent"], ["Jules Example", "Independent Party"], ["Kai Sample", "Republican"]] }
+		{
+			label: "Pennsylvania Governor and Lieutenant Governor - 4 Year Term (Vote for 1)",
+			ticket: true,
+			rows: [
+				["Alex Sample, For Governor", "Democratic"],
+				["Blair Example, For Lieutenant Governor", "Democratic"],
+				["Casey Sample, For Governor", "Republican"],
+				["Devon Example, For Lieutenant Governor", "Republican"]
+			]
+		},
+		{
+			label: "1st Congressional District - Representative in U.S. Congress - 2 Year Term (Vote for 1)",
+			rows: [
+				["Evan Sample", "Democratic"],
+				["Finley Example", "Republican"]
+			]
+		},
+		{
+			label: "6th Senatorial District - Senator in the General Assembly - 4 Year Term (Vote for 1)",
+			rows: [
+				["Gray Sample", "Democratic"],
+				["Harper Example", "Republican"]
+			]
+		},
+		{
+			label: "18th Legislative District - Representative in the General Assembly - 2 Year Term (Vote for 1)",
+			rows: [
+				["Indigo Sample", "Forward Independent"],
+				["Jules Example", "Independent Party"],
+				["Kai Sample", "Republican"]
+			]
+		}
 	]) {
 		const bottom = top + group.rows.length * 18;
 		add(0, top, bottom, group.label);
@@ -36,17 +78,116 @@ export function bucksFixture(electionDate = "2026-11-03") {
 		}
 		top = bottom;
 	}
-	const tables: StateBallotTablePage[] = [{ number: 1, width: 1008, height: 612, text: cells.map(cell => cell.text).join(" "), cells }];
-	const page = (url: string, body: string) => ({ url, body, sha256: bucksHash(body), retrievedAt: capturedAt });
-	const capture = { schemaVersion: 1, type: "bucks-candidate-capture", policies: bucksPolicyReceipts, index: page(bucksIndexUrl, index), notice: page(bucksNoticeUrl, notice), document: { url: canonicalUrl, sha256: bucksHash(pdf), retrievedAt: capturedAt, tables, redirect: { url: offeredUrl, status: 301, location: `${new URL(canonicalUrl).pathname}?bidId=`, retrievedAt: capturedAt } } };
+	const tables: StateBallotTablePage[] = [
+		{
+			number: 1,
+			width: 1008,
+			height: 612,
+			text: cells.map(cell => cell.text).join(" "),
+			cells
+		}
+	];
+	const page = (url: string, body: string) => ({
+		url,
+		body,
+		sha256: bucksHash(body),
+		retrievedAt: capturedAt
+	});
+	const capture = {
+		schemaVersion: 1,
+		type: "bucks-candidate-capture",
+		policies: bucksPolicyReceipts,
+		index: page(bucksIndexUrl, index),
+		notice: page(bucksNoticeUrl, notice),
+		document: {
+			url: canonicalUrl,
+			sha256: bucksHash(pdf),
+			retrievedAt: capturedAt,
+			tables,
+			redirect: {
+				url: offeredUrl,
+				status: 301,
+				location: `${new URL(canonicalUrl).pathname}?bidId=`,
+				retrievedAt: capturedAt
+			}
+		}
+	};
 	const responses = new Map([
-		[`${bucksOrigin}/robots.txt`, { status: 200, body: Buffer.from(policies.robots!), contentType: "text/plain", etag: undefined }],
-		[`${bucksOrigin}/copyright`, { status: 200, body: Buffer.from(policies.copyright!), contentType: "text/html", etag: undefined }],
-		[`${bucksOrigin}/privacy`, { status: 200, body: Buffer.from(policies.privacy!), contentType: "text/html", etag: undefined }],
-		[bucksIndexUrl, { status: 200, body: Buffer.from(index), contentType: "text/html", etag: undefined }],
-		[bucksNoticeUrl, { status: 200, body: Buffer.from(notice), contentType: "text/html", etag: undefined }],
-		[offeredUrl, { status: 301, body: Buffer.alloc(0), contentType: "text/html", etag: undefined, location: capture.document.redirect.location }],
-		[canonicalUrl, { status: 200, body: pdf, contentType: "application/pdf", etag: undefined }]
+		[
+			`${bucksOrigin}/robots.txt`,
+			{
+				status: 200,
+				body: Buffer.from(policies.robots!),
+				contentType: "text/plain",
+				etag: undefined
+			}
+		],
+		[
+			`${bucksOrigin}/copyright`,
+			{
+				status: 200,
+				body: Buffer.from(policies.copyright!),
+				contentType: "text/html",
+				etag: undefined
+			}
+		],
+		[
+			`${bucksOrigin}/privacy`,
+			{
+				status: 200,
+				body: Buffer.from(policies.privacy!),
+				contentType: "text/html",
+				etag: undefined
+			}
+		],
+		[
+			bucksIndexUrl,
+			{
+				status: 200,
+				body: Buffer.from(index),
+				contentType: "text/html",
+				etag: undefined
+			}
+		],
+		[
+			bucksNoticeUrl,
+			{
+				status: 200,
+				body: Buffer.from(notice),
+				contentType: "text/html",
+				etag: undefined
+			}
+		],
+		[
+			offeredUrl,
+			{
+				status: 301,
+				body: Buffer.alloc(0),
+				contentType: "text/html",
+				etag: undefined,
+				location: capture.document.redirect.location
+			}
+		],
+		[
+			canonicalUrl,
+			{
+				status: 200,
+				body: pdf,
+				contentType: "application/pdf",
+				etag: undefined
+			}
+		]
 	]);
-	return { epoch, source: bucksSource(electionDate), capturedAt, offeredUrl, canonicalUrl, pdf, capture, tables, responses, body: () => JSON.stringify(capture) };
+	return {
+		epoch,
+		source: bucksSource(electionDate),
+		capturedAt,
+		offeredUrl,
+		canonicalUrl,
+		pdf,
+		capture,
+		tables,
+		responses,
+		body: () => JSON.stringify(capture)
+	};
 }

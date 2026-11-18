@@ -16,7 +16,16 @@ export async function collectReviewedStateDocuments(reviewPath: string, collecti
 	const now = options.now ?? Date.now;
 	const reviewBody = await readBoundedStateData(reviewPath);
 	const review = JSON.parse(reviewBody);
-	if (!object(review) || !exact(review, ["schemaVersion", "type", "sourceId", "reviewedAt", "snapshotPath", "snapshotSha256"]) || review.schemaVersion !== 1 || review.type !== "reviewed-state-document-collection" || typeof review.sourceId !== "string" || typeof review.reviewedAt !== "string" || !Number.isFinite(Date.parse(review.reviewedAt)) || new Date(review.reviewedAt).toISOString() !== review.reviewedAt || Date.parse(review.reviewedAt) > now() || now() - Date.parse(review.reviewedAt) > 30 * 86400000 || typeof review.snapshotPath !== "string" || !isAbsolute(review.snapshotPath) || typeof review.snapshotSha256 !== "string" || !/^[a-f\d]{64}$/u.test(review.snapshotSha256)) throw new Error("Provide a current exact review of an external candidate snapshot.");
+	if (!object(review) || !exact(review, [
+		"schemaVersion",
+		"type",
+		"sourceId",
+		"reviewedAt",
+		"snapshotPath",
+		"snapshotSha256"
+	]) || review.schemaVersion !== 1 || review.type !== "reviewed-state-document-collection" || typeof review.sourceId !== "string" || typeof review.reviewedAt !== "string" || !Number.isFinite(Date.parse(review.reviewedAt)) || new Date(review.reviewedAt).toISOString() !== review.reviewedAt || Date.parse(review.reviewedAt) > now() || now() - Date.parse(review.reviewedAt) > 30 * 86400000 || typeof review.snapshotPath !== "string" || !isAbsolute(review.snapshotPath) || typeof review.snapshotSha256 !== "string" || !/^[a-f\d]{64}$/u.test(review.snapshotSha256)) {
+		throw new Error("Provide a current exact review of an external candidate snapshot.");
+	}
 	const source = configuredStateBallotSources.find(source => source.id === review.sourceId);
 	if (!source || source.retrievalPolicy !== "manual-snapshot" || source.snapshotStorage !== "external" || !["reviewed-pdf", "reviewed-image"].includes(source.format) || !source.documentUrls?.length) throw new Error("Reviewed document collection requires an explicitly manual PDF or image source.");
 	const snapshotBody = await readBoundedStateData(review.snapshotPath);
@@ -40,7 +49,9 @@ export async function collectReviewedStateDocuments(reviewPath: string, collecti
 	const missingDocuments = snapshot.documents.filter(document => !observed.has(document.url)).map(document => document.url);
 	const unexpectedDocuments = documents.filter(document => !expected.has(document.url)).map(document => document.url);
 	const exactDocuments = documents.length === observed.size && !changedDocuments.length && !missingDocuments.length && !unexpectedDocuments.length;
-	const status = !collection.complete ? "unavailable" : exactDocuments ? "verified-unchanged" : "review-required";
+	const status = !collection.complete
+		? "unavailable"
+		: exactDocuments ? "verified-unchanged" : "review-required";
 	const identifier = randomUUID();
 	let verifiedSnapshot: { path: string; sha256: string } | undefined;
 	if (status === "verified-unchanged") {
@@ -60,16 +71,24 @@ export async function collectReviewedStateDocuments(reviewPath: string, collecti
 		snapshotSha256: review.snapshotSha256,
 		originalRetrievedAt: snapshot.retrievedAt,
 		reviewedRecordCount: snapshot.records.length,
-		verifiedRecordCount: status === "verified-unchanged" ? snapshot.records.length : 0,
+		verifiedRecordCount: status === "verified-unchanged"
+			? snapshot.records.length
+			: 0,
 		collectedAt: collection.collectedAt,
-		...(status === "verified-unchanged" ? { lastPublisherCheckAt: new Date(Math.min(...documents.map(document => Date.parse(document.checkedAt)))).toISOString() } : {}),
+		...(status === "verified-unchanged"
+			? {
+					lastPublisherCheckAt: new Date(Math.min(...documents.map(document => Date.parse(document.checkedAt)))).toISOString()
+				}
+			: {}),
 		publisherRequests: collection.publisherRequests,
 		collectionFile: collection.file,
 		changedDocuments,
 		missingDocuments,
 		unexpectedDocuments,
 		coverageCompletenessClaimed: false,
-		...(verifiedSnapshot ? { verifiedSnapshot } : {}),
+		...(verifiedSnapshot
+			? { verifiedSnapshot }
+			: {}),
 		snapshotChanged: false,
 		imported: false,
 		published: false,

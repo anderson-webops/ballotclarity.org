@@ -55,11 +55,15 @@ function buildIntlTimeZoneOption(timeZone: string | null | undefined, value: str
 	if (floatingDateTimePattern.test(value))
 		return { timeZone: "UTC" };
 
-	return timeZone ? { timeZone } : {};
+	return timeZone
+		? { timeZone }
+		: {};
 }
 
 function parseDisplayDateInput(value: string) {
-	return floatingDateTimePattern.test(value) ? new Date(`${value}Z`) : parseDateInput(value);
+	return floatingDateTimePattern.test(value)
+		? new Date(`${value}Z`)
+		: parseDateInput(value);
 }
 
 export function formatCivicDate(value: string, timeZone: string | null | undefined) {

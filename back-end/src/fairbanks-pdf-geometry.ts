@@ -12,7 +12,9 @@ function requireValue(condition: unknown, detail: string): asserts condition {
 export function inspectFairbanksPdfGeometry(body: string, kind: "sample" | "notice") {
 	requireValue(typeof body === "string" && Buffer.byteLength(body) <= 4 * 1024 * 1024 && ["sample", "notice"].includes(kind), "input bounds");
 	const data: unknown = JSON.parse(body);
-	requireValue(object(data) && Array.isArray(data.pages) && data.pages.length > 0 && data.pages.length <= (kind === "sample" ? 4 : 20) && Array.isArray(data.qpdf) && data.qpdf.length === 2 && object(data.qpdf[1]), "page and object inventory");
+	requireValue(object(data) && Array.isArray(data.pages) && data.pages.length > 0 && data.pages.length <= (kind === "sample"
+		? 4
+		: 20) && Array.isArray(data.qpdf) && data.qpdf.length === 2 && object(data.qpdf[1]), "page and object inventory");
 	const objects = data.qpdf[1];
 	requireValue(Object.keys(objects).length > 0 && Object.keys(objects).length <= 10000, "object bounds");
 	const resolve = (reference: unknown) => {
@@ -22,7 +24,9 @@ export function inspectFairbanksPdfGeometry(body: string, kind: "sample" | "noti
 		return entry.value;
 	};
 	const seen = new Set<string>();
-	const expected = kind === "sample" ? [0, 0, 612, 1008] : [0, 0, 792, 792];
+	const expected = kind === "sample"
+		? [0, 0, 612, 1008]
+		: [0, 0, 792, 792];
 	const pages: Geometry[] = data.pages.map((page: unknown, index) => {
 		requireValue(object(page) && typeof page.object === "string" && !seen.has(page.object), "unique page identity");
 		seen.add(page.object);
@@ -46,7 +50,17 @@ export function inspectFairbanksPdfGeometry(body: string, kind: "sample" | "noti
 		const userUnit = inherited("/UserUnit") ?? 1;
 		requireValue(Array.isArray(mediaBox) && mediaBox.length === 4 && mediaBox.every((value, position) => typeof value === "number" && Number.isFinite(value) && value === expected[position]), "media box");
 		requireValue(Array.isArray(cropBox) && cropBox.length === 4 && cropBox.every((value, position) => value === mediaBox[position]) && rotation === 0 && userUnit === 1, "crop, rotation or page units");
-		return { page: index + 1, mediaBox, cropBox, rotation: 0, userUnit: 1 };
+		return {
+			page: index + 1,
+			mediaBox,
+			cropBox,
+			rotation: 0,
+			userUnit: 1
+		};
 	});
-	return { schemaVersion: 1 as const, objectsSha256: createHash("sha256").update(body).digest("hex"), pages };
+	return {
+		schemaVersion: 1 as const,
+		objectsSha256: createHash("sha256").update(body).digest("hex"),
+		pages
+	};
 }

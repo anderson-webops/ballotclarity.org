@@ -11,11 +11,16 @@ async function createReview() {
 	saving.value = true;
 	feedback.value = "";
 	try {
-		const result = await $fetch<{ package: { workflow: { id: string } } }>("/api/admin/packages", { method: "POST", body: { electionSlug: electionSlug.value } });
+		const result = await $fetch<{ package: { workflow: { id: string } } }>("/api/admin/packages", {
+			method: "POST",
+			body: { electionSlug: electionSlug.value }
+		});
 		await navigateTo(`/admin/packages/${result.package.workflow.id}`);
 	}
 	catch (error) {
-		feedback.value = error instanceof FetchError ? error.data?.message || "Unable to create publication review." : "Unable to create publication review.";
+		feedback.value = error instanceof FetchError
+			? error.data?.message || "Unable to create publication review."
+			: "Unable to create publication review.";
 	}
 	finally { saving.value = false; }
 }

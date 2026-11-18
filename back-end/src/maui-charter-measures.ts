@@ -19,8 +19,43 @@ const compact = (value: string) => value.replace(/\s+/gu, " ").trim();
 const object = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === "object" && !Array.isArray(value);
 const articlePattern = /^\/blog\/f\/[a-z0-9-]*maui-county-charter-amendments?(?:-[a-z0-9]+)*$/u;
 const resolutionPattern = /^(?:Reso|Resolution)\s+(\d{2}-\d{1,4}(?:,\s*(?:CD|FD)\d){0,3})\b/iu;
-const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
-const counts = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"];
+const months = [
+	"jan",
+	"feb",
+	"mar",
+	"apr",
+	"may",
+	"jun",
+	"jul",
+	"aug",
+	"sep",
+	"oct",
+	"nov",
+	"dec"
+];
+const counts = [
+	"zero",
+	"one",
+	"two",
+	"three",
+	"four",
+	"five",
+	"six",
+	"seven",
+	"eight",
+	"nine",
+	"ten",
+	"eleven",
+	"twelve",
+	"thirteen",
+	"fourteen",
+	"fifteen",
+	"sixteen",
+	"seventeen",
+	"eighteen",
+	"nineteen",
+	"twenty"
+];
 
 export interface MauiCharterAccessReview { reviewedAt: string; robotsSha256: string }
 export const mauiCharterAccessReview: MauiCharterAccessReview = {
@@ -63,7 +98,9 @@ function localUrl(value: string) {
 
 function sitemapLinks(body: string) {
 	if (Buffer.byteLength(body) > maximumBytes || /<!DOCTYPE|<!ENTITY|<!\[CDATA\[/iu.test(body) || !/^\s*<\?xml[^>]*>\s*<(?:sitemapindex|urlset)\b/u.test(body)) throw new Error("Maui sitemap format changed.");
-	const addresses = [...body.matchAll(/<loc>([^<]+)<\/loc>/gu)].map(match => match[1]!);
+	const addresses = [
+		...body.matchAll(/<loc>([^<]+)<\/loc>/gu)
+	].map(match => match[1]!);
 	if (!addresses.length || addresses.length > 2000 || new Set(addresses).size !== addresses.length) throw new Error("Maui sitemap inventory changed.");
 	for (const address of addresses) localUrl(address);
 	return addresses;
@@ -97,10 +134,16 @@ export function readMauiCharterIndex(body: string) {
 		const url = new URL(stateHtmlAttribute(node, "href"), origin);
 		if (!title || url.protocol !== "https:" || url.hostname !== "img1.wsimg.com" || url.username || url.password || url.port || url.hash
 			|| !/^\/blobby\/go\/d625d658-8582-4d35-b9fe-7702a7c85585\/downloads\/[a-f\d-]{36}\/[\w%,. -]+\.pdf$/iu.test(url.pathname)
-			|| [...url.searchParams.keys()].join(",") !== "ver" || !/^\d{13}$/u.test(url.searchParams.get("ver") ?? "")) {
+			|| [
+				...url.searchParams.keys()
+			].join(",") !== "ver" || !/^\d{13}$/u.test(url.searchParams.get("ver") ?? "")) {
 			throw new Error("Maui county resolution link changed.");
 		}
-		documents.push({ resolution: resolution(label), title, url: url.href });
+		documents.push({
+			resolution: resolution(label),
+			title,
+			url: url.href
+		});
 		title = "";
 	}
 	if (!documents.length || documents.length > 20 || documents.length !== headingCount || new Set(documents.map(document => document.resolution)).size !== documents.length || new Set(documents.map(document => document.url)).size !== documents.length) throw new Error("Maui resolution inventory is incomplete or ambiguous.");
@@ -120,19 +163,30 @@ function readArticle(body: string, url: string, year: number) {
 	if (!object(content) || !Array.isArray(content.blocks) || content.blocks.length > 200 || content.blocks.some(block => !object(block) || typeof block.text !== "string" || block.text.length > 10_000)) throw new Error("Maui article content changed.");
 	const blocks = content.blocks.map(block => compact(block.text));
 	const declarations = blocks.filter(text => /general election ballot will include/iu.test(text));
-	const date = declarations.length === 1 ? declarations[0]!.match(/\b(20\d{2})\)[\s\S]{0,200}?\b([A-Z][a-z]+)\.?\s+(\d{1,2})\s+general election ballot will include\s+([a-z]+|\d{1,2})\s+proposed amendments? to the Maui County Charter\./u) : null;
+	const date = declarations.length === 1
+		? declarations[0]!.match(/\b(20\d{2})\)[\s\S]{0,200}?\b([A-Z][a-z]+)\.?\s+(\d{1,2})\s+general election ballot will include\s+([a-z]+|\d{1,2})\s+proposed amendments? to the Maui County Charter\./u)
+		: null;
 	if (!date || Number(date[1]) !== year) throw new Error("Maui election date and measure count need explicit county evidence.");
 	const month = months.indexOf(date[2]!.slice(0, 3).toLowerCase()) + 1;
 	const electionDate = `${year}-${String(month).padStart(2, "0")}-${date[3]!.padStart(2, "0")}`;
 	if (!month || !Number.isFinite(Date.parse(electionDate)) || new Date(electionDate).toISOString().slice(0, 10) !== electionDate || publishedAt.slice(0, 10) > electionDate) throw new Error("Maui election calendar evidence conflicts.");
-	const count = /^\d+$/u.test(date[4]!) ? Number(date[4]) : counts.indexOf(date[4]!.toLowerCase());
+	const count = /^\d+$/u.test(date[4]!)
+		? Number(date[4])
+		: counts.indexOf(date[4]!.toLowerCase());
 	const questions = blocks.filter(text => resolutionPattern.test(text)).map((text) => {
 		const match = text.match(/^[\s\S]*?:\s*[“"](Shall the Charter[\s\S]+\?)[”"]$/u);
 		if (!match || match[1]!.length > 4000) throw new Error("Maui official question text changed.");
-		return { resolution: resolution(text), ballotQuestion: match[1]! };
+		return {
+			resolution: resolution(text),
+			ballotQuestion: match[1]!
+		};
 	});
 	if (!questions.length || questions.length !== count || questions.length > 20 || blocks.filter(text => /Shall the Charter/u.test(text)).length !== questions.length || new Set(questions.map(question => question.resolution)).size !== questions.length) throw new Error("Maui official question inventory is incomplete or ambiguous.");
-	return { electionDate, publicationDate: publishedAt.slice(0, 10), questions };
+	return {
+		electionDate,
+		publicationDate: publishedAt.slice(0, 10),
+		questions
+	};
 }
 
 export function readMauiCharterCapture(value: unknown, now = Date.now()) {
@@ -147,7 +201,11 @@ export function readMauiCharterCapture(value: unknown, now = Date.now()) {
 	const robots = captured.get(`${origin}/robots.txt`);
 	if (!robots || review.robotsSha256 !== robots.sha256 || typeof review.reviewedAt !== "string" || !Number.isFinite(Date.parse(review.reviewedAt)) || Date.parse(review.reviewedAt) > Date.parse(robots.capturedAt) || Date.parse(robots.capturedAt) - Date.parse(review.reviewedAt) > 30 * day) throw new Error("Maui publisher access review is missing or expired.");
 	const policy = electionDocumentRobotsPolicy(Buffer.from(robots.body));
-	if ([...captured.keys()].some(url => !policy.allowed(url))) throw new Error("Maui robots policy excludes a captured page.");
+	if ([
+		...captured.keys()
+	].some(url => !policy.allowed(url))) {
+		throw new Error("Maui robots policy excludes a captured page.");
+	}
 	const index = captured.get(indexUrl);
 	const sitemap = captured.get(sitemapUrl);
 	const blogMap = captured.get(blogMapUrl);
@@ -158,13 +216,34 @@ export function readMauiCharterCapture(value: unknown, now = Date.now()) {
 	const articles = addresses.flatMap((url) => {
 		const article = readArticle(captured.get(url)!.body, url, charter.year);
 		if (article && article.publicationDate > captured.get(url)!.capturedAt.slice(0, 10)) throw new Error("Maui publication date is in the future.");
-		return article ? [{ ...article, url }] : [];
+		return article
+			? [
+					{ ...article, url }
+				]
+			: [];
 	});
 	if (articles.length !== 1) throw new Error("Maui election publication is missing or ambiguous.");
 	const article = articles[0]!;
 	if (article.questions.length !== charter.documents.length || article.questions.some(question => !charter.documents.some(document => document.resolution === question.resolution))) throw new Error("Maui article and resolution inventory disagree.");
-	const questions: MauiCharterQuestion[] = charter.documents.map(document => ({ resolution: document.resolution, title: document.title, ballotQuestion: article.questions.find(question => question.resolution === document.resolution)!.ballotQuestion, resolutionUrl: document.url, articleUrl: article.url, publicationDate: article.publicationDate }));
-	return { schemaVersion: 1, type: "maui-charter-measure-inventory", stateCode: "HI", jurisdiction: { jurisdictionType: "county", name: "Maui County", slug: "hi-maui-county" }, electionDate: article.electionDate, questions, publicationApproved: false, automaticImportApproved: false, resultsInferred: false };
+	const questions: MauiCharterQuestion[] = charter.documents.map(document => ({
+		resolution: document.resolution,
+		title: document.title,
+		ballotQuestion: article.questions.find(question => question.resolution === document.resolution)!.ballotQuestion,
+		resolutionUrl: document.url,
+		articleUrl: article.url,
+		publicationDate: article.publicationDate
+	}));
+	return {
+		schemaVersion: 1,
+		type: "maui-charter-measure-inventory",
+		stateCode: "HI",
+		jurisdiction: { jurisdictionType: "county", name: "Maui County", slug: "hi-maui-county" },
+		electionDate: article.electionDate,
+		questions,
+		publicationApproved: false,
+		automaticImportApproved: false,
+		resultsInferred: false
+	};
 }
 
 export async function fetchMauiCharterCapture(options: Options = {}): Promise<MauiCharterCapture> {
@@ -176,10 +255,23 @@ export async function fetchMauiCharterCapture(options: Options = {}): Promise<Ma
 		localUrl(url);
 		if (policy && !policy.allowed(url)) throw new Error("Maui robots policy excludes the offered source.");
 		if (documents.length) await (options.sleep ?? setTimeout)(policy?.delay ?? 11_000);
-		const response = await (options.fetchDocument ?? fetchRemoteSourceDocument)(url, { allowedHosts: ["mauicountyvotes.gov"], maxBytes: maximumBytes, timeoutMs: 20_000 });
-		if (response.status !== 200 || (format === "xml" ? !["application/xml", "text/xml"].includes(response.contentType) : response.contentType !== format) || response.body.length > maximumBytes) throw new Error("Maui publisher denied the request or changed format; collection stopped.");
+		const response = await (options.fetchDocument ?? fetchRemoteSourceDocument)(url, {
+			allowedHosts: ["mauicountyvotes.gov"],
+			maxBytes: maximumBytes,
+			timeoutMs: 20_000
+		});
+		if (response.status !== 200 || (format === "xml"
+			? !["application/xml", "text/xml"].includes(response.contentType)
+			: response.contentType !== format) || response.body.length > maximumBytes) {
+			throw new Error("Maui publisher denied the request or changed format; collection stopped.");
+		}
 		const body = new TextDecoder("utf-8", { fatal: true }).decode(response.body);
-		documents.push({ url, body, sha256: hash(body), capturedAt: new Date(now()).toISOString() });
+		documents.push({
+			url,
+			body,
+			sha256: hash(body),
+			capturedAt: new Date(now()).toISOString()
+		});
 		return body;
 	}
 	const robots = await capture(`${origin}/robots.txt`, "text/plain");
@@ -191,7 +283,12 @@ export async function fetchMauiCharterCapture(options: Options = {}): Promise<Ma
 	const addresses = sitemapLinks(await capture(blogMapUrl, "xml")).filter(url => articlePattern.test(new URL(url).pathname));
 	if (!addresses.length || addresses.length > 8) throw new Error("Maui charter article discovery requires review.");
 	for (const address of addresses) await capture(address, "text/html");
-	const result: MauiCharterCapture = { schemaVersion: 1, type: "maui-charter-measure-capture", accessReview, documents };
+	const result: MauiCharterCapture = {
+		schemaVersion: 1,
+		type: "maui-charter-measure-capture",
+		accessReview,
+		documents
+	};
 	readMauiCharterCapture(result, now());
 	return result;
 }
@@ -229,5 +326,12 @@ export async function writeMauiCharterCapture(directory: string, capture: MauiCh
 		await handle.close().catch(() => {});
 		await unlink(temporary);
 	}
-	return { path, sha256, questions: inventory.questions.length, electionDate: inventory.electionDate, imported: false, published: false };
+	return {
+		path,
+		sha256,
+		questions: inventory.questions.length,
+		electionDate: inventory.electionDate,
+		imported: false,
+		published: false
+	};
 }

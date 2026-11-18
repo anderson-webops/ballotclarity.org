@@ -54,11 +54,25 @@ test("NYC accepts explicitly dated future publications without changing annual U
 });
 
 test("NYC rejects changed status, conflicting dates, repeated lines and truncated borough inventories", () => {
-	for (const body of [nycDocumentFixture().replace("TENTATIVE", "CERTIFIED"), nycDocumentFixture().replace("PRINTED AS OF:", "Updated:"), nycDocumentFixture().replace("Page 3 of 3", "Page 3 of 4"), nycDocumentFixture().replace("Bronx All Parties", "Kings All Parties"), nycDocumentFixture().replace("Working Families", "Democratic"), nycDocumentFixture().replace("Example Governor / Example Lieutenant", "Example Governor"), nycDocumentFixture().replace("9/11/2026", "11/31/2026")]) assert.throws(() => parse(body), /review/u);
+	for (const body of [
+		nycDocumentFixture().replace("TENTATIVE", "CERTIFIED"),
+		nycDocumentFixture().replace("PRINTED AS OF:", "Updated:"),
+		nycDocumentFixture().replace("Page 3 of 3", "Page 3 of 4"),
+		nycDocumentFixture().replace("Bronx All Parties", "Kings All Parties"),
+		nycDocumentFixture().replace("Working Families", "Democratic"),
+		nycDocumentFixture().replace("Example Governor / Example Lieutenant", "Example Governor"),
+		nycDocumentFixture().replace("9/11/2026", "11/31/2026")
+	]) assert.throws(() => parse(body), /review/u);
 });
 
 test("NYC accounts for every native field and rejects unsupported styling or column geometry", () => {
-	for (const body of [nycDocumentFixture().replace("</page>", "<image src=\"unknown.png\"/></page>"), nycDocumentFixture().replace("left=\"26\"", "left=\"27\""), nycDocumentFixture().replace("height=\"918\"", "height=\"1188\""), nycDocumentFixture().replace("#000000", "#FFFFFF"), nycDocumentFixture().replace("</page>", "<text top=\"900\" left=\"0\" width=\"100\" height=\"16\" font=\"7\">Unassigned content</text></page>")]) assert.throws(() => nycNativePages(body) && parse(body), /review/u);
+	for (const body of [
+		nycDocumentFixture().replace("</page>", "<image src=\"unknown.png\"/></page>"),
+		nycDocumentFixture().replace("left=\"26\"", "left=\"27\""),
+		nycDocumentFixture().replace("height=\"918\"", "height=\"1188\""),
+		nycDocumentFixture().replace("#000000", "#FFFFFF"),
+		nycDocumentFixture().replace("</page>", "<text top=\"900\" left=\"0\" width=\"100\" height=\"16\" font=\"7\">Unassigned content</text></page>")
+	]) assert.throws(() => nycNativePages(body) && parse(body), /review/u);
 });
 
 test("NYC discovers both actually linked formats while distinguishing unavailable future elections", () => {
@@ -70,5 +84,12 @@ test("NYC discovers both actually linked formats while distinguishing unavailabl
 });
 
 test("NYC discovery holds contradictory labels, missing formats and unsafe or orphaned document links", () => {
-	for (const body of [nycIndexFixture().replace(" - (DOC)", " - (PDF)"), nycIndexFixture().replace("actual-other-name.rtf", "different.doc"), nycIndexFixture().replace("href=\"/sites", "href=\"https://unreviewed.example/sites"), nycIndexFixture().replace("actually-published-2026.pdf", "actually-published-2026.pdf?token=x"), nycIndexFixture().replace("General Election Contest List", "Other General Election Contest List"), nycIndexFixture().replace("</div></div>", "<a href=\"/orphan.pdf\">General Contest List</a></div></div>")]) assert.throws(() => readNycCandidateIndex(body), /review/u);
+	for (const body of [
+		nycIndexFixture().replace(" - (DOC)", " - (PDF)"),
+		nycIndexFixture().replace("actual-other-name.rtf", "different.doc"),
+		nycIndexFixture().replace("href=\"/sites", "href=\"https://unreviewed.example/sites"),
+		nycIndexFixture().replace("actually-published-2026.pdf", "actually-published-2026.pdf?token=x"),
+		nycIndexFixture().replace("General Election Contest List", "Other General Election Contest List"),
+		nycIndexFixture().replace("</div></div>", "<a href=\"/orphan.pdf\">General Contest List</a></div></div>")
+	]) assert.throws(() => readNycCandidateIndex(body), /review/u);
 });

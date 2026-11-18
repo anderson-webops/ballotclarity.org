@@ -14,7 +14,9 @@ const { ballotPlan, compareList, isHydrated } = storeToRefs(civicStore);
 const candidateSlug = useRouteStringParam("slug");
 const { formatCompactNumber, formatCurrency, formatDate, formatPercent } = useFormatters();
 const { data: candidate, error, pending } = await useCandidate(candidateSlug);
-const candidateTimeline = computed(() => candidate.value ? buildCandidateTimeline(candidate.value) : []);
+const candidateTimeline = computed(() => candidate.value
+	? buildCandidateTimeline(candidate.value)
+	: []);
 const sectionLinks = [
 	{ href: "#biography", label: "Bio" },
 	{ href: "#issues", label: "Issues" },
@@ -29,7 +31,9 @@ function uniqueSources(sources: Source[]) {
 	for (const source of sources)
 		seen.set(source.id, source);
 
-	return [...seen.values()];
+	return [
+		...seen.values()
+	];
 }
 
 usePageSeo({
@@ -58,10 +62,16 @@ usePageSeo({
 	title: candidate.value?.name ?? "Candidate detail",
 });
 
-const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
-const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
+const effectiveBallotPlan = computed(() => isHydrated.value
+	? ballotPlan.value
+	: {});
+const effectiveCompareList = computed(() => isHydrated.value
+	? compareList.value
+	: []);
 const showPersistedCandidateState = computed(() => isHydrated.value);
-const isCompared = computed(() => candidate.value ? effectiveCompareList.value.includes(candidate.value.slug) : false);
+const isCompared = computed(() => candidate.value
+	? effectiveCompareList.value.includes(candidate.value.slug)
+	: false);
 const compareLimitReached = computed(() => effectiveCompareList.value.length >= 3 && !isCompared.value);
 const compareLaunchSlugs = computed(() => {
 	if (!candidate.value || compareLimitReached.value)
@@ -86,8 +96,12 @@ const compareButtonLabel = computed(() => {
 
 	return isCompared.value ? "Remove from compare" : "Add to compare";
 });
-const planButtonIcon = computed(() => showPersistedCandidateState.value && isPlanned.value ? "i-carbon-checkmark" : "i-carbon-notebook");
-const planButtonLabel = computed(() => showPersistedCandidateState.value && isPlanned.value ? "Saved to plan" : "Save to my plan");
+const planButtonIcon = computed(() => showPersistedCandidateState.value && isPlanned.value
+	? "i-carbon-checkmark"
+	: "i-carbon-notebook");
+const planButtonLabel = computed(() => showPersistedCandidateState.value && isPlanned.value
+	? "Saved to plan"
+	: "Save to my plan");
 const dataThroughLabel = computed(() => {
 	if (!candidate.value)
 		return "";
@@ -118,7 +132,9 @@ const atGlanceStats = computed(() => {
 	const activityNote = candidate.value.incumbent
 		? "Selected official actions. Not a full voting record."
 		: "Selected campaign, policy, or public-office actions. Not a full record.";
-	const influenceSectors = [...new Set(candidate.value.funding.topFunders.map(funder => funder.category))].slice(0, 2);
+	const influenceSectors = [
+		...new Set(candidate.value.funding.topFunders.map(funder => funder.category))
+	].slice(0, 2);
 	const influenceNote = influenceSectors.length
 		? `Context draws on ${influenceSectors.join(" and ")}. This is context only, not proof of influence.`
 		: "Influence notes are shown as context only, not proof of influence.";
@@ -137,7 +153,9 @@ const atGlanceStats = computed(() => {
 		{
 			label: "Influence context",
 			note: influenceNote,
-			value: `${candidate.value.lobbyingContext.length} note${candidate.value.lobbyingContext.length === 1 ? "" : "s"}`
+			value: `${candidate.value.lobbyingContext.length} note${candidate.value.lobbyingContext.length === 1
+				? ""
+				: "s"}`
 		}
 	];
 });

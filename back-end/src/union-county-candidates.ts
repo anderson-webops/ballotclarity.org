@@ -41,7 +41,9 @@ interface UnionCandidatePageInventory {
 }
 
 function legalLinks(document: StateHtmlNode) {
-	return [...new Set(descendants(document, node => node.nodeName === "a" && /privacy|terms|copyright|disclaimer|licen[cs]e/iu.test(`${text(node)} ${attribute(node, "href")}`)).map(node => new URL(attribute(node, "href"), unionCandidateOrigin).href))].sort();
+	return [
+		...new Set(descendants(document, node => node.nodeName === "a" && /privacy|terms|copyright|disclaimer|licen[cs]e/iu.test(`${text(node)} ${attribute(node, "href")}`)).map(node => new URL(attribute(node, "href"), unionCandidateOrigin).href))
+	].sort();
 }
 function main(body: string) {
 	if (Buffer.byteLength(body) > 2 * 1024 * 1024) return reject();
@@ -70,10 +72,19 @@ export function readUnionCandidateEdition(body: string): UnionCandidateEdition {
 	const children = (region.childNodes ?? []).filter(node => node.nodeName !== "#text" || text(node));
 	const editions = children.flatMap((node, index) => {
 		const match = /^(20\d{2}) General Election$/u.exec(text(node));
-		return match ? [{ year: Number(match[1]), index }] : [];
+		return match
+			? [
+					{
+						year: Number(match[1]),
+						index
+					}
+				]
+			: [];
 	});
 	if (!editions.length || editions.length > 20 || new Set(editions.map(edition => edition.year)).size !== editions.length) return reject();
-	const selected = editions.reduce((latest, edition) => edition.year > latest.year ? edition : latest);
+	const selected = editions.reduce((latest, edition) => edition.year > latest.year
+		? edition
+		: latest);
 	if (selected.year < 2026 || selected.year > 2099) return reject();
 	const list = children[selected.index + 1];
 	if (!list || list.nodeName !== "ul") return reject();
@@ -81,12 +92,24 @@ export function readUnionCandidateEdition(body: string): UnionCandidateEdition {
 	if (rows.length !== 2) return reject();
 	const documents = rows.map((row, index) => {
 		const anchors = descendants(row, node => node.nodeName === "a");
-		const kind = index === 0 ? "general" : "school";
-		if (anchors.length !== 1 || text(anchors[0]!) !== (kind === "general" ? "General Election Candidates" : "School Board Candidates")) return reject();
+		const kind = index === 0
+			? "general"
+			: "school";
+		if (anchors.length !== 1 || text(anchors[0]!) !== (kind === "general"
+			? "General Election Candidates"
+			: "School Board Candidates")) {
+			return reject();
+		}
 		const match = / A ?s of (\d{1,2})-(\d{1,2})-(20\d{2})$/u.exec(text(row));
-		const sourceAsOfDate = match ? `${match[3]}-${match[1]!.padStart(2, "0")}-${match[2]!.padStart(2, "0")}` : "";
+		const sourceAsOfDate = match
+			? `${match[3]}-${match[1]!.padStart(2, "0")}-${match[2]!.padStart(2, "0")}`
+			: "";
 		if (!sourceAsOfDate || match?.[3] !== String(selected.year) || new Date(`${sourceAsOfDate}T00:00:00Z`).toISOString().slice(0, 10) !== sourceAsOfDate) return reject();
-		return { kind: kind as "general" | "school", url: unionCandidateDocumentUrl(new URL(attribute(anchors[0]!, "href"), unionCandidateIndexUrl).href, selected.year), sourceAsOfDate };
+		return {
+			kind: kind as "general" | "school",
+			url: unionCandidateDocumentUrl(new URL(attribute(anchors[0]!, "href"), unionCandidateIndexUrl).href, selected.year),
+			sourceAsOfDate
+		};
 	});
 	if (new Set(documents.map(document => document.url)).size !== 2) return reject();
 	return { year: selected.year, documents };
@@ -103,10 +126,28 @@ function positionedPages(body: string) {
 		const fields = descendants(page, node => node.nodeName === "line").flatMap((node): Field[] => {
 			const words = descendants(node, child => child.nodeName === "word");
 			const value = clean(words.map(stateHtmlText).join(" "));
-			const groups = /^.+ [1-9] Yrs$/u.test(value) ? [words.slice(0, -2), words.slice(-2)] : [words];
+			const groups = /^.+ [1-9] Yrs$/u.test(value)
+				? [
+						words.slice(0, -2),
+						words.slice(-2)
+					]
+				: [words];
 			return groups.map((group) => {
-				const field = { text: clean(group.map(stateHtmlText).join(" ")), left: Math.min(...group.map(word => Number(attribute(word, "xmin")))), right: Math.max(...group.map(word => Number(attribute(word, "xmax")))), top: Math.min(...group.map(word => Number(attribute(word, "ymin")))), bottom: Math.max(...group.map(word => Number(attribute(word, "ymax")))) };
-				if (!field.text || field.text.length > 1000 || ![field.left, field.right, field.top, field.bottom].every(Number.isFinite) || field.left < 0 || field.right > 1008 || field.left >= field.right || field.top < 0 || field.bottom > 612 || field.top >= field.bottom) return reject();
+				const field = {
+					text: clean(group.map(stateHtmlText).join(" ")),
+					left: Math.min(...group.map(word => Number(attribute(word, "xmin")))),
+					right: Math.max(...group.map(word => Number(attribute(word, "xmax")))),
+					top: Math.min(...group.map(word => Number(attribute(word, "ymin")))),
+					bottom: Math.max(...group.map(word => Number(attribute(word, "ymax"))))
+				};
+				if (!field.text || field.text.length > 1000 || ![
+					field.left,
+					field.right,
+					field.top,
+					field.bottom
+				].every(Number.isFinite) || field.left < 0 || field.right > 1008 || field.left >= field.right || field.top < 0 || field.bottom > 612 || field.top >= field.bottom) {
+					return reject();
+				}
 				return field;
 			});
 		});
@@ -122,7 +163,9 @@ function positionedPages(body: string) {
 }
 function dateLabel(value: string) {
 	const match = /^NOVEMBER (\d{1,2}), (20\d{2})$/u.exec(value);
-	const date = match ? `${match[2]}-11-${match[1]!.padStart(2, "0")}` : "";
+	const date = match
+		? `${match[2]}-11-${match[1]!.padStart(2, "0")}`
+		: "";
 	if (!date || new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) !== date) return reject();
 	return date;
 }
@@ -137,7 +180,9 @@ export function readUnionCandidateReferences(body: string, layout: string, kind:
 	for (const [pageIndex, fields] of pages.entries()) {
 		const page = pageIndex + 1;
 		const visible = clean(visiblePages[pageIndex]!);
-		const title = `CANDIDATE LIST FOR THE ${kind === "general" ? "GENERAL" : "SCHOOL BOARD"} ELECTION`;
+		const title = `CANDIDATE LIST FOR THE ${kind === "general"
+			? "GENERAL"
+			: "SCHOOL BOARD"} ELECTION`;
 		if (fields.filter(field => field.text === title).length !== 1 || !visible.includes(title) || !visible.includes("UNION COUNTY DEPUTY CLERK") || !visible.includes("REFRAIN FROM PUBLISHING LITERATURE UNTIL POSITIONS ARE CONFIRMED")) return reject();
 		const dates = fields.filter(field => /^NOVEMBER \d{1,2}, 20\d{2}$/u.test(field.text));
 		if (dates.length !== 1) return reject();
@@ -151,26 +196,47 @@ export function readUnionCandidateReferences(body: string, layout: string, kind:
 		if (positions.length !== 1) return reject();
 		const header = positions[0]!;
 		const columns = fields.filter(field => Math.abs(field.top - header.top) < 1).sort((left, right) => left.left - right.left);
-		const expected = kind === "school" ? "POSITION,CANDIDATE,ADDRESS,SLOGAN,TERM,EMAIL ADDRESS" : columns.some(field => field.text === "OFFICE") ? "POSITION,CANDIDATE,ADDRESS,PARTY,OFFICE,SLOGAN,EMAIL ADDRESS" : "POSITION,CANDIDATE,ADDRESS,PARTY,SLOGAN,TERM,EMAIL ADDRESS";
+		const expected = kind === "school"
+			? "POSITION,CANDIDATE,ADDRESS,SLOGAN,TERM,EMAIL ADDRESS"
+			: columns.some(field => field.text === "OFFICE")
+				? "POSITION,CANDIDATE,ADDRESS,PARTY,OFFICE,SLOGAN,EMAIL ADDRESS"
+				: "POSITION,CANDIDATE,ADDRESS,PARTY,SLOGAN,TERM,EMAIL ADDRESS";
 		if (columns.map(field => field.text.replace(/^POSITIONS$/u, "POSITION")).join(",") !== expected) return reject();
 		const context = fields.filter(field => field.top > dates[0]!.bottom && field.bottom < header.top).sort((left, right) => left.top - right.top || left.left - right.left);
 		if (context.some(field => !visible.replace(/\s/gu, "").includes(field.text.replace(/\s/gu, "")))) return reject();
 		const jurisdiction = context.find(field => /^(?:TOWNSHIP|TOWN|BOROUGH|CITY) OF [A-Z ]+$/u.test(field.text));
 		const heading = context.find(field => /^(?:UNITED STATES SENATOR|MEMBER OF HOUSE OF REPRESENTATIVES|SHERIFF|COUNTY CLERK|MEMBERS OF BOARD OF COUNTY COMMISSIONERS)/u.test(field.text));
-		if ((kind === "school" || expected.includes("OFFICE")) ? !jurisdiction || heading : !heading || jurisdiction) return reject();
-		const headingParts = heading ? context.filter(field => Math.abs(field.top - heading.top) < 6).sort((left, right) => left.left - right.left).map(field => field.text).join(" ") : "";
+		if ((kind === "school" || expected.includes("OFFICE"))
+			? !jurisdiction || heading
+			: !heading || jurisdiction) {
+			return reject();
+		}
+		const headingParts = heading
+			? context.filter(field => Math.abs(field.top - heading.top) < 6).sort((left, right) => left.left - right.left).map(field => field.text).join(" ")
+			: "";
 		const columnFor = (field: Field) => {
 			const center = (field.left + field.right) / 2;
 			const centers = columns.map(column => (column.left + column.right) / 2);
-			return centers.findIndex((value, index) => center >= (index ? (centers[index - 1]! + value) / 2 : 0) && center < (index < centers.length - 1 ? (value + centers[index + 1]!) / 2 : 1008));
+			return centers.findIndex((value, index) => center >= (index
+				? (centers[index - 1]! + value) / 2
+				: 0) && center < (index < centers.length - 1
+				? (value + centers[index + 1]!) / 2
+				: 1008));
 		};
 		const bodyFields = fields.filter(field => field.top > header.bottom && field.top < 550);
 		const markerFields = bodyFields.filter(field => (columnFor(field) === 0 && /^\d{1,2}(?:[A-Z]|-\d{1,2})$/u.test(field.text)) || (columnFor(field) === 1 && field.text === "No Nomination Made"));
 		const markers = markerFields.filter(field => columnFor(field) === 0 || !markerFields.some(other => columnFor(other) === 0 && Math.abs(field.top - other.top) < 2)).sort((left, right) => left.top - right.top);
 		if (!markers.length) {
-			const empty = kind === "general" ? "NO LOCAL CANDIDATES" : "NO PETITION FILED";
+			const empty = kind === "general"
+				? "NO LOCAL CANDIDATES"
+				: "NO PETITION FILED";
 			if (!bodyFields.some(field => field.text === empty) || !visible.includes(empty) || bodyFields.some(field => columnFor(field) === 0 && /^\d{1,2}(?:[A-Z]|-\d{1,2})(?:\s|$)/u.test(field.text))) throw new Error(`Union ${kind} page ${page} has an unrecognized empty roster.`);
-			inventory.push({ page, jurisdictionLabel: jurisdiction!.text, records: 0, sourceNotice: empty });
+			inventory.push({
+				page,
+				jurisdictionLabel: jurisdiction!.text,
+				records: 0,
+				sourceNotice: empty
+			});
 			continue;
 		}
 		if (markers.length > 100) return reject();
@@ -185,35 +251,95 @@ export function readUnionCandidateReferences(body: string, layout: string, kind:
 			const row = data.filter(field => field.top >= marker.top - 2 && field.top < end - 2);
 			const values = columns.map((column, columnIndex) => row.filter(field => columnFor(field) === columnIndex).sort((left, right) => left.top - right.top || left.left - right.left).map(field => field.text).join(" "));
 			if (values[1] === "No Nomination Made") {
-				const allowedColumns = [0, 1, 3, ...(expected.includes("OFFICE") ? [4] : [])];
+				const allowedColumns = [
+					0,
+					1,
+					3,
+					...(expected.includes("OFFICE")
+						? [4]
+						: [])
+				];
 				if (kind !== "general" || (values[0] && values[0] !== marker.text) || !["Dem", "Rep", "Ind"].includes(values[3]!) || values.some((value, index) => !allowedColumns.includes(index) && value)) return reject();
 				for (const field of row) consumed.add(field);
-				notices.push({ text: values[1], partyCode: values[3]!, office: expected.includes("OFFICE") ? values[4]! : headingParts, position: values[0]! });
+				notices.push({
+					text: values[1],
+					partyCode: values[3]!,
+					office: expected.includes("OFFICE")
+						? values[4]!
+						: headingParts,
+					position: values[0]!
+				});
 				continue;
 			}
 			if (values[0] !== marker.text) return reject();
 			const name = values[1]!;
 			if (!name || name.length > 150 || !/^[\p{L}\p{M} .,'’"()/-]+$/u.test(name) || /\b(?:NO PETITION|CANDIDATE|ADDRESS|WITHDRAWN|NONE)\b/u.test(name) || row.filter(field => columnFor(field) === 1).some(field => !visible.includes(field.text))) return reject();
-			const partyCode = kind === "general" ? values[3]! : "";
+			const partyCode = kind === "general"
+				? values[3]!
+				: "";
 			if (kind === "general" && !["", "Dem", "Rep", "Ind"].includes(partyCode)) throw new Error(`Union general page ${page} row ${rowIndex + 1} requires party-column review.`);
-			const office = kind === "school" ? "School Board" : expected.includes("OFFICE") ? values[4]! : headingParts;
+			const office = kind === "school"
+				? "School Board"
+				: expected.includes("OFFICE")
+					? values[4]!
+					: headingParts;
 			if (!office || office.length > 200 || /@|\b(?:ADDRESS|SLOGAN)\b/u.test(office)) throw new Error(`Union ${kind} page ${page} row ${rowIndex + 1} requires office-column review.`);
-			const termLabel = expected.includes("TERM") ? values[columns.findIndex(column => column.text === "TERM")]! : "";
+			const termLabel = expected.includes("TERM")
+				? values[columns.findIndex(column => column.text === "TERM")]!
+				: "";
 			if (expected.includes("TERM") && !/^[1-9] ?Yrs$/u.test(termLabel)) throw new Error(`Union ${kind} page ${page} row ${rowIndex + 1} requires term-column review.`);
-			const relevantColumns = [1, ...(kind === "general" ? [3] : []), ...(expected.includes("OFFICE") ? [4] : []), ...(expected.includes("TERM") ? [columns.findIndex(column => column.text === "TERM")] : [])];
+			const relevantColumns = [
+				1,
+				...(kind === "general"
+					? [3]
+					: []),
+				...(expected.includes("OFFICE")
+					? [4]
+					: []),
+				...(expected.includes("TERM")
+					? [
+							columns.findIndex(column => column.text === "TERM")
+						]
+					: [])
+			];
 			if (row.filter(field => relevantColumns.includes(columnFor(field))).some(field => !visible.replace(/\s/gu, "").includes(field.text.replace(/\s/gu, "")))) return reject();
 			for (const field of row) consumed.add(field);
-			const reference = { page, position: marker.text, name, office, jurisdictionLabel: jurisdiction?.text ?? "UNION COUNTY", partyCode, termLabel };
+			const reference = {
+				page,
+				position: marker.text,
+				name,
+				office,
+				jurisdictionLabel: jurisdiction?.text ?? "UNION COUNTY",
+				partyCode,
+				termLabel
+			};
 			if (references.some(existing => JSON.stringify(existing) === JSON.stringify(reference))) return reject();
 			references.push(reference);
 		}
 		if (data.some(field => !consumed.has(field))) return reject();
 		const selectionInstructions = bodyFields.filter(field => field.top >= firstInstruction.top - 2).sort((left, right) => left.top - right.top || left.left - right.left).map(field => field.text);
 		if (selectionInstructions.some(instruction => !visible.replace(/\s/gu, "").includes(instruction.replace(/\s/gu, "")))) return reject();
-		inventory.push({ page, jurisdictionLabel: jurisdiction?.text ?? "UNION COUNTY", contextLines: context.map(field => field.text), selectionInstructions, records: references.length - before, ...(notices.length ? { notices } : {}) });
+		inventory.push({
+			page,
+			jurisdictionLabel: jurisdiction?.text ?? "UNION COUNTY",
+			contextLines: context.map(field => field.text),
+			selectionInstructions,
+			records: references.length - before,
+			...(notices.length
+				? { notices }
+				: {})
+		});
 	}
 	if (!references.length || references.length > 2000) return reject();
-	return { electionDate, references, inventory, sourceAsOfDate: descriptor.sourceAsOfDate, positionConfirmationVerified: false, qualificationVerified: false, personalApplicabilityVerified: false };
+	return {
+		electionDate,
+		references,
+		inventory,
+		sourceAsOfDate: descriptor.sourceAsOfDate,
+		positionConfirmationVerified: false,
+		qualificationVerified: false,
+		personalApplicabilityVerified: false
+	};
 }
 
 export async function collectUnionCandidateDocuments(review: { robots: string; privacy: string }, options: { fetchDocument?: typeof fetchRemoteSourceDocument; sleep?: (milliseconds: number) => Promise<void>; now?: () => number; onCapture?: (capture: UnionCandidateCapture) => Promise<void> } = {}) {
@@ -224,9 +350,24 @@ export async function collectUnionCandidateDocuments(review: { robots: string; p
 	async function request(url: string, pdf = false) {
 		await (options.sleep ?? wait)(Math.max(0, 31000 - (now() - previous)));
 		previous = now();
-		const result = await (options.fetchDocument ?? fetchRemoteSourceDocument)(url, { allowedHosts: ["unioncountyvotes.com"], maxBytes: pdf ? 12 * 1024 * 1024 : 2 * 1024 * 1024, timeoutMs: 20000 });
-		if (result.status !== 200 || !result.body.length || (pdf ? !result.body.subarray(0, 5).equals(Buffer.from("%PDF-")) || !/application\/pdf/iu.test(result.contentType) : !/text\/(?:html|plain)/iu.test(result.contentType))) return reject();
-		const capture = { url, body: result.body, sha256: unionCandidateHash(result.body), capturedAt: new Date(now()).toISOString() };
+		const result = await (options.fetchDocument ?? fetchRemoteSourceDocument)(url, {
+			allowedHosts: ["unioncountyvotes.com"],
+			maxBytes: pdf
+				? 12 * 1024 * 1024
+				: 2 * 1024 * 1024,
+			timeoutMs: 20000
+		});
+		if (result.status !== 200 || !result.body.length || (pdf
+			? !result.body.subarray(0, 5).equals(Buffer.from("%PDF-")) || !/application\/pdf/iu.test(result.contentType)
+			: !/text\/(?:html|plain)/iu.test(result.contentType))) {
+			return reject();
+		}
+		const capture = {
+			url,
+			body: result.body,
+			sha256: unionCandidateHash(result.body),
+			capturedAt: new Date(now()).toISOString()
+		};
 		await options.onCapture?.(capture);
 		captures.push(capture);
 		return capture;
@@ -239,5 +380,11 @@ export async function collectUnionCandidateDocuments(review: { robots: string; p
 	const privacy = await request(unionCandidatePolicyUrls[1]);
 	if (unionCandidatePolicyHash(privacy.body.toString("utf8"), "privacy") !== review.privacy) return reject();
 	for (const document of edition.documents) await request(document.url, true);
-	return { edition, captures, imported: false, publicationApproved: false, automaticImportApproved: false };
+	return {
+		edition,
+		captures,
+		imported: false,
+		publicationApproved: false,
+		automaticImportApproved: false
+	};
 }

@@ -32,7 +32,11 @@ export function countyAreaLabel(scope: CountyAreaScope) {
 }
 
 export function countyAreaIdentity(scope: CountyAreaScope) {
-	return JSON.stringify([scope.stateCode, normalized(scope.countyName), scope.excludedMunicipalities.map(normalized).sort()]);
+	return JSON.stringify([
+		scope.stateCode,
+		normalized(scope.countyName),
+		scope.excludedMunicipalities.map(normalized).sort()
+	]);
 }
 
 export function assertJurisdictionCountyArea(value: unknown) {

@@ -13,24 +13,52 @@ const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const sourceId = useRouteStringParam("source");
 const candidateId = useRouteStringParam("id");
 const lookupQuery = computed(() => extractNationwideLookupRouteQuery(route.query));
-const storedCandidate = computed(() => isHydrated.value ? findBallotCandidate(nationwideLookupResult.value, sourceId.value, candidateId.value) : null);
+const storedCandidate = computed(() => isHydrated.value
+	? findBallotCandidate(nationwideLookupResult.value, sourceId.value, candidateId.value)
+	: null);
 const { formatDate } = useFormatters();
 const { data, error, pending, refresh } = await useAsyncData(
 	() => `ballot-record:${sourceId.value}:${candidateId.value}:${lookupQuery.value?.lookup ?? "active"}:${lookupQuery.value?.selection ?? ""}`,
 	async () => {
 		if (storedCandidate.value) return storedCandidate.value;
 		const response = lookupQuery.value
-			? await api<LocationLookupResponse>("/location", { method: "POST", body: { q: lookupQuery.value.lookup, ...(lookupQuery.value.selection ? { selectionId: lookupQuery.value.selection } : {}) } })
+			? await api<LocationLookupResponse>("/location", {
+					method: "POST",
+					body: {
+						q: lookupQuery.value.lookup,
+						...(lookupQuery.value.selection
+							? { selectionId: lookupQuery.value.selection }
+							: {})
+					}
+				})
 			: await api<LocationLookupResponse | null>("/location/active");
-		return response ? findBallotCandidate(normalizeLookupResponseForDisplay(response, null), sourceId.value, candidateId.value) : null;
+		return response
+			? findBallotCandidate(normalizeLookupResponseForDisplay(response, null), sourceId.value, candidateId.value)
+			: null;
 	},
-	{ watch: [isHydrated, sourceId, candidateId, lookupQuery] }
+	{
+		watch: [
+			isHydrated,
+			sourceId,
+			candidateId,
+			lookupQuery
+		]
+	}
 );
 const record = computed(() => storedCandidate.value ?? data.value);
-const sourceNotes = computed(() => record.value ? ballotSourceNotes([record.value.preview]) : []);
+const sourceNotes = computed(() => record.value
+	? ballotSourceNotes([record.value.preview])
+	: []);
 const backTarget = computed(() => buildNationwideRouteTarget("/results", nationwideLookupResult.value, route.query));
 
-usePageSeo({ title: record.value?.candidate.name ?? "Candidate record", description: record.value ? `${record.value.candidate.name} · ${record.value.contest.title}` : "Candidate source record.", path: route.path, robots: "noindex,nofollow" });
+usePageSeo({
+	title: record.value?.candidate.name ?? "Candidate record",
+	description: record.value
+		? `${record.value.candidate.name} · ${record.value.contest.title}`
+		: "Candidate source record.",
+	path: route.path,
+	robots: "noindex,nofollow"
+});
 </script>
 
 <template>

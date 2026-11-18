@@ -32,12 +32,28 @@ test("corrections queue distinguishes loading, authentication, errors and a veri
 	assert.equal(getAdminCorrectionsState({ ...input, failed: true }), "error");
 	assert.equal(getAdminCorrectionsState({ ...input, corrections: null }), "error");
 	assert.equal(getAdminCorrectionsState({ ...input, authenticated: undefined }), "error");
-	assert.equal(getAdminCorrectionsState({ ...input, corrections: [{ id: "pending-report" }] }), "ready");
+	assert.equal(getAdminCorrectionsState({
+		...input,
+		corrections: [
+			{ id: "pending-report" }
+		]
+	}), "ready");
 	assert.equal(
-		getAdminCorrectionsState({ ...input, corrections: [{ id: "pending-report" }], failed: true }),
+		getAdminCorrectionsState({
+			...input,
+			corrections: [
+				{ id: "pending-report" }
+			],
+			failed: true
+		}),
 		"error"
 	);
-	assert.equal(getAdminCorrectionsState({ ...input, corrections: [{ id: "pending-report" }] }), "ready");
+	assert.equal(getAdminCorrectionsState({
+		...input,
+		corrections: [
+			{ id: "pending-report" }
+		]
+	}), "ready");
 	assert.match(correctionsPage, /@retry="retryQueue"/);
 	assert.match(correctionsPage, /Promise\.all\(\[refreshSession\(\), refresh\(\)\]\)/);
 	assert.match(correctionsPage, /v-if="queueState === 'empty'"/);

@@ -22,7 +22,9 @@ function normalized(value: string) {
 
 function personName(value: string) {
 	const parts = value.split(",");
-	return normalized(parts.length === 2 ? `${parts[1]} ${parts[0]}` : value);
+	return normalized(parts.length === 2
+		? `${parts[1]} ${parts[0]}`
+		: value);
 }
 
 function party(value: string) {
@@ -35,12 +37,19 @@ function congressImages(stateCode: string, record: PortraitRecord, members: Cong
 	if (!senate && record.scope !== "congressional") return [];
 	const district = record.district || record.office.match(/\bDistrict\s+(\d+)\b/iu)?.[1];
 	const matches = members.filter(member => member.currentMember === true
-		&& [normalized(stateCode), normalized(stateName ?? "")].includes(normalized(member.state))
+		&& [
+			normalized(stateCode),
+			normalized(stateName ?? "")
+		].includes(normalized(member.state))
 		&& personName(member.name) === personName(record.name)
 		&& (!record.party || party(member.party) === party(record.party)));
 	if (matches.length !== 1) return [];
 	const member = matches[0]!;
-	if (senate ? Boolean(member.district) && !(member.bioguideId === "C001129" && stateCode === "GA" && personName(record.name) === "mike collins") : !district || Number(district) !== member.district) return [];
+	if (senate
+		? Boolean(member.district) && !(member.bioguideId === "C001129" && stateCode === "GA" && personName(record.name) === "mike collins")
+		: !district || Number(district) !== member.district) {
+		return [];
+	}
 	return buildCongressProfileImages({ ...member, directOrderName: record.name });
 }
 
@@ -51,7 +60,9 @@ function supplementalIdentity(stateCode: string, record: PortraitRecord, officia
 		&& (record.scope === "state-house" || record.scope === "state-senate"
 			? official.districtType === record.scope && Boolean(record.district) && official.districtLabel.match(/\d+$/u)?.[0] === String(Number(record.district))
 			: record.scope === "local" && Boolean(record.jurisdiction) && normalized(record.jurisdiction!) === normalized(official.districtLabel) && [official.officeTitle, official.officeSought].some(office => normalized(office) === normalized(record.office))));
-	return matches.length === 1 ? matches[0] : undefined;
+	return matches.length === 1
+		? matches[0]
+		: undefined;
 }
 
 export function createRecordPortraitResolver(options: {
@@ -105,9 +116,22 @@ export function createRecordPortraitResolver(options: {
 		return records.map((record) => {
 			const official = supplementalIdentity(stateCode, record, officials);
 			const federalImages = congressImages(stateCode, record, entry.members);
-			const profileImages = uniqueProfileImages([...federalImages, ...official?.profileImages ?? []]);
-			const personProfileSlug = official?.slug ?? (federalImages.length ? buildNationwideRepresentativeSlug({ id: "", name: record.name }) : undefined);
-			return { ...record, ...(profileImages.length ? { profileImages } : {}), ...(personProfileSlug ? { personProfileSlug } : {}) };
+			const profileImages = uniqueProfileImages([
+				...federalImages,
+				...official?.profileImages ?? []
+			]);
+			const personProfileSlug = official?.slug ?? (federalImages.length
+				? buildNationwideRepresentativeSlug({ id: "", name: record.name })
+				: undefined);
+			return {
+				...record,
+				...(profileImages.length
+					? { profileImages }
+					: {}),
+				...(personProfileSlug
+					? { personProfileSlug }
+					: {})
+			};
 		});
 	};
 }

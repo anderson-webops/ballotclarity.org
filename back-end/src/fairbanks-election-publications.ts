@@ -33,22 +33,74 @@ interface Publication extends Page { kind: "sample" | "notice"; text: string }
 export interface FairbanksPublicationCapture { schemaVersion: 1; type: "fairbanks-election-publication-capture"; accessReview: FairbanksPublicationAccessReview; policies: Page[]; index: Page; documents: Publication[] }
 type TextRequest = typeof fetchRemoteSourceText;
 interface Options { now?: () => number; sleep?: (milliseconds: number) => Promise<void>; requestText?: TextRequest; requestDocument?: typeof fetchRemoteSourceDocument; extractor?: (body: Buffer) => Promise<string>; accessReview?: FairbanksPublicationAccessReview; previous?: FairbanksPublicationCapture }
-const robotsLayout = { restrictiveGroups: [
-	{ agents: ["Baiduspider"], unrelated: true },
-	{ agents: ["Yandex"], unrelated: true },
-	{ agents: ["*"] },
-	{ agents: ["Siteimprove"], unrelated: true },
-	{ agents: ["Siteimprovebot"], unrelated: true },
-	{ agents: ["Siteimprovebot-crawler"], unrelated: true },
-	{ agents: ["meta-webindexer", "meta-externalagent", "OAI-SearchBot", "GPTBot", "ClaudeBot", "Claude-SearchBot", "PerplexityBot", "Amazonbot", "Bytespider", "CCBot", "cohere-ai", "Reflectionbot", "LinkupBot", "ExaSearchBot", "YouBot", "DuckAssistBot", "serpstatbot", "AhrefsBot", "SemrushBot", "MJ12bot", "DotBot"] }
-] } as const;
+const robotsLayout = {
+	restrictiveGroups: [
+		{
+			agents: ["Baiduspider"],
+			unrelated: true
+		},
+		{
+			agents: ["Yandex"],
+			unrelated: true
+		},
+		{
+			agents: ["*"]
+		},
+		{
+			agents: ["Siteimprove"],
+			unrelated: true
+		},
+		{
+			agents: ["Siteimprovebot"],
+			unrelated: true
+		},
+		{
+			agents: ["Siteimprovebot-crawler"],
+			unrelated: true
+		},
+		{
+			agents: [
+				"meta-webindexer",
+				"meta-externalagent",
+				"OAI-SearchBot",
+				"GPTBot",
+				"ClaudeBot",
+				"Claude-SearchBot",
+				"PerplexityBot",
+				"Amazonbot",
+				"Bytespider",
+				"CCBot",
+				"cohere-ai",
+				"Reflectionbot",
+				"LinkupBot",
+				"ExaSearchBot",
+				"YouBot",
+				"DuckAssistBot",
+				"serpstatbot",
+				"AhrefsBot",
+				"SemrushBot",
+				"MJ12bot",
+				"DotBot"
+			]
+		}
+	]
+} as const;
 function review(value: unknown, now: number): asserts value is FairbanksPublicationAccessReview {
-	if (!exact(value, ["reviewedAt", "robotsSha256", "indexLinksSha256", "accessibilitySha256"]) || !instant(value.reviewedAt, now) || now - Date.parse(value.reviewedAt) > 30 * 86400000 || ["robotsSha256", "indexLinksSha256", "accessibilitySha256"].some(key => value[key] !== fairbanksPublicationAccessReview[key as keyof FairbanksPublicationAccessReview])) throw new Error("The Fairbanks publisher access review requires renewal.");
+	if (!exact(value, [
+		"reviewedAt",
+		"robotsSha256",
+		"indexLinksSha256",
+		"accessibilitySha256"
+	]) || !instant(value.reviewedAt, now) || now - Date.parse(value.reviewedAt) > 30 * 86400000 || ["robotsSha256", "indexLinksSha256", "accessibilitySha256"].some(key => value[key] !== fairbanksPublicationAccessReview[key as keyof FairbanksPublicationAccessReview])) {
+		throw new Error("The Fairbanks publisher access review requires renewal.");
+	}
 }
 function pageTree(body: string) {
 	if (!body || Buffer.byteLength(body) > 2 * 1024 * 1024) throw new Error("The Fairbanks page exceeds its bounds.");
 	const tree = parseStateHtml(body);
-	const pending = [{ node: tree, depth: 0 }];
+	const pending = [
+		{ node: tree, depth: 0 }
+	];
 	let visited = 0;
 	while (pending.length) {
 		const { node, depth } = pending.pop()!;
@@ -66,9 +118,21 @@ function visible(node: Parameters<typeof stateHtmlText>[0]) {
 function date(label: string) {
 	const match = /\b(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday),?\s+(October|November)\s+(\d{1,2}),\s+(20\d{2})\b/iu.exec(label);
 	if (!match) throw new Error("The Fairbanks explicit election date requires review.");
-	const value = `${match[4]}-${match[2]!.toLowerCase() === "october" ? "10" : "11"}-${match[3]!.padStart(2, "0")}`;
+	const value = `${match[4]}-${match[2]!.toLowerCase() === "october"
+		? "10"
+		: "11"}-${match[3]!.padStart(2, "0")}`;
 	const parsed = new Date(`${value}T00:00:00Z`);
-	if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value || value < "2026-10-06" || ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][parsed.getUTCDay()]!.toLowerCase() !== match[1]!.toLowerCase()) throw new Error("The Fairbanks election date or weekday is inconsistent.");
+	if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value || value < "2026-10-06" || [
+		"Sunday",
+		"Monday",
+		"Tuesday",
+		"Wednesday",
+		"Thursday",
+		"Friday",
+		"Saturday"
+	][parsed.getUTCDay()]!.toLowerCase() !== match[1]!.toLowerCase()) {
+		throw new Error("The Fairbanks election date or weekday is inconsistent.");
+	}
 	return value;
 }
 export function readFairbanksPublicationIndex(body: string) {
@@ -85,7 +149,10 @@ export function readFairbanksPublicationIndex(body: string) {
 	const calendar = new Date(`${electionDate}T00:00:00Z`);
 	if (/first Tuesday in October/iu.test(text(region)) && (calendar.getUTCMonth() !== 9 || calendar.getUTCDay() !== 2 || calendar.getUTCDate() > 7)) throw new Error("The Fairbanks schedule and election date conflict.");
 	if (/first Tuesday after the first Monday in November/iu.test(text(region)) && (calendar.getUTCMonth() !== 10 || calendar.getUTCDay() !== 2 || calendar.getUTCDate() < 2 || calendar.getUTCDate() > 8)) throw new Error("The Fairbanks schedule and election date conflict.");
-	const documents = ([["sample", "FNSB Sample Ballot (PDF)"], ["notice", "Notice of Election (PDF)"]] as const).map(([kind, label]) => {
+	const documents = ([
+		["sample", "FNSB Sample Ballot (PDF)"],
+		["notice", "Notice of Election (PDF)"]
+	] as const).map(([kind, label]) => {
 		const links = descendants(region, node => node.nodeName === "a" && text(node) === label);
 		if (links.length !== 1) throw new Error("The complete Fairbanks publication set requires review.");
 		visible(links[0]!);
@@ -97,16 +164,43 @@ export function readFairbanksPublicationIndex(body: string) {
 }
 function page(value: unknown, now: number, binary = false): asserts value is Page {
 	if (!object(value) || typeof value.url !== "string" || typeof value.body !== "string" || !digest(value.sha256) || !instant(value.checkedAt, now) || !instant(value.capturedAt, Date.parse(value.checkedAt))) throw new Error("The Fairbanks capture provenance requires review.");
-	const body = binary ? Buffer.from(value.body, "base64") : Buffer.from(value.body);
+	const body = binary
+		? Buffer.from(value.body, "base64")
+		: Buffer.from(value.body);
 	if (body.length > (binary ? 8 : 2) * 1024 * 1024 || hash(body) !== value.sha256 || (binary && (body.toString("base64") !== value.body || body.subarray(0, 5).toString() !== "%PDF-"))) throw new Error("The Fairbanks captured bytes changed or exceed their bounds.");
 }
 export function readFairbanksPublicationCapture(value: unknown, now = Date.now()) {
-	if (!exact(value, ["schemaVersion", "type", "accessReview", "policies", "index", "documents"]) || value.schemaVersion !== 1 || value.type !== "fairbanks-election-publication-capture" || !Array.isArray(value.policies) || value.policies.length !== 2 || !Array.isArray(value.documents) || value.documents.length !== 2) throw new Error("The Fairbanks publication capture contract requires review.");
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"accessReview",
+		"policies",
+		"index",
+		"documents"
+	]) || value.schemaVersion !== 1 || value.type !== "fairbanks-election-publication-capture" || !Array.isArray(value.policies) || value.policies.length !== 2 || !Array.isArray(value.documents) || value.documents.length !== 2) {
+		throw new Error("The Fairbanks publication capture contract requires review.");
+	}
 	page(value.index, now);
-	if (!exact(value.index, ["url", "body", "sha256", "capturedAt", "checkedAt"]) || value.index.url !== fairbanksElectionIndexUrl) throw new Error("The Fairbanks index provenance requires review.");
+	if (!exact(value.index, [
+		"url",
+		"body",
+		"sha256",
+		"capturedAt",
+		"checkedAt"
+	]) || value.index.url !== fairbanksElectionIndexUrl) {
+		throw new Error("The Fairbanks index provenance requires review.");
+	}
 	for (const policy of value.policies) {
 		page(policy, now);
-		if (!exact(policy, ["url", "body", "sha256", "capturedAt", "checkedAt"])) throw new Error("The Fairbanks policy capture requires review.");
+		if (!exact(policy, [
+			"url",
+			"body",
+			"sha256",
+			"capturedAt",
+			"checkedAt"
+		])) {
+			throw new Error("The Fairbanks policy capture requires review.");
+		}
 	}
 	const policies = value.policies as Page[];
 	if (policies[0]!.url !== `${origin}/robots.txt` || policies[0]!.sha256 !== fairbanksPublicationAccessReview.robotsSha256 || policies[1]!.url !== `${origin}/accessibility` || electionDocumentPolicyFingerprint(Buffer.from(policies[1]!.body), "region", policies[1]!.url, "contentarea") !== fairbanksPublicationAccessReview.accessibilitySha256) throw new Error("The Fairbanks publisher policies changed.");
@@ -116,18 +210,48 @@ export function readFairbanksPublicationCapture(value: unknown, now = Date.now()
 	for (const [position, document] of documents.entries()) {
 		page(document, now, true);
 		const offered = inventory.documents[position]!;
-		if (!exact(document, ["url", "body", "sha256", "capturedAt", "checkedAt", "kind", "text"]) || document.kind !== offered.kind || document.url !== offered.url || !rules.allowed(document.url) || typeof document.text !== "string" || Buffer.byteLength(document.text) > 4 * 1024 * 1024 || !/Fairbanks North Star Borough/iu.test(document.text.split("\f")[0]!)) throw new Error("The Fairbanks publication evidence requires review.");
+		if (!exact(document, [
+			"url",
+			"body",
+			"sha256",
+			"capturedAt",
+			"checkedAt",
+			"kind",
+			"text"
+		]) || document.kind !== offered.kind || document.url !== offered.url || !rules.allowed(document.url) || typeof document.text !== "string" || Buffer.byteLength(document.text) > 4 * 1024 * 1024 || !/Fairbanks North Star Borough/iu.test(document.text.split("\f")[0]!)) {
+			throw new Error("The Fairbanks publication evidence requires review.");
+		}
 		const first = document.text.split("\f")[0]!.replace(/\s+/gu, " ").trim();
 		const pages = document.text.split("\f").filter(item => item.trim()).length;
-		if (!pages || pages > (document.kind === "sample" ? 4 : 20) || containsControlCharacters(document.text.replace(/[\r\n\t\f]/gu, ""))) throw new Error("The Fairbanks PDF text or page inventory requires review.");
-		const dated = document.kind === "sample" ? /REGULAR ELECTION\s*(?:-\s*)?((October|November)\s+\d{1,2},\s+20\d{2})/iu.exec(first) : /Notice of Elections\s*((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday),?\s+(October|November)\s+\d{1,2},\s+20\d{2})/iu.exec(first);
+		if (!pages || pages > (document.kind === "sample"
+			? 4
+			: 20) || containsControlCharacters(document.text.replace(/[\r\n\t\f]/gu, ""))) {
+			throw new Error("The Fairbanks PDF text or page inventory requires review.");
+		}
+		const dated = document.kind === "sample"
+			? /REGULAR ELECTION\s*(?:-\s*)?((October|November)\s+\d{1,2},\s+20\d{2})/iu.exec(first)
+			: /Notice of Elections\s*((Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday),?\s+(October|November)\s+\d{1,2},\s+20\d{2})/iu.exec(first);
 		if (!dated) throw new Error("The Fairbanks PDF election identity requires review.");
-		const printed = document.kind === "sample" ? date(`${new Date(`${inventory.electionDate}T00:00:00Z`).toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" })}, ${dated[1]}`) : date(dated[1]!);
+		const printed = document.kind === "sample"
+			? date(`${new Date(`${inventory.electionDate}T00:00:00Z`).toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" })}, ${dated[1]}`)
+			: date(dated[1]!);
 		if (printed !== inventory.electionDate) throw new Error("The Fairbanks index and PDF election dates disagree.");
 	}
 	const checked = Math.max(Date.parse(value.index.checkedAt), ...policies.map(item => Date.parse(item.checkedAt)), ...documents.map(item => Date.parse(item.checkedAt)));
 	review(value.accessReview, checked);
-	return { ...inventory, sourceDocuments: documents.map(({ kind, url, sha256, capturedAt, checkedAt }) => ({ kind, url, sha256, capturedAt, checkedAt })), candidateImportApproved: false, publicationApproved: false, resultsInferred: false };
+	return {
+		...inventory,
+		sourceDocuments: documents.map(({ kind, url, sha256, capturedAt, checkedAt }) => ({
+			kind,
+			url,
+			sha256,
+			capturedAt,
+			checkedAt
+		})),
+		candidateImportApproved: false,
+		publicationApproved: false,
+		resultsInferred: false
+	};
 }
 export async function fetchFairbanksElectionPublications(options: Options = {}): Promise<FairbanksPublicationCapture> {
 	const now = options.now ?? Date.now;
@@ -135,13 +259,32 @@ export async function fetchFairbanksElectionPublications(options: Options = {}):
 	review(accessReview, now());
 	if (options.previous) readFairbanksPublicationCapture(options.previous, now());
 	const request = options.requestText ?? fetchRemoteSourceText;
-	const previousPages = options.previous ? [...options.previous.policies, options.previous.index, ...options.previous.documents] : [];
+	const previousPages = options.previous
+		? [
+				...options.previous.policies,
+				options.previous.index,
+				...options.previous.documents
+			]
+		: [];
 	const preserve = (url: string, body: string, binary = false) => {
-		const sha256 = hash(binary ? Buffer.from(body, "base64") : body);
+		const sha256 = hash(binary
+			? Buffer.from(body, "base64")
+			: body);
 		const previous = previousPages.find(item => item.url === url && item.sha256 === sha256 && item.body === body);
-		return { url, body, sha256, capturedAt: previous?.capturedAt ?? new Date(now()).toISOString(), checkedAt: new Date(now()).toISOString() };
+		return {
+			url,
+			body,
+			sha256,
+			capturedAt: previous?.capturedAt ?? new Date(now()).toISOString(),
+			checkedAt: new Date(now()).toISOString()
+		};
 	};
-	const transport = { allowedHosts: ["www.fnsb.gov"], maxBytes: 2 * 1024 * 1024, maxRedirects: 0, timeoutMs: 30000 };
+	const transport = {
+		allowedHosts: ["www.fnsb.gov"],
+		maxBytes: 2 * 1024 * 1024,
+		maxRedirects: 0,
+		timeoutMs: 30000
+	};
 	const robots = preserve(`${origin}/robots.txt`, await request(`${origin}/robots.txt`, transport));
 	if (robots.sha256 !== accessReview.robotsSha256) throw new Error("The Fairbanks robots policy changed.");
 	const rules = electionDocumentRobotsPolicy(Buffer.from(robots.body), [], [], undefined, undefined, robotsLayout);
@@ -170,9 +313,20 @@ export async function fetchFairbanksElectionPublications(options: Options = {}):
 		const response = await (options.requestDocument ?? fetchRemoteSourceDocument)(offered.url, { allowedHosts: transport.allowedHosts, maxBytes: 8 * 1024 * 1024, timeoutMs: 30000 });
 		if (response.status !== 200 || response.contentType !== "application/pdf" || response.body.subarray(0, 5).toString() !== "%PDF-") throw new Error("A Fairbanks PDF is unavailable; retain prior evidence.");
 		const extracted = await extractor(response.body);
-		documents.push({ ...preserve(offered.url, response.body.toString("base64"), true), kind: offered.kind, text: extracted });
+		documents.push({
+			...preserve(offered.url, response.body.toString("base64"), true),
+			kind: offered.kind,
+			text: extracted
+		});
 	}
-	const capture: FairbanksPublicationCapture = { schemaVersion: 1, type: "fairbanks-election-publication-capture", accessReview, policies: [robots, accessibility], index, documents };
+	const capture: FairbanksPublicationCapture = {
+		schemaVersion: 1,
+		type: "fairbanks-election-publication-capture",
+		accessReview,
+		policies: [robots, accessibility],
+		index,
+		documents
+	};
 	readFairbanksPublicationCapture(capture, now());
 	return capture;
 }
@@ -211,5 +365,11 @@ export async function writeFairbanksElectionPublications(directory: string, capt
 		await handle.close().catch(() => {});
 		await unlink(temporary);
 	}
-	return { path, sha256, electionDate: inventory.electionDate, imported: false, published: false };
+	return {
+		path,
+		sha256,
+		electionDate: inventory.electionDate,
+		imported: false,
+		published: false
+	};
 }

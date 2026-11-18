@@ -1,7 +1,12 @@
 import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
 
-const fontNames = ["/ArialMT", "/Arial-BoldMT", "/TimesNewRomanPSMT", "/TimesNewRomanPS-BoldMT"];
+const fontNames = [
+	"/ArialMT",
+	"/Arial-BoldMT",
+	"/TimesNewRomanPSMT",
+	"/TimesNewRomanPS-BoldMT"
+];
 const plain = (value: unknown): value is Record<string, unknown> => Boolean(value && typeof value === "object" && !Array.isArray(value));
 const hash = (value: Buffer) => createHash("sha256").update(value).digest("hex");
 function reject(): never {
@@ -33,7 +38,16 @@ export function inspectWinnebagoPdfFonts(body: string) {
 		const definition = resolved(reference);
 		if (!plain(definition) || definition["/Type"] !== "/Font" || !fontNames.includes(String(definition["/BaseFont"]))) return reject();
 		if (definition["/Subtype"] === "/Type0") {
-			if (definition["/BaseFont"] !== "/TimesNewRomanPS-BoldMT" || definition["/Encoding"] !== "/Identity-H" || Object.keys(definition).some(key => !["/BaseFont", "/DescendantFonts", "/Encoding", "/Subtype", "/ToUnicode", "/Type"].includes(key))) return reject();
+			if (definition["/BaseFont"] !== "/TimesNewRomanPS-BoldMT" || definition["/Encoding"] !== "/Identity-H" || Object.keys(definition).some(key => ![
+				"/BaseFont",
+				"/DescendantFonts",
+				"/Encoding",
+				"/Subtype",
+				"/ToUnicode",
+				"/Type"
+			].includes(key))) {
+				return reject();
+			}
 			stream(definition["/ToUnicode"], "8fabe6a45e6869c0df147f3e3c2dfc57005613ae2cd9896836c91264dc4d5f9d");
 			const children = resolved(definition["/DescendantFonts"]);
 			if (!Array.isArray(children) || children.length !== 1) return reject();
@@ -45,7 +59,19 @@ export function inspectWinnebagoPdfFonts(body: string) {
 			dash++;
 			return;
 		}
-		if (definition["/Subtype"] !== "/TrueType" || definition["/Encoding"] !== "/WinAnsiEncoding" || Object.keys(definition).some(key => !["/BaseFont", "/Encoding", "/FirstChar", "/FontDescriptor", "/LastChar", "/Name", "/Subtype", "/Type", "/Widths"].includes(key))) return reject();
+		if (definition["/Subtype"] !== "/TrueType" || definition["/Encoding"] !== "/WinAnsiEncoding" || Object.keys(definition).some(key => ![
+			"/BaseFont",
+			"/Encoding",
+			"/FirstChar",
+			"/FontDescriptor",
+			"/LastChar",
+			"/Name",
+			"/Subtype",
+			"/Type",
+			"/Widths"
+		].includes(key))) {
+			return reject();
+		}
 		const descriptor = resolved(definition["/FontDescriptor"]);
 		if (!plain(descriptor) || descriptor["/Type"] !== "/FontDescriptor" || descriptor["/FontName"] !== definition["/BaseFont"] || descriptor["/Flags"] !== 32 || descriptor["/FontFile"] || descriptor["/FontFile2"] || descriptor["/FontFile3"]) return reject();
 		const widths = resolved(definition["/Widths"]);
@@ -61,7 +87,17 @@ export function inspectWinnebagoPdfFonts(body: string) {
 			pending.push(...item);
 		}
 		else if (plain(item)) {
-			if (Object.keys(item).some(key => ["/OpenAction", "/AA", "/JS", "/JavaScript", "/EmbeddedFiles", "/AcroForm", "/XFA"].includes(key))) return reject();
+			if (Object.keys(item).some(key => [
+				"/OpenAction",
+				"/AA",
+				"/JS",
+				"/JavaScript",
+				"/EmbeddedFiles",
+				"/AcroForm",
+				"/XFA"
+			].includes(key))) {
+				return reject();
+			}
 			if (item["/Font"]) {
 				const resources = resolved(item["/Font"]);
 				if (!plain(resources) || !Object.keys(resources).length || Object.keys(resources).length > 16) return reject();

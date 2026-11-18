@@ -17,7 +17,16 @@ export async function collectFultonElectionCalendar({ directory, now = Date.now,
 		if (current && Date.parse(current.inventory.retrievedAt) + fultonCalendarPublication.minimumRefreshIntervalMs > now()) return { collected: false, publisherRequests: 0, retrievedAt: current.inventory.retrievedAt };
 		const previous = await readFultonCalendarRun(canonical, now());
 		if (previous && Date.parse(previous.startedAt) + fultonCalendarPublication.minimumRefreshIntervalMs > now()) throw new Error("The Fulton calendar collection is awaiting its next permitted attempt.");
-		const run: FultonCalendarRun = { schemaVersion: 1, type: "fulton-calendar-collection-run", status: "running", startedAt: new Date(now()).toISOString(), finishedAt: null, lastSuccessAt: previous?.lastSuccessAt ?? current?.envelope.storedAt ?? null, publisherRequests: 0, reason: null };
+		const run: FultonCalendarRun = {
+			schemaVersion: 1,
+			type: "fulton-calendar-collection-run",
+			status: "running",
+			startedAt: new Date(now()).toISOString(),
+			finishedAt: null,
+			lastSuccessAt: previous?.lastSuccessAt ?? current?.envelope.storedAt ?? null,
+			publisherRequests: 0,
+			reason: null
+		};
 		await writeFultonCalendarFile(canonical, "calendar-run.json", `${JSON.stringify(run)}\n`);
 		let prepared = false;
 		try {
@@ -25,8 +34,18 @@ export async function collectFultonElectionCalendar({ directory, now = Date.now,
 			const get = async (url: string) => {
 				if (run.publisherRequests) await pause(fultonCalendarPublication.minimumRequestIntervalMs);
 				run.publisherRequests++;
-				const body = await request(url, { allowedHosts: ["fultoncountyga.gov"], maxBytes: fultonCalendarPublication.maximumDocumentBytes, maxRedirects: 0, timeoutMs: 15000 });
-				capture.documents.push({ url, body, capturedAt: new Date(now()).toISOString(), sha256: createHash("sha256").update(body).digest("hex") });
+				const body = await request(url, {
+					allowedHosts: ["fultoncountyga.gov"],
+					maxBytes: fultonCalendarPublication.maximumDocumentBytes,
+					maxRedirects: 0,
+					timeoutMs: 15000
+				});
+				capture.documents.push({
+					url,
+					body,
+					capturedAt: new Date(now()).toISOString(),
+					sha256: createHash("sha256").update(body).digest("hex")
+				});
 				return body;
 			};
 			for (const [index, policy] of fultonCalendarPublication.policies.entries()) verifyFultonCalendarPolicy(await get(policy.url), index);

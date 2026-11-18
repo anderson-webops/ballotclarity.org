@@ -5,15 +5,45 @@ import test from "node:test";
 import { ballotQuestionAreaLabel, groupBallotQuestions } from "../src/utils/ballot-question-groups.js";
 import { electionQuestions } from "../src/utils/election-questions.js";
 
-const question = (id: string, audience: string): PublicBallotQuestion => ({ id, audience, title: `Question ${id}`, officialText: "Shall this question be decided?", choices: ["Yes", "No"], pages: [1], explicitlyAdvisory: false, voterApplicabilityVerified: false });
+function question(id: string, audience: string): PublicBallotQuestion {
+	return {
+		id,
+		audience,
+		title: `Question ${id}`,
+		officialText: "Shall this question be decided?",
+		choices: ["Yes", "No"],
+		pages: [1],
+		explicitlyAdvisory: false,
+		voterApplicabilityVerified: false
+	};
+}
 const source = { stateCode: "GA", sourceId: "ga-fulton-2026" };
-const response: StateQuestionsResponse = { available: true, source: { stateCode: "GA", stateName: "Georgia", id: source.sourceId, configured: true, electionDate: "2026-11-03" }, questions: [question("first", "Fulton County")] };
+const response: StateQuestionsResponse = {
+	available: true,
+	source: {
+		stateCode: "GA",
+		stateName: "Georgia",
+		id: source.sourceId,
+		configured: true,
+		electionDate: "2026-11-03"
+	},
+	questions: [
+		question("first", "Fulton County")
+	]
+};
 
 test("question groups preserve exact audience distinctions, source order and original records", () => {
-	const questions = [question("first", "To the Voters of the City of Example:"), question("second", "Example School District"), question("third", "To the Voters of the City of Example:")];
+	const questions = [
+		question("first", "To the Voters of the City of Example:"),
+		question("second", "Example School District"),
+		question("third", "To the Voters of the City of Example:")
+	];
 	const groups = groupBallotQuestions(questions);
 	assert.deepEqual(groups.map(group => group.label), ["City of Example", "Example School District"]);
-	assert.deepEqual(groups.map(group => group.questions.map(item => item.id)), [["first", "third"], ["second"]]);
+	assert.deepEqual(groups.map(group => group.questions.map(item => item.id)), [
+		["first", "third"],
+		["second"]
+	]);
 	assert.equal(groups[0]!.questions[0], questions[0]);
 	assert.equal(groups[0]!.audience, questions[0]!.audience);
 	assert.equal(groups[1]!.questions[0]!.voterApplicabilityVerified, false);
@@ -21,10 +51,30 @@ test("question groups preserve exact audience distinctions, source order and ori
 });
 
 test("printed area groups distinguish statewide, county, exclusions and city records without filtering questions", () => {
-	const item = (id: string, kind: NonNullable<PublicBallotQuestion["publishedArea"]>["kind"], name: string): PublicBallotQuestion => ({ ...question(id, "Fulton County consolidated sample ballot"), publishedArea: { kind, stateCode: "GA", name, basis: "printed-question", evidence: "Synthetic source text" } });
-	const questions = [item("transport", "county-area", "Fulton County outside Atlanta"), item("city", "city", "Example Town"), item("state-first", "state", "Georgia"), item("county", "county", "Fulton County"), item("state-second", "state", "Georgia")];
+	const item = (id: string, kind: NonNullable<PublicBallotQuestion["publishedArea"]>["kind"], name: string): PublicBallotQuestion => ({
+		...question(id, "Fulton County consolidated sample ballot"),
+		publishedArea: {
+			kind,
+			stateCode: "GA",
+			name,
+			basis: "printed-question",
+			evidence: "Synthetic source text"
+		}
+	});
+	const questions = [
+		item("transport", "county-area", "Fulton County outside Atlanta"),
+		item("city", "city", "Example Town"),
+		item("state-first", "state", "Georgia"),
+		item("county", "county", "Fulton County"),
+		item("state-second", "state", "Georgia")
+	];
 	const groups = groupBallotQuestions(questions);
-	assert.deepEqual(groups.map(group => group.label), ["Georgia", "Fulton County", "Fulton County outside Atlanta", "Example Town"]);
+	assert.deepEqual(groups.map(group => group.label), [
+		"Georgia",
+		"Fulton County",
+		"Fulton County outside Atlanta",
+		"Example Town"
+	]);
 	assert.deepEqual(groups[0]!.questions.map(item => item.id), ["state-first", "state-second"]);
 	assert.equal(groups.flatMap(group => group.questions).length, questions.length);
 	assert.equal(groups.at(-1)!.questions[0], questions[1]);
@@ -34,21 +84,57 @@ test("printed area groups distinguish statewide, county, exclusions and city rec
 test("area presentation retains older payloads and empty-label fallbacks", () => {
 	const old = question("old", "Published sample");
 	assert.equal(ballotQuestionAreaLabel(old), null);
-	const changed = { ...old, publishedArea: { kind: "state" as const, stateCode: "GA", name: "", basis: "printed-question" as const, evidence: "Source text" } };
+	const changed = {
+		...old,
+		publishedArea: {
+			kind: "state" as const,
+			stateCode: "GA",
+			name: "",
+			basis: "printed-question" as const,
+			evidence: "Source text"
+		}
+	};
 	assert.equal(ballotQuestionAreaLabel(changed), null);
 	assert.deepEqual(groupBallotQuestions([changed]).map(group => group.label), ["Published sample"]);
 });
 
 test("election questions require the exact selected state, source and election date", () => {
 	assert.equal(electionQuestions(response, source, "2026-11-03"), response.questions);
-	for (const changed of [{ ...response, available: false }, { ...response, source: { ...response.source, stateCode: "WA" } }, { ...response, source: { ...response.source, id: "other-source" } }, { ...response, source: { ...response.source, electionDate: "2028-11-07" } }])
+	for (const changed of [
+		{ ...response, available: false },
+		{
+			...response,
+			source: { ...response.source, stateCode: "WA" }
+		},
+		{
+			...response,
+			source: { ...response.source, id: "other-source" }
+		},
+		{
+			...response,
+			source: { ...response.source, electionDate: "2028-11-07" }
+		}
+	])
 		assert.deepEqual(electionQuestions(changed, source, "2026-11-03"), []);
 	assert.deepEqual(electionQuestions(null, source, "2026-11-03"), []);
 });
 
 test("future elections reuse the selected source without inferring personal applicability or notice choices", () => {
-	const notice = { ...question("future", "Future Town"), textKind: "notice" as const, choices: [] as [] };
-	const future: StateQuestionsResponse = { available: true, source: { ...response.source, id: "future-source", electionDate: "2030-11-05", questionKind: "notice" }, questions: [notice] };
+	const notice = {
+		...question("future", "Future Town"),
+		textKind: "notice" as const,
+		choices: [] as []
+	};
+	const future: StateQuestionsResponse = {
+		available: true,
+		source: {
+			...response.source,
+			id: "future-source",
+			electionDate: "2030-11-05",
+			questionKind: "notice"
+		},
+		questions: [notice]
+	};
 	assert.deepEqual(electionQuestions(future, { ...source, sourceId: "future-source" }, "2030-11-05"), [notice]);
 	assert.deepEqual(notice.choices, []);
 	assert.equal(notice.voterApplicabilityVerified, false);

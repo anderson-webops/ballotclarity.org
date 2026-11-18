@@ -130,7 +130,9 @@ function generalDate(value: unknown): value is string {
 function publicUrl(value: string, kind: "page" | "pdf", base = texasDiscoveryUrl) {
 	const url = new URL(value, base);
 	const path
-		= kind === "pdf" ? /^\/elections\/forms\/[\w.-]{1,140}\.pdf$/u : /^\/elections\/laws\/[\w.-]{1,180}\.shtml$/u;
+		= kind === "pdf"
+			? /^\/elections\/forms\/[\w.-]{1,140}\.pdf$/u
+			: /^\/elections\/laws\/[\w.-]{1,180}\.shtml$/u;
 	if (
 		url.href.length > 2048
 		|| url.origin !== origin
@@ -164,7 +166,9 @@ function offeredPages(body: string) {
 	}
 	if (!elections.size || elections.size > texasPdfCollectorContract.maximumElections)
 		throw new Error("No bounded Texas general-election publications are offered.");
-	return [...elections.values()].sort((first, second) => first.electionDate.localeCompare(second.electionDate));
+	return [
+		...elections.values()
+	].sort((first, second) => first.electionDate.localeCompare(second.electionDate));
 }
 function electionDocuments(body: string, electionDate: string, pageUrl: string): TexasElection {
 	policyLinks(body);
@@ -180,7 +184,10 @@ function electionDocuments(body: string, electionDate: string, pageUrl: string):
 	if (targets.length !== 1)
 		throw new Error("The Texas publication does not explicitly identify the selected general election.");
 	const heading = targets[0]!;
-	const parents = [region, ...descendants(region, node => Boolean(node.childNodes?.includes(heading)))].filter(node =>
+	const parents = [
+		region,
+		...descendants(region, node => Boolean(node.childNodes?.includes(heading)))
+	].filter(node =>
 		node.childNodes?.includes(heading)
 	);
 	const siblings = parents[0]?.childNodes ?? [];
@@ -194,20 +201,39 @@ function electionDocuments(body: string, electionDate: string, pageUrl: string):
 	const result: TexasElection["texasDocuments"] = [];
 	for (const node of links) {
 		const label = text(node);
-		if (label === `${year} Ballot Certification (PDF)`)
-			result.push({ kind: "certification", url: publicUrl(attribute(node, "href"), "pdf", pageUrl) });
-		else if (label === `${year} Certified List of Write-In Candidates (Federal, State, and District) (PDF)`)
-			result.push({ kind: "write-ins", url: publicUrl(attribute(node, "href"), "pdf", pageUrl) });
-		else if (/certification|certified.*write.in/iu.test(label))
+		if (label === `${year} Ballot Certification (PDF)`) {
+			result.push({
+				kind: "certification",
+				url: publicUrl(attribute(node, "href"), "pdf", pageUrl)
+			});
+		}
+		else if (label === `${year} Certified List of Write-In Candidates (Federal, State, and District) (PDF)`) {
+			result.push({
+				kind: "write-ins",
+				url: publicUrl(attribute(node, "href"), "pdf", pageUrl)
+			});
+		}
+		else if (/certification|certified.*write.in/iu.test(label)) {
 			throw new Error("A Texas certification publication has an unfamiliar label requiring review.");
+		}
 	}
-	const election = { electionId: null, electionDate, pageUrl, texasDocuments: result };
+	const election = {
+		electionId: null,
+		electionDate,
+		pageUrl,
+		texasDocuments: result
+	};
 	validateTexasElection(election);
 	return election;
 }
 export function validateTexasElection(value: unknown): asserts value is TexasElection {
 	if (
-		!exact(value, ["electionId", "electionDate", "pageUrl", "texasDocuments"])
+		!exact(value, [
+			"electionId",
+			"electionDate",
+			"pageUrl",
+			"texasDocuments"
+		])
 		|| value.electionId !== null
 		|| !generalDate(value.electionDate)
 		|| typeof value.pageUrl !== "string"
@@ -242,7 +268,13 @@ function readCapture(body: string) {
 		throw new Error("The Texas certification capture exceeds its bounds.");
 	const value: unknown = JSON.parse(body);
 	if (
-		!exact(value, ["schemaVersion", "type", "policies", "pages", "documents"])
+		!exact(value, [
+			"schemaVersion",
+			"type",
+			"policies",
+			"pages",
+			"documents"
+		])
 		|| value.schemaVersion !== 1
 		|| value.type !== "texas-certification-discovery"
 		|| JSON.stringify(value.policies) !== JSON.stringify(texasPolicyReceipts)
@@ -308,7 +340,9 @@ export function readTexasElectionDiscovery(body: string) {
 	return elections;
 }
 export async function fetchTexasCycleDiscovery(options: Options = {}) {
-	const executable = options.extractor ? null : await resolveStateBallotPdfExtractor();
+	const executable = options.extractor
+		? null
+		: await resolveStateBallotPdfExtractor();
 	const request = options.requestText ?? fetchRemoteSourceText;
 	const transport = {
 		allowedHosts: ["www.sos.state.tx.us"],
@@ -318,11 +352,16 @@ export async function fetchTexasCycleDiscovery(options: Options = {}) {
 	};
 	for (const policy of texasPolicyReceipts) {
 		const body = await request(policy.url, transport);
-		if (hash(policy.region === "content" ? text(content(body)) : body) !== policy.sha256)
+		if (hash(policy.region === "content"
+			? text(content(body))
+			: body) !== policy.sha256) {
 			throw new Error("The Texas publisher policy changed and requires review.");
+		}
 	}
 	const index = await request(texasDiscoveryUrl, transport);
-	const pages = [{ url: texasDiscoveryUrl, body: index }];
+	const pages = [
+		{ url: texasDiscoveryUrl, body: index }
+	];
 	const descriptors: TexasElection["texasDocuments"] = [];
 	for (const page of offeredPages(index)) {
 		const body = await request(page.pageUrl, transport);
@@ -368,7 +407,9 @@ export function validateTexasSource(source: StateBallotSource) {
 		|| source.retrievalPolicy
 		|| source.postBody
 		|| !generalDate(source.electionDate)
-		|| source.id !== (current ? "tx-sos-2026" : `tx-general-${source.electionDate}`)
+		|| source.id !== (current
+			? "tx-sos-2026"
+			: `tx-general-${source.electionDate}`)
 		|| source.url !== (current ? source.documentUrls?.[0] : source.pageUrl)
 		|| publicUrl(source.pageUrl, "page") !== source.pageUrl
 		|| !source.pageUrl.includes(source.electionDate.slice(0, 4))
@@ -430,8 +471,13 @@ function geography(
 			: legislative[1]!.startsWith("STATE SENATOR")
 				? "state-senate"
 				: "state-house";
-		if (Number(legislative[2]) > (scope === "congressional" ? 38 : scope === "state-senate" ? 31 : 150))
+		if (Number(legislative[2]) > (scope === "congressional"
+			? 38
+			: scope === "state-senate"
+				? 31
+				: 150)) {
 			throw new Error("The Texas legislative district requires a reviewed boundary update.");
+		}
 		return { scope, district: legislative[2]! };
 	}
 	if (
@@ -482,7 +528,11 @@ function candidate(
 		location.district,
 		name.toLowerCase(),
 		(party ?? "").toLowerCase(),
-		...(location.jurisdiction ? [location.jurisdiction.toLowerCase()] : [])
+		...(location.jurisdiction
+			? [
+					location.jurisdiction.toLowerCase()
+				]
+			: [])
 	];
 	return {
 		id: hash(JSON.stringify(key)).slice(0, 24),
@@ -492,8 +542,12 @@ function candidate(
 		scope: location.scope,
 		status: writeIn ? "write-in" : "qualified",
 		sourceStatus: writeIn ? "Certified properly-filed declared write-in candidate" : "Certified candidate",
-		...(party ? { party } : {}),
-		...(location.jurisdiction ? { jurisdiction: location.jurisdiction } : {})
+		...(party
+			? { party }
+			: {}),
+		...(location.jurisdiction
+			? { jurisdiction: location.jurisdiction }
+			: {})
 	};
 }
 function certifiedRecords(source: StateBallotSource, document: TexasDocument) {
@@ -599,12 +653,16 @@ function certifiedRecords(source: StateBallotSource, document: TexasDocument) {
 		counties.size !== texasPdfCollectorContract.maximumCounties
 		|| !records.size
 		|| !statewide.size
-		|| [...statewide.values()].some(found => found.size !== counties.size)
+		|| [
+			...statewide.values()
+		].some(found => found.size !== counties.size)
 	) {
 		throw new Error("The Texas report does not reconcile its complete county and statewide candidate claims.");
 	}
 	return {
-		records: [...records.values()],
+		records: [
+			...records.values()
+		],
 		counties,
 		pages: pages.length - 1,
 		claims,
@@ -681,15 +739,22 @@ export function parseTexasCandidateCapture(source: StateBallotSource, body: stri
 		capture.documents.find(document => document.url === item.url)!
 	);
 	const main = certifiedRecords(source, selected[0]!);
-	const writeIns = selected[1] ? writeInRecords(source, selected[1], main.counties) : [];
-	const records = [...main.records, ...writeIns];
+	const writeIns = selected[1]
+		? writeInRecords(source, selected[1], main.counties)
+		: [];
+	const records = [
+		...main.records,
+		...writeIns
+	];
 	if (records.length > 25000 || new Set(records.map(record => record.id)).size !== records.length)
 		throw new Error("The Texas certification records exceed their bounds or conflict across documents.");
 	const documents = selected.map((document, index) => ({
 		url: document.url,
 		sha256: document.sha256,
 		retrievedAt: document.retrievedAt,
-		includedRecordCount: index === 0 ? main.records.length : writeIns.length
+		includedRecordCount: index === 0
+			? main.records.length
+			: writeIns.length
 	}));
 	return {
 		records,

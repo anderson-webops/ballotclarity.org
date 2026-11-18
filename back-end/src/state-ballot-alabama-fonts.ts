@@ -28,7 +28,12 @@ export function createAlabamaFontVerifier(program: Buffer) {
 		}
 		const key = `${unicode}:${glyph}`;
 		if (!verified.has(key)) {
-			const proof = chicagoFontProgram(program, new Map([[glyph, unicode.toString(16).padStart(4, "0")]]), "nyc");
+			const proof = chicagoFontProgram(program, new Map([
+				[
+					glyph,
+					unicode.toString(16).padStart(4, "0")
+				]
+			]), "nyc");
 			try {
 				validateChicagoFontProgram(proof, alabamaGlyphApprovals);
 			}

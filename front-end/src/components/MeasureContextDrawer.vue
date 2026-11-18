@@ -50,7 +50,9 @@ function handleKeydown(event: KeyboardEvent) {
 
 	const firstElement = focusableElements[0]!;
 	const lastElement = focusableElements.at(-1)!;
-	const activeElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+	const activeElement = document.activeElement instanceof HTMLElement
+		? document.activeElement
+		: null;
 
 	if (!activeElement || !panelRef.value?.contains(activeElement)) {
 		event.preventDefault();
@@ -75,7 +77,9 @@ watch(isOpen, (value) => {
 		document.documentElement.style.overflow = value ? "hidden" : "";
 
 		if (value) {
-			activeElementBeforeOpen.value = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+			activeElementBeforeOpen.value = document.activeElement instanceof HTMLElement
+				? document.activeElement
+				: null;
 			document.addEventListener("keydown", handleKeydown);
 			nextTick(() => closeButton.value?.focus());
 			return;

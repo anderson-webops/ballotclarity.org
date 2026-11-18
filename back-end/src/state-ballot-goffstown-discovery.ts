@@ -42,7 +42,9 @@ export function goffstownPolicyFingerprint(body: Buffer, format: "links" | "regi
 		});
 	}
 	const document = parseStateHtml(normalized);
-	const pending = [{ node: document, depth: 0 }];
+	const pending = [
+		{ node: document, depth: 0 }
+	];
 	let visited = 0;
 	while (pending.length) {
 		const item = pending.pop()!;
@@ -50,12 +52,24 @@ export function goffstownPolicyFingerprint(body: Buffer, format: "links" | "regi
 		for (const node of item.node.childNodes ?? []) pending.push({ node, depth: item.depth + 1 });
 	}
 	function text(node: StateHtmlNode): string {
-		if (["script", "style", "noscript", "template", "form"].includes(node.nodeName)) return "";
+		if ([
+			"script",
+			"style",
+			"noscript",
+			"template",
+			"form"
+		].includes(node.nodeName)) {
+			return "";
+		}
 		if (node.nodeName === "#text") return node.value ?? "";
-		return (node.nodeName === "a" ? ` ${attribute(node, "href")} ` : "") + (node.childNodes ?? []).map(text).join(" ");
+		return (node.nodeName === "a"
+			? ` ${attribute(node, "href")} `
+			: "") + (node.childNodes ?? []).map(text).join(" ");
 	}
 	if (format === "links") {
-		const links = [...new Set(descendants(document, node => node.nodeName === "a").filter(node => /privacy|disclaimer|copyright|licen[cs]e|terms|polic(?:y|ies)/iu.test(`${stateHtmlText(node)} ${attribute(node, "href")}`)).map(node => new URL(attribute(node, "href"), url).href))].sort();
+		const links = [
+			...new Set(descendants(document, node => node.nodeName === "a").filter(node => /privacy|disclaimer|copyright|licen[cs]e|terms|polic(?:y|ies)/iu.test(`${stateHtmlText(node)} ${attribute(node, "href")}`)).map(node => new URL(attribute(node, "href"), url).href))
+		].sort();
 		const footers = descendants(document, node => node.nodeName === "footer" || attribute(node, "role") === "contentinfo" || /(?:^|\s)(?:site-)?footer(?:\s|$)/u.test(attribute(node, "class"))).map(node => text(node).replace(/\s+/gu, " ").trim());
 		return hash(JSON.stringify({ links, footers }));
 	}
@@ -75,7 +89,9 @@ function checkedPage(page: Page, now: number, policy?: "copyright" | "privacy" |
 export function readGoffstownOfferedElections(body: string): GoffstownElection[] {
 	if (Buffer.byteLength(body) > 2 * 1024 * 1024) return reject();
 	const document = parseStateHtml(body);
-	const pending = [{ node: document, depth: 0 }];
+	const pending = [
+		{ node: document, depth: 0 }
+	];
 	let visited = 0;
 	while (pending.length) {
 		const item = pending.pop()!;
@@ -87,8 +103,12 @@ export function readGoffstownOfferedElections(body: string): GoffstownElection[]
 	for (const section of sections) {
 		const headings = descendants(section, node => ["h2", "h3", "h4"].includes(node.nodeName)).map(node => stateHtmlText(node).replace(/\s+/gu, " ").trim());
 		if (!headings.some(heading => heading.startsWith("State General Election"))) continue;
-		const match = headings.length === 1 ? /^State General Election - November ([2-8]), (20\d{2})$/u.exec(headings[0]!) : null;
-		const electionDate = match ? `${match[2]}-11-0${match[1]}` : "";
+		const match = headings.length === 1
+			? /^State General Election - November ([2-8]), (20\d{2})$/u.exec(headings[0]!)
+			: null;
+		const electionDate = match
+			? `${match[2]}-11-0${match[1]}`
+			: "";
 		if (!validDate(electionDate) || elections.some(election => election.electionDate === electionDate)) return reject();
 		const documentUrls: string[] = [];
 		for (const anchor of descendants(section, node => node.nodeName === "a")) {
@@ -108,7 +128,14 @@ export function readGoffstownOfferedElections(body: string): GoffstownElection[]
 export function readGoffstownCycleDiscovery(body: string, now = Date.now()) {
 	if (Buffer.byteLength(body) > 10 * 1024 * 1024 || !Number.isFinite(now)) return reject();
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "index", "policies"]) || value.schemaVersion !== 1 || value.type !== "goffstown-election-discovery" || !Array.isArray(value.policies) || value.policies.length !== 4) return reject();
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"index",
+		"policies"
+	]) || value.schemaVersion !== 1 || value.type !== "goffstown-election-discovery" || !Array.isArray(value.policies) || value.policies.length !== 4) {
+		return reject();
+	}
 	function page(value: unknown, url: string): Page {
 		if (!exact(value, ["url", "body", "sha256", "retrievedAt"]) || value.url !== url || typeof value.body !== "string" || Buffer.byteLength(value.body) > 2 * 1024 * 1024 || value.sha256 !== hash(value.body) || typeof value.retrievedAt !== "string" || !Number.isFinite(Date.parse(value.retrievedAt)) || new Date(value.retrievedAt).toISOString() !== value.retrievedAt || Date.parse(value.retrievedAt) > now) return reject();
 		return value as unknown as Page;
@@ -118,7 +145,10 @@ export function readGoffstownCycleDiscovery(body: string, now = Date.now()) {
 	const index = page(value.index, goffstownDiscoveryUrl);
 	checkedPage(index, now);
 	for (const [offset, name] of (["copyright", "privacy", "accessibility"] as const).entries()) checkedPage(page(value.policies[offset + 1], `${origin}/${name}`), now, name);
-	return { index, elections: readGoffstownOfferedElections(index.body) };
+	return {
+		index,
+		elections: readGoffstownOfferedElections(index.body)
+	};
 }
 export async function fetchGoffstownCycleDiscovery(options: Options = {}) {
 	const request = options.requestDocument ?? fetchRemoteSourceDocument;
@@ -128,10 +158,19 @@ export async function fetchGoffstownCycleDiscovery(options: Options = {}) {
 	async function page(url: string, contentType: string): Promise<Page> {
 		if (requested) await sleep(11000);
 		requested = true;
-		const reply = await request(url, { allowedHosts: ["www.goffstownnh.gov"], maxBytes: 2 * 1024 * 1024, timeoutMs: 45000 });
+		const reply = await request(url, {
+			allowedHosts: ["www.goffstownnh.gov"],
+			maxBytes: 2 * 1024 * 1024,
+			timeoutMs: 45000
+		});
 		if (reply.status !== 200 || reply.contentType !== contentType) return reject();
 		const body = new TextDecoder("utf-8", { fatal: true }).decode(reply.body);
-		return { url, body, sha256: hash(reply.body), retrievedAt: new Date(now()).toISOString() };
+		return {
+			url,
+			body,
+			sha256: hash(reply.body),
+			retrievedAt: new Date(now()).toISOString()
+		};
 	}
 	const robots = await page(`${origin}/robots.txt`, "text/plain");
 	checkedRobots(robots.body);
@@ -144,7 +183,12 @@ export async function fetchGoffstownCycleDiscovery(options: Options = {}) {
 		checkedPage(policy, now(), name);
 		policies.push(policy);
 	}
-	const body = JSON.stringify({ schemaVersion: 1, type: "goffstown-election-discovery", index, policies });
+	const body = JSON.stringify({
+		schemaVersion: 1,
+		type: "goffstown-election-discovery",
+		index,
+		policies
+	});
 	readGoffstownCycleDiscovery(body, now());
 	return body;
 }

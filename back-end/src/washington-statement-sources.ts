@@ -128,35 +128,44 @@ const observedRaces = [
 	["187083", "Supreme Court - Justice Position #07"],
 ] as const;
 
-export const washingtonStateStatementSources: readonly ElectionReferenceSource[] = [{
-	id: "wa-state-statements-2026",
-	stateCode: "WA",
-	electionDate: "2026-11-03",
-	documents: observedRaces.map(([raceId, title]) => ({
-		url: `https://voter.votewa.gov/elections/candidate.ashx?e=899&r=${raceId}&b=0&la=en&c=`,
-		pageUrl: `https://voter.votewa.gov/genericvoterguide.aspx?e=899&c=#/candidates/${raceId}`,
-		title,
-		publisher: "Washington Secretary of State / VoteWA",
-		kind: "candidate-statement",
-	})),
-}];
+export const washingtonStateStatementSources: readonly ElectionReferenceSource[] = [
+	{
+		id: "wa-state-statements-2026",
+		stateCode: "WA",
+		electionDate: "2026-11-03",
+		documents: observedRaces.map(([raceId, title]) => ({
+			url: `https://voter.votewa.gov/elections/candidate.ashx?e=899&r=${raceId}&b=0&la=en&c=`,
+			pageUrl: `https://voter.votewa.gov/genericvoterguide.aspx?e=899&c=#/candidates/${raceId}`,
+			title,
+			publisher: "Washington Secretary of State / VoteWA",
+			kind: "candidate-statement",
+		})),
+	}
+];
 
-export const washingtonLocalStatementSources: readonly ElectionReferenceSource[] = [{
-	id: "wa-stevens-statements-2026",
-	stateCode: "WA",
-	electionDate: "2026-11-03",
-	optional: true,
-	washingtonLocality: { countyDisplay: "Stevens", rosterJurisdiction: "County", statementJurisdiction: "Countywide", statementJurisdictionType: "CTY" },
-	documents: ([
-		["186880", "Assessor"],
-		["186881", "Auditor"],
-		["186882", "Clerk"],
-		["186883", "Commissioner #2"],
-	] as const).map(([raceId, office]) => ({
-		url: `https://voter.votewa.gov/elections/candidate.ashx?e=899&r=${raceId}&b=0&la=en&c=`,
-		pageUrl: `https://voter.votewa.gov/genericvoterguide.aspx?e=899&c=#/candidates/${raceId}`,
-		title: `Stevens County · ${office}`,
-		publisher: "Washington Secretary of State / VoteWA",
-		kind: "candidate-statement",
-	})),
-}];
+export const washingtonLocalStatementSources: readonly ElectionReferenceSource[] = [
+	{
+		id: "wa-stevens-statements-2026",
+		stateCode: "WA",
+		electionDate: "2026-11-03",
+		optional: true,
+		washingtonLocality: {
+			countyDisplay: "Stevens",
+			rosterJurisdiction: "County",
+			statementJurisdiction: "Countywide",
+			statementJurisdictionType: "CTY"
+		},
+		documents: ([
+			["186880", "Assessor"],
+			["186881", "Auditor"],
+			["186882", "Clerk"],
+			["186883", "Commissioner #2"],
+		] as const).map(([raceId, office]) => ({
+			url: `https://voter.votewa.gov/elections/candidate.ashx?e=899&r=${raceId}&b=0&la=en&c=`,
+			pageUrl: `https://voter.votewa.gov/genericvoterguide.aspx?e=899&c=#/candidates/${raceId}`,
+			title: `Stevens County · ${office}`,
+			publisher: "Washington Secretary of State / VoteWA",
+			kind: "candidate-statement",
+		})),
+	}
+];

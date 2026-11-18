@@ -10,7 +10,20 @@ export const parishSampleIndexUrl = `${parishSampleOrigin}/sampleballots/`;
 export const parishSamplePolicyUrls = [`${parishSampleOrigin}/robots.txt`, `${parishSampleOrigin}/privacy-policy/`, `${parishSampleOrigin}/terms-of-service/`] as const;
 export const parishSampleHash = (body: string | Uint8Array) => createHash("sha256").update(body).digest("hex");
 const clean = (text: string) => text.replace(/\s+/gu, " ").trim();
-const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const months = [
+	"January",
+	"February",
+	"March",
+	"April",
+	"May",
+	"June",
+	"July",
+	"August",
+	"September",
+	"October",
+	"November",
+	"December"
+];
 const maximumBytes = 12 * 1024 * 1024;
 const parishNames = "Acadia|Allen|Ascension|Assumption|Avoyelles|Beauregard|Bienville|Bossier|Caddo|Calcasieu|Caldwell|Cameron|Catahoula|Claiborne|Concordia|De Soto|East Baton Rouge|East Carroll|East Feliciana|Evangeline|Franklin|Grant|Iberia|Iberville|Jackson|Jefferson|Jefferson Davis|Lafayette|Lafourche|La Salle|Lincoln|Livingston|Madison|Morehouse|Natchitoches|Orleans|Ouachita|Plaquemines|Pointe Coupee|Rapides|Red River|Richland|Sabine|St Bernard|St Charles|St Helena|St James|St John the Baptist|St Landry|St Martin|St Mary|St Tammany|Tangipahoa|Tensas|Terrebonne|Union|Vermilion|Vernon|Washington|Webster|West Baton Rouge|West Carroll|West Feliciana|Winn".split("|");
 export const parishSampleParishes: readonly string[] = parishNames;
@@ -23,7 +36,11 @@ export interface ParishSampleAccessReview {
 }
 
 export function parishSamplePolicyHash(body: Buffer, url: string) {
-	return electionDocumentPolicyFingerprint(body, url.endsWith("robots.txt") ? "robots" : "region", url, undefined, url.endsWith("robots.txt") ? undefined : "entry-content");
+	return electionDocumentPolicyFingerprint(body, url.endsWith("robots.txt")
+		? "robots"
+		: "region", url, undefined, url.endsWith("robots.txt")
+		? undefined
+		: "entry-content");
 }
 
 function content(body: string) {
@@ -32,7 +49,14 @@ function content(body: string) {
 	const regions = stateHtmlDescendants(tree, node => stateHtmlAttribute(node, "class").split(/\s+/u).includes("entry-content"));
 	if (regions.length !== 1) throw new Error("Parish sample index layout changed.");
 	const policies = stateHtmlDescendants(tree, node => node.nodeName === "a").filter(node => /privacy|terms|copyright|legal/iu.test(stateHtmlAttribute(node, "href") + stateHtmlText(node))).map(node => new URL(stateHtmlAttribute(node, "href"), parishSampleIndexUrl).href);
-	if (policies.some(url => ![...parishSamplePolicyUrls, `${parishSampleOrigin}/privacy-policy`, `${parishSampleOrigin}/terms-of-service`, "https://www.constantcontact.com/legal/about-constant-contact"].includes(url))) throw new Error("Parish publisher policy links changed.");
+	if (policies.some(url => ![
+		...parishSamplePolicyUrls,
+		`${parishSampleOrigin}/privacy-policy`,
+		`${parishSampleOrigin}/terms-of-service`,
+		"https://www.constantcontact.com/legal/about-constant-contact"
+	].includes(url))) {
+		throw new Error("Parish publisher policy links changed.");
+	}
 	return regions[0]!;
 }
 
@@ -44,7 +68,10 @@ export function parishSampleDownloadControl(value: string) {
 
 export function readParishSampleIndex(body: string) {
 	const region = content(body);
-	const headings = stateHtmlDescendants(region, node => node.nodeName === "h1").map(node => ({ node, text: clean(stateHtmlText(node)) })).filter(item => /^[A-Z][a-z]+ \d{1,2}, 20\d{2} /u.test(item.text));
+	const headings = stateHtmlDescendants(region, node => node.nodeName === "h1").map(node => ({
+		node,
+		text: clean(stateHtmlText(node))
+	})).filter(item => /^[A-Z][a-z]+ \d{1,2}, 20\d{2} /u.test(item.text));
 	if (headings.length !== 1) throw new Error("Parish election heading is ambiguous.");
 	const heading = /^([A-Za-z]+) (\d{1,2}), (20\d{2}) (U\.S\. Representative Runoff & Municipal General)$/u.exec(headings[0]!.text);
 	if (!heading) throw new Error("Parish election type requires review.");
@@ -59,16 +86,26 @@ export function readParishSampleIndex(body: string) {
 		}
 		if (!active) continue;
 		const label = clean(stateHtmlText(node)).replace(/ \(opens in a new tab\)$/u, "");
-		const parish = label === "Lasalle" ? "La Salle" : label;
+		const parish = label === "Lasalle"
+			? "La Salle"
+			: label;
 		if (!parishNames.includes(parish)) throw new Error("Parish election section contains an unrecognized link.");
 		let downloadUrl: string | null = null;
 		try {
 			downloadUrl = parishSampleDownloadControl(new URL(stateHtmlAttribute(node, "href"), parishSampleIndexUrl).href);
 		}
 		catch { downloadUrl = null; }
-		links.push({ parish, downloadUrl, issue: downloadUrl ? null : "download-link-unavailable" });
+		links.push({
+			parish,
+			downloadUrl,
+			issue: downloadUrl ? null : "download-link-unavailable"
+		});
 	}
-	if (!links.length || links.length > 64 || new Set(links.map(item => item.parish)).size !== links.length || new Set(links.flatMap(item => item.downloadUrl ? [item.downloadUrl] : [])).size !== links.filter(item => item.downloadUrl).length) throw new Error("Parish publication inventory is inconsistent.");
+	if (!links.length || links.length > 64 || new Set(links.map(item => item.parish)).size !== links.length || new Set(links.flatMap(item => item.downloadUrl
+		? [item.downloadUrl]
+		: [])).size !== links.filter(item => item.downloadUrl).length) {
+		throw new Error("Parish publication inventory is inconsistent.");
+	}
 	return { electionDate, electionLabel: heading[4]!, links };
 }
 
@@ -123,7 +160,11 @@ export async function collectParishSampleBatch(parishes: string[], accessReview:
 		const wait = Math.max(0, lastRequest + delay - now());
 		if (wait) await sleep(wait);
 		lastRequest = now();
-		const response = await (options.fetchDocument ?? fetchRemoteSourceDocument)(url, { allowedHosts: ["powercoalition.org"], maxBytes: maximumBytes, timeoutMs: 20000 });
+		const response = await (options.fetchDocument ?? fetchRemoteSourceDocument)(url, {
+			allowedHosts: ["powercoalition.org"],
+			maxBytes: maximumBytes,
+			timeoutMs: 20000
+		});
 		const capturedAt = new Date(now()).toISOString();
 		return { response, capturedAt };
 	}
@@ -135,22 +176,43 @@ export async function collectParishSampleBatch(parishes: string[], accessReview:
 			allowed = policy.allowed;
 			delay = Math.max(delay, policy.delay);
 		}
-		await retain({ url, body: response.body, sha256: parishSampleHash(response.body), capturedAt });
+		await retain({
+			url,
+			body: response.body,
+			sha256: parishSampleHash(response.body),
+			capturedAt
+		});
 	}
 	const { response: indexResponse, capturedAt } = await request(parishSampleIndexUrl);
 	if (indexResponse.status !== 200 || indexResponse.contentType !== "text/html" || !upgradePolicy(indexResponse.contentSecurityPolicy)) throw new Error("Parish sample index or secure navigation policy is unavailable.");
 	const catalog = readParishSampleIndex(new TextDecoder("utf-8", { fatal: true }).decode(indexResponse.body));
-	await retain({ url: parishSampleIndexUrl, body: indexResponse.body, sha256: parishSampleHash(indexResponse.body), capturedAt, contentSecurityPolicy: indexResponse.contentSecurityPolicy });
+	await retain({
+		url: parishSampleIndexUrl,
+		body: indexResponse.body,
+		sha256: parishSampleHash(indexResponse.body),
+		capturedAt,
+		contentSecurityPolicy: indexResponse.contentSecurityPolicy
+	});
 	const results: { parish: string; status: "collected" | "held"; downloadUrl: string | null; documentUrl?: string; sha256?: string; capturedAt?: string; reason?: string; navigation?: ParishSampleNavigation }[] = [];
 	let publisherHeld = false;
 	for (const parish of parishes) {
 		const offered = catalog.links.find(link => link.parish === parish);
 		if (publisherHeld) {
-			results.push({ parish, status: "held", downloadUrl: offered?.downloadUrl ?? null, reason: "publisher-access-or-capacity-held" });
+			results.push({
+				parish,
+				status: "held",
+				downloadUrl: offered?.downloadUrl ?? null,
+				reason: "publisher-access-or-capacity-held"
+			});
 			continue;
 		}
 		if (!offered?.downloadUrl) {
-			results.push({ parish, status: "held", downloadUrl: offered?.downloadUrl ?? null, reason: offered?.issue ?? "parish-not-offered" });
+			results.push({
+				parish,
+				status: "held",
+				downloadUrl: offered?.downloadUrl ?? null,
+				reason: offered?.issue ?? "parish-not-offered"
+			});
 			continue;
 		}
 		let navigation: ParishSampleNavigation | undefined;
@@ -169,15 +231,48 @@ export async function collectParishSampleBatch(parishes: string[], accessReview:
 				throw new Error("Parish batch exceeds its 64 MiB evidence bound.");
 			}
 			const sha256 = parishSampleHash(response.body);
-			await retain({ url: documentUrl, body: response.body, sha256, capturedAt });
-			results.push({ parish, status: "collected", downloadUrl: offered.downloadUrl, documentUrl, sha256, capturedAt, navigation });
+			await retain({
+				url: documentUrl,
+				body: response.body,
+				sha256,
+				capturedAt
+			});
+			results.push({
+				parish,
+				status: "collected",
+				downloadUrl: offered.downloadUrl,
+				documentUrl,
+				sha256,
+				capturedAt,
+				navigation
+			});
 		}
 		catch (error) {
 			if (error instanceof ParishSamplePersistenceError) throw error;
-			results.push({ parish, status: "held", downloadUrl: offered.downloadUrl, reason: error instanceof Error ? error.message : "Parish collection requires review.", ...(navigation ? { navigation } : {}) });
+			results.push({
+				parish,
+				status: "held",
+				downloadUrl: offered.downloadUrl,
+				reason: error instanceof Error
+					? error.message
+					: "Parish collection requires review.",
+				...(navigation
+					? { navigation }
+					: {})
+			});
 		}
 	}
-	return { schemaVersion: 1, type: "louisiana-parish-sample-research-capture", publisher: "Power Coalition for Equity and Justice", official: false, catalog, captures, results, automaticImportApproved: false, publicationApproved: false };
+	return {
+		schemaVersion: 1,
+		type: "louisiana-parish-sample-research-capture",
+		publisher: "Power Coalition for Equity and Justice",
+		official: false,
+		catalog,
+		captures,
+		results,
+		automaticImportApproved: false,
+		publicationApproved: false
+	};
 }
 
 export function readParishSamplePages(text: string, parish: string, electionDate: string) {
@@ -205,7 +300,9 @@ export function readParishCandidateReferences(text: string, parish: string, elec
 		let precedingJurisdiction = "";
 		for (const line of page.split(/\r?\n/u).map(clean).filter(Boolean)) {
 			if (/^(?:U\.\s*S\.\s*Representative|State Senator|Mayor|Alderm[ae]n(?: at Large)?|Councilm[ae]n(?: at Large)?|Councilwoman|Council ?[Mm]ember(?:\(s\))?(?: at Large)?|Chief of Police|Member of School Board|Justice of the Peace|Constable(?: Justice of the Peace)?|District Judge|City Judge|City Marshal|Judge|District Attorney|Assessor|Sheriff|Clerk of Court|Police Juror)(?:,| (?:District|Ward)\b)/u.test(line) && line.length <= 180) {
-				office = precedingJurisdiction && !line.includes(precedingJurisdiction) ? `${line}, ${precedingJurisdiction}` : line;
+				office = precedingJurisdiction && !line.includes(precedingJurisdiction)
+					? `${line}, ${precedingJurisdiction}`
+					: line;
 				precedingJurisdiction = "";
 				adjacent = true;
 				headingOpen = true;
@@ -238,7 +335,16 @@ export function readParishCandidateReferences(text: string, parish: string, elec
 				if (!row || !office || !adjacent) throw new Error("Parish candidate row or office association requires review.");
 				const name = row[1]!.trim();
 				const statedParty = row[2]!;
-				records.push({ id: parishSampleHash(`${parish}\n${electionDate}\n${office}\n${name}\n${statedParty}`).slice(0, 24), name, office, statedParty, sourcePage: pageIndex + 1, ...(voteFor === undefined ? {} : { voteFor }) });
+				records.push({
+					id: parishSampleHash(`${parish}\n${electionDate}\n${office}\n${name}\n${statedParty}`).slice(0, 24),
+					name,
+					office,
+					statedParty,
+					sourcePage: pageIndex + 1,
+					...(voteFor === undefined
+						? {}
+						: { voteFor })
+				});
 				headingOpen = false;
 				continue;
 			}

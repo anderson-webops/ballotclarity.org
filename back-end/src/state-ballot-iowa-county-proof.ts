@@ -18,7 +18,9 @@ export function validateIowaSampleGeometry(geometry: IowaSampleGeometry[], count
 	for (const page of geometry) {
 		assert(object(page) && Object.keys(page).sort().join("|") === "cropBox|mediaBox|rotation|userUnit", "The Iowa PDF geometry fields require review.");
 		assert(Array.isArray(page.mediaBox) && page.mediaBox.length === 4 && page.mediaBox.every((value, index) => Number.isFinite(value) && Math.abs(value - [0, 0, 612, 1008][index]!) < 0.01), "The Iowa PDF media box requires review.");
-		const expected = county === "Monona" ? [18.573, 66.596, 593.28, 974.929] : [0, 0, 612, 1008];
+		const expected = county === "Monona"
+			? [18.573, 66.596, 593.28, 974.929]
+			: [0, 0, 612, 1008];
 		assert(Array.isArray(page.cropBox) && page.cropBox.length === 4 && page.cropBox.every((value, index) => Number.isFinite(value) && Math.abs(value - expected[index]!) < 0.01) && page.rotation === 0 && page.userUnit === 1, "The Iowa PDF crop, rotation or units require review.");
 	}
 }
@@ -57,7 +59,12 @@ export function inspectIowaSampleGeometry(body: string, county: IowaSampleContex
 		const mediaBox = inherited("/MediaBox");
 		const cropBox = inherited("/CropBox") ?? mediaBox;
 		assert(Array.isArray(mediaBox) && Array.isArray(cropBox), "The Iowa PDF page boxes are unavailable.");
-		return { mediaBox, cropBox, rotation: inherited("/Rotate") ?? 0, userUnit: inherited("/UserUnit") ?? 1 } as IowaSampleGeometry;
+		return {
+			mediaBox,
+			cropBox,
+			rotation: inherited("/Rotate") ?? 0,
+			userUnit: inherited("/UserUnit") ?? 1
+		} as IowaSampleGeometry;
 	});
 	validateIowaSampleGeometry(geometry, county);
 	return geometry;
@@ -66,7 +73,9 @@ export function inspectIowaSampleGeometry(body: string, county: IowaSampleContex
 function nativeTree(body: string) {
 	assert(Buffer.byteLength(body) <= 4 * 1024 * 1024, "The Iowa visible-text proof exceeds its bounds.");
 	const tree = parseStateHtml(body);
-	const pending = [{ node: tree, depth: 0 }];
+	const pending = [
+		{ node: tree, depth: 0 }
+	];
 	let count = 0;
 	while (pending.length) {
 		const current = pending.pop()!;
@@ -84,12 +93,17 @@ function visibleColumns(tree: StateHtmlNode, context: IowaSampleContext): IowaSa
 	assert(fontSpecifications.length > 0 && fontSpecifications.length <= 256, "The Iowa visible font inventory exceeds its bounds.");
 	for (const node of fontSpecifications) {
 		const id = attribute(node, "id");
-		const value = { size: Number(attribute(node, "size")), color: attribute(node, "color") };
+		const value = {
+			size: Number(attribute(node, "size")),
+			color: attribute(node, "color")
+		};
 		assert(id && Number.isFinite(value.size) && value.size > 0 && value.size <= 128 && /^#[a-f\d]{6}$/iu.test(value.color), "The Iowa visible font specification requires review.");
 		if (fonts.has(id)) assert.deepEqual(fonts.get(id), value, "The Iowa visible font ID is ambiguous.");
 		fonts.set(id, value);
 	}
-	const bounds = context.county === "Monona" ? [19, 211, 403, 593.28] : [33, 215, 395, 577];
+	const bounds = context.county === "Monona"
+		? [19, 211, 403, 593.28]
+		: [33, 215, 395, 577];
 	return pages.map((page, pageIndex) => {
 		assert(Number(attribute(page, "width")) === 612 && Number(attribute(page, "height")) === 1008, "The Iowa visible page dimensions require review.");
 		const columns: { text: string; left: number; top: number; bottom: number }[][] = [[], [], []];
@@ -104,15 +118,28 @@ function visibleColumns(tree: StateHtmlNode, context: IowaSampleContext): IowaSa
 			const font = fonts.get(attribute(node, "font"));
 			assert(value && !containsControlCharacters(value) && [left, top, width, height].every(Number.isFinite) && width > 0 && height > 0 && font, "The Iowa visible text geometry requires review.");
 			if (font.size > 20 || height > 20) {
-				const watermark = context.county === "Monona" ? font.size === 100 && font.color === "#b00000" && /^(?:SAMPLE|BALLOT)$/u.test(value) : font.size === 128 && font.color === "#d3d3d3" && value === "SAMPLE";
+				const watermark = context.county === "Monona"
+					? font.size === 100 && font.color === "#b00000" && /^(?:SAMPLE|BALLOT)$/u.test(value)
+					: font.size === 128 && font.color === "#d3d3d3" && value === "SAMPLE";
 				assert(watermark || (context.county === "Woodbury" && font.size === 20 && font.color === "#000000" && /^20\d{2} General Election$/u.test(value)), "The Iowa large visible-text layer requires review.");
 				continue;
 			}
 			assert(font.color === "#000000", "The Iowa visible text color requires review.");
 			const column = bounds.findIndex((boundary, index) => index < 3 && left >= boundary - 1 && left < bounds[index + 1]! - 1);
-			if (column < 0 || top < (context.county === "Monona" ? 33 : 25) || top + height > (context.county === "Monona" ? 942 : 978)) continue;
+			if (column < 0 || top < (context.county === "Monona"
+				? 33
+				: 25) || top + height > (context.county === "Monona"
+				? 942
+				: 978)) {
+				continue;
+			}
 			if (pageIndex > 0 || top > 250) assert(left + width <= bounds[column + 1]! + 1, "An Iowa visible text field crosses columns.");
-			columns[column]!.push({ text: value, left, top, bottom: top + height });
+			columns[column]!.push({
+				text: value,
+				left,
+				top,
+				bottom: top + height
+			});
 			assert(columns[column]!.length <= 1500, "The Iowa visible column inventory exceeds its bounds.");
 		}
 		return columns.map((values, column) => {
@@ -125,10 +152,20 @@ function visibleColumns(tree: StateHtmlNode, context: IowaSampleContext): IowaSa
 					existing.bottom = Math.max(existing.bottom, value.bottom);
 				}
 				else {
-					lines.push({ top: value.top, bottom: value.bottom, parts: [value] });
+					lines.push({
+						top: value.top,
+						bottom: value.bottom,
+						parts: [value]
+					});
 				}
 			}
-			return lines.sort((first, second) => first.top - second.top).map(line => ({ page: pageIndex + 1, column: column + 1, ymin: line.top, ymax: line.bottom, text: line.parts.sort((first, second) => first.left - second.left).map(value => value.text).join(" ") }));
+			return lines.sort((first, second) => first.top - second.top).map(line => ({
+				page: pageIndex + 1,
+				column: column + 1,
+				ymin: line.top,
+				ymax: line.bottom,
+				text: line.parts.sort((first, second) => first.left - second.left).map(value => value.text).join(" ")
+			}));
 		});
 	});
 }
@@ -143,12 +180,30 @@ export function verifyIowaSampleNative(parsed: IowaSampleRead, visible: string, 
 	assert(header.includes(`November ${Number(context.electionDate.slice(-2))}, ${context.electionDate.slice(0, 4)}`) && header.includes("General Election") && new RegExp(`${context.county} County|County of ${context.county}`, "iu").test(header), "The Iowa visible-text election identity requires review.");
 	const independent = readIowaSampleFields(visibleColumns(tree, context), context);
 	assert.deepEqual(independent.records, parsed.records, "The Iowa native paths disagree on candidate or retention fields.");
-	const offices = (value: IowaSampleRead) => value.contests.map(({ office, scope, districtCode, jurisdiction, team, voteLimit, nonpartisanOffice, printedCaption, page, column, style }) => ({ office, scope, districtCode, jurisdiction, team, voteLimit, nonpartisanOffice, printedCaption, page, column, style }));
+	const offices = (value: IowaSampleRead) => value.contests.map(({ office, scope, districtCode, jurisdiction, team, voteLimit, nonpartisanOffice, printedCaption, page, column, style }) => ({
+		office,
+		scope,
+		districtCode,
+		jurisdiction,
+		team,
+		voteLimit,
+		nonpartisanOffice,
+		printedCaption,
+		page,
+		column,
+		style
+	}));
 	assert.deepEqual(offices(independent), offices(parsed), "The Iowa native paths disagree on offices or vote limits.");
 	assert.equal(independent.questionLines.map(line => line.text).join(" "), parsed.questionLines.map(line => line.text).join(" "), "The Iowa native paths disagree on measure-column text.");
 	for (const claim of parsed.claims) {
 		const other = independent.claims.find(candidate => candidate.key === claim.key && candidate.sourceName === claim.sourceName);
 		assert(other && other.page === claim.page && other.column === claim.column && Math.abs(other.ymin - claim.ymin) <= 6, "The Iowa native name coordinates disagree.");
 	}
-	return { geometry, objectsSha256, visibleSha256: hash(visible), choices: parsed.records.length, names: parsed.claims.length };
+	return {
+		geometry,
+		objectsSha256,
+		visibleSha256: hash(visible),
+		choices: parsed.records.length,
+		names: parsed.claims.length
+	};
 }

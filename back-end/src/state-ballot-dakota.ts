@@ -9,16 +9,22 @@ const northDakotaCalendarUrl = "https://www.sos.nd.gov/elections/candidate/candi
 const clean = (node: StateHtmlNode) => stateHtmlText(node).replace(/\s+/gu, " ").trim();
 
 export function dakotaDiscoveryUrl(state: DakotaState) {
-	return state === "SD" ? "https://sdsos.gov/elections-voting/default.aspx" : "https://www.sos.nd.gov/elections/candidate";
+	return state === "SD"
+		? "https://sdsos.gov/elections-voting/default.aspx"
+		: "https://www.sos.nd.gov/elections/candidate";
 }
 
 export function dakotaCandidateRosterUrl(state: DakotaState, electionId: string) {
 	if (!/^[1-9]\d{0,8}$/u.test(electionId)) throw new Error("The Dakota election identifier is invalid.");
-	return `https://${state === "SD" ? "vip.sdsos.gov" : "vip.sos.nd.gov"}/candidatelist.aspx?eid=${electionId}`;
+	return `https://${state === "SD"
+		? "vip.sdsos.gov"
+		: "vip.sos.nd.gov"}/candidatelist.aspx?eid=${electionId}`;
 }
 
 function publishedHref(nodes: StateHtmlNode[], label: string, base: string) {
-	const values = [...new Set(nodes.filter(node => node.nodeName === "a" && clean(node) === label).map(node => new URL(attribute(node, "href"), base).href))];
+	const values = [
+		...new Set(nodes.filter(node => node.nodeName === "a" && clean(node) === label).map(node => new URL(attribute(node, "href"), base).href))
+	];
 	if (values.length !== 1) throw new Error("The official Dakota election links are missing or conflicting.");
 	return values[0]!;
 }
@@ -44,7 +50,13 @@ export function readDakotaElectionIndex(state: DakotaState, body: string, minimu
 			const links = descendants(section, node => node.nodeName === "a");
 			const calendarUrl = publishedHref(links, "Election Calendar", base);
 			if (calendarUrl !== `https://sdsos.gov/elections-voting/upcoming-elections/general-information/${year}%20Election%20Information/${year}-Election-Information.aspx`) throw new Error("The South Dakota published calendar does not match its election year.");
-			return [{ year, calendarUrl, electionId: candidateElectionId(state, publishedHref(links, "Candidate List", base)) }];
+			return [
+				{
+					year,
+					calendarUrl,
+					electionId: candidateElectionId(state, publishedHref(links, "Candidate List", base))
+				}
+			];
 		});
 	}
 	else {
@@ -56,7 +68,11 @@ export function readDakotaElectionIndex(state: DakotaState, body: string, minimu
 		entries = links.filter(link => clean(link).startsWith("Election Contests & Candidates")).map((link) => {
 			const identity = /^Election Contests & Candidates View candidates and contests on the ballot for the (20\d{2}) General Election\.$/u.exec(clean(link));
 			if (!identity) throw new Error("The North Dakota candidate link does not identify its general-election year.");
-			return { year: identity[1]!, calendarUrl, electionId: candidateElectionId(state, new URL(attribute(link, "href"), base).href) };
+			return {
+				year: identity[1]!,
+				calendarUrl,
+				electionId: candidateElectionId(state, new URL(attribute(link, "href"), base).href)
+			};
 		}).filter(entry => entry.year >= minimumYear);
 	}
 	const years = new Map<string, DakotaElectionLink>();
@@ -65,19 +81,27 @@ export function readDakotaElectionIndex(state: DakotaState, body: string, minimu
 		years.set(entry.year, entry);
 	}
 	if (!years.size || years.size > 10) throw new Error("The Dakota published election list exceeds its bounds.");
-	return [...years.values()].sort((first, second) => first.year.localeCompare(second.year));
+	return [
+		...years.values()
+	].sort((first, second) => first.year.localeCompare(second.year));
 }
 
 function readDakotaCalendar(state: DakotaState, body: string, year: string, now: number) {
 	const document = parseStateHtml(body);
 	const headings = descendants(document, node => node.nodeName === "h1");
-	if (headings.length !== 1 || clean(headings[0]!) !== (state === "SD" ? `${year} Election Calendar` : "Candidate Calendar")) throw new Error("The Dakota election calendar heading has changed.");
+	if (headings.length !== 1 || clean(headings[0]!) !== (state === "SD"
+		? `${year} Election Calendar`
+		: "Candidate Calendar")) {
+		throw new Error("The Dakota election calendar heading has changed.");
+	}
 	let date: string | undefined;
 	if (state === "SD") {
 		const paragraphs = descendants(document, node => node.nodeName === "p" && descendants(node, child => child.nodeName === "strong" && clean(child) === "General Election Date:").length > 0);
 		if (paragraphs.length !== 1) throw new Error("The South Dakota explicit general-election date is missing or ambiguous.");
 		const text = clean(paragraphs[0]!);
-		const matches = [...text.matchAll(/General Election Date:\s*November ([2-8]), (20\d{2})(?!\d)/gu)];
+		const matches = [
+			...text.matchAll(/General Election Date:\s*November ([2-8]), (20\d{2})(?!\d)/gu)
+		];
 		if (matches.length !== 1 || (text.match(/General Election Date:/gu) ?? []).length !== 1 || matches[0]![2] !== year) throw new Error("The South Dakota general-election date and published year do not match.");
 		date = `${year}-11-0${matches[0]![1]}`;
 	}
@@ -104,26 +128,41 @@ export function readDakotaElectionDiscovery(state: DakotaState, body: string, mi
 	const value: unknown = JSON.parse(body);
 	if (!exactKeys(value, ["page", "calendars"]) || typeof value.page !== "string" || !Array.isArray(value.calendars)) throw new Error("The Dakota discovery envelope is invalid.");
 	const entries = readDakotaElectionIndex(state, value.page, minimumYear);
-	const expected = [...new Set(entries.map(entry => entry.calendarUrl))];
+	const expected = [
+		...new Set(entries.map(entry => entry.calendarUrl))
+	];
 	const calendars = value.calendars;
 	if (calendars.length !== expected.length || calendars.some((calendar, index) => !exactKeys(calendar, ["url", "body"]) || calendar.url !== expected[index] || typeof calendar.body !== "string")) throw new Error("The Dakota discovery calendar set is incomplete or changed.");
 	return entries.flatMap((entry) => {
 		const electionDate = readDakotaCalendar(state, calendars.find(calendar => calendar.url === entry.calendarUrl)!.body, entry.year, now);
-		return electionDate ? [{ electionId: entry.electionId, electionDate }] : [];
+		return electionDate
+			? [
+					{ electionId: entry.electionId, electionDate }
+				]
+			: [];
 	});
 }
 
 export function validateDakotaCandidatePage(source: StateBallotSource, document: StateHtmlNode) {
-	const state = source.format === "south-dakota-csv" ? "SD" : "ND";
+	const state = source.format === "south-dakota-csv"
+		? "SD"
+		: "ND";
 	const forms = descendants(document, node => node.nodeName === "form");
-	if (source.stateCode !== state || forms.length !== 1 || attribute(forms[0]!, "id") !== (state === "SD" ? "Form1" : "aspnetForm") || attribute(forms[0]!, "method").toLowerCase() !== "post" || !attribute(forms[0]!, "action") || new URL(attribute(forms[0]!, "action"), source.url).href !== source.url) throw new Error("The Dakota public candidate form target has changed.");
+	if (source.stateCode !== state || forms.length !== 1 || attribute(forms[0]!, "id") !== (state === "SD"
+		? "Form1"
+		: "aspnetForm") || attribute(forms[0]!, "method").toLowerCase() !== "post" || !attribute(forms[0]!, "action") || new URL(attribute(forms[0]!, "action"), source.url).href !== source.url) {
+		throw new Error("The Dakota public candidate form target has changed.");
+	}
 	const form = forms[0]!;
 	const year = source.electionDate.slice(0, 4);
 	if (state === "SD") {
 		const label = `${year} General Election Candidate List`;
 		const headings = descendants(form, node => node.nodeName === "span" && attribute(node, "id") === "MainContent_lblFormHeader");
 		if (headings.length !== 1 || clean(headings[0]!) !== label || descendants(form, node => node.nodeName === "select").length) throw new Error("The South Dakota public report does not identify the configured unfiltered general election.");
-		for (const [suffix, value] of [["hidElectionDate", label], ["hidElectionType", "General"]]) {
+		for (const [suffix, value] of [
+			["hidElectionDate", label],
+			["hidElectionType", "General"]
+		]) {
 			const fields = descendants(form, node => node.nodeName === "input" && attribute(node, "type") === "hidden" && attribute(node, "name") === `ctl00$MainContent$${suffix}`);
 			if (fields.length !== 1 || attribute(fields[0]!, "value") !== value) throw new Error("The South Dakota public export election identity has changed.");
 		}
@@ -133,10 +172,23 @@ export function validateDakotaCandidatePage(source: StateBallotSource, document:
 		if (titles.length !== 1 || clean(titles[0]!) !== `${year} General Election Contest/Candidate List`) throw new Error("The public search form does not identify the configured general election.");
 		const selectors = descendants(form, node => node.nodeName === "select");
 		if (selectors.filter(node => attribute(node, "name") !== "ctl00$ContentPlaceHolder1$ddlExportFormat").length !== 4 || selectors.filter(node => attribute(node, "name") === "ctl00$ContentPlaceHolder1$ddlExportFormat").length > 1) throw new Error("The North Dakota public candidate filters have changed.");
-		for (const suffix of ["ddlJursdiction", "ddlDistrict", "ddlContest", "ddlCandidate"]) {
+		for (const suffix of [
+			"ddlJursdiction",
+			"ddlDistrict",
+			"ddlContest",
+			"ddlCandidate"
+		]) {
 			const selectors = descendants(form, node => node.nodeName === "select" && attribute(node, "name") === `ctl00$ContentPlaceHolder1$${suffix}`);
-			const selected = selectors.length === 1 ? descendants(selectors[0]!, node => node.nodeName === "option" && Boolean(node.attrs?.some(value => value.name === "selected"))) : [];
-			if (selected.length !== 1 || attribute(selected[0]!, "value") !== (suffix === "ddlJursdiction" ? "AL" : "0") || clean(selected[0]!) !== (["ddlJursdiction", "ddlDistrict"].includes(suffix) ? "All" : "")) throw new Error("The North Dakota public candidate report no longer selects the unfiltered request.");
+			const selected = selectors.length === 1
+				? descendants(selectors[0]!, node => node.nodeName === "option" && Boolean(node.attrs?.some(value => value.name === "selected")))
+				: [];
+			if (selected.length !== 1 || attribute(selected[0]!, "value") !== (suffix === "ddlJursdiction"
+				? "AL"
+				: "0") || clean(selected[0]!) !== (["ddlJursdiction", "ddlDistrict"].includes(suffix)
+				? "All"
+				: "")) {
+				throw new Error("The North Dakota public candidate report no longer selects the unfiltered request.");
+			}
 		}
 	}
 	return form;

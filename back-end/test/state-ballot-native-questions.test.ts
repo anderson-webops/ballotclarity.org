@@ -44,7 +44,14 @@ test("Tuscola retains future statewide and local questions without a hard-coded 
 });
 
 test("Tuscola requires complete wording, scope, choices and matching repetitions", () => {
-	for (const body of [proposal.replace("No\n", ""), proposal.replace("Yes\n", ""), proposal.replace("Tuscola County\n", ""), proposal.replace("Proposal Section\n", ""), proposal.replace("VOTE BOTH", "Unexpected\nVOTE BOTH"), proposal + proposal.replace("five years", "six years")]) {
+	for (const body of [
+		proposal.replace("No\n", ""),
+		proposal.replace("Yes\n", ""),
+		proposal.replace("Tuscola County\n", ""),
+		proposal.replace("Proposal Section\n", ""),
+		proposal.replace("VOTE BOTH", "Unexpected\nVOTE BOTH"),
+		proposal + proposal.replace("five years", "six years")
+	]) {
 		assert.throws(() => readTuscolaBallotQuestions(tuscola, body, sourceDocument));
 	}
 	assert.deepEqual(readTuscolaBallotQuestions(tuscola, "Candidate-only sample\f", sourceDocument), []);
@@ -55,10 +62,39 @@ test("Tuscola requires complete wording, scope, choices and matching repetitions
 
 test("Tuscola's stored metadata binds actual choices, citation, pages, scope and wording", () => {
 	const questions = readTuscolaBallotQuestions(tuscola, proposal, sourceDocument);
-	const data = { ballotQuestions: questions, documents: [{}, { url: sourceDocument }], retrievalPolicy: "automatic" };
+	const data = {
+		ballotQuestions: questions,
+		documents: [
+			{},
+			{ url: sourceDocument }
+		],
+		retrievalPolicy: "automatic"
+	};
 	assert.deepEqual(readTuscolaQuestionMetadata(tuscola, data).ballotQuestions, questions);
-	for (const change of [{ choices: [] }, { pages: [2, 1] }, { pages: [0] }, { audience: "Unknown" }, { officialText: "Changed wording" }, { sourceUrl: "https://example.org/" }, { voterApplicabilityVerified: true }, { explicitlyAdvisory: true }, { textKind: "notice" }]) {
-		assert.throws(() => readTuscolaQuestionMetadata(tuscola, { ...data, ballotQuestions: [{ ...questions[0], ...change }] }));
+	for (const change of [
+		{ choices: [] },
+		{
+			pages: [2, 1]
+		},
+		{
+			pages: [0]
+		},
+		{ audience: "Unknown" },
+		{ officialText: "Changed wording" },
+		{ sourceUrl: "https://example.org/" },
+		{ voterApplicabilityVerified: true },
+		{ explicitlyAdvisory: true },
+		{ textKind: "notice" }
+	]) {
+		assert.throws(() => readTuscolaQuestionMetadata(tuscola, {
+			...data,
+			ballotQuestions: [
+				{
+					...questions[0],
+					...change
+				}
+			]
+		}));
 	}
 	assert.throws(() => readTuscolaQuestionMetadata(tuscola, { ...data, sourceAsOf: "2026-01-01" }));
 });
@@ -70,7 +106,10 @@ test("Franklin preserves framed compound tax/bond notices and literal unnumbered
 	assert.equal(questions[1]!.title, "Other Public Library Proposed Tax Levy");
 	assert.equal(questions[1]!.audience, "Other Public Library");
 	assert.ok(questions.every(question => question.textKind === "notice" && question.choices.length === 0 && !question.voterApplicabilityVerified));
-	assert.deepEqual(questions.map(question => question.pages), [[1], [1]]);
+	assert.deepEqual(questions.map(question => question.pages), [
+		[1],
+		[1]
+	]);
 });
 
 test("Franklin notice identity follows the actual future election and native page furniture", () => {
@@ -79,38 +118,110 @@ test("Franklin notice identity follows the actual future election and native pag
 	assert.throws(() => readFranklinIssueNotices(franklin, JSON.stringify(franklinIssuesFixture(2028)), publication), /identity/u);
 	const fixture = franklinIssuesFixture();
 	for (const change of [
-		{ svg: [fixture.svg[0]!.replaceAll("viewBox=\"0 0 612 792\"", "viewBox=\"0 0 600 792\"")] },
-		{ svg: ["<svg viewBox=\"0 0 612 792\"></svg>"] },
-		{ svg: [fixture.svg[0]!.replace("<path", "<path transform=\"translate(1 0)\"")] },
-		{ bbox: fixture.bbox.replace("Revised", "Updated") },
-		{ bbox: fixture.bbox.replace("Page", "Unexpected") },
-		{ bbox: fixture.bbox.replace("Current", "Changed") },
-		{ layout: fixture.layout.replace("Current", "Changed") },
+		{
+			svg: [
+				fixture.svg[0]!.replaceAll("viewBox=\"0 0 612 792\"", "viewBox=\"0 0 600 792\"")
+			]
+		},
+		{
+			svg: ["<svg viewBox=\"0 0 612 792\"></svg>"]
+		},
+		{
+			svg: [
+				fixture.svg[0]!.replace("<path", "<path transform=\"translate(1 0)\"")
+			]
+		},
+		{
+			bbox: fixture.bbox.replace("Revised", "Updated")
+		},
+		{
+			bbox: fixture.bbox.replace("Page", "Unexpected")
+		},
+		{
+			bbox: fixture.bbox.replace("Current", "Changed")
+		},
+		{
+			layout: fixture.layout.replace("Current", "Changed")
+		},
 		{ svg: [] },
 		{ extra: true }
-	]) assert.throws(() => readFranklinIssueNotices(franklin, JSON.stringify({ ...fixture, ...change }), publication));
+	]) {
+		assert.throws(() => readFranklinIssueNotices(franklin, JSON.stringify({
+			...fixture,
+			...change
+		}), publication));
+	}
 });
 
 test("Franklin's notices never manufacture ballot choices or retain altered stored evidence", () => {
 	const questions = readFranklinIssueNotices(franklin, JSON.stringify(franklinIssuesFixture()), publication);
-	const data = { ballotQuestions: questions, documents: [{}, {}, { url: publication }], retrievalPolicy: "automatic" };
+	const data = {
+		ballotQuestions: questions,
+		documents: [
+			{},
+			{},
+			{ url: publication }
+		],
+		retrievalPolicy: "automatic"
+	};
 	assert.deepEqual(readFranklinNoticeMetadata(franklin, data).ballotQuestions, questions);
-	for (const change of [{ choices: ["Yes", "No"] }, { textKind: undefined }, { pages: [1, 2] }, { officialText: "Changed" }, { audience: "Different" }, { sourceUrl: "https://example.org/" }, { voterApplicabilityVerified: true }]) {
-		assert.throws(() => readFranklinNoticeMetadata(franklin, { ...data, ballotQuestions: [{ ...questions[0], ...change }] }));
+	for (const change of [
+		{
+			choices: ["Yes", "No"]
+		},
+		{ textKind: undefined },
+		{
+			pages: [1, 2]
+		},
+		{ officialText: "Changed" },
+		{ audience: "Different" },
+		{ sourceUrl: "https://example.org/" },
+		{ voterApplicabilityVerified: true }
+	]) {
+		assert.throws(() => readFranklinNoticeMetadata(franklin, {
+			...data,
+			ballotQuestions: [
+				{
+					...questions[0],
+					...change
+				}
+			]
+		}));
 	}
 	const fixture = franklinIssuesFixture();
-	const changed = { ...fixture, bbox: fixture.bbox.replaceAll("Current", "Changed"), layout: fixture.layout.replaceAll("Current", "Changed") };
+	const changed = {
+		...fixture,
+		bbox: fixture.bbox.replaceAll("Current", "Changed"),
+		layout: fixture.layout.replaceAll("Current", "Changed")
+	};
 	assert.throws(() => readFranklinIssueNotices(franklin, JSON.stringify(changed), publication, questions), /changed/u);
 });
 
 test("Franklin's public directory and question API identify notices and cite their own publication", async (context) => {
 	const value = tuscolaDiscoveryFixture();
-	const parsed = parseTuscolaCandidateCapture(tuscola, await fetchTuscolaCandidateCapture(tuscola, { discovery: JSON.stringify(value), now: () => clock }), clock);
+	const parsed = parseTuscolaCandidateCapture(tuscola, await fetchTuscolaCandidateCapture(tuscola, {
+		discovery: JSON.stringify(value),
+		now: () => clock
+	}), clock);
 	const questions = readFranklinIssueNotices(franklin, JSON.stringify(franklinIssuesFixture()), publication);
-	const documents = [...parsed.documents.map(document => ({ ...document, url: publication.replace("33333333", document.includedRecordCount ? "11111111" : "22222222") })), { ...parsed.documents[1]!, url: publication }];
-	const snapshot = { ...parsed, source: franklin, documents, ballotQuestions: questions };
+	const documents = [
+		...parsed.documents.map(document => ({
+			...document,
+			url: publication.replace("33333333", document.includedRecordCount ? "11111111" : "22222222")
+		})),
+		{ ...parsed.documents[1]!, url: publication }
+	];
+	const snapshot = {
+		...parsed,
+		source: franklin,
+		documents,
+		ballotQuestions: questions
+	};
 	const app = express();
-	registerStateRecordRoutes(app, { sources: [franklin], getSnapshot: async () => snapshot });
+	registerStateRecordRoutes(app, {
+		sources: [franklin],
+		getSnapshot: async () => snapshot
+	});
 	const server = app.listen(0, "127.0.0.1");
 	await once(server, "listening");
 	context.after(() => new Promise<void>(resolve => server.close(() => resolve())));
@@ -133,7 +244,10 @@ test("Tuscola recurring refresh, snapshot reload and question routes preserve ac
 	context.after(() => rm(directory, { recursive: true }));
 	const value = tuscolaDiscoveryFixture();
 	value.documents[0]![1]!.text = value.documents[0]![1]!.text.replace("Proposal text\nVOTE BOTH FRONT AND BACK OF BALLOT\n\f", proposal);
-	let body = await fetchTuscolaCandidateCapture(tuscola, { discovery: JSON.stringify(value), now: () => clock });
+	let body = await fetchTuscolaCandidateCapture(tuscola, {
+		discovery: JSON.stringify(value),
+		now: () => clock
+	});
 	const parsed = parseTuscolaCandidateCapture(tuscola, body, clock);
 	assert.equal(parsed.ballotQuestions.length, 1);
 	const storage = createStateBallotStorage(directory);
@@ -143,7 +257,13 @@ test("Tuscola recurring refresh, snapshot reload and question routes preserve ac
 	const snapshot = (await storage.read(tuscola))!;
 	assert.deepEqual(parseBundledStateSnapshot(tuscola, serializeStoredStateSnapshot(snapshot), "automatic").ballotQuestions, parsed.ballotQuestions);
 	let currentClock = clock;
-	const repository = createStateBallotRepository({ sources: [tuscola], dataDirectory: directory, ttlMs: 1, now: () => currentClock, fetchText: async () => body });
+	const repository = createStateBallotRepository({
+		sources: [tuscola],
+		dataDirectory: directory,
+		ttlMs: 1,
+		now: () => currentClock,
+		fetchText: async () => body
+	});
 	const app = express();
 	registerStateRecordRoutes(app, repository);
 	const server = app.listen(0, "127.0.0.1");
@@ -163,7 +283,10 @@ test("Tuscola recurring refresh, snapshot reload and question routes preserve ac
 	assert.equal(recordPage.source.questionKind, undefined);
 	value.documents[0]![1]!.text = value.documents[0]![1]!.text.replace(proposal, "Candidate-only reverse\nVOTE BOTH FRONT AND BACK OF BALLOT\n\f");
 	value.documents[0]![1]!.sha256 = createHash("sha256").update("changed sample").digest("hex");
-	body = await fetchTuscolaCandidateCapture(tuscola, { discovery: JSON.stringify(value), now: () => clock });
+	body = await fetchTuscolaCandidateCapture(tuscola, {
+		discovery: JSON.stringify(value),
+		now: () => clock
+	});
 	currentClock++;
 	assert.deepEqual((await repository.getSnapshot("MI", tuscola.id))!.ballotQuestions, parsed.ballotQuestions);
 	assert.ok((await readFile(join(directory, filename))).equals(accepted));

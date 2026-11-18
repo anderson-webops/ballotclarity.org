@@ -26,24 +26,77 @@ async function fixture(context: TestContext) {
 	const directory = await realpath(await mkdtemp(join(tmpdir(), "reviewed-state-documents-")));
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	const bodies = new Map<string, Buffer>();
-	for (const policy of publisher.policies) bodies.set(policy.url, Buffer.from(policy.format === "robots" ? "User-agent: *\nDisallow: /private/\nCrawl-delay: 10\n" : `<main><div class="card__small_plain">Reviewed public accessibility and publisher terms remain part of this fixture.</div></main><footer>Publisher legal information</footer>`));
+	for (const policy of publisher.policies) {
+		bodies.set(policy.url, Buffer.from(policy.format === "robots"
+			? "User-agent: *\nDisallow: /private/\nCrawl-delay: 10\n"
+			: `<main><div class="card__small_plain">Reviewed public accessibility and publisher terms remain part of this fixture.</div></main><footer>Publisher legal information</footer>`));
+	}
 	bodies.set(publisher.indexUrl, Buffer.from(`<main>${publisher.dateMarkers.join(" ")}${source.documentUrls!.map(url => `<a href="${url}">Reviewed sample</a>`).join("")}</main><footer>Publisher legal information</footer>`));
 	for (const [index, url] of source.documentUrls!.entries()) bodies.set(url, Buffer.from(`%PDF-reviewed-image-${index}`));
-	const records = ["Example Candidate", "Other Candidate"].map(name => createStateCandidateRecord(source, { name, office: "FOR GOVERNOR", party: "REPUBLICAN", status: "listed", scope: "statewide", sourceAreaLabel: "Woodward County" })!);
-	const documents = source.documentUrls!.map((url, index) => ({ url, sha256: hash(bodies.get(url)!), retrievedAt: new Date(epoch - day).toISOString(), includedRecordCount: index ? 0 : records.length }));
-	const snapshot: StateBallotSnapshot = { source, records, documents, retrievedAt: new Date(epoch - day).toISOString(), sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))) };
+	const records = ["Example Candidate", "Other Candidate"].map(name => createStateCandidateRecord(source, {
+		name,
+		office: "FOR GOVERNOR",
+		party: "REPUBLICAN",
+		status: "listed",
+		scope: "statewide",
+		sourceAreaLabel: "Woodward County"
+	})!);
+	const documents = source.documentUrls!.map((url, index) => ({
+		url,
+		sha256: hash(bodies.get(url)!),
+		retrievedAt: new Date(epoch - day).toISOString(),
+		includedRecordCount: index ? 0 : records.length
+	}));
+	const snapshot: StateBallotSnapshot = {
+		source,
+		records,
+		documents,
+		retrievedAt: new Date(epoch - day).toISOString(),
+		sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 }))))
+	};
 	const snapshotPath = join(directory, "snapshot.json");
 	const original = `${serializeStoredStateSnapshot(snapshot)}\n`;
 	await writeFile(snapshotPath, original);
-	const review = { schemaVersion: 1, type: "reviewed-state-document-collection", sourceId: source.id, reviewedAt: new Date(epoch).toISOString(), snapshotPath, snapshotSha256: hash(original) };
-	const policyFingerprints = Object.fromEntries(publisher.policies.map(policy => [policy.id, electionDocumentPolicyFingerprint(bodies.get(policy.url)!, policy.format, policy.url, policy.regionId, policy.regionClass)]));
+	const review = {
+		schemaVersion: 1,
+		type: "reviewed-state-document-collection",
+		sourceId: source.id,
+		reviewedAt: new Date(epoch).toISOString(),
+		snapshotPath,
+		snapshotSha256: hash(original)
+	};
+	const policyFingerprints = Object.fromEntries(publisher.policies.map(policy => [
+		policy.id,
+		electionDocumentPolicyFingerprint(bodies.get(policy.url)!, policy.format, policy.url, policy.regionId, policy.regionClass)
+	]));
 	policyFingerprints.indexLinks = electionDocumentPolicyFingerprint(bodies.get(publisher.indexUrl)!, "links", publisher.indexUrl);
-	const plan: ElectionDocumentPlan = { schemaVersion: 1, type: "election-document-collection", sourceIds: [publisher.id], cacheDirectory: join(directory, "cache"), outputRoot: join(directory, "output"), accessReviews: [{ sourceId: publisher.id, reviewedAt: new Date(epoch).toISOString(), configurationSha256: electionDocumentConfigurationSha256(publisher), policyFingerprints }] };
+	const plan: ElectionDocumentPlan = {
+		schemaVersion: 1,
+		type: "election-document-collection",
+		sourceIds: [publisher.id],
+		cacheDirectory: join(directory, "cache"),
+		outputRoot: join(directory, "output"),
+		accessReviews: [
+			{
+				sourceId: publisher.id,
+				reviewedAt: new Date(epoch).toISOString(),
+				configurationSha256: electionDocumentConfigurationSha256(publisher),
+				policyFingerprints
+			}
+		]
+	};
 	const seed: ElectionDocumentSeed = { schemaVersion: 1, type: "election-document-seed", captures: [] };
 	for (const [url, body] of bodies) {
 		const path = join(directory, hash(url));
 		await writeFile(path, body);
-		seed.captures.push({ sourceId: publisher.id, url, path, sha256: hash(body), capturedAt: new Date(epoch).toISOString(), etag: "\"reviewed\"" });
+		seed.captures.push({
+			sourceId: publisher.id,
+			url,
+			path,
+			sha256: hash(body),
+			capturedAt: new Date(epoch).toISOString(),
+			etag: "\"reviewed\""
+		});
 	}
 	const reviewPath = join(directory, "review.json");
 	const planPath = join(directory, "collection.json");
@@ -52,13 +105,28 @@ async function fixture(context: TestContext) {
 		await writeFile(planPath, JSON.stringify(plan));
 	};
 	await save();
-	return { directory, bodies, records, snapshot, original, review, reviewPath, plan, planPath, seed, save };
+	return {
+		directory,
+		bodies,
+		records,
+		snapshot,
+		original,
+		review,
+		reviewPath,
+		plan,
+		planPath,
+		seed,
+		save
+	};
 }
 
 test("cached verified scans produce the exact reviewed snapshot without changing capture or import clocks", async (context) => {
 	const input = await fixture(context);
 	await seedElectionDocuments(input.plan, input.seed, epoch);
-	const result = await collectReviewedStateDocuments(input.reviewPath, input.planPath, { now: () => epoch, fetchDocument: async () => assert.fail("Cached evidence must stay local.") });
+	const result = await collectReviewedStateDocuments(input.reviewPath, input.planPath, {
+		now: () => epoch,
+		fetchDocument: async () => assert.fail("Cached evidence must stay local.")
+	});
 	assert.equal(result.status, "verified-unchanged");
 	assert.equal(result.complete, true);
 	assert.equal(result.publisherRequests, 0);
@@ -87,7 +155,12 @@ test("daily refresh honors conditional requests and distinguishes publisher chec
 		fetchDocument: async (_url, options) => {
 			requests++;
 			assert.equal(options.etag, "\"reviewed\"");
-			return { status: 304, body: Buffer.alloc(0), contentType: "", etag: "\"reviewed\"" };
+			return {
+				status: 304,
+				body: Buffer.alloc(0),
+				contentType: "",
+				etag: "\"reviewed\""
+			};
 		},
 	});
 	assert.equal(result.status, "verified-unchanged");
@@ -104,7 +177,16 @@ test("changed scans queue review instead of publishing OCR guesses or an empty c
 	const result = await collectReviewedStateDocuments(input.reviewPath, input.planPath, {
 		now: () => clock,
 		sleep: async (delay) => { clock += delay; },
-		fetchDocument: async url => ({ status: 200, body: url === source.documentUrls![0] ? Buffer.from("%PDF-new-scanned-candidates") : input.bodies.get(url)!, contentType: url.endsWith(".pdf") ? "application/pdf" : "text/html", etag: undefined }),
+		fetchDocument: async url => ({
+			status: 200,
+			body: url === source.documentUrls![0]
+				? Buffer.from("%PDF-new-scanned-candidates")
+				: input.bodies.get(url)!,
+			contentType: url.endsWith(".pdf")
+				? "application/pdf"
+				: "text/html",
+			etag: undefined
+		}),
 	});
 	assert.equal(result.status, "review-required");
 	assert.equal(result.complete, false);
@@ -115,7 +197,10 @@ test("changed scans queue review instead of publishing OCR guesses or an empty c
 	assert.equal(result.changedDocuments.length, 1);
 	assert.equal(result.changedDocuments[0]!.url, source.documentUrls![0]);
 	assert.equal(await readFile(input.review.snapshotPath, "utf8"), input.original);
-	const repeated = await collectReviewedStateDocuments(input.reviewPath, input.planPath, { now: () => clock, fetchDocument: async () => assert.fail("A changed-scan review should reuse its cached evidence.") });
+	const repeated = await collectReviewedStateDocuments(input.reviewPath, input.planPath, {
+		now: () => clock,
+		fetchDocument: async () => assert.fail("A changed-scan review should reuse its cached evidence.")
+	});
 	assert.equal(repeated.status, "review-required");
 	assert.equal(repeated.publisherRequests, 0);
 });
@@ -127,13 +212,23 @@ test("publisher denials retain reviewed facts and cannot become an empty success
 	const result = await collectReviewedStateDocuments(input.reviewPath, input.planPath, {
 		now: () => clock,
 		sleep: async (delay) => { clock += delay; },
-		fetchDocument: async url => ({ status: url.endsWith(".pdf") ? 403 : 200, body: input.bodies.get(url)!, contentType: "text/html", etag: undefined }),
+		fetchDocument: async url => ({
+			status: url.endsWith(".pdf")
+				? 403
+				: 200,
+			body: input.bodies.get(url)!,
+			contentType: "text/html",
+			etag: undefined
+		}),
 	});
 	assert.equal(result.status, "unavailable");
 	assert.equal(result.verifiedSnapshot, undefined);
 	assert.equal(result.verifiedRecordCount, 0);
 	assert.equal(await readFile(input.review.snapshotPath, "utf8"), input.original);
-	const retry = await collectReviewedStateDocuments(input.reviewPath, input.planPath, { now: () => clock, fetchDocument: async () => assert.fail("A publisher hold requires independent review.") });
+	const retry = await collectReviewedStateDocuments(input.reviewPath, input.planPath, {
+		now: () => clock,
+		fetchDocument: async () => assert.fail("A publisher hold requires independent review.")
+	});
 	assert.equal(retry.status, "unavailable");
 	assert.equal(retry.publisherRequests, 0);
 });
@@ -151,7 +246,10 @@ test("review identity, hashes, clocks and cross-state collectors fail before pub
 		const input = await fixture(context);
 		mutate(input);
 		await input.save();
-		await assert.rejects(collectReviewedStateDocuments(input.reviewPath, input.planPath, { now: () => epoch, fetchDocument: async () => assert.fail("Invalid reviews must not contact publishers.") }));
+		await assert.rejects(collectReviewedStateDocuments(input.reviewPath, input.planPath, {
+			now: () => epoch,
+			fetchDocument: async () => assert.fail("Invalid reviews must not contact publishers.")
+		}));
 	}
 });
 
@@ -164,7 +262,12 @@ test("a snapshot changed during collection never produces a verified copy", asyn
 		sleep: async (delay) => { clock += delay; },
 		fetchDocument: async (url) => {
 			if (url === source.documentUrls![0]) await writeFile(input.review.snapshotPath, `${input.original}\n`);
-			return { status: 304, body: Buffer.alloc(0), contentType: "", etag: "\"reviewed\"" };
+			return {
+				status: 304,
+				body: Buffer.alloc(0),
+				contentType: "",
+				etag: "\"reviewed\""
+			};
 		},
 	}), /changed during/u);
 });

@@ -5,7 +5,13 @@ import type { StateBallotSource } from "./state-ballot-sources.js";
 const normalized = (value: string) => value.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
 
 export function stateRecordOfficeKey(record: Pick<StateCandidateRecord, "scope" | "office" | "district">) {
-	return JSON.stringify([record.scope, record.district, record.scope === "statewide" ? normalized(record.office) : ""]);
+	return JSON.stringify([
+		record.scope,
+		record.district,
+		record.scope === "statewide"
+			? normalized(record.office)
+			: ""
+	]);
 }
 
 export function stateRecordSupplementSources(source: StateBallotSource, sources: readonly StateBallotSource[]) {

@@ -21,7 +21,9 @@ export function chicagoUnicodeMappings(body: string) {
 	const mappings = new Map<number, string>();
 	let consumed = "";
 	for (const match of middle.matchAll(/(\d{1,3}) beginbfchar (.*?) endbfchar/gu)) {
-		const pairs = [...match[2]!.matchAll(/<([\da-f]{4})> <([\da-f]{4})>/giu)];
+		const pairs = [
+			...match[2]!.matchAll(/<([\da-f]{4})> <([\da-f]{4})>/giu)
+		];
 		if (pairs.length !== Number(match[1]) || !pairs.length || pairs.length > 256 || match[2]!.replace(/<[\da-f]{4}> <[\da-f]{4}>/giu, "").trim()) return reject();
 		consumed += match[0];
 		for (const pair of pairs) {
@@ -58,17 +60,38 @@ export function chicagoFontProgram(program: Buffer, mappings: ReadonlyMap<number
 	if (!head || head.length !== 54 || head.readUInt32BE(12) !== 0x5F0F3CF5 || !maximum || maximum.length !== 32 || !offsets || !outlines) return reject();
 	const glyphs = maximum.readUInt16BE(4);
 	const format = head.readInt16BE(50);
-	const width = format === 0 ? 2 : format === 1 ? 4 : 0;
+	const width = format === 0
+		? 2
+		: format === 1
+			? 4
+			: 0;
 	if (!width || !glyphs || glyphs > 20000 || offsets.length !== (glyphs + 1) * width || head.readUInt16BE(18) < 16) return reject();
-	const positions = Array.from({ length: glyphs + 1 }, (_, index) => format === 0 ? offsets.readUInt16BE(index * 2) * 2 : offsets.readUInt32BE(index * 4));
+	const positions = Array.from({ length: glyphs + 1 }, (_, index) => format === 0
+		? offsets.readUInt16BE(index * 2) * 2
+		: offsets.readUInt32BE(index * 4));
 	if (positions.some((position, index) => position > outlines.length || (index > 0 && position < positions[index - 1]!))) return reject();
 	const hints = ["cvt ", "fpgm", "prep", "gasp"].map((name) => {
 		const bytes = tables.get(name);
 		if (!bytes && name === "gasp" && profile === "nyc") return [name, null];
 		if (!bytes || bytes.length > 65536) return reject();
-		return [name, hash(bytes)];
+		return [
+			name,
+			hash(bytes)
+		];
 	});
-	const signature = hash(JSON.stringify({ head: [head.subarray(0, 8).toString("hex"), head.subarray(16, 20).toString("hex"), head.subarray(44, 50).toString("hex")], ...(profile === "chicago" ? { maximum: hash(maximum) } : {}), hints }));
+	const signature = hash(JSON.stringify({
+		head: [
+			head.subarray(0, 8).toString("hex"),
+			head.subarray(16, 20).toString("hex"),
+			head.subarray(44, 50).toString("hex")
+		],
+		...(profile === "chicago"
+			? {
+					maximum: hash(maximum)
+				}
+			: {}),
+		hints
+	}));
 	const components: Record<string, Component[]> = {};
 	const checked = new Map<number, string>();
 	function inspect(glyph: number, ancestors: Set<number>): string {
@@ -85,9 +108,20 @@ export function chicagoFontProgram(program: Buffer, mappings: ReadonlyMap<number
 				if (position + 4 > bytes.length || children.length > 32) return reject();
 				flags = bytes.readUInt16BE(position);
 				const child = bytes.readUInt16BE(position + 2);
-				position += 4 + ((flags & 1) ? 4 : 2) + ((flags & 8) ? 2 : (flags & 64) ? 4 : (flags & 128) ? 8 : 0);
+				position += 4 + ((flags & 1)
+					? 4
+					: 2) + ((flags & 8)
+					? 2
+					: (flags & 64)
+							? 4
+							: (flags & 128)
+									? 8
+									: 0);
 				if (position > bytes.length || [8, 64, 128].filter(flag => flags & flag).length > 1) return reject();
-				children.push({ glyph: child, sha256: inspect(child, new Set([...ancestors, glyph])) });
+				children.push({
+					glyph: child,
+					sha256: inspect(child, new Set([...ancestors, glyph]))
+				});
 			} while (flags & 32);
 		}
 		if (components[sha256] && JSON.stringify(components[sha256]) !== JSON.stringify(children)) return reject();
@@ -95,7 +129,10 @@ export function chicagoFontProgram(program: Buffer, mappings: ReadonlyMap<number
 		checked.set(glyph, sha256);
 		return sha256;
 	}
-	const characters = [...mappings].map(([glyph, unicode]) => ({ unicode, sha256: inspect(glyph, new Set()) }));
+	const characters = [...mappings].map(([glyph, unicode]) => ({
+		unicode,
+		sha256: inspect(glyph, new Set())
+	}));
 	if (characters.some(character => character.unicode !== "0020" && character.sha256 === hash(Buffer.alloc(0)))) return reject();
 	return { signature, characters, components };
 }
@@ -144,7 +181,9 @@ export function chicagoFooterMappings(program: Buffer) {
 				const address = position + offset + (unicode - first) * 2;
 				if (address + 2 > end) return reject();
 				const value = table.readUInt16BE(address);
-				glyph = value ? (value + delta) & 0xFFFF : 0;
+				glyph = value
+					? (value + delta) & 0xFFFF
+					: 0;
 			}
 			break;
 		}
@@ -181,7 +220,17 @@ export function readChicagoPdfFontPrograms(body: string) {
 			queue.push(...item);
 		}
 		else if (plain(item)) {
-			if (Object.keys(item).some(key => ["/OpenAction", "/AA", "/JS", "/JavaScript", "/EmbeddedFiles", "/XFA", "/Encrypt"].includes(key))) return reject();
+			if (Object.keys(item).some(key => [
+				"/OpenAction",
+				"/AA",
+				"/JS",
+				"/JavaScript",
+				"/EmbeddedFiles",
+				"/XFA",
+				"/Encrypt"
+			].includes(key))) {
+				return reject();
+			}
 			queue.push(...Object.values(item));
 		}
 	}
@@ -192,7 +241,10 @@ export function readChicagoPdfFontPrograms(body: string) {
 		if (!plain(page)) return reject();
 		const definition = resolved(page.object);
 		if (!plain(definition) || definition["/Annots"] || definition["/Rotate"] || !plain(definition["/Resources"])) return reject();
-		resourcesPending.push({ resources: definition["/Resources"], ancestors: new Set() });
+		resourcesPending.push({
+			resources: definition["/Resources"],
+			ancestors: new Set()
+		});
 	}
 	let resourceCount = 0;
 	while (resourcesPending.length) {
@@ -212,10 +264,15 @@ export function readChicagoPdfFontPrograms(body: string) {
 		if (forms !== undefined) {
 			if (!plain(forms) || Object.keys(forms).length > 8) return reject();
 			for (const reference of Object.values(forms)) {
-				const object = typeof reference === "string" ? objects[`obj:${reference}`] : null;
+				const object = typeof reference === "string"
+					? objects[`obj:${reference}`]
+					: null;
 				if (!plain(object) || !plain(object.stream) || !plain(object.stream.dict) || object.stream.dict["/Subtype"] !== "/Form" || item.ancestors.has(reference)) return reject();
 				if (JSON.stringify(object.stream.dict["/Matrix"]) !== "[1,0,0,1,0,0]") return reject();
-				resourcesPending.push({ resources: object.stream.dict["/Resources"], ancestors: new Set([...item.ancestors, reference]) });
+				resourcesPending.push({
+					resources: object.stream.dict["/Resources"],
+					ancestors: new Set([...item.ancestors, reference])
+				});
 			}
 		}
 		for (const reference of Object.values(fonts)) {
@@ -245,5 +302,8 @@ export function readChicagoPdfFontPrograms(body: string) {
 export function inspectChicagoPdfFonts(body: string) {
 	const programs = readChicagoPdfFontPrograms(body);
 	for (const program of programs) validateChicagoFontProgram(program);
-	return { programs: programs.length, characters: programs.reduce((total, program) => total + program.characters.length, 0) };
+	return {
+		programs: programs.length,
+		characters: programs.reduce((total, program) => total + program.characters.length, 0)
+	};
 }

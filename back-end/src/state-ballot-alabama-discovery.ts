@@ -62,7 +62,9 @@ function document(body: string) {
 	if (typeof body !== "string" || Buffer.byteLength(body) > 3 * 1024 * 1024 || body.includes("\uFFFD"))
 		throw new Error("The Alabama publication exceeds its reviewed bounds.");
 	const parsed = parseStateHtml(body);
-	const pending = [{ node: parsed, depth: 0 }];
+	const pending = [
+		{ node: parsed, depth: 0 }
+	];
 	let count = 0;
 	while (pending.length) {
 		const { node, depth } = pending.pop()!;
@@ -115,7 +117,9 @@ export function alabamaAnnualPages(body: string) {
 		pages.set(year[1], url);
 	}
 	if (!pages.size || pages.size > 10) throw new Error("No bounded current/future Alabama annual pages are offered.");
-	return [...pages.entries()].sort(([first], [second]) => first.localeCompare(second));
+	return [
+		...pages.entries()
+	].sort(([first], [second]) => first.localeCompare(second));
 }
 export function alabamaGeneralElection(body: string, year: string): AlabamaPublishedGeneralElection;
 export function alabamaGeneralElection(body: string, year: string, pendingAsOf: number): AlabamaPublishedGeneralElection | AlabamaPendingPublication;
@@ -123,14 +127,21 @@ export function alabamaGeneralElection(body: string, year: string, pendingAsOf?:
 	const content = main(body);
 	const headings = stateHtmlDescendants(content, node => /^h[1-4]$/u.test(node.nodeName));
 	const selected = headings.filter(node => /^General Election\s[–-]\s/u.test(text(node)));
-	const pending = (reason: AlabamaPendingPublication["reason"]): AlabamaPendingPublication => ({ status: "pending", year, pageUrl: `${alabamaDiscoveryUrl}/${year}`, reason });
+	const pending = (reason: AlabamaPendingPublication["reason"]): AlabamaPendingPublication => ({
+		status: "pending",
+		year,
+		pageUrl: `${alabamaDiscoveryUrl}/${year}`,
+		reason
+	});
 	const awaitingCutoff = new Date(`${year}-11-02T00:00:00Z`);
 	awaitingCutoff.setUTCDate(awaitingCutoff.getUTCDate() + (2 - awaitingCutoff.getUTCDay() + 7) % 7);
 	const futureYear = pendingAsOf !== undefined && Number.isFinite(pendingAsOf) && /^20\d{2}$/u.test(year) && Number(year) >= 2026 && Number(year) % 2 === 0 && Number(year) >= new Date(pendingAsOf).getUTCFullYear() && pendingAsOf < awaitingCutoff.getTime();
 	if (!selected.length && futureYear && headings.filter(node => node.nodeName === "h1" && text(node) === `${year} Election Information`).length === 1 && !/general\s*election/iu.test(text(content))) return pending("general-election-not-published");
 	if (selected.length !== 1) throw new Error("The regular Alabama general election must be explicit and unique.");
 	const date = /^General Election\s[–-]\sNovember ([2-8]), (20\d{2})$/u.exec(text(selected[0]));
-	const electionDate = date ? `${date[2]}-11-0${date[1]}` : null;
+	const electionDate = date
+		? `${date[2]}-11-0${date[1]}`
+		: null;
 	if (
 		!electionDate
 		|| date![2] !== year
@@ -150,8 +161,12 @@ export function alabamaGeneralElection(body: string, year: string, pendingAsOf?:
 			active = node === selected[0];
 			continue;
 		}
-		if (active && /certif|sample ballots|candidate|amendment/iu.test(text(node)))
-			links.push({ label: text(node), url: address(stateHtmlAttribute(node, "href")) });
+		if (active && /certif|sample ballots|candidate|amendment/iu.test(text(node))) {
+			links.push({
+				label: text(node),
+				url: address(stateHtmlAttribute(node, "href"))
+			});
+		}
 	}
 	const samples = links.filter(link => link.label === "Sample Ballots");
 	if ((!samples.length && !canPend) || samples.length > 1 || (samples.length === 1 && samples[0].url !== `${origin}/alabama-votes/${year}-general-election-sample-ballots`))
@@ -185,7 +200,12 @@ export function alabamaGeneralElection(body: string, year: string, pendingAsOf?:
 		if (canPend) return pending("ballot-resources-not-published");
 		throw new Error("The Alabama state-certified party inventory is incomplete.");
 	}
-	return { electionDate, pageUrl: `${alabamaDiscoveryUrl}/${year}`, sampleIndexUrl: samples[0].url, certifications };
+	return {
+		electionDate,
+		pageUrl: `${alabamaDiscoveryUrl}/${year}`,
+		sampleIndexUrl: samples[0].url,
+		certifications
+	};
 }
 export function alabamaCountySamples(body: string, year: string) {
 	const content = main(body);
@@ -263,7 +283,12 @@ export function prepareAlabamaReferences(capture: unknown, now = Date.now()): Al
 		) {
 			throw new Error("The Alabama discovery provenance is invalid.");
 		}
-		documents.set(item.url, { url: item.url, body: item.body, sha256: item.sha256, capturedAt: item.capturedAt });
+		documents.set(item.url, {
+			url: item.url,
+			body: item.body,
+			sha256: item.sha256,
+			capturedAt: item.capturedAt
+		});
 	}
 	const robots = documents.get(`${origin}/robots.txt`);
 	const discovery = documents.get(alabamaDiscoveryUrl);
@@ -286,15 +311,22 @@ export function prepareAlabamaReferences(capture: unknown, now = Date.now()): Al
 		const sample = documents.get(election.sampleIndexUrl);
 		if (!sample) throw new Error("The offered Alabama sample index is missing.");
 		used.add(sample.url);
-		elections.push({ ...election, ...alabamaCountySamples(sample.body, year) });
+		elections.push({
+			...election,
+			...alabamaCountySamples(sample.body, year)
+		});
 	}
 	if (
 		used.size !== documents.size
-		|| [...documents.keys()].some(url => !url.endsWith("/robots.txt") && !permissions.allowed(url))
+		|| [
+			...documents.keys()
+		].some(url => !url.endsWith("/robots.txt") && !permissions.allowed(url))
 	) {
 		throw new Error("The Alabama capture includes extra or prohibited publications.");
 	}
-	const provenance = [...documents.values()].map(({ url, sha256, capturedAt }) => ({ url, sha256, capturedAt }));
+	const provenance = [
+		...documents.values()
+	].map(({ url, sha256, capturedAt }) => ({ url, sha256, capturedAt }));
 	return {
 		schemaVersion: 1,
 		type: "official-alabama-election-references",
@@ -308,7 +340,9 @@ export function prepareAlabamaReferences(capture: unknown, now = Date.now()): Al
 			.at(-1)!,
 		documents: provenance,
 		elections,
-		...(pendingPublications.length ? { pendingPublications } : {}),
+		...(pendingPublications.length
+			? { pendingPublications }
+			: {}),
 		candidateExtractionPerformed: false,
 		candidateQualificationInferred: false,
 		individualBallotApplicabilityVerified: false,

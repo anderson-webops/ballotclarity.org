@@ -13,8 +13,18 @@ export const fultonCountyOfficeholderPublication = {
 	minimumRefreshIntervalMs: 6 * 60 * 60 * 1000,
 	maximumDocumentBytes: 3 * 1024 * 1024,
 	offices: [
-		{ id: "sheriff", role: "Sheriff", pageUrl: "https://fultoncountyga.gov/Inside-Fulton-County/Fulton-County-Departments/Sheriff", profilePrefix: "/Inside-Fulton-County/Fulton-County-Departments/Sheriff/About-Us/Sheriff-" },
-		{ id: "district-attorney", role: "District Attorney", pageUrl: "https://fultoncountyga.gov/Inside-Fulton-County/Fulton-County-Departments/District-Attorney", profilePrefix: "/Inside-Fulton-County/Fulton-County-Departments/District-Attorney/DA-Executive-Team/" },
+		{
+			id: "sheriff",
+			role: "Sheriff",
+			pageUrl: "https://fultoncountyga.gov/Inside-Fulton-County/Fulton-County-Departments/Sheriff",
+			profilePrefix: "/Inside-Fulton-County/Fulton-County-Departments/Sheriff/About-Us/Sheriff-"
+		},
+		{
+			id: "district-attorney",
+			role: "District Attorney",
+			pageUrl: "https://fultoncountyga.gov/Inside-Fulton-County/Fulton-County-Departments/District-Attorney",
+			profilePrefix: "/Inside-Fulton-County/Fulton-County-Departments/District-Attorney/DA-Executive-Team/"
+		},
 		{ id: "solicitor-general", role: "Solicitor General", pageUrl: "https://fultoncountyga.gov/Inside-Fulton-County/Fulton-County-Departments/Solicitor-General" },
 		{ id: "tax-commissioner", role: "Tax Commissioner", pageUrl: "https://fultoncountyga.gov/Inside-Fulton-County/Fulton-County-Departments/Tax-Commissioner" },
 		{ id: "clerk", role: "Clerk of Superior and Magistrate Courts", pageUrl: fultonClerkPublication.url }
@@ -113,7 +123,15 @@ function parseDepartmentOffice(content: StateHtmlNode, office: OfficeDefinition)
 		name = statements[0]![1]!;
 	}
 	if (!validName(name) || !departmentSlug(name)) throw new Error("The Fulton county-office department name requires review.");
-	return { id: office.id, status: "occupied", person: { name, slug: departmentSlug(name), officialWebsiteUrl: office.pageUrl } };
+	return {
+		id: office.id,
+		status: "occupied",
+		person: {
+			name,
+			slug: departmentSlug(name),
+			officialWebsiteUrl: office.pageUrl
+		}
+	};
 }
 
 export function parseFultonCountyOffice(body: string, office: OfficeDefinition): FultonCountyOffice {
@@ -126,23 +144,55 @@ export function parseFultonCountyOffice(body: string, office: OfficeDefinition):
 	const card = cards[0]!;
 	const sourceName = clean(stateHtmlText(oneClass(card, "bio-card__name")));
 	if (sourceName === "Vacant") return { id: office.id, status: "vacant" };
-	const name = office.id === "sheriff" ? sourceName.replace(/^Sheriff /u, "") : sourceName;
-	const links = [...new Set(stateHtmlDescendants(card, node => node.nodeName === "a").map(node => profileUrl(stateHtmlAttribute(node, "href"), office)))];
+	const name = office.id === "sheriff"
+		? sourceName.replace(/^Sheriff /u, "")
+		: sourceName;
+	const links = [
+		...new Set(stateHtmlDescendants(card, node => node.nodeName === "a").map(node => profileUrl(stateHtmlAttribute(node, "href"), office)))
+	];
 	const photo = /^background-image: url\(([^()]+)\);$/u.exec(stateHtmlAttribute(oneClass(card, "bio-card__frame"), "style"));
 	if (!validName(name) || links.length !== 1 || !photo) throw new Error("The Fulton county-office identity requires review.");
-	return { id: office.id, status: "occupied", person: { name, slug: profileSlug(links[0]!), officialWebsiteUrl: links[0]!, portraitUrl: portraitUrl(photo[1]!) } };
+	return {
+		id: office.id,
+		status: "occupied",
+		person: {
+			name,
+			slug: profileSlug(links[0]!),
+			officialWebsiteUrl: links[0]!,
+			portraitUrl: portraitUrl(photo[1]!)
+		}
+	};
 }
 
 export function validateFultonCountyOfficeholderSnapshot(value: unknown, now = Date.now()): asserts value is FultonCountyOfficeholderSnapshot {
-	if (!value || typeof value !== "object" || Array.isArray(value) || !exact(value, ["schemaVersion", "type", "sourceId", "countyFips", "retrievedAt", "sourceSha256", "documents", "offices"])) throw new Error("The Fulton county-office snapshot fields are invalid.");
+	if (!value || typeof value !== "object" || Array.isArray(value) || !exact(value, [
+		"schemaVersion",
+		"type",
+		"sourceId",
+		"countyFips",
+		"retrievedAt",
+		"sourceSha256",
+		"documents",
+		"offices"
+	])) {
+		throw new Error("The Fulton county-office snapshot fields are invalid.");
+	}
 	const snapshot = value as FultonCountyOfficeholderSnapshot;
-	const definitions = fultonCountyOfficeholderPublication.offices.slice(0, snapshot.schemaVersion === 1 ? 2 : snapshot.schemaVersion === 2 ? 4 : 5);
+	const definitions = fultonCountyOfficeholderPublication.offices.slice(0, snapshot.schemaVersion === 1
+		? 2
+		: snapshot.schemaVersion === 2
+			? 4
+			: 5);
 	if (![1, 2, 3].includes(snapshot.schemaVersion) || snapshot.type !== "fulton-county-officeholders" || snapshot.sourceId !== "ga-fulton-county-offices" || snapshot.countyFips !== "13121" || !Array.isArray(snapshot.offices) || snapshot.offices.length !== definitions.length || !Array.isArray(snapshot.documents)) throw new Error("The Fulton county-office snapshot identity is invalid.");
 	const urls: string[] = fultonCountyOfficeholderPublication.policies.map(policy => policy.url);
 	const slugs: string[] = [];
 	for (const [index, office] of snapshot.offices.entries()) {
 		const definition = definitions[index]!;
-		if (!office || !["occupied", "vacant"].includes(office.status) || office.id !== definition.id || !exact(office, office.status === "occupied" ? ["id", "status", "person"] : ["id", "status"])) throw new Error("The Fulton county-office roles are invalid.");
+		if (!office || !["occupied", "vacant"].includes(office.status) || office.id !== definition.id || !exact(office, office.status === "occupied"
+			? ["id", "status", "person"]
+			: ["id", "status"])) {
+			throw new Error("The Fulton county-office roles are invalid.");
+		}
 		if (office.id === "clerk" && office.status !== "occupied") throw new Error("The Fulton Clerk vacancy requires explicit source review.");
 		if (definition.id === "clerk") urls.push(...fultonClerkPublication.policies.map(policy => policy.url));
 		urls.push(definition.pageUrl);
@@ -154,7 +204,14 @@ export function validateFultonCountyOfficeholderSnapshot(value: unknown, now = D
 			urls.push(fultonClerkPublication.aboutUrl, person.officialWebsiteUrl);
 		}
 		else if ("profilePrefix" in definition) {
-			if (!exact(person, ["name", "slug", "officialWebsiteUrl", "portraitUrl"]) || profileUrl(person.officialWebsiteUrl, definition) !== person.officialWebsiteUrl || profileSlug(person.officialWebsiteUrl) !== person.slug || typeof person.portraitUrl !== "string" || portraitUrl(person.portraitUrl) !== person.portraitUrl) throw new Error("The Fulton county-office profile is invalid.");
+			if (!exact(person, [
+				"name",
+				"slug",
+				"officialWebsiteUrl",
+				"portraitUrl"
+			]) || profileUrl(person.officialWebsiteUrl, definition) !== person.officialWebsiteUrl || profileSlug(person.officialWebsiteUrl) !== person.slug || typeof person.portraitUrl !== "string" || portraitUrl(person.portraitUrl) !== person.portraitUrl) {
+				throw new Error("The Fulton county-office profile is invalid.");
+			}
 			urls.push(person.officialWebsiteUrl);
 		}
 		else if (!exact(person, ["name", "slug", "officialWebsiteUrl"]) || person.officialWebsiteUrl !== definition.pageUrl || person.slug !== departmentSlug(person.name)) {
@@ -170,15 +227,29 @@ export function validateFultonCountyOfficeholderSnapshot(value: unknown, now = D
 }
 
 export function prepareFultonCountyOfficeholders(capture: FultonCountyOfficeholderCapture, now = Date.now()): FultonCountyOfficeholderSnapshot {
-	if (!capture || !exact(capture, ["schemaVersion", "type", "documents"]) || ![1, 2, 3].includes(capture.schemaVersion) || capture.type !== "fulton-county-officeholder-capture" || !Array.isArray(capture.documents) || capture.documents.length < 4 || capture.documents.length > (capture.schemaVersion === 1 ? 6 : capture.schemaVersion === 2 ? 8 : 14) || Buffer.byteLength(JSON.stringify(capture)) > fultonClerkPublication.maximumCaptureBytes) throw new Error("The Fulton county-office capture is invalid.");
+	if (!capture || !exact(capture, ["schemaVersion", "type", "documents"]) || ![1, 2, 3].includes(capture.schemaVersion) || capture.type !== "fulton-county-officeholder-capture" || !Array.isArray(capture.documents) || capture.documents.length < 4 || capture.documents.length > (capture.schemaVersion === 1
+		? 6
+		: capture.schemaVersion === 2
+			? 8
+			: 14) || Buffer.byteLength(JSON.stringify(capture)) > fultonClerkPublication.maximumCaptureBytes) {
+		throw new Error("The Fulton county-office capture is invalid.");
+	}
 	for (const [index, document] of capture.documents.entries()) {
 		if (!document || !exact(document, ["url", "body", "capturedAt", "sha256"]) || typeof document.body !== "string" || Buffer.byteLength(document.body) > fultonCountyOfficeholderPublication.maximumDocumentBytes || digest(document.body) !== document.sha256) throw new Error("The Fulton county-office capture provenance is invalid.");
 		const policy = fultonCountyOfficeholderPublication.policies[index];
-		if (policy && (document.url !== policy.url || digest(policy.region === "bytes" ? document.body : clean(stateHtmlText(main(document.body)))) !== policy.sha256)) throw new Error("The Fulton county-office publisher policy requires review.");
+		if (policy && (document.url !== policy.url || digest(policy.region === "bytes"
+			? document.body
+			: clean(stateHtmlText(main(document.body)))) !== policy.sha256)) {
+			throw new Error("The Fulton county-office publisher policy requires review.");
+		}
 	}
 	const offices: FultonCountyOffice[] = [];
 	let cursor = 2;
-	for (const definition of fultonCountyOfficeholderPublication.offices.slice(0, capture.schemaVersion === 1 ? 2 : capture.schemaVersion === 2 ? 4 : 5)) {
+	for (const definition of fultonCountyOfficeholderPublication.offices.slice(0, capture.schemaVersion === 1
+		? 2
+		: capture.schemaVersion === 2
+			? 4
+			: 5)) {
 		if (definition.id === "clerk") {
 			for (const [index, policy] of fultonClerkPublication.policies.entries()) {
 				const source = capture.documents[cursor++];
@@ -204,13 +275,26 @@ export function prepareFultonCountyOfficeholders(capture: FultonCountyOfficehold
 			policyLinks(profile.body, profile.url);
 			const content = main(profile.body);
 			const sourceName = clean(stateHtmlText(oneClass(content, "name")));
-			if ((definition.id === "sheriff" ? sourceName.replace(/^Sheriff /u, "") : sourceName) !== office.person.name || !clean(stateHtmlText(content)).includes("Fulton County") || !clean(stateHtmlText(content)).includes(definition.role)) throw new Error("The county-office publications disagree.");
+			if ((definition.id === "sheriff"
+				? sourceName.replace(/^Sheriff /u, "")
+				: sourceName) !== office.person.name || !clean(stateHtmlText(content)).includes("Fulton County") || !clean(stateHtmlText(content)).includes(definition.role)) {
+				throw new Error("The county-office publications disagree.");
+			}
 		}
 		offices.push(office);
 	}
 	if (cursor !== capture.documents.length) throw new Error("The county-office capture contains unrecognized documents.");
 	const documents = capture.documents.map(({ url, capturedAt, sha256 }) => ({ url, capturedAt, sha256 }));
-	const snapshot: FultonCountyOfficeholderSnapshot = { schemaVersion: capture.schemaVersion, type: "fulton-county-officeholders", sourceId: "ga-fulton-county-offices", countyFips: "13121", retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.capturedAt)))).toISOString(), sourceSha256: digest(JSON.stringify(documents)), documents, offices };
+	const snapshot: FultonCountyOfficeholderSnapshot = {
+		schemaVersion: capture.schemaVersion,
+		type: "fulton-county-officeholders",
+		sourceId: "ga-fulton-county-offices",
+		countyFips: "13121",
+		retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.capturedAt)))).toISOString(),
+		sourceSha256: digest(JSON.stringify(documents)),
+		documents,
+		offices
+	};
 	validateFultonCountyOfficeholderSnapshot(snapshot, now);
 	return snapshot;
 }
@@ -218,5 +302,22 @@ export function prepareFultonCountyOfficeholders(capture: FultonCountyOfficehold
 export function fultonCountyOfficeholderCsv(snapshot: FultonCountyOfficeholderSnapshot) {
 	validateFultonCountyOfficeholderSnapshot(snapshot);
 	const quote = (value: string) => `"${value.replace(/"/gu, "\"\"")}"`;
-	return `${[["office", "status", "name", "officeWebsite", "portraitUrl", "retrievedAt"], ...snapshot.offices.map(office => [fultonCountyOfficeholderPublication.offices.find(item => item.id === office.id)!.role, office.status, office.person?.name ?? "", office.person?.officialWebsiteUrl ?? "", office.person?.portraitUrl ?? "", snapshot.retrievedAt])].map(row => row.map(quote).join(",")).join("\n")}\n`;
+	return `${[
+		[
+			"office",
+			"status",
+			"name",
+			"officeWebsite",
+			"portraitUrl",
+			"retrievedAt"
+		],
+		...snapshot.offices.map(office => [
+			fultonCountyOfficeholderPublication.offices.find(item => item.id === office.id)!.role,
+			office.status,
+			office.person?.name ?? "",
+			office.person?.officialWebsiteUrl ?? "",
+			office.person?.portraitUrl ?? "",
+			snapshot.retrievedAt
+		])
+	].map(row => row.map(quote).join(",")).join("\n")}\n`;
 }

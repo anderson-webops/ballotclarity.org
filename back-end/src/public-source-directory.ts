@@ -39,9 +39,24 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		primarySourceLabel: "Open Census Geocoder",
 		reviewNote: "Ballot Clarity reviews this provider description when district-matching logic or published geography coverage changes.",
 		routeCitations: [
-			{ href: "/results", id: "results", label: "Results", type: "page" },
-			{ href: "/districts", id: "districts", label: "District pages", type: "page" },
-			{ href: "/representatives", id: "representatives", label: "Representative pages", type: "page" },
+			{
+				href: "/results",
+				id: "results",
+				label: "Results",
+				type: "page"
+			},
+			{
+				href: "/districts",
+				id: "districts",
+				label: "District pages",
+				type: "page"
+			},
+			{
+				href: "/representatives",
+				id: "representatives",
+				label: "Representative pages",
+				type: "page"
+			},
 		],
 		sourceSystem: "U.S. Census Geocoder",
 		summary: "Official federal geography and district boundary service used to translate addresses and ZIP areas into canonical civic geography.",
@@ -64,9 +79,24 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		primarySourceLabel: "Open Open States",
 		reviewNote: "Ballot Clarity reviews provider matching and public page attachment when representative identity or district crosswalk logic changes.",
 		routeCitations: [
-			{ href: "/results", id: "results", label: "Results", type: "page" },
-			{ href: "/districts", id: "districts", label: "District pages", type: "page" },
-			{ href: "/representatives", id: "representatives", label: "Representative pages", type: "page" },
+			{
+				href: "/results",
+				id: "results",
+				label: "Results",
+				type: "page"
+			},
+			{
+				href: "/districts",
+				id: "districts",
+				label: "District pages",
+				type: "page"
+			},
+			{
+				href: "/representatives",
+				id: "representatives",
+				label: "Representative pages",
+				type: "page"
+			},
 		],
 		sourceSystem: "Open States",
 		summary: "Public-interest civic data service used for current officeholder identity, officeholding, and district-linked representative records.",
@@ -89,7 +119,12 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		primarySourceLabel: "Open Congress.gov API",
 		reviewNote: "Ballot Clarity reviews this federal enrichment layer when Congress member matching or committee context attachment changes.",
 		routeCitations: [
-			{ href: "/representatives", id: "representatives", label: "Representative pages", type: "page" },
+			{
+				href: "/representatives",
+				id: "representatives",
+				label: "Representative pages",
+				type: "page"
+			},
 		],
 		sourceSystem: "Congress.gov API",
 		summary: "Official congressional member and legislative metadata service maintained by the Library of Congress.",
@@ -112,7 +147,12 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		primarySourceLabel: "Open OpenFEC",
 		reviewNote: "Ballot Clarity reviews finance attachment rules when campaign crosswalk logic or FEC coverage windows change.",
 		routeCitations: [
-			{ href: "/representatives", id: "representatives", label: "Representative pages", type: "page" },
+			{
+				href: "/representatives",
+				id: "representatives",
+				label: "Representative pages",
+				type: "page"
+			},
 		],
 		sourceSystem: "OpenFEC",
 		summary: "Official federal campaign-finance API that exposes candidate, committee, receipts, spending, and cash-on-hand records.",
@@ -135,7 +175,12 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		primarySourceLabel: "Open LDA.gov",
 		reviewNote: "Ballot Clarity reviews influence attachment rules when lobbying crosswalk logic or disclosure windows change.",
 		routeCitations: [
-			{ href: "/representatives", id: "representatives", label: "Representative pages", type: "page" },
+			{
+				href: "/representatives",
+				id: "representatives",
+				label: "Representative pages",
+				type: "page"
+			},
 		],
 		sourceSystem: "LDA.gov API",
 		summary: "Official federal lobbying and LD-203 disclosure service for registrant, client, issue-area, and contribution records.",
@@ -158,7 +203,12 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		primarySourceLabel: "Open Google Civic API docs",
 		reviewNote: "Ballot Clarity reviews this lookup layer when official-tool attachment or election-context fallback behavior changes.",
 		routeCitations: [
-			{ href: "/results", id: "results", label: "Results", type: "page" },
+			{
+				href: "/results",
+				id: "results",
+				label: "Results",
+				type: "page"
+			},
 		],
 		sourceSystem: "Google Civic Information API",
 		summary: "Third-party civic infrastructure API that can return official election information and voter-tool context for matched locations.",
@@ -181,8 +231,18 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		primarySourceLabel: "Open CTCL Ballot Information Project",
 		reviewNote: "Ballot Clarity should review this record when CTCL grants data access or changes delivery format.",
 		routeCitations: [
-			{ href: "/data-sources", id: "data-sources", label: "Data sources", type: "page" },
-			{ href: "/results", id: "results", label: "Results", type: "page" },
+			{
+				href: "/data-sources",
+				id: "data-sources",
+				label: "Data sources",
+				type: "page"
+			},
+			{
+				href: "/results",
+				id: "results",
+				label: "Results",
+				type: "page"
+			},
 		],
 		sourceSystem: "CTCL Ballot Information Project",
 		summary: "Nonprofit ballot-information dataset focused on who and what appears on voter-specific ballots.",
@@ -205,8 +265,18 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		primarySourceLabel: "Open Ballotpedia API docs",
 		reviewNote: "Ballot Clarity should review this record when Ballotpedia API access, package scope, or field mapping changes.",
 		routeCitations: [
-			{ href: "/data-sources", id: "data-sources", label: "Data sources", type: "page" },
-			{ href: "/results", id: "results", label: "Results", type: "page" },
+			{
+				href: "/data-sources",
+				id: "data-sources",
+				label: "Data sources",
+				type: "page"
+			},
+			{
+				href: "/results",
+				id: "results",
+				label: "Results",
+				type: "page"
+			},
 		],
 		sourceSystem: "Ballotpedia API",
 		summary: "Ballot-content API that can return races, candidates, ballot measures, districts, offices, and person records for configured access.",
@@ -229,8 +299,18 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		primarySourceLabel: "Open CivicEngine docs",
 		reviewNote: "Ballot Clarity should review this record when CivicEngine access or licensing terms are active.",
 		routeCitations: [
-			{ href: "/data-sources", id: "data-sources", label: "Data sources", type: "page" },
-			{ href: "/results", id: "results", label: "Results", type: "page" },
+			{
+				href: "/data-sources",
+				id: "data-sources",
+				label: "Data sources",
+				type: "page"
+			},
+			{
+				href: "/results",
+				id: "results",
+				label: "Results",
+				type: "page"
+			},
 		],
 		sourceSystem: "BallotReady CivicEngine",
 		summary: "Commercial civic-data API for ballot matching, candidate profiles, issue content, ballot measures, and voter-guide data.",
@@ -254,8 +334,18 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		primarySourceLabel: "Open Democracy Works API docs",
 		reviewNote: "Ballot Clarity should review this record when Democracy Works API access or ballot-data field mapping changes.",
 		routeCitations: [
-			{ href: "/data-sources", id: "data-sources", label: "Data sources", type: "page" },
-			{ href: "/results", id: "results", label: "Results", type: "page" },
+			{
+				href: "/data-sources",
+				id: "data-sources",
+				label: "Data sources",
+				type: "page"
+			},
+			{
+				href: "/results",
+				id: "results",
+				label: "Results",
+				type: "page"
+			},
 		],
 		sourceSystem: "Democracy Works Elections API",
 		summary: "Nonprofit elections API for election discovery, dates, deadlines, guidance, and optional ballot data when requested.",
@@ -278,8 +368,18 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		primarySourceLabel: "Open state election authority directory",
 		reviewNote: "Ballot Clarity reviews these official-tool links when state portal coverage or verification routing changes.",
 		routeCitations: [
-			{ href: "/results", id: "results", label: "Results", type: "page" },
-			{ href: "/coverage", id: "coverage", label: "Coverage profile", type: "page" },
+			{
+				href: "/results",
+				id: "results",
+				label: "Results",
+				type: "page"
+			},
+			{
+				href: "/coverage",
+				id: "coverage",
+				label: "Coverage profile",
+				type: "page"
+			},
 		],
 		sourceSystem: "Official state voter portals",
 		summary: "Official state-run voter portals used to verify registration status, sample ballot, absentee status, and polling-place details.",
@@ -302,9 +402,24 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		primarySourceLabel: "Open election office directory",
 		reviewNote: "Ballot Clarity reviews this layer when official verification links or county-election-office routing changes.",
 		routeCitations: [
-			{ href: "/results", id: "results", label: "Results", type: "page" },
-			{ href: "/districts", id: "districts", label: "District pages", type: "page" },
-			{ href: "/representatives", id: "representatives", label: "Representative pages", type: "page" },
+			{
+				href: "/results",
+				id: "results",
+				label: "Results",
+				type: "page"
+			},
+			{
+				href: "/districts",
+				id: "districts",
+				label: "District pages",
+				type: "page"
+			},
+			{
+				href: "/representatives",
+				id: "representatives",
+				label: "Representative pages",
+				type: "page"
+			},
 		],
 		sourceSystem: "Official election verification layer",
 		summary: "Ballot Clarity’s official verification layer points users back to the relevant state and county election authorities for critical election details.",
@@ -327,9 +442,24 @@ const curatedSourceDefinitions: CuratedSourceDefinition[] = [
 		primarySourceLabel: "Open methodology",
 		reviewNote: "This source record should be updated when public source attachment rules, confidence labels, or verification expectations materially change.",
 		routeCitations: [
-			{ href: "/coverage", id: "coverage", label: "Coverage profile", type: "page" },
-			{ href: "/methodology", id: "methodology", label: "Methodology", type: "page" },
-			{ href: "/sources", id: "sources", label: "Source directory", type: "page" },
+			{
+				href: "/coverage",
+				id: "coverage",
+				label: "Coverage profile",
+				type: "page"
+			},
+			{
+				href: "/methodology",
+				id: "methodology",
+				label: "Methodology",
+				type: "page"
+			},
+			{
+				href: "/sources",
+				id: "sources",
+				label: "Source directory",
+				type: "page"
+			},
 		],
 		sourceSystem: "Ballot Clarity methodology",
 		summary: "Ballot Clarity’s public methodology and verification layer describing how official records, provider systems, and confidence labels are handled on the site.",

@@ -30,14 +30,31 @@ const guideStatus = computed(() => hasVerifiedContestPackage.value
 		: { label: props.note, tone: "warning" as const });
 const facts = computed(() => hasVerifiedContestPackage.value
 	? props.election.contests.every(contest => contest.type === "measure")
-		? [{ label: "Measures", value: String(measureCount.value) }]
+		? [
+				{
+					label: "Measures",
+					value: String(measureCount.value)
+				}
+			]
 		: [
-				{ label: "Contests", value: String(contestCount.value) },
-				{ label: "Measures", value: String(measureCount.value) }
+				{
+					label: "Contests",
+					value: String(contestCount.value)
+				},
+				{
+					label: "Measures",
+					value: String(measureCount.value)
+				}
 			]
 	: [
-			{ label: "Official links", value: String(props.election.officialResources.length) },
-			{ label: "Key dates", value: String(props.election.keyDates.length) }
+			{
+				label: "Official links",
+				value: String(props.election.officialResources.length)
+			},
+			{
+				label: "Key dates",
+				value: String(props.election.keyDates.length)
+			}
 		]);
 // A guide not matched to a verified address needs one local caveat; ZIP codes get the more specific reason.
 const confirmationCaveat = computed(() => {
@@ -45,7 +62,9 @@ const confirmationCaveat = computed(() => {
 		return `${areaGuideLabels.value.limitation} Confirm your ballot with your election office.`;
 	if (hasVerifiedContestPackage.value && props.coverageLimits?.length) {
 		const limit = publicCoverageLimit(props.coverageLimits);
-		return limit ? `${limit} Confirm your ballot with your election office.` : "";
+		return limit
+			? `${limit} Confirm your ballot with your election office.`
+			: "";
 	}
 
 	if (props.location.lookupMode === "zip-preview")

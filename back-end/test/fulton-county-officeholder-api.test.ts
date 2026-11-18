@@ -15,13 +15,84 @@ delete process.env.ADMIN_DATABASE_URL;
 delete process.env.DATABASE_URL;
 
 async function fixture(context: TestContext, getSnapshot: () => FultonCountyOfficeholderSnapshot) {
-	const app = await createApp({ adminDbPath: ":memory:", allowLegacyAdminActorHeadersForTesting: true, adminApiKey: "controlled-county-office-key", activeLookupCookieSecret: "controlled-county-office-cookie-secret-long-enough", adminMfaEncryptionKey: "controlled-county-office-mfa-secret-long-enough", stateBallotRepository: null, electionReferenceRepository: null, congressClient: null, googleCivicClient: null, ldaClient: null, openFecClient: null, openStatesClient: null, fultonOfficeholderRepository: { getSnapshot: () => exampleFultonOfficeholders() }, fultonCountyOfficeholderRepository: { getSnapshot, inspectSources: async () => [{ id: "ga-fulton-county-offices", label: "Fulton County offices", kind: "officeholders", mode: "automatic", stateCode: "GA", electionDate: "", status: "current", records: 2, retrievedAt: getSnapshot().retrievedAt, lastAttemptAt: null, lastImportAt: getSnapshot().retrievedAt, failure: null }] }, zipLocationService: { async lookupZip(postalCode) {
-		const stateAbbreviation = postalCode === "65251" ? "MO" : "GA";
-		return { postalCode, matches: [{ id: "county:121", locality: "Fulton County", stateAbbreviation, stateName: stateAbbreviation === "GA" ? "Georgia" : "Missouri", postalCode, latitude: 34, longitude: -84.3, sourceSystem: "Controlled county geography", districtMatches: [{ id: "county:121", districtType: "county", districtCode: "121", label: "Fulton County", stateFips: stateAbbreviation === "GA" ? "13" : "29", sourceSystem: "Controlled county geography" }], representativeMatches: [] }] };
-	} } });
+	const app = await createApp({
+		adminDbPath: ":memory:",
+		allowLegacyAdminActorHeadersForTesting: true,
+		adminApiKey: "controlled-county-office-key",
+		activeLookupCookieSecret: "controlled-county-office-cookie-secret-long-enough",
+		adminMfaEncryptionKey: "controlled-county-office-mfa-secret-long-enough",
+		stateBallotRepository: null,
+		electionReferenceRepository: null,
+		congressClient: null,
+		googleCivicClient: null,
+		ldaClient: null,
+		openFecClient: null,
+		openStatesClient: null,
+		fultonOfficeholderRepository: {
+			getSnapshot: () => exampleFultonOfficeholders()
+		},
+		fultonCountyOfficeholderRepository: {
+			getSnapshot,
+			inspectSources: async () => [
+				{
+					id: "ga-fulton-county-offices",
+					label: "Fulton County offices",
+					kind: "officeholders",
+					mode: "automatic",
+					stateCode: "GA",
+					electionDate: "",
+					status: "current",
+					records: 2,
+					retrievedAt: getSnapshot().retrievedAt,
+					lastAttemptAt: null,
+					lastImportAt: getSnapshot().retrievedAt,
+					failure: null
+				}
+			]
+		},
+		zipLocationService: {
+			async lookupZip(postalCode) {
+				const stateAbbreviation = postalCode === "65251"
+					? "MO"
+					: "GA";
+				return {
+					postalCode,
+					matches: [
+						{
+							id: "county:121",
+							locality: "Fulton County",
+							stateAbbreviation,
+							stateName: stateAbbreviation === "GA"
+								? "Georgia"
+								: "Missouri",
+							postalCode,
+							latitude: 34,
+							longitude: -84.3,
+							sourceSystem: "Controlled county geography",
+							districtMatches: [
+								{
+									id: "county:121",
+									districtType: "county",
+									districtCode: "121",
+									label: "Fulton County",
+									stateFips: stateAbbreviation === "GA"
+										? "13"
+										: "29",
+									sourceSystem: "Controlled county geography"
+								}
+							],
+							representativeMatches: []
+						}
+					]
+				};
+			}
+		}
+	});
 	const server = app.listen(0, "127.0.0.1");
 	await once(server, "listening");
-	context.after(() => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())));
+	context.after(() => new Promise<void>((resolve, reject) => server.close(error => error
+		? reject(error)
+		: resolve())));
 	return `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 }
 
@@ -51,7 +122,14 @@ test("current county offices join the county page and exact county lookup withou
 	assert.deepEqual(new Set(lookup.representatives.map((person: { name: string }) => person.name)), new Set(["Avery Chair", "Avery First", "Jordan Second"]));
 	const district = await fetch(`${base}/api/districts/fulton-county-commission-district-1`).then(result => result.json());
 	assert.deepEqual(district.representatives.map((person: { name: string }) => person.name), ["Alex One"]);
-	const operations = await fetch(`${base}/api/admin/operations`, { headers: { "x-admin-api-key": "controlled-county-office-key", "x-admin-actor-username": "fixture-admin", "x-admin-actor-display-name": "Fixture Admin", "x-admin-actor-role": "admin" } }).then(result => result.json());
+	const operations = await fetch(`${base}/api/admin/operations`, {
+		headers: {
+			"x-admin-api-key": "controlled-county-office-key",
+			"x-admin-actor-username": "fixture-admin",
+			"x-admin-actor-display-name": "Fixture Admin",
+			"x-admin-actor-role": "admin"
+		}
+	}).then(result => result.json());
 	assert.equal(operations.datasets.find((dataset: { id: string }) => dataset.id === "ga-fulton-county-offices").kind, "officeholders");
 });
 
@@ -100,7 +178,13 @@ test("expanded county departments become public without a restart, fabricated po
 		assert.equal((await fetch(`${base}/api/sources/${encodeURIComponent(sources[0].id)}`)).status, 200);
 	}
 	const lookup = await fetch(`${base}/api/representatives?lookup=30022`).then(result => result.json());
-	assert.deepEqual(new Set(lookup.representatives.map((person: { name: string }) => person.name)), new Set(["Avery Chair", "Avery First", "Jordan Second", "Morgan Future", "Taylor Future"]));
+	assert.deepEqual(new Set(lookup.representatives.map((person: { name: string }) => person.name)), new Set([
+		"Avery Chair",
+		"Avery First",
+		"Jordan Second",
+		"Morgan Future",
+		"Taylor Future"
+	]));
 });
 
 test("county-office failure is explicit and never attaches Georgia officials to a same-named county in another state", async (context) => {

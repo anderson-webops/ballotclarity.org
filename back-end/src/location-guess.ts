@@ -102,7 +102,9 @@ function normalizeGeoHeaderValue(value: string | undefined, maximumLength: numbe
 function buildProxyHeaderGuess(request: Request, proxyHeaders: ProxyHeaderConfig) {
 	const country = normalizeGeoHeaderValue(readRequestHeader(request, proxyHeaders.countryHeaders), 2)?.toUpperCase();
 	const rawPostalCode = normalizeGeoHeaderValue(readRequestHeader(request, proxyHeaders.postalCodeHeaders), 10);
-	const postalCode = rawPostalCode && postalCodePattern.test(rawPostalCode) ? rawPostalCode : undefined;
+	const postalCode = rawPostalCode && postalCodePattern.test(rawPostalCode)
+		? rawPostalCode
+		: undefined;
 	const city = normalizeGeoHeaderValue(readRequestHeader(request, proxyHeaders.cityHeaders), 120);
 	const region = normalizeGeoHeaderValue(readRequestHeader(request, proxyHeaders.regionHeaders), 64);
 
@@ -186,7 +188,9 @@ export function createLocationGuessService(
 			proxyHeaders.postalCodeHeaders.length > 0
 			|| (proxyHeaders.cityHeaders.length > 0 && proxyHeaders.regionHeaders.length > 0)
 		);
-	const varyHeaders = canGuessOnLoad ? configuredVaryHeaders : [];
+	const varyHeaders = canGuessOnLoad
+		? configuredVaryHeaders
+		: [];
 
 	return {
 		buildGuess(request) {

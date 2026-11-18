@@ -85,8 +85,18 @@ export default defineNuxtConfig({
 				{ rel: "shortcut icon", href: `/favicon.ico?v=${assetVersion}` },
 				{ rel: "icon", href: `/favicon.ico?v=${assetVersion}`, sizes: "any" },
 				{ rel: "icon", type: "image/svg+xml", href: `/favicon.svg?v=${assetVersion}` },
-				{ rel: "icon", type: "image/png", href: `/favicon-32x32.png?v=${assetVersion}`, sizes: "32x32" },
-				{ rel: "icon", type: "image/png", href: `/favicon-16x16.png?v=${assetVersion}`, sizes: "16x16" },
+				{
+					rel: "icon",
+					type: "image/png",
+					href: `/favicon-32x32.png?v=${assetVersion}`,
+					sizes: "32x32"
+				},
+				{
+					rel: "icon",
+					type: "image/png",
+					href: `/favicon-16x16.png?v=${assetVersion}`,
+					sizes: "16x16"
+				},
 				{ rel: "apple-touch-icon", href: `/apple-touch-icon.png?v=${assetVersion}` },
 				{ rel: "manifest", href: `/site.webmanifest?v=${assetVersion}` }
 			],

@@ -49,16 +49,38 @@ export interface IowaPolkElection {
 	}[];
 }
 export const iowaPolkPolicyReceipts = [
-	{ url: `${origin}/robots.txt`, status: 404, region: "bytes", sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
-	{ url: `${origin}/human-resources/internal-policies/`, status: 200, region: "content-grid-item", sha256: "2de6e7ce6c728ec557ccb4b858303f96701da87e17258a7e6fbf0abbd1df9802" },
-	{ url: `${origin}/accessibility-statement/`, status: 200, region: "content-grid-item", sha256: "a9f9b50e24f2de886a24d97240e5d0507df24905907c11ffcbd73658205282bf" },
-	{ url: iowaPolkDiscoveryUrl, status: 200, region: "legal-inventory", sha256: "b6856cd961297a1a04bbff925716faa49a79dacea605549d03d884a0bbf18b48" }
+	{
+		url: `${origin}/robots.txt`,
+		status: 404,
+		region: "bytes",
+		sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+	},
+	{
+		url: `${origin}/human-resources/internal-policies/`,
+		status: 200,
+		region: "content-grid-item",
+		sha256: "2de6e7ce6c728ec557ccb4b858303f96701da87e17258a7e6fbf0abbd1df9802"
+	},
+	{
+		url: `${origin}/accessibility-statement/`,
+		status: 200,
+		region: "content-grid-item",
+		sha256: "a9f9b50e24f2de886a24d97240e5d0507df24905907c11ffcbd73658205282bf"
+	},
+	{
+		url: iowaPolkDiscoveryUrl,
+		status: 200,
+		region: "legal-inventory",
+		sha256: "b6856cd961297a1a04bbff925716faa49a79dacea605549d03d884a0bbf18b48"
+	}
 ] as const;
 function html(body: string) {
 	if (Buffer.byteLength(body) > 2 * 1024 * 1024)
 		throw new Error("The Polk County publication exceeds its bounds.");
 	const document = parseStateHtml(body);
-	const pending = [{ node: document, depth: 0 }];
+	const pending = [
+		{ node: document, depth: 0 }
+	];
 	let visited = 0;
 	while (pending.length) {
 		const item = pending.pop()!;
@@ -77,13 +99,24 @@ export function iowaPolkPolicyFingerprint(body: string, region: "content-grid-it
 	if (footers.length !== 1)
 		throw new Error("The Polk County legal footer requires review.");
 	const footer = text(footers[0]!);
-	if ([...footer.matchAll(/\b20\d{2} Polk County Iowa\b/gu)].length !== 1)
+	if ([
+		...footer.matchAll(/\b20\d{2} Polk County Iowa\b/gu)
+	].length !== 1) {
 		throw new Error("The Polk County copyright notice changed.");
-	const links = descendants(document, node => node.nodeName === "a" && /privacy|disclaimer|copyright|licen[cs]e|terms|polic(?:y|ies)|legal|accessibility/iu.test(`${text(node)} ${attribute(node, "href")}`)).map(node => [text(node), new URL(attribute(node, "href"), origin).href]).filter(([label, url]) => {
+	}
+	const links = descendants(document, node => node.nodeName === "a" && /privacy|disclaimer|copyright|licen[cs]e|terms|polic(?:y|ies)|legal|accessibility/iu.test(`${text(node)} ${attribute(node, "href")}`)).map(node => [
+		text(node),
+		new URL(attribute(node, "href"), origin).href
+	]).filter(([label, url]) => {
 		const application = /^(20\d{2}) Polk County Dog License Application$/u.exec(label!);
 		return !application || new URL(url!).origin !== origin || !new RegExp(`^${origin}/media/[a-z0-9]{8}/${application[1]}-polk-county-dog-application\\.pdf$`, "u").test(url!);
 	});
-	return hash(JSON.stringify({ footer: footer.replace(/\b20\d{2}(?= Polk County Iowa\b)/u, "YYYY"), links: [...new Set(links.map(link => JSON.stringify(link)))].sort() }));
+	return hash(JSON.stringify({
+		footer: footer.replace(/\b20\d{2}(?= Polk County Iowa\b)/u, "YYYY"),
+		links: [
+			...new Set(links.map(link => JSON.stringify(link)))
+		].sort()
+	}));
 }
 export function validateIowaPolkDocumentUrl(value: string) {
 	const url = new URL(value);
@@ -102,8 +135,14 @@ function datePage(value: string) {
 	return date;
 }
 export function validateIowaPolkElection(value: unknown): asserts value is IowaPolkElection {
-	if (!exact(value, ["electionId", "electionDate", "pageUrl", "polkDocuments"]) || value.electionId !== null || typeof value.pageUrl !== "string" || value.electionDate !== datePage(value.pageUrl) || !Array.isArray(value.polkDocuments) || ![0, 2].includes(value.polkDocuments.length))
+	if (!exact(value, [
+		"electionId",
+		"electionDate",
+		"pageUrl",
+		"polkDocuments"
+	]) || value.electionId !== null || typeof value.pageUrl !== "string" || value.electionDate !== datePage(value.pageUrl) || !Array.isArray(value.polkDocuments) || ![0, 2].includes(value.polkDocuments.length)) {
 		throw new Error("The Polk County election identity is invalid.");
+	}
 	for (const [index, document] of value.polkDocuments.entries()) {
 		if (!exact(document, ["kind", "url"]) || document.kind !== (index ? "sample" : "candidates") || typeof document.url !== "string")
 			throw new Error("The Polk County document set requires review.");
@@ -116,9 +155,17 @@ export function iowaPolkDocumentDigest(documents: IowaPolkElection["polkDocument
 	return hash(JSON.stringify(documents));
 }
 export function validateIowaPolkSource(source: StateBallotSource) {
-	validateIowaPolkElection({ electionId: null, electionDate: source.electionDate, pageUrl: source.pageUrl, polkDocuments: [] });
-	if (source.stateCode !== "IA" || source.format !== "iowa-polk-pdf" || source.countyName !== "Polk County" || source.snapshotStorage !== "external" || source.url !== source.pageUrl || source.retrievalPolicy || source.postBody || source.delimiter || source.documentUrls || source.documentLinks || source.id !== (source.electionDate === "2026-11-03" ? "ia-polk-2026" : `ia-polk-general-${source.electionDate}`))
+	validateIowaPolkElection({
+		electionId: null,
+		electionDate: source.electionDate,
+		pageUrl: source.pageUrl,
+		polkDocuments: []
+	});
+	if (source.stateCode !== "IA" || source.format !== "iowa-polk-pdf" || source.countyName !== "Polk County" || source.snapshotStorage !== "external" || source.url !== source.pageUrl || source.retrievalPolicy || source.postBody || source.delimiter || source.documentUrls || source.documentLinks || source.id !== (source.electionDate === "2026-11-03"
+		? "ia-polk-2026"
+		: `ia-polk-general-${source.electionDate}`)) {
 		throw new Error("The Polk County source contract is invalid.");
+	}
 }
 function checkedPage(page: unknown, now: number): asserts page is Page {
 	if (!exact(page, ["url", "body", "sha256", "retrievedAt"]) || typeof page.url !== "string" || typeof page.body !== "string" || hash(page.body) !== page.sha256 || typeof page.retrievedAt !== "string" || !Number.isFinite(Date.parse(page.retrievedAt)) || new Date(page.retrievedAt).toISOString() !== page.retrievedAt || Date.parse(page.retrievedAt) > now || iowaPolkPolicyFingerprint(page.body, "legal-inventory") !== iowaPolkPolicyReceipts[3].sha256)
@@ -143,16 +190,32 @@ function electionPage(page: Page): IowaPolkElection {
 		throw new Error("The Polk County printed election date changed.");
 	const candidateLinks = descendants(document, node => node.nodeName === "a" && text(node) === "Full Candidate List");
 	const tables = descendants(document, node => node.nodeName === "table" && stateHtmlTableRows(node).some(row => text(row) === "Precinct Location Address Sample Ballot"));
-	if (!candidateLinks.length && !tables.length && /Candidate list and sample ballots will be posted\./u.test(text(document)))
-		return { electionId: null, electionDate, pageUrl: page.url, polkDocuments: [] };
+	if (!candidateLinks.length && !tables.length && /Candidate list and sample ballots will be posted\./u.test(text(document))) {
+		return {
+			electionId: null,
+			electionDate,
+			pageUrl: page.url,
+			polkDocuments: []
+		};
+	}
 	if (candidateLinks.length !== 1 || tables.length !== 1)
 		throw new Error("The Polk County candidate and sample publications require review.");
 	const rows = stateHtmlTableRows(tables[0]!);
 	const first = rows.find(row => text(row) !== "Precinct Location Address Sample Ballot" && descendants(row, node => node.nodeName === "td").length > 0);
-	const samples = first ? descendants(first, node => node.nodeName === "a" && text(node) === "Sample Ballot") : [];
+	const samples = first
+		? descendants(first, node => node.nodeName === "a" && text(node) === "Sample Ballot")
+		: [];
 	if (samples.length !== 1)
 		throw new Error("The Polk County first listed precinct has no unique sample ballot.");
-	const election: IowaPolkElection = { electionId: null, electionDate, pageUrl: page.url, polkDocuments: [{ kind: "candidates", url: new URL(attribute(candidateLinks[0]!, "href"), page.url).href }, { kind: "sample", url: new URL(attribute(samples[0]!, "href"), page.url).href }] };
+	const election: IowaPolkElection = {
+		electionId: null,
+		electionDate,
+		pageUrl: page.url,
+		polkDocuments: [
+			{ kind: "candidates", url: new URL(attribute(candidateLinks[0]!, "href"), page.url).href },
+			{ kind: "sample", url: new URL(attribute(samples[0]!, "href"), page.url).href }
+		]
+	};
 	validateIowaPolkElection(election);
 	return election;
 }
@@ -160,8 +223,15 @@ export function readIowaPolkDiscovery(body: string, now = Date.now()) {
 	if (Buffer.byteLength(body) > 16 * 1024 * 1024)
 		throw new Error("The Polk County discovery exceeds its bounds.");
 	const value = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "policies", "index", "pages"]) || value.schemaVersion !== 1 || value.type !== "iowa-polk-discovery" || JSON.stringify(value.policies) !== JSON.stringify(iowaPolkPolicyReceipts) || !Array.isArray(value.pages) || !value.pages.length || value.pages.length > 6)
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"policies",
+		"index",
+		"pages"
+	]) || value.schemaVersion !== 1 || value.type !== "iowa-polk-discovery" || JSON.stringify(value.policies) !== JSON.stringify(iowaPolkPolicyReceipts) || !Array.isArray(value.pages) || !value.pages.length || value.pages.length > 6) {
 		throw new Error("The Polk County discovery contract is invalid.");
+	}
 	checkedPage(value.index, now);
 	if (value.index.url !== iowaPolkDiscoveryUrl)
 		throw new Error("The Polk County index URL changed.");
@@ -174,21 +244,42 @@ export function readIowaPolkDiscovery(body: string, now = Date.now()) {
 	});
 	if (pages.some((page, index) => page.url !== offered[index]))
 		throw new Error("The Polk County publication identities changed.");
-	return { index: value.index, pages, elections: pages.map(electionPage) };
+	return {
+		index: value.index,
+		pages,
+		elections: pages.map(electionPage)
+	};
 }
 export async function fetchIowaPolkCycleDiscovery(options: Options = {}) {
 	const request = options.requestDocument ?? fetchRemoteSourceDocument;
 	const sleep = options.sleep ?? wait;
 	const now = options.now ?? Date.now;
 	for (const policy of iowaPolkPolicyReceipts.slice(0, 3)) {
-		const response = await request(policy.url, { allowedHosts: [new URL(origin).hostname], maxBytes: 2 * 1024 * 1024, timeoutMs: 25000 });
-		if (response.status !== policy.status || (policy.region === "bytes" ? hash(response.body.toString("utf8")) : iowaPolkPolicyFingerprint(response.body.toString("utf8"), "content-grid-item")) !== policy.sha256)
+		const response = await request(policy.url, {
+			allowedHosts: [new URL(origin).hostname],
+			maxBytes: 2 * 1024 * 1024,
+			timeoutMs: 25000
+		});
+		if (response.status !== policy.status || (policy.region === "bytes"
+			? hash(response.body.toString("utf8"))
+			: iowaPolkPolicyFingerprint(response.body.toString("utf8"), "content-grid-item")) !== policy.sha256) {
 			throw new Error("The Polk County public access policy requires review.");
+		}
 		await sleep(11000);
 	}
 	const page = async (url: string): Promise<Page> => {
-		const body = await (options.requestText ?? fetchRemoteSourceText)(url, { allowedHosts: [new URL(origin).hostname], maxBytes: 2 * 1024 * 1024, maxRedirects: 0, timeoutMs: 25000 });
-		const result = { url, body, sha256: hash(body), retrievedAt: new Date(now()).toISOString() };
+		const body = await (options.requestText ?? fetchRemoteSourceText)(url, {
+			allowedHosts: [new URL(origin).hostname],
+			maxBytes: 2 * 1024 * 1024,
+			maxRedirects: 0,
+			timeoutMs: 25000
+		});
+		const result = {
+			url,
+			body,
+			sha256: hash(body),
+			retrievedAt: new Date(now()).toISOString()
+		};
 		checkedPage(result, now());
 		return result;
 	};
@@ -198,7 +289,13 @@ export async function fetchIowaPolkCycleDiscovery(options: Options = {}) {
 		await sleep(11000);
 		pages.push(await page(url));
 	}
-	const body = JSON.stringify({ schemaVersion: 1, type: "iowa-polk-discovery", policies: iowaPolkPolicyReceipts, index, pages });
+	const body = JSON.stringify({
+		schemaVersion: 1,
+		type: "iowa-polk-discovery",
+		policies: iowaPolkPolicyReceipts,
+		index,
+		pages
+	});
 	readIowaPolkDiscovery(body, now());
 	return body;
 }
@@ -211,18 +308,55 @@ function officeValues(office: string, group: string): Omit<StateCandidateValues,
 	const base = { office, district: "", status: "listed" as const };
 	if (group === "statewide") {
 		const district = /^United States Representative District ([1-4])$/u.exec(office);
-		if (district)
-			return { ...base, office: "U.S. House", district: district[1]!, scope: "congressional" };
-		if (!["President", "Vice President", "United States Senator", "Governor", "Lieutenant Governor", "Secretary of State", "Auditor of State", "Treasurer of State", "Secretary of Agriculture", "Attorney General"].includes(office))
+		if (district) {
+			return {
+				...base,
+				office: "U.S. House",
+				district: district[1]!,
+				scope: "congressional"
+			};
+		}
+		if (![
+			"President",
+			"Vice President",
+			"United States Senator",
+			"Governor",
+			"Lieutenant Governor",
+			"Secretary of State",
+			"Auditor of State",
+			"Treasurer of State",
+			"Secretary of Agriculture",
+			"Attorney General"
+		].includes(office)) {
 			throw new Error("The Polk County statewide office requires review.");
+		}
 		const titles: Record<string, string> = { "United States Senator": "U.S. Senate", "Auditor of State": "State Auditor", "Treasurer of State": "State Treasurer" };
 		return { ...base, office: titles[office] ?? office, scope: "statewide" };
 	}
 	const legislative = /^State (Senate|Representative) District ([1-9]\d{0,2})$/u.exec(office);
-	if (legislative && group === (legislative[1] === "Senate" ? "senate" : "house"))
-		return { ...base, office: legislative[1] === "Senate" ? "State Senate" : "State House", district: legislative[2]!, scope: legislative[1] === "Senate" ? "state-senate" : "state-house" };
-	if (group === "county" && /^(?:County (?:Auditor|Sheriff|Treasurer|Recorder|Attorney)|Board of Supervisors - District [1-9]\d?)$/u.test(office))
-		return { ...base, scope: "local", jurisdiction: office.startsWith("Board") ? `Polk County, ${office}` : "Polk County" };
+	if (legislative && group === (legislative[1] === "Senate"
+		? "senate"
+		: "house")) {
+		return {
+			...base,
+			office: legislative[1] === "Senate"
+				? "State Senate"
+				: "State House",
+			district: legislative[2]!,
+			scope: legislative[1] === "Senate"
+				? "state-senate"
+				: "state-house"
+		};
+	}
+	if (group === "county" && /^(?:County (?:Auditor|Sheriff|Treasurer|Recorder|Attorney)|Board of Supervisors - District [1-9]\d?)$/u.test(office)) {
+		return {
+			...base,
+			scope: "local",
+			jurisdiction: office.startsWith("Board")
+				? `Polk County, ${office}`
+				: "Polk County"
+		};
+	}
 	if (group === "nonpartisan" && /^(?:County Hospital Trustees|Soil & Water Commission|Agricultural Extension Council(?: \(Vacancy\))?)(?: - Vote for no more than [1-9]\d?)?$/u.test(office))
 		return { ...base, scope: "local", jurisdiction: "Polk County" };
 	throw new Error("The Polk County office or section requires review.");
@@ -236,10 +370,17 @@ function ticketPairs(sample: string, office: string) {
 	if (edge < 25 || edge > 70)
 		throw new Error("The Polk County ballot column exceeds its bounds.");
 	const column = lines.map(line => clean(line.slice(0, edge))).filter(Boolean);
-	const first = office === "Governor" ? "GOVERNOR AND" : "PRESIDENT AND";
-	const positions = column.flatMap((line, index) => line === first ? [index] : []);
-	if (positions.length !== 1 || column[positions[0]! + 1] !== (office === "Governor" ? "LT. GOVERNOR" : "VICE PRESIDENT") || column[positions[0]! + 2] !== "Vote for no more than ONE team")
+	const first = office === "Governor"
+		? "GOVERNOR AND"
+		: "PRESIDENT AND";
+	const positions = column.flatMap((line, index) => line === first
+		? [index]
+		: []);
+	if (positions.length !== 1 || column[positions[0]! + 1] !== (office === "Governor"
+		? "LT. GOVERNOR"
+		: "VICE PRESIDENT") || column[positions[0]! + 2] !== "Vote for no more than ONE team") {
 		throw new Error("The Polk County ballot joint-ticket instruction requires review.");
+	}
 	const abbreviations = lines.find(line => line.startsWith("Party Abbreviations: "));
 	if (!abbreviations)
 		throw new Error("The Polk County printed party abbreviations are missing.");
@@ -258,7 +399,11 @@ function ticketPairs(sample: string, office: string) {
 		const match = /^(.+?) ([A-Z]{2,5})$/u.exec(column[position]!);
 		if (!match || !parties[match[2]!] || !column[position + 1])
 			throw new Error("The Polk County ballot running mate requires review.");
-		pairs.push({ name: candidateName(match[1]!), mate: candidateName(column[position + 1]!), party: parties[match[2]!]! });
+		pairs.push({
+			name: candidateName(match[1]!),
+			mate: candidateName(column[position + 1]!),
+			party: parties[match[2]!]!
+		});
 	}
 	if (!pairs.length || position >= column.length || new Set(pairs.map(pair => pair.party)).size !== pairs.length)
 		throw new Error("The Polk County joint-ticket set requires review.");
@@ -296,7 +441,9 @@ export function readIowaPolkCandidateDocuments(source: StateBallotSource, roster
 			for (const [index, initial] of ["Court of Appeals", match[1]!].entries()) {
 				let court = initial;
 				for (const line of rawLines.slice(1)) {
-					const value = clean(index ? line.slice(edge) : line.slice(0, edge));
+					const value = clean(index
+						? line.slice(edge)
+						: line.slice(0, edge));
 					if (!value || value === "Candidate Name")
 						continue;
 					if (/^District [1-9]\d?[A-Z]? Associate Judge$/u.test(value) && index) {
@@ -304,14 +451,35 @@ export function readIowaPolkCandidateDocuments(source: StateBallotSource, roster
 						continue;
 					}
 					const name = candidateName(value);
-					const record = make({ name, party: "", office: `${court} retention - ${name}`, district: "", scope: court === "Court of Appeals" ? "statewide" : "local", ...(court === "Court of Appeals" ? {} : { jurisdiction: court.replace(/ (?:Associate )?Judge$/u, "") }), status: "listed" });
+					const record = make({
+						name,
+						party: "",
+						office: `${court} retention - ${name}`,
+						district: "",
+						scope: court === "Court of Appeals"
+							? "statewide"
+							: "local",
+						...(court === "Court of Appeals"
+							? {}
+							: {
+									jurisdiction: court.replace(/ (?:Associate )?Judge$/u, "")
+								}),
+						status: "listed"
+					});
 					record.sourceStatus = "Judicial retention election";
 					records.push(record);
 				}
 			}
 			continue;
 		}
-		const group = heading === `${date} - Statewide Offices` ? "statewide" : ({ "State Senate": "senate", "State Representative": "house", "Countywide Offices": "county", "Countwide Offices - Nonpartisan": "nonpartisan" } as Record<string, string>)[heading];
+		const group = heading === `${date} - Statewide Offices`
+			? "statewide"
+			: ({
+					"State Senate": "senate",
+					"State Representative": "house",
+					"Countywide Offices": "county",
+					"Countwide Offices - Nonpartisan": "nonpartisan"
+				} as Record<string, string>)[heading];
 		if (!group)
 			throw new Error("The Polk County candidate section changed.");
 		let context: ReturnType<typeof officeValues> | null = null;
@@ -339,7 +507,9 @@ export function readIowaPolkCandidateDocuments(source: StateBallotSource, roster
 			if (!context || fields.length > 3 || !fields[0])
 				throw new Error("The Polk County candidate row requires review.");
 			rows++;
-			const party = group === "nonpartisan" ? "Nonpartisan" : fields[1];
+			const party = group === "nonpartisan"
+				? "Nonpartisan"
+				: fields[1];
 			if (!party || !/^\p{L}[\p{L} '&.-]{0,70}$/u.test(party) || (group === "nonpartisan" && fields.length > 2))
 				throw new Error("The Polk County candidate party columns changed.");
 			if (fields[0] === "(No candidate)") {
@@ -348,7 +518,14 @@ export function readIowaPolkCandidateDocuments(source: StateBallotSource, roster
 			}
 			const voteLimit = / - Vote for no more than ([1-9]\d?)$/u.exec(context.office);
 			const name = candidateName(fields[0]);
-			const record = make({ ...context, office: voteLimit ? context.office.replace(voteLimit[0], "") : context.office, name, party });
+			const record = make({
+				...context,
+				office: voteLimit
+					? context.office.replace(voteLimit[0], "")
+					: context.office,
+				name,
+				party
+			});
 			if (voteLimit)
 				record.voteLimit = Number(voteLimit[1]);
 			records.push(record);
@@ -357,7 +534,10 @@ export function readIowaPolkCandidateDocuments(source: StateBallotSource, roster
 			throw new Error("The Polk County candidate page is incomplete.");
 	}
 	const normalized = [...records];
-	for (const [office, mate] of [["Governor", "Lieutenant Governor"], ["President", "Vice President"]]) {
+	for (const [office, mate] of [
+		["Governor", "Lieutenant Governor"],
+		["President", "Vice President"]
+	]) {
 		const members = records.filter(record => record.office === office || record.office === mate);
 		if (!members.length)
 			continue;
@@ -369,7 +549,14 @@ export function readIowaPolkCandidateDocuments(source: StateBallotSource, roster
 			if (members.includes(normalized[index]!))
 				normalized.splice(index, 1);
 		}
-		normalized.splice(position, 0, ...pairs.map(pair => make({ name: `${pair.name} / ${pair.mate}`, office: `${office} and ${mate}`, district: "", scope: "statewide", party: pair.party, status: "listed" })));
+		normalized.splice(position, 0, ...pairs.map(pair => make({
+			name: `${pair.name} / ${pair.mate}`,
+			office: `${office} and ${mate}`,
+			district: "",
+			scope: "statewide",
+			party: pair.party,
+			status: "listed"
+		})));
 	}
 	if (!normalized.length || normalized.length > 25000 || new Set(normalized.map(record => record.id)).size !== normalized.length)
 		throw new Error("The Polk County candidate identities are empty or duplicated.");
@@ -382,23 +569,47 @@ export async function fetchIowaPolkCandidateCapture(source: StateBallotSource, o
 	const selected = readIowaPolkDiscovery(discovery, now()).elections.find(election => election.electionDate === source.electionDate);
 	if (!selected || selected.pageUrl !== source.pageUrl)
 		throw new Error("The Polk County offered publications changed.");
-	if (!selected.polkDocuments.length)
-		return JSON.stringify({ schemaVersion: 1, type: "iowa-polk-candidate-capture", discovery: JSON.parse(discovery), documents: [] });
-	const executable = options.extractor ? null : await resolveStateBallotPdfExtractor();
+	if (!selected.polkDocuments.length) {
+		return JSON.stringify({
+			schemaVersion: 1,
+			type: "iowa-polk-candidate-capture",
+			discovery: JSON.parse(discovery),
+			documents: []
+		});
+	}
+	const executable = options.extractor
+		? null
+		: await resolveStateBallotPdfExtractor();
 	const documents = [];
 	for (const document of selected.polkDocuments) {
 		await (options.sleep ?? wait)(11000);
-		documents.push(await fetchStateBallotPdfDocument(document.url, { allowedHosts: [new URL(origin).hostname], request: options.requestDocument, extractor: options.extractor ?? (bytes => extractStateBallotPdfText(bytes, executable!)), now }));
+		documents.push(await fetchStateBallotPdfDocument(document.url, {
+			allowedHosts: [new URL(origin).hostname],
+			request: options.requestDocument,
+			extractor: options.extractor ?? (bytes => extractStateBallotPdfText(bytes, executable!)),
+			now
+		}));
 	}
-	return JSON.stringify({ schemaVersion: 1, type: "iowa-polk-candidate-capture", discovery: JSON.parse(discovery), documents });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "iowa-polk-candidate-capture",
+		discovery: JSON.parse(discovery),
+		documents
+	});
 }
 export function parseIowaPolkCandidateCapture(source: StateBallotSource, body: string, factory: Factory, now = Date.now()) {
 	validateIowaPolkSource(source);
 	if (Buffer.byteLength(body) > 24 * 1024 * 1024)
 		throw new Error("The Polk County capture exceeds its bounds.");
 	const capture = JSON.parse(body);
-	if (!exact(capture, ["schemaVersion", "type", "discovery", "documents"]) || capture.schemaVersion !== 1 || capture.type !== "iowa-polk-candidate-capture" || !Array.isArray(capture.documents))
+	if (!exact(capture, [
+		"schemaVersion",
+		"type",
+		"discovery",
+		"documents"
+	]) || capture.schemaVersion !== 1 || capture.type !== "iowa-polk-candidate-capture" || !Array.isArray(capture.documents)) {
 		throw new Error("The Polk County candidate capture requires review.");
+	}
 	const selected = readIowaPolkDiscovery(JSON.stringify(capture.discovery), now).elections.find(election => election.electionDate === source.electionDate);
 	if (!selected || selected.pageUrl !== source.pageUrl || capture.documents.length !== selected.polkDocuments.length)
 		throw new Error("The Polk County captured document set is incomplete.");
@@ -410,5 +621,16 @@ export function parseIowaPolkCandidateCapture(source: StateBallotSource, body: s
 		return document as unknown as Pdf;
 	});
 	const parsed = readIowaPolkCandidateDocuments(source, documents[0]!.text, documents[1]!.text, factory);
-	return { ...parsed, retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString(), sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), documents: documents.map(({ url, sha256, retrievedAt }, index) => ({ url, sha256, retrievedAt, includedRecordCount: index ? 0 : parsed.records.length })), collectionIndexSha256: iowaPolkDocumentDigest(selected.polkDocuments) };
+	return {
+		...parsed,
+		retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString(),
+		sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+		documents: documents.map(({ url, sha256, retrievedAt }, index) => ({
+			url,
+			sha256,
+			retrievedAt,
+			includedRecordCount: index ? 0 : parsed.records.length
+		})),
+		collectionIndexSha256: iowaPolkDocumentDigest(selected.polkDocuments)
+	};
 }

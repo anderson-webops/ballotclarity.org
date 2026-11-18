@@ -93,7 +93,31 @@ export function isSupportedMeasureBallotOptions(value: unknown): value is Measur
 		|| value.yes !== value.yes.trim() || value.no !== value.no.trim()) {
 		return false;
 	}
-	return ["YES:NO", "YES, TO APPROVE:NO, TO REJECT", "FOR:AGAINST", "APPROVE:REJECT", "YES/FOR:NO/AGAINST", "FOR THE MEASURE:AGAINST THE MEASURE", "FOR GENERAL OBLIGATION BONDS:AGAINST GENERAL OBLIGATION BONDS", "FOR THE CONSTITUTIONAL AMENDMENT:AGAINST THE CONSTITUTIONAL AMENDMENT", "FOR CHARTER AMENDMENT:AGAINST CHARTER AMENDMENT", "FOR THE CHARTER AMENDMENT:AGAINST THE CHARTER AMENDMENT", "FOR BOND ISSUE:AGAINST BOND ISSUE", "FOR THE REFERRED LAW:AGAINST THE REFERRED LAW", "FOR THE PROPOSAL - YES:AGAINST THE PROPOSAL - NO", "FOR THE PROPOSITION - YES:AGAINST THE PROPOSITION - NO", "YES/SÍ:NO/NO", "YES/SÍ:NO", "YES - SI:NO - NO", "YES - FOR THE ½ CENT SALES TAX:NO - AGAINST THE ½ CENT SALES TAX", "YES - FOR RENEWAL OF MILLAGE:NO - AGAINST RENEWAL OF MILLAGE", "YES - FOR THE RENEWAL OF THE HALF-CENT SALES TAX:NO - AGAINST THE RENEWAL OF THE HALF-CENT SALES TAX", "YES - IN FAVOR:NO - OPPOSED", "YES - FOR APPROVAL:NO - FOR REJECTION", "YES - FOR BONDS:NO - AGAINST BONDS"].includes(`${value.yes.toUpperCase()}:${value.no.toUpperCase()}`);
+	return [
+		"YES:NO",
+		"YES, TO APPROVE:NO, TO REJECT",
+		"FOR:AGAINST",
+		"APPROVE:REJECT",
+		"YES/FOR:NO/AGAINST",
+		"FOR THE MEASURE:AGAINST THE MEASURE",
+		"FOR GENERAL OBLIGATION BONDS:AGAINST GENERAL OBLIGATION BONDS",
+		"FOR THE CONSTITUTIONAL AMENDMENT:AGAINST THE CONSTITUTIONAL AMENDMENT",
+		"FOR CHARTER AMENDMENT:AGAINST CHARTER AMENDMENT",
+		"FOR THE CHARTER AMENDMENT:AGAINST THE CHARTER AMENDMENT",
+		"FOR BOND ISSUE:AGAINST BOND ISSUE",
+		"FOR THE REFERRED LAW:AGAINST THE REFERRED LAW",
+		"FOR THE PROPOSAL - YES:AGAINST THE PROPOSAL - NO",
+		"FOR THE PROPOSITION - YES:AGAINST THE PROPOSITION - NO",
+		"YES/SÍ:NO/NO",
+		"YES/SÍ:NO",
+		"YES - SI:NO - NO",
+		"YES - FOR THE ½ CENT SALES TAX:NO - AGAINST THE ½ CENT SALES TAX",
+		"YES - FOR RENEWAL OF MILLAGE:NO - AGAINST RENEWAL OF MILLAGE",
+		"YES - FOR THE RENEWAL OF THE HALF-CENT SALES TAX:NO - AGAINST THE RENEWAL OF THE HALF-CENT SALES TAX",
+		"YES - IN FAVOR:NO - OPPOSED",
+		"YES - FOR APPROVAL:NO - FOR REJECTION",
+		"YES - FOR BONDS:NO - AGAINST BONDS"
+	].includes(`${value.yes.toUpperCase()}:${value.no.toUpperCase()}`);
 }
 
 export function isSupportedMeasureDecisionEffect(value: unknown, ballotOptions: unknown) {
@@ -101,12 +125,19 @@ export function isSupportedMeasureDecisionEffect(value: unknown, ballotOptions: 
 }
 
 export function coverageElections(snapshot: CoverageSnapshot): Election[] {
-	return [...(snapshot.election ? [snapshot.election] : []), ...(snapshot.additionalGuides ?? []).map(guide => guide.election)];
+	return [
+		...(snapshot.election
+			? [snapshot.election]
+			: []),
+		...(snapshot.additionalGuides ?? []).map(guide => guide.election)
+	];
 }
 
 export function coverageJurisdictions(snapshot: CoverageSnapshot): Jurisdiction[] {
 	return Array.from(new Map([
-		...(snapshot.jurisdiction ? [snapshot.jurisdiction] : []),
+		...(snapshot.jurisdiction
+			? [snapshot.jurisdiction]
+			: []),
 		...(snapshot.additionalGuides ?? []).map(guide => guide.jurisdiction),
 	].map(jurisdiction => [jurisdiction.slug, jurisdiction])).values());
 }
@@ -140,7 +171,9 @@ export function coverageJurisdictionSummaries(snapshot: CoverageSnapshot): Juris
 			displayName: jurisdiction.displayName,
 			state: jurisdiction.state,
 			jurisdictionType: jurisdiction.jurisdictionType,
-			...(jurisdiction.countyAreaScope ? { countyAreaScope: jurisdiction.countyAreaScope } : {}),
+			...(jurisdiction.countyAreaScope
+				? { countyAreaScope: jurisdiction.countyAreaScope }
+				: {}),
 			description: jurisdiction.description,
 			nextElectionName: jurisdiction.nextElectionName,
 			nextElectionSlug: jurisdiction.nextElectionSlug,
@@ -156,8 +189,14 @@ function validateAdditionalGuides(snapshot: CoverageSnapshot) {
 	if (!Array.isArray(snapshot.additionalGuides))
 		throw new Error("Coverage snapshot additionalGuides must be an array.");
 
-	const electionSlugs = new Set(snapshot.election ? [snapshot.election.slug] : []);
-	const jurisdictionRecords = new Map(snapshot.jurisdiction ? [[snapshot.jurisdiction.slug, snapshot.jurisdiction]] : []);
+	const electionSlugs = new Set(snapshot.election
+		? [snapshot.election.slug]
+		: []);
+	const jurisdictionRecords = new Map(snapshot.jurisdiction
+		? [
+				[snapshot.jurisdiction.slug, snapshot.jurisdiction]
+			]
+		: []);
 	const contestSlugs = new Set(snapshot.election?.contests.map(contest => contest.slug) ?? []);
 	const candidateSlugs = new Set(snapshot.candidates.map(candidate => candidate.slug));
 	const measureSlugs = new Set(snapshot.measures.map(measure => measure.slug));
@@ -173,7 +212,13 @@ function validateAdditionalGuides(snapshot: CoverageSnapshot) {
 		const { election, jurisdiction, location } = guide;
 		if (guide.coverageLimits !== undefined && (!Array.isArray(guide.coverageLimits) || !guide.coverageLimits.every(value => typeof value === "string" && value.trim())))
 			throw new Error("Additional guide coverage limits must be nonempty strings.");
-		for (const [label, value] of Object.entries({ electionSlug: election.slug, electionDate: election.date, jurisdictionSlug: jurisdiction.slug, state: jurisdiction.state, locationSlug: location.slug })) {
+		for (const [label, value] of Object.entries({
+			electionSlug: election.slug,
+			electionDate: election.date,
+			jurisdictionSlug: jurisdiction.slug,
+			state: jurisdiction.state,
+			locationSlug: location.slug
+		})) {
 			if (typeof value !== "string" || !value.trim())
 				throw new Error(`Additional guide must include ${label}.`);
 		}
@@ -202,11 +247,18 @@ function validateAdditionalGuides(snapshot: CoverageSnapshot) {
 				throw new Error("Additional guide contest slugs must be present and unique across guides.");
 			contestSlugs.add(contest.slug);
 			if ((contest.type !== "candidate" && contest.type !== "measure")
-				|| !Array.isArray(contest.type === "candidate" ? contest.candidates : contest.measures)
-				|| (contest.type === "candidate" ? contest.measures?.length : contest.candidates?.length)) {
+				|| !Array.isArray(contest.type === "candidate"
+					? contest.candidates
+					: contest.measures)
+				|| (contest.type === "candidate"
+					? contest.measures?.length
+					: contest.candidates?.length)) {
 				throw new Error("Additional guide contests must contain records of their declared type.");
 			}
-			for (const [records, slugs] of [[contest.candidates ?? [], candidateSlugs], [contest.measures ?? [], measureSlugs]] as const) {
+			for (const [records, slugs] of [
+				[contest.candidates ?? [], candidateSlugs],
+				[contest.measures ?? [], measureSlugs]
+			] as const) {
 				for (const record of records) {
 					if (!isRecord(record) || typeof record.slug !== "string" || !record.slug.trim() || slugs.has(record.slug) || record.contestSlug !== contest.slug)
 						throw new Error("Additional guide records must have unique slugs and match their parent contest.");
@@ -314,13 +366,25 @@ export function parseCoverageSnapshotMetadata(raw: unknown): CoverageSnapshotMet
 		throw new Error("Coverage snapshot metadata contentSha256 must be a lowercase SHA-256 digest.");
 
 	return {
-		approvedAt: typeof raw.approvedAt === "string" ? raw.approvedAt : undefined,
-		contentSha256: typeof raw.contentSha256 === "string" ? raw.contentSha256 : undefined,
-		importedAt: typeof raw.importedAt === "string" ? raw.importedAt : undefined,
-		note: typeof raw.note === "string" ? raw.note : undefined,
-		reviewedAt: typeof raw.reviewedAt === "string" ? raw.reviewedAt : undefined,
+		approvedAt: typeof raw.approvedAt === "string"
+			? raw.approvedAt
+			: undefined,
+		contentSha256: typeof raw.contentSha256 === "string"
+			? raw.contentSha256
+			: undefined,
+		importedAt: typeof raw.importedAt === "string"
+			? raw.importedAt
+			: undefined,
+		note: typeof raw.note === "string"
+			? raw.note
+			: undefined,
+		reviewedAt: typeof raw.reviewedAt === "string"
+			? raw.reviewedAt
+			: undefined,
 		sourceLabel: sourceLabel.trim(),
-		sourceOrigin: typeof raw.sourceOrigin === "string" ? raw.sourceOrigin : undefined,
+		sourceOrigin: typeof raw.sourceOrigin === "string"
+			? raw.sourceOrigin
+			: undefined,
 		sourceType,
 		status
 	};
@@ -354,9 +418,16 @@ export function parseCoverageSnapshot(raw: unknown): CoverageSnapshot {
 		throw new Error("Coverage snapshot must include updatedAt.");
 
 	validateAdditionalGuides(snapshot as CoverageSnapshot);
-	for (const jurisdiction of [snapshot.jurisdiction, ...snapshot.jurisdictionSummaries, ...(snapshot.additionalGuides ?? []).map(guide => guide.jurisdiction)])
+	for (const jurisdiction of [
+		snapshot.jurisdiction,
+		...snapshot.jurisdictionSummaries,
+		...(snapshot.additionalGuides ?? []).map(guide => guide.jurisdiction)
+	])
 		assertJurisdictionCountyArea(jurisdiction);
-	const measures = [...snapshot.measures, ...coverageElections(snapshot as CoverageSnapshot).flatMap(election => (election.contests ?? []).flatMap(contest => contest.measures ?? []))];
+	const measures = [
+		...snapshot.measures,
+		...coverageElections(snapshot as CoverageSnapshot).flatMap(election => (election.contests ?? []).flatMap(contest => contest.measures ?? []))
+	];
 	if (measures.some(measure => isRecord(measure) && !isSupportedMeasureBallotOptions(measure.ballotOptions)))
 		throw new Error("Measures must retain a supported binary ballot-option pair; non-binary choices require a separate contract.");
 	if (measures.some(measure => isRecord(measure) && !isSupportedMeasureDecisionEffect(measure.decisionEffect, measure.ballotOptions)))
@@ -407,7 +478,9 @@ export async function createCoverageRepository(): Promise<CoverageRepository> {
 	const hasSnapshot = Boolean(configuredSnapshotPath) && existsSync(snapshotPath);
 	const configuredSnapshotMissing = Boolean(configuredSnapshotPath) && !hasSnapshot;
 	const loadedAt = new Date().toISOString();
-	const snapshot = hasSnapshot ? readCoverageSnapshot(snapshotPath) : buildEmptyCoverageSnapshot();
+	const snapshot = hasSnapshot
+		? readCoverageSnapshot(snapshotPath)
+		: buildEmptyCoverageSnapshot();
 	let snapshotMetadata: CoverageSnapshotMetadata;
 
 	if (requireLiveCoverage && !hasSnapshot)

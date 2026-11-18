@@ -10,8 +10,15 @@ const outline = "M 0 0 L 4 0 L 4 -6 L 0 -6 Z";
 const alternative = "M 0 0 L 4 0 L 4 -5 L 0 -5 Z";
 const approvals = { [hash(outline)]: "A", [hash(alternative)]: "B" };
 function fixture(county: IowaSampleCounty = "Woodbury") {
-	const cropBox = county === "Monona" ? [18.573, 66.596, 593.28, 974.929] : [0, 0, 612, 1008];
-	const geometry = { mediaBox: [0, 0, 612, 1008], cropBox, rotation: 0, userUnit: 1 };
+	const cropBox = county === "Monona"
+		? [18.573, 66.596, 593.28, 974.929]
+		: [0, 0, 612, 1008];
+	const geometry = {
+		mediaBox: [0, 0, 612, 1008],
+		cropBox,
+		rotation: 0,
+		userUnit: 1
+	};
 	const offsetY = 1008 - cropBox[3]!;
 	const width = cropBox[2]! - cropBox[0]!;
 	const height = cropBox[3]! - cropBox[1]!;
@@ -79,7 +86,10 @@ test("ordinary opaque, translucent and hidden parent paint cannot suppress text"
 });
 test("later white and black covers fail even when native text and glyph placement remain unchanged", () => {
 	const sample = fixture();
-	for (const color of [fill(0), fill(100)])
+	for (const color of [
+		fill(0),
+		fill(100)
+	])
 		assert.throws(() => sample.inspect(sample.svg.replace("</svg>", `${cover(color)}</svg>`)), /occlusion/u);
 	assert.throws(
 		() =>
@@ -176,7 +186,11 @@ test("thin black tangential rules preserve ink while middle, deeper and white co
 		`<path fill="none" stroke="${color}" stroke-width="0.36" stroke-linecap="butt" stroke-linejoin="round" d="M ${horizontal} 90 L ${horizontal} 105"/>`;
 	const allowed = sample.svg.replace("</svg>", `${stroke(49.9)}</svg>`);
 	assert.equal(sample.inspect(allowed).ruleContacts, 1);
-	for (const paint of [stroke(50), stroke(52), stroke(49.9, "rgb(100%, 100%, 100%)")])
+	for (const paint of [
+		stroke(50),
+		stroke(52),
+		stroke(49.9, "rgb(100%, 100%, 100%)")
+	])
 		assert.throws(() => sample.inspect(sample.svg.replace("</svg>", `${paint}</svg>`)), /occlusion/u);
 });
 test("underlines below the baseline preserve descenders without accepting erased or thickened text", () => {
@@ -191,7 +205,11 @@ test("underlines below the baseline preserve descenders without accepting erased
 	const stroke = (top: number, width = 0.36, color = "rgb(0%, 0%, 0%)") =>
 		`<path fill="none" stroke="${color}" stroke-width="${width}" stroke-linecap="butt" stroke-linejoin="round" d="M 45 ${top} L 60 ${top}"/>`;
 	assert.equal(inspect(stroke(101)).ruleContacts, 1);
-	for (const paint of [stroke(97), stroke(101, 0.8), stroke(101, 0.36, "rgb(100%, 100%, 100%)")])
+	for (const paint of [
+		stroke(97),
+		stroke(101, 0.8),
+		stroke(101, 0.36, "rgb(100%, 100%, 100%)")
+	])
 		assert.throws(() => inspect(paint), /occlusion/u);
 });
 test("Monona's reviewed translucent red watermark preserves contrast without allowing arbitrary mask paint", () => {

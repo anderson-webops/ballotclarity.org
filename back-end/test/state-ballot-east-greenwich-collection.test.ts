@@ -15,7 +15,10 @@ import { eastGreenwichDiscoveryFixture, eastGreenwichFixtureHash, eastGreenwichF
 
 const source = configuredStateBallotSources.find(item => item.id === "ri-east-greenwich-2026")!;
 async function capture(fixture = eastGreenwichDiscoveryFixture(), selected = source) {
-	return fetchEastGreenwichCandidateCapture(selected, { discovery: JSON.stringify(fixture), now: () => eastGreenwichFixtureTime });
+	return fetchEastGreenwichCandidateCapture(selected, {
+		discovery: JSON.stringify(fixture),
+		now: () => eastGreenwichFixtureTime
+	});
 }
 test("East Greenwich discovers the dated section and reconciles every sample without duplicate local records", async () => {
 	const fixture = eastGreenwichDiscoveryFixture();
@@ -33,25 +36,37 @@ test("advancing copyright years alone require no annual edit while changed owner
 	const now = Date.parse("2030-01-01T00:00:00Z");
 	const fingerprint = eastGreenwichPolicyFingerprint(Buffer.from(body), "region", url, "mainWrapTS", now);
 	assert.equal(eastGreenwichPolicyFingerprint(Buffer.from(body.replaceAll("-2026", "-2030")), "region", url, "mainWrapTS", now), fingerprint);
-	for (const changed of [body.replace("CivicPlus", "Other owner"), body.replace("Publisher metadata", "Reuse requires permission"), body.replace("its representatives", "new license terms")]) assert.notEqual(eastGreenwichPolicyFingerprint(Buffer.from(changed), "region", url, "mainWrapTS", now), fingerprint);
+	for (const changed of [
+		body.replace("CivicPlus", "Other owner"),
+		body.replace("Publisher metadata", "Reuse requires permission"),
+		body.replace("its representatives", "new license terms")
+	]) assert.notEqual(eastGreenwichPolicyFingerprint(Buffer.from(changed), "region", url, "mainWrapTS", now), fingerprint);
 	assert.throws(() => eastGreenwichPolicyFingerprint(Buffer.from(body.replaceAll("-2026", "-2031")), "region", url, "mainWrapTS", now), /year requires review/u);
 });
 test("dated headings, legal inventories, explicit PDF roles, image proofs and provenance remain strict", () => {
-	for (const mutate of [(fixture: ReturnType<typeof eastGreenwichDiscoveryFixture>) => {
-		fixture.index.body += "<a href=\"/new-terms\">Terms</a>";
-	}, (fixture: ReturnType<typeof eastGreenwichDiscoveryFixture>) => {
-		fixture.index.body = fixture.index.body.replace("November 3, 2026", "November 4, 2026");
-	}, (fixture: ReturnType<typeof eastGreenwichDiscoveryFixture>) => {
-		fixture.documents[0]!.url += "?download=1";
-	}, (fixture: ReturnType<typeof eastGreenwichDiscoveryFixture>) => {
-		fixture.documents[0]!.retrievedAt = "2099-01-01T00:00:00.000Z";
-	}, (fixture: ReturnType<typeof eastGreenwichDiscoveryFixture>) => {
-		fixture.documents[0]!.visual.pages[0]!.images[1]!.sha256 = "f".repeat(64);
-	}, (fixture: ReturnType<typeof eastGreenwichDiscoveryFixture>) => {
-		fixture.documents[0]!.text = fixture.documents[0]!.text.replace(">DEMOCRAT<", ">Different Party<");
-	}, (fixture: ReturnType<typeof eastGreenwichDiscoveryFixture>) => {
-		fixture.documents.push(fixture.documents[0]!);
-	}]) {
+	for (const mutate of [
+		(fixture: ReturnType<typeof eastGreenwichDiscoveryFixture>) => {
+			fixture.index.body += "<a href=\"/new-terms\">Terms</a>";
+		},
+		(fixture: ReturnType<typeof eastGreenwichDiscoveryFixture>) => {
+			fixture.index.body = fixture.index.body.replace("November 3, 2026", "November 4, 2026");
+		},
+		(fixture: ReturnType<typeof eastGreenwichDiscoveryFixture>) => {
+			fixture.documents[0]!.url += "?download=1";
+		},
+		(fixture: ReturnType<typeof eastGreenwichDiscoveryFixture>) => {
+			fixture.documents[0]!.retrievedAt = "2099-01-01T00:00:00.000Z";
+		},
+		(fixture: ReturnType<typeof eastGreenwichDiscoveryFixture>) => {
+			fixture.documents[0]!.visual.pages[0]!.images[1]!.sha256 = "f".repeat(64);
+		},
+		(fixture: ReturnType<typeof eastGreenwichDiscoveryFixture>) => {
+			fixture.documents[0]!.text = fixture.documents[0]!.text.replace(">DEMOCRAT<", ">Different Party<");
+		},
+		(fixture: ReturnType<typeof eastGreenwichDiscoveryFixture>) => {
+			fixture.documents.push(fixture.documents[0]!);
+		}
+	]) {
 		const fixture = eastGreenwichDiscoveryFixture();
 		mutate(fixture);
 		fixture.index.sha256 = eastGreenwichFixtureHash(fixture.index.body);
@@ -66,20 +81,45 @@ test("shared source claims and disappearing accepted identities require review",
 	changed.text = changed.text.replace(">Blair Sample<", ">Other Sample<");
 	changed.visual = eastGreenwichVisualFixture(changed.text, changed.sha256);
 	await assert.rejects(async () => parseEastGreenwichCandidateCapture(source, await capture(fixture), eastGreenwichFixtureTime), /shared statewide or town/u);
-	await assert.rejects(async () => parseEastGreenwichCandidateCapture(source, await capture(), eastGreenwichFixtureTime, [...accepted.records, { ...accepted.records[0]!, id: "a".repeat(24) }]), /candidate disappeared/u);
+	await assert.rejects(async () => parseEastGreenwichCandidateCapture(source, await capture(), eastGreenwichFixtureTime, [
+		...accepted.records,
+		{
+			...accepted.records[0]!,
+			id: "a".repeat(24)
+		}
+	]), /candidate disappeared/u);
 });
 test("partial offered sample sets remain pending and cannot replace accepted facts", async () => {
 	const body = await capture(eastGreenwichDiscoveryFixture(["2026-11-03"], 4));
 	assert.throws(() => parseEastGreenwichCandidateCapture(source, body, eastGreenwichFixtureTime), StateBallotAwaitingRecordsError);
-	assert.throws(() => parseEastGreenwichCandidateCapture(source, body, eastGreenwichFixtureTime, [{ id: "a" } as never]), /publications disappeared/u);
+	assert.throws(() => parseEastGreenwichCandidateCapture(source, body, eastGreenwichFixtureTime, [
+		{ id: "a" } as never
+	]), /publications disappeared/u);
 });
 test("unreviewed robots or index policies stop collection before PDF or alternate-path requests", async () => {
-	for (const response of [{ status: 403, body: Buffer.alloc(0) }, { status: 200, body: Buffer.from("User-agent: *\nDisallow: /\n") }]) {
+	for (const response of [
+		{
+			status: 403,
+			body: Buffer.alloc(0)
+		},
+		{
+			status: 200,
+			body: Buffer.from("User-agent: *\nDisallow: /\n")
+		}
+	]) {
 		const requests: string[] = [];
-		await assert.rejects(fetchEastGreenwichCycleDiscovery({ requestDocument: async (url) => {
-			requests.push(url);
-			return { ...response, contentType: "text/plain", etag: undefined, location: undefined };
-		}, sleep: async () => {} }));
+		await assert.rejects(fetchEastGreenwichCycleDiscovery({
+			requestDocument: async (url) => {
+				requests.push(url);
+				return {
+					...response,
+					contentType: "text/plain",
+					etag: undefined,
+					location: undefined
+				};
+			},
+			sleep: async () => {}
+		}));
 		assert.deepEqual(requests, ["https://www.eastgreenwichri.gov/robots.txt"]);
 	}
 });
@@ -89,14 +129,27 @@ test("first automatic replacement backs up exact reviewed bytes and keeps unchan
 	const fixture = eastGreenwichDiscoveryFixture();
 	const parsed = parseEastGreenwichCandidateCapture(source, await capture(fixture), eastGreenwichFixtureTime);
 	const storage = createStateBallotStorage(directory);
-	await storage.write({ ...parsed, source: legacyReviewedStateBallotSource(source)!, collectionIndexSha256: undefined });
+	await storage.write({
+		...parsed,
+		source: legacyReviewedStateBallotSource(source)!,
+		collectionIndexSha256: undefined
+	});
 	const file = (await readdir(directory)).find(name => name.startsWith(source.id))!;
 	const before = await readFile(join(directory, file));
-	const options = { familyId: source.id, dataDirectory: directory, catalogPath: join(directory, "cycles.json"), now: () => eastGreenwichFixtureTime, fetchDiscovery: async () => JSON.stringify(fixture) };
+	const options = {
+		familyId: source.id,
+		dataDirectory: directory,
+		catalogPath: join(directory, "cycles.json"),
+		now: () => eastGreenwichFixtureTime,
+		fetchDiscovery: async () => JSON.stringify(fixture)
+	};
 	const first = await syncStateBallotCycles(options);
-	const cached = await syncStateBallotCycles({ ...options, fetchCandidates: async () => {
-		throw new Error("Stored records must remain cached");
-	} });
+	const cached = await syncStateBallotCycles({
+		...options,
+		fetchCandidates: async () => {
+			throw new Error("Stored records must remain cached");
+		}
+	});
 	assert.equal(first.results[0]!.status, "available");
 	assert.equal(first.results[0]!.imported, true);
 	assert.equal(cached.results[0]!.imported, false);
@@ -105,7 +158,10 @@ test("first automatic replacement backs up exact reviewed bytes and keeps unchan
 	const backup = (await readdir(directory)).find(name => name.startsWith(`${file}.legacy-`))!;
 	assert.ok(backup);
 	assert.deepEqual(await readFile(join(directory, backup)), before);
-	await assert.rejects(syncStateBallotCycles({ ...options, fetchDiscovery: async () => JSON.stringify(eastGreenwichDiscoveryFixture(["2026-11-03"], 4)) }), /publication disappeared/u);
+	await assert.rejects(syncStateBallotCycles({
+		...options,
+		fetchDiscovery: async () => JSON.stringify(eastGreenwichDiscoveryFixture(["2026-11-03"], 4))
+	}), /publication disappeared/u);
 	assert.equal(JSON.parse(serializeStoredStateSnapshot((await storage.read(source))!)).retrievalPolicy, "automatic");
 });
 test("compatible synthetic future publications progress from pending to available without annual source edits", async (context) => {
@@ -115,27 +171,46 @@ test("compatible synthetic future publications progress from pending to availabl
 	const catalog = discoverStateBallotElectionCycles(JSON.stringify(fixture), source.id, eastGreenwichFixtureTime);
 	const future = stateBallotCycleSources(catalog, eastGreenwichFixtureTime)[0]!;
 	assert.equal(future.id, "ri-east-greenwich-general-2030-11-05");
-	const options = { familyId: source.id, dataDirectory: directory, catalogPath: join(directory, "cycles.json"), now: () => eastGreenwichFixtureTime, fetchDiscovery: async () => JSON.stringify(fixture) };
+	const options = {
+		familyId: source.id,
+		dataDirectory: directory,
+		catalogPath: join(directory, "cycles.json"),
+		now: () => eastGreenwichFixtureTime,
+		fetchDiscovery: async () => JSON.stringify(fixture)
+	};
 	assert.equal((await syncStateBallotCycles(options)).results[0]!.status, "awaiting-records");
 	fixture = eastGreenwichDiscoveryFixture(["2030-11-05"]);
 	assert.equal((await syncStateBallotCycles(options)).results[0]!.records, 10);
-	assert.equal((await syncStateBallotCycles({ ...options, fetchCandidates: async () => {
-		throw new Error("Cached future source must not download again");
-	} })).results[0]!.imported, false);
+	assert.equal((await syncStateBallotCycles({
+		...options,
+		fetchCandidates: async () => {
+			throw new Error("Cached future source must not download again");
+		}
+	})).results[0]!.imported, false);
 });
 test("same URLs with revised digests refresh imports, while expired elections are not extrapolated", async (context) => {
 	const directory = await realpath(await mkdtemp(join(tmpdir(), "east-greenwich-revision-")));
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	let fixture = eastGreenwichDiscoveryFixture();
-	const options = { familyId: source.id, dataDirectory: directory, catalogPath: join(directory, "cycles.json"), now: () => eastGreenwichFixtureTime, fetchDiscovery: async () => JSON.stringify(fixture) };
+	const options = {
+		familyId: source.id,
+		dataDirectory: directory,
+		catalogPath: join(directory, "cycles.json"),
+		now: () => eastGreenwichFixtureTime,
+		fetchDiscovery: async () => JSON.stringify(fixture)
+	};
 	await syncStateBallotCycles(options);
 	fixture = eastGreenwichDiscoveryFixture(["2026-11-03"], 5, "revised");
 	assert.equal((await syncStateBallotCycles(options)).results[0]!.imported, true);
 	let requests = 0;
-	const expired = await syncStateBallotCycles({ ...options, now: () => Date.parse("2026-11-06T12:00:00Z"), fetchCandidates: async () => {
-		requests++;
-		throw new Error("Expired publications are not a future ballot");
-	} });
+	const expired = await syncStateBallotCycles({
+		...options,
+		now: () => Date.parse("2026-11-06T12:00:00Z"),
+		fetchCandidates: async () => {
+			requests++;
+			throw new Error("Expired publications are not a future ballot");
+		}
+	});
 	assert.equal(expired.results.length, 1);
 	assert.equal(expired.results[0]!.status, "expired");
 	assert.equal(requests, 0);
@@ -146,11 +221,21 @@ test("failed recovery backup preserves the accepted reviewed envelope", async (c
 	const fixture = eastGreenwichDiscoveryFixture();
 	const parsed = parseEastGreenwichCandidateCapture(source, await capture(fixture), eastGreenwichFixtureTime);
 	const storage = createStateBallotStorage(directory);
-	await storage.write({ ...parsed, source: legacyReviewedStateBallotSource(source)!, collectionIndexSha256: undefined });
+	await storage.write({
+		...parsed,
+		source: legacyReviewedStateBallotSource(source)!,
+		collectionIndexSha256: undefined
+	});
 	const file = (await readdir(directory)).find(name => name.startsWith(source.id))!;
 	const before = await readFile(join(directory, file));
 	await writeFile(join(directory, `${file}.legacy-${createHash("sha256").update(before).digest("hex")}`), "Synthetic conflicting recovery file", { flag: "wx" });
-	const result = await syncStateBallotCycles({ familyId: source.id, dataDirectory: directory, catalogPath: join(directory, "cycles.json"), now: () => eastGreenwichFixtureTime, fetchDiscovery: async () => JSON.stringify(fixture) });
+	const result = await syncStateBallotCycles({
+		familyId: source.id,
+		dataDirectory: directory,
+		catalogPath: join(directory, "cycles.json"),
+		now: () => eastGreenwichFixtureTime,
+		fetchDiscovery: async () => JSON.stringify(fixture)
+	});
 	assert.equal(result.results[0]!.status, "persistence-failed");
 	assert.deepEqual(await readFile(join(directory, file)), before);
 });

@@ -133,7 +133,14 @@ function isPlaceholderOrInternalHostname(rawHostname: string) {
 	if (hostname.endsWith(".example.com") || hostname.endsWith(".example.org") || hostname.endsWith(".example.net"))
 		return true;
 
-	return [".example", ".test", ".invalid", ".localhost", ".local", ".internal"].some(suffix => hostname.endsWith(suffix));
+	return [
+		".example",
+		".test",
+		".invalid",
+		".localhost",
+		".local",
+		".internal"
+	].some(suffix => hostname.endsWith(suffix));
 }
 
 function findPlaceholderUrlMatches(value: unknown, path = "$"): PlaceholderUrlMatch[] {
@@ -145,11 +152,13 @@ function findPlaceholderUrlMatches(value: unknown, path = "$"): PlaceholderUrlMa
 			const url = new URL(value);
 
 			return isPlaceholderOrInternalHostname(url.hostname)
-				? [{
-						hostname: url.hostname,
-						path,
-						url: value,
-					}]
+				? [
+						{
+							hostname: url.hostname,
+							path,
+							url: value,
+						}
+					]
 				: [];
 		}
 		catch {
@@ -195,7 +204,9 @@ function findUnsafePublicHrefMatches(
 ): UnsafePublicHrefMatch[] {
 	if (typeof value === "string") {
 		return value.trim() && isPublicHrefFieldName(fieldName) && !normalizePublicHref(value)
-			? [{ path, url: value }]
+			? [
+					{ path, url: value }
+				]
 			: [];
 	}
 
@@ -241,12 +252,18 @@ export function validateCoverageSnapshotForPublication(
 ): CoverageSnapshotValidationResult {
 	const errors: string[] = [];
 	const warnings: string[] = [];
-	for (const jurisdiction of [snapshot.jurisdiction, ...snapshot.jurisdictionSummaries, ...(snapshot.additionalGuides ?? []).map(guide => guide.jurisdiction)]) {
+	for (const jurisdiction of [
+		snapshot.jurisdiction,
+		...snapshot.jurisdictionSummaries,
+		...(snapshot.additionalGuides ?? []).map(guide => guide.jurisdiction)
+	]) {
 		try {
 			assertJurisdictionCountyArea(jurisdiction);
 		}
 		catch (error) {
-			errors.push(error instanceof Error ? error.message : "Invalid partial-county scope.");
+			errors.push(error instanceof Error
+				? error.message
+				: "Invalid partial-county scope.");
 		}
 	}
 	const referenceArchiveMatches = findReferenceArchiveMatches(snapshot);
@@ -291,7 +308,11 @@ export function validateCoverageSnapshotForPublication(
 			.join(", ");
 		const remainingCount = Math.max(unsafePublicHrefMatches.length - 8, 0);
 		errors.push(
-			`Snapshot contains unsafe public URL values at ${matchedPaths}${remainingCount ? ` and ${remainingCount} more location${remainingCount === 1 ? "" : "s"}` : ""}.`,
+			`Snapshot contains unsafe public URL values at ${matchedPaths}${remainingCount
+				? ` and ${remainingCount} more location${remainingCount === 1
+					? ""
+					: "s"}`
+				: ""}.`,
 		);
 	}
 

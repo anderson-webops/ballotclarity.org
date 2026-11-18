@@ -72,11 +72,16 @@ export function electionDocumentPublisherHosts(source: ElectionDocumentSource) {
 		throw new Error("HTML election markers cannot be applied to a default PDF source.");
 	if (source.documentFormat !== undefined && (source.documentFormat !== "html" || !Array.isArray(source.documentDateMarkers) || !source.documentDateMarkers.length || source.documentDateMarkers.length > 10 || source.documentDateMarkers.some(marker => typeof marker !== "string" || !marker.trim() || marker.length > 250)))
 		throw new Error("HTML document sources require explicit bounded election markers.");
-	const addresses = [source.indexUrl, ...source.policies.map(policy => policy.url)];
+	const addresses = [
+		source.indexUrl,
+		...source.policies.map(policy => policy.url)
+	];
 	const urls = addresses.map(address => new URL(address));
-	if (urls.some((url, index) => url.protocol !== "https:" || url.username || url.password || url.port || url.search || url.hash || url.href !== addresses[index]) || urls[0]!.hostname !== source.host || new Set(source.policies.map(policy => policy.id)).size !== source.policies.length)
+	if (urls.some((url, index) => url.protocol !== "https:" || url.username !== "" || url.password !== "" || url.port || url.search || url.hash || url.href !== addresses[index]) || urls[0]!.hostname !== source.host || new Set(source.policies.map(policy => policy.id)).size !== source.policies.length)
 		throw new Error("Document publishers require exact public HTTPS addresses and unique policy identities.");
-	const hosts = [...new Set(urls.map(url => url.hostname))];
+	const hosts = [
+		...new Set(urls.map(url => url.hostname))
+	];
 	for (const host of hosts) {
 		const robots = source.policies.filter(policy => policy.format === "robots" && new URL(policy.url).hostname === host);
 		if (robots.length !== 1 || new URL(robots[0]!.url).pathname !== "/robots.txt")
@@ -89,7 +94,7 @@ function validateDocumentBounds(source: ElectionDocumentSource) {
 	if (source.indexIsDocument !== undefined) {
 		if (source.indexIsDocument !== true || source.minimumDocuments !== 1 || source.maximumDocuments !== 1 || source.selectDocumentOptions || source.encodedDocumentPaths || source.reviewedDocumentUrls || (source.documentFormat === undefined && source.dateMarkers.length !== 0)) throw new CollectionFailure("direct-document-review-required");
 		const url = new URL(source.indexUrl);
-		if (url.protocol !== "https:" || url.hostname !== source.host || url.username || url.password || url.port || url.search || url.hash || url.href !== source.indexUrl || !source.documentPatterns.some(pattern => new RegExp(pattern, "u").test(url.pathname))) throw new CollectionFailure("direct-document-review-required");
+		if (url.protocol !== "https:" || url.hostname !== source.host || url.username !== "" || url.password !== "" || url.port || url.search || url.hash || url.href !== source.indexUrl || !source.documentPatterns.some(pattern => new RegExp(pattern, "u").test(url.pathname))) throw new CollectionFailure("direct-document-review-required");
 	}
 	if (source.selectDocumentOptions !== undefined && source.selectDocumentOptions !== true) throw new CollectionFailure("document-option-review-required");
 	if (!Number.isSafeInteger(source.maximumDocuments) || source.maximumDocuments < 1 || source.maximumDocuments > 100 || (source.minimumDocuments !== undefined && (!Number.isSafeInteger(source.minimumDocuments) || source.minimumDocuments < 1 || source.minimumDocuments > source.maximumDocuments))) throw new CollectionFailure("document-count-review-required");
@@ -98,7 +103,7 @@ function validateDocumentBounds(source: ElectionDocumentSource) {
 	for (const path of paths) {
 		if (typeof path !== "string" || !path.startsWith("/") || !path.includes("%") || /%(?!20|26)/u.test(path)) throw new CollectionFailure("document-path-review-required");
 		const url = new URL(path, `https://${source.host}`);
-		if (url.hostname !== source.host || url.pathname !== path || url.search || url.hash || url.username || url.password || url.port) throw new CollectionFailure("document-path-review-required");
+		if (url.hostname !== source.host || url.pathname !== path || url.search || url.hash || url.username !== "" || url.password !== "" || url.port) throw new CollectionFailure("document-path-review-required");
 	}
 	const addresses = source.reviewedDocumentUrls ?? [];
 	if (!Array.isArray(addresses) || (source.reviewedDocumentUrls !== undefined && !addresses.length) || addresses.length > source.maximumDocuments || new Set(addresses).size !== addresses.length) throw new CollectionFailure("document-query-review-required");
@@ -108,11 +113,13 @@ function validateDocumentBounds(source: ElectionDocumentSource) {
 			url = new URL(address);
 		}
 		catch { throw new CollectionFailure("document-query-review-required"); }
-		const queryKeys = [...url.searchParams.keys()].sort().join(",");
+		const queryKeys = [
+			...url.searchParams.keys()
+		].sort().join(",");
 		const revisionQuery = queryKeys === "hash,rev" && /^[a-f\d]{32}$/iu.test(url.searchParams.get("rev") ?? "") && /^[a-f\d]{32}$/iu.test(url.searchParams.get("hash") ?? "");
 		const englishAssetQuery = queryKeys === "language" && url.searchParams.get("language") === "en"
 			&& /^\/getContentAsset\/[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}\/[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}\/[\w.-]+\.pdf$/iu.test(url.pathname);
-		if (typeof address !== "string" || url.href !== address || url.protocol !== "https:" || url.hostname !== source.host || url.username || url.password || url.port || url.hash
+		if (typeof address !== "string" || url.href !== address || url.protocol !== "https:" || url.hostname !== source.host || url.username !== "" || url.password !== "" || url.port || url.hash
 			|| url.search.includes("%") || (!revisionQuery && !englishAssetQuery)
 			|| !source.documentPatterns.some(pattern => new RegExp(pattern, "u").test(url.pathname))) {
 			throw new CollectionFailure("document-query-review-required");
@@ -123,7 +130,9 @@ function validateDocumentBounds(source: ElectionDocumentSource) {
 function html(body: Uint8Array) {
 	if (body.byteLength > 2 * 1024 * 1024) throw new CollectionFailure("html-size-limit");
 	const document = parseStateHtml(new TextDecoder("utf-8", { fatal: true }).decode(body));
-	const pending = [{ node: document, depth: 0 }];
+	const pending = [
+		{ node: document, depth: 0 }
+	];
 	let visited = 0;
 	while (pending.length) {
 		const { node, depth } = pending.pop()!;
@@ -134,13 +143,25 @@ function html(body: Uint8Array) {
 }
 
 function policyLinks(document: StateHtmlNode, address: string) {
-	return [...new Set(stateHtmlDescendants(document, node => node.nodeName === "a").filter(node => /privacy|disclaimer|copyright|licen[cs]e|terms|polic(?:y|ies)/iu.test(`${stateHtmlText(node)} ${stateHtmlAttribute(node, "href")}`)).map(node => new URL(stateHtmlAttribute(node, "href"), address).href))].sort();
+	return [
+		...new Set(stateHtmlDescendants(document, node => node.nodeName === "a").filter(node => /privacy|disclaimer|copyright|licen[cs]e|terms|polic(?:y|ies)/iu.test(`${stateHtmlText(node)} ${stateHtmlAttribute(node, "href")}`)).map(node => new URL(stateHtmlAttribute(node, "href"), address).href))
+	].sort();
 }
 
 function mainText(node: StateHtmlNode): string {
-	if (["script", "style", "noscript", "template", "form"].includes(node.nodeName)) return "";
+	if ([
+		"script",
+		"style",
+		"noscript",
+		"template",
+		"form"
+	].includes(node.nodeName)) {
+		return "";
+	}
 	if (node.nodeName === "#text") return node.value ?? "";
-	const address = node.nodeName === "a" ? ` ${stateHtmlAttribute(node, "href")} ` : "";
+	const address = node.nodeName === "a"
+		? ` ${stateHtmlAttribute(node, "href")} `
+		: "";
 	return address + (node.childNodes ?? []).map(mainText).join(" ");
 }
 
@@ -151,8 +172,17 @@ export function electionDocumentPolicyFingerprint(body: Uint8Array, format: Elec
 		return hash(body);
 	}
 	const document = html(body);
-	if (format === "links") return hash(JSON.stringify({ links: policyLinks(document, address), footers: stateHtmlDescendants(document, node => node.nodeName === "footer" || stateHtmlAttribute(node, "role") === "contentinfo" || /(?:^|\s)(?:site-)?footer(?:\s|$)/u.test(stateHtmlAttribute(node, "class"))).map(node => mainText(node).replace(/\s+/gu, " ").trim()) }));
-	if (format === "region" && (Boolean(regionId) === Boolean(regionClass) || !(regionId ? /^[a-z][\w.-]{0,100}$/iu.test(regionId) : /^[a-z][\w-]{0,100}$/iu.test(regionClass || "")))) throw new CollectionFailure("policy-region-unavailable");
+	if (format === "links") {
+		return hash(JSON.stringify({
+			links: policyLinks(document, address),
+			footers: stateHtmlDescendants(document, node => node.nodeName === "footer" || stateHtmlAttribute(node, "role") === "contentinfo" || /(?:^|\s)(?:site-)?footer(?:\s|$)/u.test(stateHtmlAttribute(node, "class"))).map(node => mainText(node).replace(/\s+/gu, " ").trim())
+		}));
+	}
+	if (format === "region" && (Boolean(regionId) === Boolean(regionClass) || !(regionId
+		? /^[a-z][\w.-]{0,100}$/iu.test(regionId)
+		: /^[a-z][\w-]{0,100}$/iu.test(regionClass || "")))) {
+		throw new CollectionFailure("policy-region-unavailable");
+	}
 	const mains = stateHtmlDescendants(document, node => format !== "region"
 		? node.nodeName === "main"
 		: regionId
@@ -175,8 +205,14 @@ export function electionDocumentRobotsPolicy(body: Uint8Array, otherAgents: stri
 	if (preambleCrawlDelay !== undefined && preambleCrawlDelay !== true) throw new CollectionFailure("robots-group-review-required");
 	if (layout && (otherAgents.length || repeatWildcardGroup || preambleCrawlDelay)) throw new CollectionFailure("robots-group-review-required");
 	if (layout?.restrictiveGroups) {
-		const policies = reviewedRestrictiveRobotsGroups(new TextDecoder("utf-8", { fatal: true }).decode(body), layout).map(group => ({ ...group, policy: electionDocumentRobotsPolicy(Buffer.from(group.body), [], relativeDisallows) }));
-		return { delay: Math.max(...policies.map(({ policy }) => policy.delay)), allowed: (address: string) => policies.filter(group => !group.unrelated).every(({ policy }) => policy.allowed(address)) };
+		const policies = reviewedRestrictiveRobotsGroups(new TextDecoder("utf-8", { fatal: true }).decode(body), layout).map(group => ({
+			...group,
+			policy: electionDocumentRobotsPolicy(Buffer.from(group.body), [], relativeDisallows)
+		}));
+		return {
+			delay: Math.max(...policies.map(({ policy }) => policy.delay)),
+			allowed: (address: string) => policies.filter(group => !group.unrelated).every(({ policy }) => policy.allowed(address))
+		};
 	}
 	const rules: { allow: boolean; pattern: RegExp; length: number }[] = [];
 	let agents = 0;
@@ -215,21 +251,34 @@ export function electionDocumentRobotsPolicy(body: Uint8Array, otherAgents: stri
 		else if (["allow", "disallow"].includes(key) && agents) {
 			hasDirectives = true;
 			if (!value) continue;
-			const pattern = value.startsWith("/") ? value : key === "disallow" && relativeDisallows.includes(value) ? `/${value}` : "";
+			const pattern = value.startsWith("/")
+				? value
+				: key === "disallow" && relativeDisallows.includes(value)
+					? `/${value}`
+					: "";
 			if (!pattern) throw new CollectionFailure("robots-format-changed");
 			const escaped = pattern.replace(/[.+?^{}()|[\]\\]/gu, "\\$&").replace(/\*/gu, ".*").replace(/\$(?!$)/gu, "\\$");
-			if (applicable) rules.push({ allow: key === "allow", pattern: new RegExp(`^${escaped}`, "u"), length: pattern.replace(/\*/gu, "").length });
+			if (applicable) {
+				rules.push({
+					allow: key === "allow",
+					pattern: new RegExp(`^${escaped}`, "u"),
+					length: pattern.replace(/\*/gu, "").length
+				});
+			}
 		}
 		else {
 			throw new CollectionFailure("robots-format-changed");
 		}
 	}
 	if (!observedAgents.has("*") || agents !== reviewedAgents.length + 1 + Number(Boolean(repeatWildcardGroup)) || wildcardGroups !== (repeatWildcardGroup ? 2 : 1) || delay > 300_000) throw new CollectionFailure("robots-group-review-required");
-	return { delay, allowed(address: string) {
-		const url = new URL(address);
-		const matches = rules.filter(rule => rule.pattern.test(url.pathname + url.search)).sort((first, second) => second.length - first.length || Number(second.allow) - Number(first.allow));
-		return matches[0]?.allow ?? true;
-	} };
+	return {
+		delay,
+		allowed(address: string) {
+			const url = new URL(address);
+			const matches = rules.filter(rule => rule.pattern.test(url.pathname + url.search)).sort((first, second) => second.length - first.length || Number(second.allow) - Number(first.allow));
+			return matches[0]?.allow ?? true;
+		}
+	};
 }
 
 export function discoverElectionDocuments(source: ElectionDocumentSource, body: Uint8Array) {
@@ -252,7 +301,11 @@ export function discoverElectionDocuments(source: ElectionDocumentSource, body: 
 		const url = new URL(link, source.indexUrl);
 		if (url.hostname !== source.host || !source.documentPatterns.some(pattern => new RegExp(pattern, "u").test(url.pathname))) continue;
 		url.hash = "";
-		if (url.protocol !== "https:" || url.username || url.password || url.port || (source.reviewedDocumentUrls ? !source.reviewedDocumentUrls.includes(url.href) : Boolean(url.search))) throw new CollectionFailure("document-link-changed");
+		if (url.protocol !== "https:" || url.username !== "" || url.password !== "" || url.port || (source.reviewedDocumentUrls
+			? !source.reviewedDocumentUrls.includes(url.href)
+			: Boolean(url.search))) {
+			throw new CollectionFailure("document-link-changed");
+		}
 		if (url.pathname.includes("%") && !source.encodedDocumentPaths?.includes(url.pathname)) throw new CollectionFailure("document-link-changed");
 		urls.add(url.href);
 	}
@@ -306,13 +359,37 @@ async function bodyFile(cache: string, body: Uint8Array) {
 }
 
 async function directories(plan: ElectionDocumentPlan, now: number) {
-	if (!objectValue(plan) || !exact(plan, ["schemaVersion", "type", "sourceIds", "cacheDirectory", "outputRoot", "accessReviews"]) || plan.schemaVersion !== 1 || plan.type !== "election-document-collection" || !Array.isArray(plan.sourceIds) || !plan.sourceIds.length || plan.sourceIds.length > 25 || new Set(plan.sourceIds).size !== plan.sourceIds.length || !Array.isArray(plan.accessReviews) || plan.accessReviews.length !== plan.sourceIds.length || typeof plan.cacheDirectory !== "string" || !isAbsolute(plan.cacheDirectory) || typeof plan.outputRoot !== "string" || !isAbsolute(plan.outputRoot)) throw new Error("Provide a configured election document plan and explicit current access reviews.");
+	if (!objectValue(plan) || !exact(plan, [
+		"schemaVersion",
+		"type",
+		"sourceIds",
+		"cacheDirectory",
+		"outputRoot",
+		"accessReviews"
+	]) || plan.schemaVersion !== 1 || plan.type !== "election-document-collection" || !Array.isArray(plan.sourceIds) || !plan.sourceIds.length || plan.sourceIds.length > 25 || new Set(plan.sourceIds).size !== plan.sourceIds.length || !Array.isArray(plan.accessReviews) || plan.accessReviews.length !== plan.sourceIds.length || typeof plan.cacheDirectory !== "string" || !isAbsolute(plan.cacheDirectory) || typeof plan.outputRoot !== "string" || !isAbsolute(plan.outputRoot)) {
+		throw new Error("Provide a configured election document plan and explicit current access reviews.");
+	}
 	const sources = plan.sourceIds.map(id => electionDocumentSources.find(source => source.id === id));
 	if (sources.some(source => !source || now >= Date.parse(source.electionDate) + 2 * day) || new Set(plan.accessReviews.map(review => review?.sourceId)).size !== sources.length) throw new Error("The selected election document sources are unavailable or expired.");
 	for (const source of sources as ElectionDocumentSource[]) {
 		electionDocumentPublisherHosts(source);
 		const review = plan.accessReviews.find(review => review?.sourceId === source.id);
-		if (!review || !exact(review, ["sourceId", "reviewedAt", "configurationSha256", "policyFingerprints"]) || !validDate(review.reviewedAt, now) || now - Date.parse(review.reviewedAt) > 30 * day || review.configurationSha256 !== electionDocumentConfigurationSha256(source) || !objectValue(review.policyFingerprints) || !exact(review.policyFingerprints, [...source.policies.map(policy => policy.id), source.indexIsDocument && source.documentFormat === undefined ? "indexPdf" : "indexLinks", ...(source.documentFormat === "html" ? ["documentLinks"] : [])]) || !Object.values(review.policyFingerprints).every(validHash)) throw new Error("An election document source requires a matching current access review.");
+		if (!review || !exact(review, [
+			"sourceId",
+			"reviewedAt",
+			"configurationSha256",
+			"policyFingerprints"
+		]) || !validDate(review.reviewedAt, now) || now - Date.parse(review.reviewedAt) > 30 * day || review.configurationSha256 !== electionDocumentConfigurationSha256(source) || !objectValue(review.policyFingerprints) || !exact(review.policyFingerprints, [
+			...source.policies.map(policy => policy.id),
+			source.indexIsDocument && source.documentFormat === undefined
+				? "indexPdf"
+				: "indexLinks",
+			...(source.documentFormat === "html"
+				? ["documentLinks"]
+				: [])
+		]) || !Object.values(review.policyFingerprints).every(validHash)) {
+			throw new Error("An election document source requires a matching current access review.");
+		}
 	}
 	for (const path of [plan.cacheDirectory, plan.outputRoot]) {
 		assertExternalStateDataDirectory(path);
@@ -384,7 +461,18 @@ export async function seedElectionDocuments(plan: ElectionDocumentPlan, seed: El
 		let combinedBytes = 0;
 		for (const input of seed.captures) {
 			const source = sources.find(source => source.id === input?.sourceId);
-			if (!source || !exact(input, ["sourceId", "url", "path", "sha256", "capturedAt", ...(input.etag === undefined ? [] : ["etag"])]) || typeof input.path !== "string" || !isAbsolute(input.path) || !validHash(input.sha256) || !validDate(input.capturedAt, now) || typeof input.url !== "string" || seen.has(`${source.id}/${input.url}`) || (input.etag !== undefined && !/^(?:W\/)?"[\x21\x23-\x7E]{0,500}"$/u.test(input.etag))) throw new Error("A retained document capture is invalid or duplicated.");
+			if (!source || !exact(input, [
+				"sourceId",
+				"url",
+				"path",
+				"sha256",
+				"capturedAt",
+				...(input.etag === undefined
+					? []
+					: ["etag"])
+			]) || typeof input.path !== "string" || !isAbsolute(input.path) || !validHash(input.sha256) || !validDate(input.capturedAt, now) || typeof input.url !== "string" || seen.has(`${source.id}/${input.url}`) || (input.etag !== undefined && !/^(?:W\/)?"[\x21\x23-\x7E]{0,500}"$/u.test(input.etag))) {
+				throw new Error("A retained document capture is invalid or duplicated.");
+			}
 			const body = await readBoundedStateDataBytes(input.path);
 			combinedBytes += body.length;
 			if (combinedBytes > 128 * 1024 * 1024) throw new Error("Retained document seeds exceed their combined size limit.");
@@ -396,10 +484,17 @@ export async function seedElectionDocuments(plan: ElectionDocumentPlan, seed: El
 			const review = plan.accessReviews.find(review => review.sourceId === source.id)!;
 			const index = prepared.find(item => item.source.id === source.id && item.input.url === source.indexUrl);
 			if (!index || source.policies.some(policy => !prepared.some(item => item.source.id === source.id && item.input.url === policy.url))) throw new Error("Each document seed requires its reviewed index and policies.");
-			const allowed = new Set([source.indexUrl, ...source.policies.map(policy => policy.url), ...discoverElectionDocuments(source, index.body)]);
+			const allowed = new Set([
+				source.indexUrl,
+				...source.policies.map(policy => policy.url),
+				...discoverElectionDocuments(source, index.body)
+			]);
 			const permissions = new Map(source.policies.filter(policy => policy.format === "robots").map((policy) => {
 				const robots = prepared.find(item => item.source.id === source.id && item.input.url === policy.url)!;
-				return [new URL(policy.url).hostname, electionDocumentRobotsPolicy(robots.body, policy.otherRobotsAgents ?? source.otherRobotsAgents, source.relativeRobotsDisallows, source.repeatWildcardGroup, source.preambleCrawlDelay, source.robotsLayout)];
+				return [
+					new URL(policy.url).hostname,
+					electionDocumentRobotsPolicy(robots.body, policy.otherRobotsAgents ?? source.otherRobotsAgents, source.relativeRobotsDisallows, source.repeatWildcardGroup, source.preambleCrawlDelay, source.robotsLayout)
+				];
 			}));
 			for (const item of prepared.filter(item => item.source.id === source.id)) {
 				if (!allowed.has(item.input.url) || !permissions.get(new URL(item.input.url).hostname)?.allowed(item.input.url)) throw new Error("A retained document is outside its permitted observed source links.");
@@ -408,14 +503,27 @@ export async function seedElectionDocuments(plan: ElectionDocumentPlan, seed: El
 		}
 		for (const { source, input, body } of prepared) {
 			const sha256 = await bodyFile(cache, body);
-			await atomic(capturePath(cache, source, input.url), { schemaVersion: 1, sourceId: source.id, configurationSha256: electionDocumentConfigurationSha256(source), url: input.url, sha256, capturedAt: input.capturedAt, checkedAt: input.capturedAt, ...(input.etag ? { etag: input.etag } : {}) });
+			await atomic(capturePath(cache, source, input.url), {
+				schemaVersion: 1,
+				sourceId: source.id,
+				configurationSha256: electionDocumentConfigurationSha256(source),
+				url: input.url,
+				sha256,
+				capturedAt: input.capturedAt,
+				checkedAt: input.capturedAt,
+				...(input.etag
+					? { etag: input.etag }
+					: {})
+			});
 		}
 		for (const hostname of new Set(sources.flatMap(electionDocumentPublisherHosts))) {
 			const host = join(cache, "hosts", hostname);
 			await mkdir(host, { recursive: true });
 			if (await realpath(host) !== host) throw new Error("Publisher cache directories must not be linked.");
 			const latest = Math.max(...prepared.filter(item => new URL(item.input.url).hostname === hostname).map(item => Date.parse(item.input.capturedAt)));
-			await atomic(join(host, "last-request.json"), { at: new Date(latest).toISOString() });
+			await atomic(join(host, "last-request.json"), {
+				at: new Date(latest).toISOString()
+			});
 		}
 		return { seeded: prepared.length, publisherRequests: 0, imported: false };
 	});
@@ -429,7 +537,13 @@ export async function collectElectionDocuments(plan: ElectionDocumentPlan, optio
 		let publisherRequests = 0;
 		for (const source of sources) {
 			const review = plan.accessReviews.find(review => review.sourceId === source.id)!;
-			const publishers = new Map(electionDocumentPublisherHosts(source).map(hostname => [hostname, { directory: join(cache, "hosts", hostname), delay: 11_000 }]));
+			const publishers = new Map(electionDocumentPublisherHosts(source).map(hostname => [
+				hostname,
+				{
+					directory: join(cache, "hosts", hostname),
+					delay: 11_000
+				}
+			]));
 			for (const publisher of publishers.values()) {
 				await mkdir(publisher.directory, { recursive: true });
 				if (await realpath(publisher.directory) !== publisher.directory) throw new Error("Publisher cache directories must not be linked.");
@@ -445,7 +559,20 @@ export async function collectElectionDocuments(plan: ElectionDocumentPlan, optio
 				let previous: Capture | null = null;
 				let body: Buffer | undefined;
 				if (raw) {
-					if (!exact(raw, ["schemaVersion", "sourceId", "configurationSha256", "url", "sha256", "capturedAt", "checkedAt", ...(raw.etag === undefined ? [] : ["etag"])]) || raw.schemaVersion !== 1 || raw.sourceId !== source.id || raw.configurationSha256 !== electionDocumentConfigurationSha256(source) || raw.url !== url || !validHash(raw.sha256) || !validDate(raw.capturedAt, now()) || !validDate(raw.checkedAt, now()) || Date.parse(raw.checkedAt) < Date.parse(raw.capturedAt) || (raw.etag !== undefined && (typeof raw.etag !== "string" || !/^(?:W\/)?"[\x21\x23-\x7E]{0,500}"$/u.test(raw.etag)))) throw new CollectionFailure("cache-invalid");
+					if (!exact(raw, [
+						"schemaVersion",
+						"sourceId",
+						"configurationSha256",
+						"url",
+						"sha256",
+						"capturedAt",
+						"checkedAt",
+						...(raw.etag === undefined
+							? []
+							: ["etag"])
+					]) || raw.schemaVersion !== 1 || raw.sourceId !== source.id || raw.configurationSha256 !== electionDocumentConfigurationSha256(source) || raw.url !== url || !validHash(raw.sha256) || !validDate(raw.capturedAt, now()) || !validDate(raw.checkedAt, now()) || Date.parse(raw.checkedAt) < Date.parse(raw.capturedAt) || (raw.etag !== undefined && (typeof raw.etag !== "string" || !/^(?:W\/)?"[\x21\x23-\x7E]{0,500}"$/u.test(raw.etag)))) {
+						throw new CollectionFailure("cache-invalid");
+					}
 					previous = raw as unknown as Capture;
 					body = await readBoundedStateDataBytes(join(cache, "bodies", previous.sha256));
 					if (hash(body) !== previous.sha256) throw new CollectionFailure("cache-integrity-changed");
@@ -457,17 +584,30 @@ export async function collectElectionDocuments(plan: ElectionDocumentPlan, optio
 				if (failure && typeof failure.retryAt === "number" && failure.retryAt > now()) throw new CollectionFailure("cooldown");
 				const last = await optional(join(host, "last-request.json"));
 				if (last && (!exact(last, ["at"]) || !validDate(last.at, now()))) throw new CollectionFailure("cache-invalid");
-				let wait = last ? Math.max(0, publisher.delay - (now() - Date.parse(last.at as string))) : 0;
+				let wait = last
+					? Math.max(0, publisher.delay - (now() - Date.parse(last.at as string)))
+					: 0;
 				while (wait > 0) {
 					await (options.sleep ?? setTimeout)(wait);
 					wait = Math.max(0, publisher.delay - (now() - Date.parse(last!.at as string)));
 				}
 				if (now() >= Date.parse(source.electionDate) + 2 * day || now() - Date.parse(review.reviewedAt) > 30 * day) throw new CollectionFailure("review-or-election-expired");
-				await atomic(join(host, "last-request.json"), { at: new Date(now()).toISOString() });
+				await atomic(join(host, "last-request.json"), {
+					at: new Date(now()).toISOString()
+				});
 				let response: Awaited<ReturnType<typeof fetchRemoteSourceDocument>>;
 				try {
 					publisherRequests++;
-					response = await (options.fetchDocument ?? fetchRemoteSourceDocument)(url, { allowedHosts: [address.hostname], maxBytes: isPdf ? maximumBytes : 2 * 1024 * 1024, timeoutMs: 30_000, ...(previous?.etag ? { etag: previous.etag } : {}) });
+					response = await (options.fetchDocument ?? fetchRemoteSourceDocument)(url, {
+						allowedHosts: [address.hostname],
+						maxBytes: isPdf
+							? maximumBytes
+							: 2 * 1024 * 1024,
+						timeoutMs: 30_000,
+						...(previous?.etag
+							? { etag: previous.etag }
+							: {})
+					});
 				}
 				catch (error) {
 					if (error instanceof RemoteSourceDocumentPolicyError || /CERT|TLS|UNABLE_TO_VERIFY_LEAF_SIGNATURE/u.test(String((error as NodeJS.ErrnoException).code ?? ""))) throw new CollectionFailure("document-transport-policy-violation");
@@ -475,12 +615,17 @@ export async function collectElectionDocuments(plan: ElectionDocumentPlan, optio
 					throw new CollectionFailure("transport-unavailable");
 				}
 				finally {
-					await atomic(join(host, "last-request.json"), { at: new Date(now()).toISOString() });
+					await atomic(join(host, "last-request.json"), {
+						at: new Date(now()).toISOString()
+					});
 				}
 				if ([401, 403, 429].includes(response.status) || (response.status >= 300 && response.status < 400 && response.status !== 304)) throw new CollectionFailure("publisher-denial-or-redirect", response.status);
 				if (response.status === 304) {
 					if (!previous?.etag || !body) throw new CollectionFailure("unsolicited-not-modified");
-					const metadata = { ...previous, checkedAt: new Date(now()).toISOString() };
+					const metadata = {
+						...previous,
+						checkedAt: new Date(now()).toISOString()
+					};
 					await atomic(path, metadata);
 					return { metadata, body };
 				}
@@ -492,7 +637,20 @@ export async function collectElectionDocuments(plan: ElectionDocumentPlan, optio
 				if (!source.policies.some(policy => policy.url === url) && url !== source.indexUrl && source.documentFormat === "html" && response.contentType !== "text/html") throw new CollectionFailure("document-format-changed");
 				validateContent(source, review, url, response.body);
 				const sha256 = await bodyFile(cache, response.body);
-				const metadata: Capture = { schemaVersion: 1, sourceId: source.id, configurationSha256: electionDocumentConfigurationSha256(source), url, sha256, capturedAt: previous?.sha256 === sha256 ? previous.capturedAt : new Date(now()).toISOString(), checkedAt: new Date(now()).toISOString(), ...(response.etag && /^(?:W\/)?"[\x21\x23-\x7E]{0,500}"$/u.test(response.etag) ? { etag: response.etag } : {}) };
+				const metadata: Capture = {
+					schemaVersion: 1,
+					sourceId: source.id,
+					configurationSha256: electionDocumentConfigurationSha256(source),
+					url,
+					sha256,
+					capturedAt: previous?.sha256 === sha256
+						? previous.capturedAt
+						: new Date(now()).toISOString(),
+					checkedAt: new Date(now()).toISOString(),
+					...(response.etag && /^(?:W\/)?"[\x21\x23-\x7E]{0,500}"$/u.test(response.etag)
+						? { etag: response.etag }
+						: {})
+				};
 				await atomic(path, metadata);
 				await unlink(`${path}.failure`).catch((error: NodeJS.ErrnoException) => {
 					if (error.code !== "ENOENT") throw error;
@@ -526,14 +684,46 @@ export async function collectElectionDocuments(plan: ElectionDocumentPlan, optio
 				observations.push({ sourceId: source.id, complete: true, documents });
 			}
 			catch (error) {
-				const failure = error instanceof CollectionFailure ? error : new CollectionFailure("cache-or-format-invalid");
-				if (!["publisher-on-hold", "transport-unavailable", "document-or-policy-unavailable", "cooldown"].includes(failure.reason)) {
-					for (const publisher of publishers.values()) await atomic(join(publisher.directory, "hold.json"), { reason: failure.reason, status: failure.status, at: new Date(now()).toISOString() });
+				const failure = error instanceof CollectionFailure
+					? error
+					: new CollectionFailure("cache-or-format-invalid");
+				if (![
+					"publisher-on-hold",
+					"transport-unavailable",
+					"document-or-policy-unavailable",
+					"cooldown"
+				].includes(failure.reason)) {
+					for (const publisher of publishers.values()) {
+						await atomic(join(publisher.directory, "hold.json"), {
+							reason: failure.reason,
+							status: failure.status,
+							at: new Date(now()).toISOString()
+						});
+					}
 				}
-				observations.push({ sourceId: source.id, complete: false, reason: failure.reason, ...(failure.status ? { status: failure.status } : {}) });
+				observations.push({
+					sourceId: source.id,
+					complete: false,
+					reason: failure.reason,
+					...(failure.status
+						? { status: failure.status }
+						: {})
+				});
 			}
 		}
-		const result = { schemaVersion: 1, type: "election-document-collection-result", complete: observations.every(observation => observation.complete), observations, publisherRequests, collectedAt: new Date(now()).toISOString(), configuredLinkRulesOnly: true, coverageCompletenessClaimed: false, capturedContentReviewed: false, imported: false, published: false };
+		const result = {
+			schemaVersion: 1,
+			type: "election-document-collection-result",
+			complete: observations.every(observation => observation.complete),
+			observations,
+			publisherRequests,
+			collectedAt: new Date(now()).toISOString(),
+			configuredLinkRulesOnly: true,
+			coverageCompletenessClaimed: false,
+			capturedContentReviewed: false,
+			imported: false,
+			published: false
+		};
 		const file = join(outputRoot, `election-documents-${randomUUID()}.json`);
 		await atomic(file, result);
 		return { ...result, file };

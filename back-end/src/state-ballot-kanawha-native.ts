@@ -5,7 +5,12 @@ import { readKanawhaNativeRendering } from "./state-ballot-kanawha-visual.js";
 import { extractStateBallotPdfText, inspectStateBallotPdfObjects, resolveStateBallotPdfExtractor, resolveStateBallotPdfObjectInspector } from "./state-ballot-pdf.js";
 import { containsControlCharacters } from "./text-validation.js";
 
-const parties: Readonly<Record<string, string>> = { REP: "Republican", DEM: "Democratic", CST: "Constitution", IND: "Independent" };
+const parties: Readonly<Record<string, string>> = {
+	REP: "Republican",
+	DEM: "Democratic",
+	CST: "Constitution",
+	IND: "Independent"
+};
 interface Position { page: number; line: number }
 export interface KanawhaCandidateClaim {
 	name: string;
@@ -31,24 +36,93 @@ function title(value: string) {
 function office(heading: string): Office | null {
 	if (/^AMENDMENT NO\. [1-9]\d?$|^(?:BOE|LIBRARY) LEVY$|^SPECIAL LEVY CITY OF [A-Z ]+$/u.test(heading)) return null;
 	const base = { district: "", jurisdiction: "Kanawha County", partyRequired: true };
-	if (heading === "FOR U.S. SENATOR") return { ...base, office: "U.S. Senate", scope: "statewide", jurisdiction: "West Virginia" };
-	const statewide: Readonly<Record<string, string>> = { "FOR GOVERNOR": "Governor", "FOR SECRETARY OF STATE": "Secretary of State", "FOR STATE AUDITOR": "State Auditor", "FOR STATE TREASURER": "State Treasurer", "FOR ATTORNEY GENERAL": "Attorney General", "FOR COMMISSIONER OF AGRICULTURE": "Commissioner of Agriculture" };
-	if (statewide[heading]) return { ...base, office: statewide[heading]!, scope: "statewide", jurisdiction: "West Virginia" };
+	if (heading === "FOR U.S. SENATOR") {
+		return {
+			...base,
+			office: "U.S. Senate",
+			scope: "statewide",
+			jurisdiction: "West Virginia"
+		};
+	}
+	const statewide: Readonly<Record<string, string>> = {
+		"FOR GOVERNOR": "Governor",
+		"FOR SECRETARY OF STATE": "Secretary of State",
+		"FOR STATE AUDITOR": "State Auditor",
+		"FOR STATE TREASURER": "State Treasurer",
+		"FOR ATTORNEY GENERAL": "Attorney General",
+		"FOR COMMISSIONER OF AGRICULTURE": "Commissioner of Agriculture"
+	};
+	if (statewide[heading]) {
+		return {
+			...base,
+			office: statewide[heading]!,
+			scope: "statewide",
+			jurisdiction: "West Virginia"
+		};
+	}
 	const house = /^FOR U\.S\. HOUSE OF REPRESENTATIVES ([1-9]\d?)(?:ST|ND|RD|TH) DIST$/u.exec(heading);
-	if (house) return { ...base, office: `U.S. House District ${house[1]}`, scope: "congressional", district: house[1]!, jurisdiction: "West Virginia" };
+	if (house) {
+		return {
+			...base,
+			office: `U.S. House District ${house[1]}`,
+			scope: "congressional",
+			district: house[1]!,
+			jurisdiction: "West Virginia"
+		};
+	}
 	const senate = /^FOR STATE SENATOR (UNEXPIRED )?([1-9]\d?)(?:ST|ND|RD|TH) DISTRICT$/u.exec(heading);
-	if (senate) return { ...base, office: `State Senate District ${senate[2]}${senate[1] ? " (Unexpired term)" : ""}`, scope: "state-senate", district: senate[2]!, jurisdiction: "West Virginia", ...(senate[1] ? { ballotDesignation: "Unexpired term" } : {}) };
+	if (senate) {
+		return {
+			...base,
+			office: `State Senate District ${senate[2]}${senate[1] ? " (Unexpired term)" : ""}`,
+			scope: "state-senate",
+			district: senate[2]!,
+			jurisdiction: "West Virginia",
+			...(senate[1]
+				? { ballotDesignation: "Unexpired term" }
+				: {})
+		};
+	}
 	const delegates = /^FOR MEMBER OF HOUSE OF DELEGATES ([1-9]\d{0,2})(?:ST|ND|RD|TH) DISTRICT$/u.exec(heading);
-	if (delegates) return { ...base, office: `House of Delegates District ${delegates[1]}`, scope: "state-house", district: delegates[1]!, jurisdiction: "West Virginia" };
+	if (delegates) {
+		return {
+			...base,
+			office: `House of Delegates District ${delegates[1]}`,
+			scope: "state-house",
+			district: delegates[1]!,
+			jurisdiction: "West Virginia"
+		};
+	}
 	const magistrate = /^FOR MAGISTRATE DIV ([1-9]\d?) UNEXP$/u.exec(heading);
-	if (magistrate) return { ...base, office: `Magistrate, Division ${magistrate[1]} (Unexpired term)`, scope: "local", partyRequired: false, sourceDivision: magistrate[1]!, ballotDesignation: "Unexpired term" };
+	if (magistrate) {
+		return {
+			...base,
+			office: `Magistrate, Division ${magistrate[1]} (Unexpired term)`,
+			scope: "local",
+			partyRequired: false,
+			sourceDivision: magistrate[1]!,
+			ballotDesignation: "Unexpired term"
+		};
+	}
 	if (heading === "FOR COUNTY COMMISSIONER") return { ...base, office: "County Commissioner", scope: "local" };
-	const county: Readonly<Record<string, string>> = { "FOR COUNTY CLERK": "County Clerk", "FOR CIRCUIT CLERK": "Circuit Clerk", "FOR SHERIFF": "Sheriff", "FOR ASSESSOR": "Assessor", "FOR PROSECUTING ATTORNEY": "Prosecuting Attorney" };
+	const county: Readonly<Record<string, string>> = {
+		"FOR COUNTY CLERK": "County Clerk",
+		"FOR CIRCUIT CLERK": "Circuit Clerk",
+		"FOR SHERIFF": "Sheriff",
+		"FOR ASSESSOR": "Assessor",
+		"FOR PROSECUTING ATTORNEY": "Prosecuting Attorney"
+	};
 	if (county[heading]) return { ...base, office: county[heading]!, scope: "local" };
 	const municipal = /^FOR ((?:CITY )?COUNCIL WARD [1-9]\d?|(?:CITY )?COUNCIL AT LARGE|MAYOR|RECORDER|CLERK|TREASURER|MUNICIPAL JUDGE) (TOWN|CITY) OF ([A-Z][A-Z .'-]{1,50})$/u.exec(heading);
 	if (!municipal) throw new Error(`The Kanawha County office heading requires review: ${heading.slice(0, 150)}`);
 	const label = municipal[1]!.replace(" AT LARGE", ", At-large").replace(/ WARD ([1-9]\d?)/u, ", Ward $1");
-	return { ...base, office: title(label).replace("At-Large", "At-large"), scope: "local", jurisdiction: `${title(municipal[2]!)} of ${title(municipal[3]!)}`, partyRequired: municipal[3] !== "CHESAPEAKE" };
+	return {
+		...base,
+		office: title(label).replace("At-Large", "At-large"),
+		scope: "local",
+		jurisdiction: `${title(municipal[2]!)} of ${title(municipal[3]!)}`,
+		partyRequired: municipal[3] !== "CHESAPEAKE"
+	};
 }
 function calendarDate(month: string, day: string, year: string) {
 	const date = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
@@ -67,7 +141,11 @@ export function readKanawhaTestText(body: string, sourceSha256: string) {
 	const headings = new Set<string>();
 	let totalOccurrences = 0;
 	for (const [pageIndex, page] of pages.entries()) {
-		const lines = page.split(/\r?\n/u).map((line, index) => ({ raw: line.trim(), text: line.trim().replace(/\s+/gu, " "), line: index + 1 })).filter(item => item.text);
+		const lines = page.split(/\r?\n/u).map((line, index) => ({
+			raw: line.trim(),
+			text: line.trim().replace(/\s+/gu, " "),
+			line: index + 1
+		})).filter(item => item.text);
 		if (lines[0]?.text !== "Summary Results Report UNOFFICIAL RESULTS" || lines[1]?.text !== "General Election") return reject();
 		const date = /^November ([1-9]\d?), (20\d{2}) Kanawha County, WV$/u.exec(lines[2]?.text ?? "");
 		if (!date) return reject();
@@ -78,7 +156,9 @@ export function readKanawhaTestText(body: string, sourceSha256: string) {
 		if (!footer || Number(footer[7]) !== pageIndex + 1 || Number(footer[8]) !== pages.length || Number(footer[4]) < 1 || Number(footer[4]) > 12 || Number(footer[5]) > 59) return reject();
 		const publishedDate = calendarDate(footer[1]!, footer[2]!, footer[3]!);
 		if (footer[3] !== date[2] || publishedDate > electionDate) return reject();
-		const hour = Number(footer[4]) % 12 + (footer[6] === "PM" ? 12 : 0);
+		const hour = Number(footer[4]) % 12 + (footer[6] === "PM"
+			? 12
+			: 0);
 		clocks.add(`${publishedDate}T${String(hour).padStart(2, "0")}:${footer[5]}`);
 		let offset = 3;
 		if (pageIndex === 0) {
@@ -132,18 +212,64 @@ export function readKanawhaTestText(body: string, sourceSha256: string) {
 				const duplicate = candidates.get(key);
 				if (duplicate) return reject();
 				const { partyRequired: _partyRequired, ...fields } = context;
-				candidates.set(key, { ...fields, name, ...(party ? { sourcePartyCode: party[1]!, party: parties[party[1]!]! } : {}), sourceHeading: heading, voteLimit, occurrences: [position] });
+				candidates.set(key, {
+					...fields,
+					name,
+					...(party
+						? { sourcePartyCode: party[1]!, party: parties[party[1]!]! }
+						: {}),
+					sourceHeading: heading,
+					voteLimit,
+					occurrences: [position]
+				});
 				occurrences++;
 				totalOccurrences++;
 			}
-			if (!ended || (context ? writeIns !== 1 || occurrences + placeholders === 0 : voteLimit !== 1 || ![["FOR", "AGAINST"], ["For the Levies", "Against the Levies"], ["FOR THE LEVIES", "AGAINST THE LEVIES"]].some(pair => JSON.stringify(pair) === JSON.stringify(choices)))) return reject();
-			if (context) contests.push({ heading, voteLimit, page: pageIndex + 1, candidateOccurrences: occurrences, placeholderRows: placeholders });
-			else questions.push({ heading, voteLimit, choices, page: pageIndex + 1, completeBallotText: false });
+			if (!ended || (context
+				? writeIns !== 1 || occurrences + placeholders === 0
+				: voteLimit !== 1 || ![
+					["FOR", "AGAINST"],
+					["For the Levies", "Against the Levies"],
+					["FOR THE LEVIES", "AGAINST THE LEVIES"]
+				].some(pair => JSON.stringify(pair) === JSON.stringify(choices)))) {
+				return reject();
+			}
+			if (context) {
+				contests.push({
+					heading,
+					voteLimit,
+					page: pageIndex + 1,
+					candidateOccurrences: occurrences,
+					placeholderRows: placeholders
+				});
+			}
+			else {
+				questions.push({
+					heading,
+					voteLimit,
+					choices,
+					page: pageIndex + 1,
+					completeBallotText: false
+				});
+			}
 		}
 	}
 	if (dates.size !== 1 || clocks.size !== 1 || !contests.length || candidates.size > 1000 || contests.length > 300 || questions.length > 50) return reject();
 	const publicationClock = [...clocks][0]!;
-	return { electionDate: [...dates][0]!, sourceAsOfDate: publicationClock.slice(0, 10), publicationClock, publicationClockPrecision: "minute" as const, sourceSha256, pages: pages.length, candidates: [...candidates.values()], candidateOccurrences: totalOccurrences, contests, questions };
+	return {
+		electionDate: [...dates][0]!,
+		sourceAsOfDate: publicationClock.slice(0, 10),
+		publicationClock,
+		publicationClockPrecision: "minute" as const,
+		sourceSha256,
+		pages: pages.length,
+		candidates: [
+			...candidates.values()
+		],
+		candidateOccurrences: totalOccurrences,
+		contests,
+		questions
+	};
 }
 export function validateKanawhaPdfStructure(body: string) {
 	if (Buffer.byteLength(body) > 4 * 1024 * 1024) return reject();
@@ -151,8 +277,29 @@ export function validateKanawhaPdfStructure(body: string) {
 	if (!document || !Array.isArray(document.qpdf) || document.qpdf.length !== 2 || document.qpdf[0]?.jsonversion !== 2 || !document.qpdf[1] || typeof document.qpdf[1] !== "object" || !Array.isArray(document.pages) || !document.pages.length || document.pages.length > 20 || document.encrypt?.encrypted !== false || document.acroform?.needappearances !== false || !Array.isArray(document.acroform.fields) || document.acroform.fields.length || !document.attachments || Object.keys(document.attachments).length) return reject();
 	const objects = document.qpdf[1] as Record<string, { value?: Record<string, unknown> }>;
 	if (Object.keys(objects).length > 2000) return reject();
-	const forbidden = new Set(["/A", "/AA", "/OpenAction", "/JavaScript", "/JS", "/Launch", "/EmbeddedFile", "/OCProperties", "/SMask", "/ExtGState", "/XObject", "/ToUnicode", "/Rotate", "/CropBox", "/BleedBox", "/TrimBox", "/ArtBox", "/UserUnit"]);
-	const pending: { value: unknown; depth: number }[] = [{ value: objects, depth: 0 }];
+	const forbidden = new Set([
+		"/A",
+		"/AA",
+		"/OpenAction",
+		"/JavaScript",
+		"/JS",
+		"/Launch",
+		"/EmbeddedFile",
+		"/OCProperties",
+		"/SMask",
+		"/ExtGState",
+		"/XObject",
+		"/ToUnicode",
+		"/Rotate",
+		"/CropBox",
+		"/BleedBox",
+		"/TrimBox",
+		"/ArtBox",
+		"/UserUnit"
+	]);
+	const pending: { value: unknown; depth: number }[] = [
+		{ value: objects, depth: 0 }
+	];
 	let visited = 0;
 	while (pending.length) {
 		const item = pending.pop()!;
@@ -164,7 +311,14 @@ export function validateKanawhaPdfStructure(body: string) {
 		}
 	}
 	const fonts = Object.entries(objects).filter(([, item]) => item.value?.["/Type"] === "/Font");
-	if (fonts.length !== 1 || JSON.stringify(Object.entries(fonts[0]![1].value!).sort()) !== JSON.stringify(Object.entries({ "/BaseFont": "/Helvetica", "/Encoding": "/WinAnsiEncoding", "/Subtype": "/Type1", "/Type": "/Font" }).sort())) return reject();
+	if (fonts.length !== 1 || JSON.stringify(Object.entries(fonts[0]![1].value!).sort()) !== JSON.stringify(Object.entries({
+		"/BaseFont": "/Helvetica",
+		"/Encoding": "/WinAnsiEncoding",
+		"/Subtype": "/Type1",
+		"/Type": "/Font"
+	}).sort())) {
+		return reject();
+	}
 	const fontReference = fonts[0]![0].replace(/^obj:/u, "");
 	for (const page of document.pages) {
 		const value = objects[`obj:${page.object}`]?.value;
@@ -186,7 +340,9 @@ export function readKanawhaPreparedDocument(evidence: { objects: string; bbox: s
 	for (const claim of report.candidates) {
 		const page = fields[claim.occurrences[0]!.page - 1]!;
 		const heading = page.filter(field => field.text === claim.sourceHeading);
-		const labels = page.filter(field => field.text === `${claim.sourcePartyCode ? `${claim.sourcePartyCode} ` : ""}${claim.name}`);
+		const labels = page.filter(field => field.text === `${claim.sourcePartyCode
+			? `${claim.sourcePartyCode} `
+			: ""}${claim.name}`);
 		const next = page.filter(field => field.text.startsWith("FOR ") || report.questions.some(question => question.heading === field.text)).filter(field => field.top < (heading[0]?.bottom ?? 0)).sort((first, second) => second.top - first.top)[0];
 		if (heading.length !== 1 || labels.length !== 1 || labels[0]!.top >= heading[0]!.bottom || (next && labels[0]!.bottom <= next.top)) return reject();
 	}
@@ -199,7 +355,12 @@ export async function captureKanawhaTestDocument(bytes: Buffer, options: { textE
 	const executable = await resolveStateBallotPdfExtractor(options.textExecutable);
 	const text = await extractStateBallotPdfText(bytes, executable);
 	const bbox = await extractStateBallotPdfText(bytes, executable, 12000, "bbox-layout", 20);
-	const evidence = { objects, bbox, text, sha256: sourceSha256 };
+	const evidence = {
+		objects,
+		bbox,
+		text,
+		sha256: sourceSha256
+	};
 	readKanawhaPreparedDocument(evidence);
 	return evidence;
 }

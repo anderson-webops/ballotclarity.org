@@ -24,37 +24,66 @@ export function resolveProviderCredential(id: ProviderId) {
 	switch (id) {
 		case "google-civic":
 			return hasEnv("GOOGLE_CIVIC_API_KEY")
-				? { source: "GOOGLE_CIVIC_API_KEY", value: getEnv("GOOGLE_CIVIC_API_KEY") }
+				? {
+						source: "GOOGLE_CIVIC_API_KEY",
+						value: getEnv("GOOGLE_CIVIC_API_KEY")
+					}
 				: null;
 		case "data-gov":
 			return hasEnv("DATA_API_KEY")
-				? { source: "DATA_API_KEY", value: getEnv("DATA_API_KEY") }
+				? {
+						source: "DATA_API_KEY",
+						value: getEnv("DATA_API_KEY")
+					}
 				: null;
 		case "congress":
-			if (hasEnv("CONGRESS_API_KEY"))
-				return { source: "CONGRESS_API_KEY", value: getEnv("CONGRESS_API_KEY") };
+			if (hasEnv("CONGRESS_API_KEY")) {
+				return {
+					source: "CONGRESS_API_KEY",
+					value: getEnv("CONGRESS_API_KEY")
+				};
+			}
 
 			return hasEnv("DATA_API_KEY")
-				? { source: "DATA_API_KEY", value: getEnv("DATA_API_KEY") }
+				? {
+						source: "DATA_API_KEY",
+						value: getEnv("DATA_API_KEY")
+					}
 				: null;
 		case "openfec":
-			if (hasEnv("OPENFEC_API_KEY"))
-				return { source: "OPENFEC_API_KEY", value: getEnv("OPENFEC_API_KEY") };
+			if (hasEnv("OPENFEC_API_KEY")) {
+				return {
+					source: "OPENFEC_API_KEY",
+					value: getEnv("OPENFEC_API_KEY")
+				};
+			}
 
 			return hasEnv("DATA_API_KEY")
-				? { source: "DATA_API_KEY", value: getEnv("DATA_API_KEY") }
+				? {
+						source: "DATA_API_KEY",
+						value: getEnv("DATA_API_KEY")
+					}
 				: null;
 		case "openstates":
 			return hasEnv("OPENSTATES_API_KEY")
-				? { source: "OPENSTATES_API_KEY", value: getEnv("OPENSTATES_API_KEY") }
+				? {
+						source: "OPENSTATES_API_KEY",
+						value: getEnv("OPENSTATES_API_KEY")
+					}
 				: null;
 		case "lda":
 			return hasEnv("LDA_API_KEY")
-				? { source: "LDA_API_KEY", value: getEnv("LDA_API_KEY") }
+				? {
+						source: "LDA_API_KEY",
+						value: getEnv("LDA_API_KEY")
+					}
 				: null;
 		case "openai":
 			return hasEnv("OPENAI_API_KEY")
-				? { source: "OPENAI_API_KEY", value: getEnv("OPENAI_API_KEY") }
+				? {
+						source: "OPENAI_API_KEY",
+						value: getEnv("OPENAI_API_KEY")
+					}
 				: null;
 		default:
 			return null;

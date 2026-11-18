@@ -50,7 +50,9 @@ export function resolveColorModeHydrationState(
 	const resolvedValue = isResolvedColorModeValue(helperValue)
 		? helperValue
 		: inferredValue
-			?? (isResolvedColorModeValue(fallbackValue) ? fallbackValue : "light");
+			?? (isResolvedColorModeValue(fallbackValue)
+				? fallbackValue
+				: "light");
 	const resolvedPreference = helperPreference || fallbackPreference || resolvedValue;
 
 	return {

@@ -14,7 +14,10 @@ async function main() {
 		return;
 	}
 	if (command === "catalog" && !paths.length) {
-		console.log(JSON.stringify(electionDocumentSources.map(source => ({ ...source, configurationSha256: electionDocumentConfigurationSha256(source) }))));
+		console.log(JSON.stringify(electionDocumentSources.map(source => ({
+			...source,
+			configurationSha256: electionDocumentConfigurationSha256(source)
+		}))));
 		return;
 	}
 	if ((command !== "collect" || paths.length !== 1) && (command !== "seed" || paths.length !== 2)) throw new Error("Use catalog, collect PLAN.json, seed PLAN.json CAPTURES.json, or collect-reviewed REVIEW.json COLLECTION.json. Documents are never imported or published.");
@@ -29,6 +32,8 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-	console.error(error instanceof Error ? error.message : "Election document collection failed.");
+	console.error(error instanceof Error
+		? error.message
+		: "Election document collection failed.");
 	process.exitCode = 1;
 });

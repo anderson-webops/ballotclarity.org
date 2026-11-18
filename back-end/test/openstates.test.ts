@@ -3,11 +3,26 @@ import test from "node:test";
 import { createOpenStatesClient } from "../src/openstates.js";
 
 test("Open States keeps portraits and prefers safe homepage links", async () => {
-	const person = { id: "test-person", name: "Alex Example", image: "https://example.org/alex.jpg", current_role: { district: "4", org_classification: "lower" }, links: [{ url: "javascript:alert(1)", note: "homepage" }, { url: "https://example.org/alex/bio" }, { url: "https://example.org/alex", note: "homepage" }] };
-	const client = createOpenStatesClient({ apiKey: "test-openstates-key", fetchImpl: (async (resource) => {
-		assert.equal(new URL(String(resource)).searchParams.get("include"), "links");
-		return new Response(JSON.stringify({ results: [person] }), { status: 200 });
-	}) as typeof fetch });
+	const person = {
+		id: "test-person",
+		name: "Alex Example",
+		image: "https://example.org/alex.jpg",
+		current_role: { district: "4", org_classification: "lower" },
+		links: [
+			{ url: "javascript:alert(1)", note: "homepage" },
+			{ url: "https://example.org/alex/bio" },
+			{ url: "https://example.org/alex", note: "homepage" }
+		]
+	};
+	const client = createOpenStatesClient({
+		apiKey: "test-openstates-key",
+		fetchImpl: (async (resource) => {
+			assert.equal(new URL(String(resource)).searchParams.get("include"), "links");
+			return new Response(JSON.stringify({
+				results: [person]
+			}), { status: 200 });
+		}) as typeof fetch
+	});
 	assert.ok(client);
 	const [record] = await client.searchPeopleByName("Alex Example");
 	assert.equal(record?.officialWebsiteUrl, "https://example.org/alex");
@@ -15,7 +30,9 @@ test("Open States keeps portraits and prefers safe homepage links", async () => 
 	const [match] = await client.lookupPeopleByCoordinates(0, 0);
 	assert.equal(match?.officialWebsiteUrl, record?.officialWebsiteUrl);
 	assert.deepEqual(match?.profileImages, record?.profileImages);
-	person.links = [{ url: "http://127.0.0.1/private", note: "homepage" }];
+	person.links = [
+		{ url: "http://127.0.0.1/private", note: "homepage" }
+	];
 	assert.equal((await client.searchPeopleByName("Alex Example"))[0]?.officialWebsiteUrl, undefined);
 });
 
@@ -79,17 +96,39 @@ test("createOpenStatesClient includes the provider response body in lookup error
 
 test("current officeholder requests exclude historical and empty roles without discarding valid older records", async () => {
 	const people = [
-		{ id: "former-missing", name: "Alex Example", updated_at: "2026-11-02", links: [{ url: "https://example.org/former-office" }] },
+		{
+			id: "former-missing",
+			name: "Alex Example",
+			updated_at: "2026-11-02",
+			links: [
+				{ url: "https://example.org/former-office" }
+			]
+		},
 		{ id: "former-null", name: "Alex Example", current_role: null },
 		{ id: "empty-role", name: "Alex Example", current_role: {} },
-		{ id: "blank-role", name: "Alex Example", current_role: { title: " ", org_classification: " " } },
-		{ id: "current-role", name: "Alex Example", updated_at: "2021-10-08", current_role: { title: "Senator", org_classification: "upper", district: "4" }, links: [{ url: "https://example.org/current-office" }] }
+		{
+			id: "blank-role",
+			name: "Alex Example",
+			current_role: { title: " ", org_classification: " " }
+		},
+		{
+			id: "current-role",
+			name: "Alex Example",
+			updated_at: "2021-10-08",
+			current_role: { title: "Senator", org_classification: "upper", district: "4" },
+			links: [
+				{ url: "https://example.org/current-office" }
+			]
+		}
 	];
 	const requests: URL[] = [];
-	const client = createOpenStatesClient({ apiKey: "test-openstates-key", fetchImpl: (async (resource) => {
-		requests.push(new URL(String(resource)));
-		return new Response(JSON.stringify({ results: people }), { status: 200 });
-	}) as typeof fetch });
+	const client = createOpenStatesClient({
+		apiKey: "test-openstates-key",
+		fetchImpl: (async (resource) => {
+			requests.push(new URL(String(resource)));
+			return new Response(JSON.stringify({ results: people }), { status: 200 });
+		}) as typeof fetch
+	});
 	assert.ok(client);
 	for (const records of [await client.searchPeopleByName("Alex Example"), await client.lookupPeopleByCoordinates(0, 0), await client.listPeopleByJurisdiction("Georgia")]) {
 		assert.deepEqual(records.map(record => record.id), ["current-role"]);
@@ -101,10 +140,26 @@ test("current officeholder requests exclude historical and empty roles without d
 });
 
 test("jurisdiction pagination checks the current role on every page", async () => {
-	const client = createOpenStatesClient({ apiKey: "test-openstates-key", fetchImpl: (async (resource) => {
-		const page = new URL(String(resource)).searchParams.get("page");
-		return new Response(JSON.stringify({ pagination: { max_page: 2 }, results: page === "1" ? [{ id: "former", name: "Former Person" }] : [{ id: "current", name: "Current Person", current_role: { org_classification: "lower", district: "4" } }] }), { status: 200 });
-	}) as typeof fetch });
+	const client = createOpenStatesClient({
+		apiKey: "test-openstates-key",
+		fetchImpl: (async (resource) => {
+			const page = new URL(String(resource)).searchParams.get("page");
+			return new Response(JSON.stringify({
+				pagination: { max_page: 2 },
+				results: page === "1"
+					? [
+							{ id: "former", name: "Former Person" }
+						]
+					: [
+							{
+								id: "current",
+								name: "Current Person",
+								current_role: { org_classification: "lower", district: "4" }
+							}
+						]
+			}), { status: 200 });
+		}) as typeof fetch
+	});
 	assert.ok(client);
 	assert.deepEqual((await client.listPeopleByJurisdiction("Georgia")).map(record => record.id), ["current"]);
 });

@@ -29,12 +29,22 @@ export function floridaElectionDate(electionId: string) {
 
 export function floridaCandidatePostBody(electionId: string, candidateType: "STA" | "LOC" = "STA") {
 	floridaElectionDate(electionId);
-	return new URLSearchParams({ elecID: electionId, office: "All", status: "All", cantype: candidateType, FormSubmit: "Download Candidate List" }).toString();
+	return new URLSearchParams({
+		elecID: electionId,
+		office: "All",
+		status: "All",
+		cantype: candidateType,
+		FormSubmit: "Download Candidate List"
+	}).toString();
 }
 
 export function floridaSourceElectionId(source: StateBallotSource) {
 	const identifier = new URLSearchParams(source.postBody).get("elecID") ?? "";
-	if (source.stateCode !== "FL" || !["csv", "florida-local-tsv"].includes(source.format) || source.delimiter !== "\t" || source.url !== floridaCandidateUrl || source.pageUrl !== floridaDiscoveryUrl || source.postBody !== floridaCandidatePostBody(identifier, source.format === "florida-local-tsv" ? "LOC" : "STA") || source.electionDate !== floridaElectionDate(identifier)) throw new Error("The Florida source does not retain its exact candidate download contract.");
+	if (source.stateCode !== "FL" || !["csv", "florida-local-tsv"].includes(source.format) || source.delimiter !== "\t" || source.url !== floridaCandidateUrl || source.pageUrl !== floridaDiscoveryUrl || source.postBody !== floridaCandidatePostBody(identifier, source.format === "florida-local-tsv"
+		? "LOC"
+		: "STA") || source.electionDate !== floridaElectionDate(identifier)) {
+		throw new Error("The Florida source does not retain its exact candidate download contract.");
+	}
 	return identifier;
 }
 
@@ -58,7 +68,17 @@ function floridaDownloadForm(body: string, candidateType: "STA" | "LOC") {
 	const form = floridaPublicForm(body, "CanDownload", floridaCandidateUrl);
 	const selectors = descendants(form, node => node.nodeName === "select");
 	if (selectors.length !== 4 || selectors.filter(node => attribute(node, "name") === "elecID").length !== 1) throw new Error("The Florida public download filters have changed.");
-	for (const [name, value, label] of [["office", "All", "ALL"], ["status", "All", "ALL"], ["cantype", candidateType, candidateType === "STA" ? "State Candidates" : "Local Candidates"]]) {
+	for (const [name, value, label] of [
+		["office", "All", "ALL"],
+		["status", "All", "ALL"],
+		[
+			"cantype",
+			candidateType,
+			candidateType === "STA"
+				? "State Candidates"
+				: "Local Candidates"
+		]
+	]) {
 		const matches = selectors.filter(node => attribute(node, "name") === name);
 		if (matches.length !== 1 || descendants(matches[0]!, node => node.nodeName === "option" && attribute(node, "value") === value && clean(node) === label).length !== 1) throw new Error("The Florida public download no longer supports the approved unfiltered state request.");
 	}
@@ -78,13 +98,17 @@ export function readFloridaElectionDiscovery(body: string, minimumYear: string, 
 		const electionDate = floridaElectionDate(electionId);
 		if (electionDate.slice(0, 4) < minimumYear) return [];
 		if (clean(option) !== `${electionDate.slice(0, 4)} Election`) throw new Error("The Florida general-election label and published identifier conflict.");
-		return [{ electionId, electionDate }];
+		return [
+			{ electionId, electionDate }
+		];
 	});
 }
 
 export function buildFloridaCandidateForm(source: StateBallotSource, body: string) {
 	const electionId = floridaSourceElectionId(source);
-	const candidateType = source.format === "florida-local-tsv" ? "LOC" : "STA";
+	const candidateType = source.format === "florida-local-tsv"
+		? "LOC"
+		: "STA";
 	const elections = readFloridaElectionDiscovery(body, source.electionDate.slice(0, 4), candidateType);
 	if (elections.filter(item => item.electionId === electionId && item.electionDate === source.electionDate).length !== 1) throw new Error("The configured Florida general election is not uniquely published in its public form.");
 	return floridaCandidatePostBody(electionId, candidateType);
@@ -147,11 +171,21 @@ export function readSouthCarolinaElectionDiscovery(body: string, minimumYear: st
 		const entries: unknown = JSON.parse(capture.body);
 		if (!Array.isArray(entries) || !entries.length || entries.length > 200) throw new Error("The South Carolina public election list exceeds its bounds.");
 		return entries.flatMap((entry) => {
-			if (!exactKeys(entry, ["electionId", "electionName", "displayName", "electionDate", "filingPeriodBeginDate"]) || typeof entry.electionId !== "string" || !/^[1-9]\d{0,8}$/u.test(entry.electionId) || typeof entry.electionName !== "string" || typeof entry.displayName !== "string" || typeof entry.electionDate !== "string" || !entry.electionDate.startsWith(`${years[index]}-`)) throw new Error("The South Carolina public election metadata has changed.");
+			if (!exactKeys(entry, [
+				"electionId",
+				"electionName",
+				"displayName",
+				"electionDate",
+				"filingPeriodBeginDate"
+			]) || typeof entry.electionId !== "string" || !/^[1-9]\d{0,8}$/u.test(entry.electionId) || typeof entry.electionName !== "string" || typeof entry.displayName !== "string" || typeof entry.electionDate !== "string" || !entry.electionDate.startsWith(`${years[index]}-`)) {
+				throw new Error("The South Carolina public election metadata has changed.");
+			}
 			if (entry.electionName !== "Statewide General Election") return [];
 			const electionDate = generalDate(entry.electionDate.slice(0, 10));
 			if (entry.electionDate !== `${electionDate}T00:00:00` || entry.displayName !== `11/${Number(electionDate.slice(8))}/${electionDate.slice(0, 4)} Statewide General Election`) throw new Error("The South Carolina general-election date and label conflict.");
-			return [{ electionId: entry.electionId, electionDate }];
+			return [
+				{ electionId: entry.electionId, electionDate }
+			];
 		});
 	});
 }

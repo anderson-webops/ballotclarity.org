@@ -10,10 +10,16 @@ test("ballot previews refresh after private storage strips them, only for the sa
 		inputKind: "zip",
 		lookupQuery: "27601",
 		location: { state: "North Carolina", slug: "raleigh-nc" },
-		districtMatches: [{ districtType: "congressional", districtCode: "2" }],
+		districtMatches: [
+			{ districtType: "congressional", districtCode: "2" }
+		],
 		actions: [],
-		availability: { ballotCandidates: { status: "limited" } },
-		ballotContentPreviews: [{ id: "official-records" }],
+		availability: {
+			ballotCandidates: { status: "limited" }
+		},
+		ballotContentPreviews: [
+			{ id: "official-records" }
+		],
 	} as unknown as NationwideLookupResultContext;
 	const stored = sanitizeNationwideLookupResultForStorage(fresh)!;
 	assert.deepEqual(stored.ballotContentPreviews, []);
@@ -25,9 +31,18 @@ test("ballot previews refresh after private storage strips them, only for the sa
 		{ lookupQuery: "27602" },
 		{ inputKind: "address" },
 		{ selectionId: "other-area" },
-		{ location: { state: "Virginia", slug: "raleigh-nc" } },
-		{ districtMatches: [{ districtType: "congressional", districtCode: "3" }] },
+		{
+			location: { state: "Virginia", slug: "raleigh-nc" }
+		},
+		{
+			districtMatches: [
+				{ districtType: "congressional", districtCode: "3" }
+			]
+		},
 	]) {
-		assert.equal(restoreMatchingBallotPreviews(stored, { ...fresh, ...changed } as NationwideLookupResultContext), stored);
+		assert.equal(restoreMatchingBallotPreviews(stored, {
+			...fresh,
+			...changed
+		} as NationwideLookupResultContext), stored);
 	}
 });

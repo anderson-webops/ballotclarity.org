@@ -22,12 +22,42 @@ export interface OregonElection {
 export const oregonDiscoveryUrl = "https://multco.us/info/current-and-upcoming-elections-multnomah-county-elections";
 const digest = (body: string | Buffer) => createHash("sha256").update(body).digest("hex");
 const policyPages = [
-	{ id: "robots", url: "https://multco.us/robots.txt", format: "robots", sha256: "803007435e82032fc59493356370597089f6e13a890990d6f3de11775be4dafe" },
-	{ id: "home-links", url: "https://multco.us/", format: "links", sha256: "4df48d7dab285d5a8cc5a369d3cfdd373c13d067948eeacce3f3829d1cffb813" },
-	{ id: "terms", url: "https://multco.us/info/multnomah-county-website-terms", format: "main", sha256: "4a281aa56b5992f5d1de04afdb86e84d33a2c50062140f105c2c60a6b1796406" },
-	{ id: "privacy", url: "https://multco.us/info/privacy-policy", format: "main", sha256: "84856cc654aec7d6ccab2d07dcbb9b4c5c6fa75557ce03a9085459c4080dba00" },
-	{ id: "accessibility", url: "https://multco.us/info/web-accessibility", format: "main", sha256: "c3bba0c40352e824b57681fadebab82f8a1c3f10988b2484970318112d763ff4" },
-	{ id: "ada", url: "https://multco.us/info/ada-policy-notice-and-disability-complaint-process", format: "main", sha256: "60f4199dad779b3e11ae9af54f867fc04c2598e5552b162c62a1b61f93dea181" },
+	{
+		id: "robots",
+		url: "https://multco.us/robots.txt",
+		format: "robots",
+		sha256: "803007435e82032fc59493356370597089f6e13a890990d6f3de11775be4dafe"
+	},
+	{
+		id: "home-links",
+		url: "https://multco.us/",
+		format: "links",
+		sha256: "4df48d7dab285d5a8cc5a369d3cfdd373c13d067948eeacce3f3829d1cffb813"
+	},
+	{
+		id: "terms",
+		url: "https://multco.us/info/multnomah-county-website-terms",
+		format: "main",
+		sha256: "4a281aa56b5992f5d1de04afdb86e84d33a2c50062140f105c2c60a6b1796406"
+	},
+	{
+		id: "privacy",
+		url: "https://multco.us/info/privacy-policy",
+		format: "main",
+		sha256: "84856cc654aec7d6ccab2d07dcbb9b4c5c6fa75557ce03a9085459c4080dba00"
+	},
+	{
+		id: "accessibility",
+		url: "https://multco.us/info/web-accessibility",
+		format: "main",
+		sha256: "c3bba0c40352e824b57681fadebab82f8a1c3f10988b2484970318112d763ff4"
+	},
+	{
+		id: "ada",
+		url: "https://multco.us/info/ada-policy-notice-and-disability-complaint-process",
+		format: "main",
+		sha256: "60f4199dad779b3e11ae9af54f867fc04c2598e5552b162c62a1b61f93dea181"
+	},
 ] as const;
 export const oregonPolicyReceipts = policyPages.map(({ id, url, sha256 }) => ({ id, url, sha256 }));
 const kinds: OregonDocumentKind[] = ["state-directive", "county-general", "county-rcv"];
@@ -66,18 +96,24 @@ export function readOregonElectionIndex(body: string) {
 		const label = text(anchor);
 		if (!/^November .*General Election$/u.test(label)) continue;
 		const match = /^November ([2-8]), (20\d{2}) General Election$/u.exec(label);
-		const date = match ? `${match[2]}-11-0${match[1]}` : "";
+		const date = match
+			? `${match[2]}-11-0${match[1]}`
+			: "";
 		if (!generalDate(date) || elections.has(date) || publicUrl(stateHtmlAttribute(anchor, "href")) !== pageUrl(date)) throw new Error("The Oregon county offered election date is invalid or ambiguous.");
 		elections.set(date, pageUrl(date));
 	}
 	if (!elections.size || elections.size > 10) throw new Error("The Oregon county catalog has no bounded general-election publications.");
-	return [...elections.entries()].sort(([first], [second]) => first.localeCompare(second));
+	return [
+		...elections.entries()
+	].sort(([first], [second]) => first.localeCompare(second));
 }
 function documentUrl(url: string, kind: OregonDocumentKind, date: string) {
 	const year = date.slice(0, 4);
 	const expected = kind === "state-directive"
 		? `/file/ballot_directive_-_november_${Number(date.slice(-2))}%2C_${year}_general/download`
-		: `/file/ballot_content_${kind === "county-rcv" ? "rcv_" : ""}-_nov._${year}/download`;
+		: `/file/ballot_content_${kind === "county-rcv"
+			? "rcv_"
+			: ""}-_nov._${year}/download`;
 	if (publicUrl(url) !== `https://multco.us${expected}`) throw new Error("The Oregon county document link does not match its election.");
 	return publicUrl(url);
 }
@@ -93,20 +129,42 @@ function readElectionPage(body: string, date: string): OregonElection | null {
 			? "state-directive"
 			: label === `Ballot Content - Nov. ${date.slice(0, 4)}`
 				? "county-general"
-				: label === `Ballot Content RCV - Nov. ${date.slice(0, 4)}` ? "county-rcv" : null;
-		if (kind) documents.push({ kind, url: documentUrl(stateHtmlAttribute(anchor, "href"), kind, date) });
-		else if (/^Ballot (?:Directive|Content)/u.test(label)) throw new Error("The Oregon county candidate document controls changed.");
+				: label === `Ballot Content RCV - Nov. ${date.slice(0, 4)}`
+					? "county-rcv"
+					: null;
+		if (kind) {
+			documents.push({
+				kind,
+				url: documentUrl(stateHtmlAttribute(anchor, "href"), kind, date)
+			});
+		}
+		else if (/^Ballot (?:Directive|Content)/u.test(label)) {
+			throw new Error("The Oregon county candidate document controls changed.");
+		}
 	}
 	if (!documents.length) return null;
 	documents.sort((first, second) => kinds.indexOf(first.kind) - kinds.indexOf(second.kind));
-	const election: OregonElection = { electionId: null, electionDate: date, pageUrl: pageUrl(date), oregonDocuments: documents };
+	const election: OregonElection = {
+		electionId: null,
+		electionDate: date,
+		pageUrl: pageUrl(date),
+		oregonDocuments: documents
+	};
 	validateOregonElection(election);
 	return election;
 }
 function readDiscovery(body: string) {
 	if (Buffer.byteLength(body) > 12 * 1024 * 1024) throw new Error("The Oregon county discovery exceeds its bounds.");
 	const value = JSON.parse(body);
-	if (!exactKeys(value, ["schemaVersion", "type", "index", "pages", "policies"]) || value.schemaVersion !== 1 || value.type !== "oregon-county-discovery" || typeof value.index !== "string" || !Array.isArray(value.pages) || JSON.stringify(value.policies) !== JSON.stringify(oregonPolicyReceipts)) throw new Error("The Oregon county discovery is invalid or its policies changed.");
+	if (!exactKeys(value, [
+		"schemaVersion",
+		"type",
+		"index",
+		"pages",
+		"policies"
+	]) || value.schemaVersion !== 1 || value.type !== "oregon-county-discovery" || typeof value.index !== "string" || !Array.isArray(value.pages) || JSON.stringify(value.policies) !== JSON.stringify(oregonPolicyReceipts)) {
+		throw new Error("The Oregon county discovery is invalid or its policies changed.");
+	}
 	return value as unknown as { index: string; pages: Array<{ url: string; body: string }> };
 }
 export function readOregonElectionDiscovery(body: string): OregonElection[] {
@@ -117,23 +175,48 @@ export function readOregonElectionDiscovery(body: string): OregonElection[] {
 		const page = value.pages[position];
 		if (!exactKeys(page, ["url", "body"]) || page.url !== url || typeof page.body !== "string") throw new Error("The Oregon county discovery page set changed.");
 		const election = readElectionPage(page.body, date);
-		return election ? [election] : [];
+		return election
+			? [election]
+			: [];
 	});
 }
 export function validateOregonElection(value: unknown): asserts value is OregonElection {
-	if (!exactKeys(value, ["electionId", "electionDate", "pageUrl", "oregonDocuments"]) || value.electionId !== null || typeof value.electionDate !== "string" || !generalDate(value.electionDate) || value.pageUrl !== pageUrl(value.electionDate) || !Array.isArray(value.oregonDocuments) || value.oregonDocuments.length !== 3) throw new Error("The Oregon county election definition is invalid.");
+	if (!exactKeys(value, [
+		"electionId",
+		"electionDate",
+		"pageUrl",
+		"oregonDocuments"
+	]) || value.electionId !== null || typeof value.electionDate !== "string" || !generalDate(value.electionDate) || value.pageUrl !== pageUrl(value.electionDate) || !Array.isArray(value.oregonDocuments) || value.oregonDocuments.length !== 3) {
+		throw new Error("The Oregon county election definition is invalid.");
+	}
 	for (const [position, document] of value.oregonDocuments.entries()) {
 		if (!exactKeys(document, ["kind", "url"]) || document.kind !== kinds[position] || typeof document.url !== "string" || document.url !== documentUrl(document.url, kinds[position]!, value.electionDate)) throw new Error("The Oregon county document set is incomplete or ambiguous.");
 	}
 }
 export function validateOregonSource(source: StateBallotSource) {
-	if (source.stateCode !== "OR" || source.format !== "oregon-pdf" || source.retrievalPolicy || source.postBody || source.delimiter || source.id !== (source.electionDate === "2026-11-03" ? "or-sos-multnomah-2026" : `or-multnomah-general-${source.electionDate}`) || source.url !== (source.electionDate === "2026-11-03" ? source.documentUrls?.[0] : source.pageUrl) || !source.documentUrls) throw new Error("The automatic Oregon county source identity is invalid.");
-	validateOregonElection({ electionId: null, electionDate: source.electionDate, pageUrl: source.pageUrl, oregonDocuments: source.documentUrls.map((url, position) => ({ kind: kinds[position], url })) });
+	if (source.stateCode !== "OR" || source.format !== "oregon-pdf" || source.retrievalPolicy || source.postBody || source.delimiter || source.id !== (source.electionDate === "2026-11-03"
+		? "or-sos-multnomah-2026"
+		: `or-multnomah-general-${source.electionDate}`) || source.url !== (source.electionDate === "2026-11-03"
+		? source.documentUrls?.[0]
+		: source.pageUrl) || !source.documentUrls) {
+		throw new Error("The automatic Oregon county source identity is invalid.");
+	}
+	validateOregonElection({
+		electionId: null,
+		electionDate: source.electionDate,
+		pageUrl: source.pageUrl,
+		oregonDocuments: source.documentUrls.map((url, position) => ({ kind: kinds[position], url }))
+	});
 }
 export async function fetchOregonCycleDiscovery(options: { requestText?: TextRequest; wait?: (delay: number) => Promise<void> } = {}) {
 	const request = options.requestText ?? fetchRemoteSourceText;
 	const wait = options.wait ?? (delay => new Promise(resolve => setTimeout(resolve, delay)));
-	const transport = { allowedHosts: ["multco.us"], maxBytes: 2 * 1024 * 1024, maxRedirects: 0, timeoutMs: stateBallotPdfCollectorContract.timeoutMs };
+	const transport = {
+		allowedHosts: ["multco.us"],
+		maxBytes: 2 * 1024 * 1024,
+		maxRedirects: 0,
+		timeoutMs: stateBallotPdfCollectorContract.timeoutMs
+	};
 	let robots: ReturnType<typeof electionDocumentRobotsPolicy> | undefined;
 	const read = async (url: string) => {
 		if (robots) {
@@ -151,7 +234,13 @@ export async function fetchOregonCycleDiscovery(options: { requestText?: TextReq
 	const index = await read(oregonDiscoveryUrl);
 	const pages = [];
 	for (const [, url] of readOregonElectionIndex(index)) pages.push({ url, body: await read(url) });
-	const body = JSON.stringify({ schemaVersion: 1, type: "oregon-county-discovery", index, pages, policies: oregonPolicyReceipts });
+	const body = JSON.stringify({
+		schemaVersion: 1,
+		type: "oregon-county-discovery",
+		index,
+		pages,
+		policies: oregonPolicyReceipts
+	});
 	readOregonElectionDiscovery(body);
 	return body;
 }
@@ -159,16 +248,28 @@ export async function fetchOregonCycleDiscovery(options: { requestText?: TextReq
 interface CapturedDocument { url: string; sha256: string; retrievedAt: string; text: string }
 export async function fetchOregonCandidateCapture(source: StateBallotSource, options: { requestText?: TextRequest; requestDocument?: typeof fetchRemoteSourceDocument; extractor?: (body: Buffer) => Promise<string>; discovery?: string; now?: () => number; wait?: (delay: number) => Promise<void> } = {}) {
 	validateOregonSource(source);
-	const executable = options.extractor ? null : await resolveStateBallotPdfExtractor();
+	const executable = options.extractor
+		? null
+		: await resolveStateBallotPdfExtractor();
 	const discovery = options.discovery ?? await fetchOregonCycleDiscovery(options);
 	const election = readOregonElectionDiscovery(discovery).find(item => item.electionDate === source.electionDate);
 	if (!election || election.oregonDocuments.map(item => item.url).join("|") !== source.documentUrls!.join("|")) throw new Error("The Oregon county published document set requires review.");
 	const documents: CapturedDocument[] = [];
 	for (const document of election.oregonDocuments) {
 		await (options.wait ?? (delay => new Promise(resolve => setTimeout(resolve, delay))))(11000);
-		documents.push(await fetchStateBallotPdfDocument(document.url, { allowedHosts: ["multco.us"], request: options.requestDocument, extractor: options.extractor ?? (body => extractStateBallotPdfText(body, executable!)), now: options.now }));
+		documents.push(await fetchStateBallotPdfDocument(document.url, {
+			allowedHosts: ["multco.us"],
+			request: options.requestDocument,
+			extractor: options.extractor ?? (body => extractStateBallotPdfText(body, executable!)),
+			now: options.now
+		}));
 	}
-	const body = JSON.stringify({ schemaVersion: 1, type: "oregon-county-candidates", discovery, documents });
+	const body = JSON.stringify({
+		schemaVersion: 1,
+		type: "oregon-county-candidates",
+		discovery,
+		documents
+	});
 	if (Buffer.byteLength(body) > 12 * 1024 * 1024) throw new Error("The Oregon candidate capture exceeds its bounds.");
 	return body;
 }
@@ -197,7 +298,20 @@ function statePages(body: string, electionDate: string, retrievedAt: string) {
 		if (!text.startsWith("Secretary of State Elections Division") || !text.includes("Candidate Ballot Statement") || !text.includes(`${electionDate.slice(0, 4)} General Election`) || !date || !new RegExp(`Page ${number} of ${pages.length}\\s*$`, "u").test(text)) throw new Error("The Oregon state statement page sequence or election identity changed.");
 		publicationDates.add(date);
 		const parsed = /^([A-Z][a-z]+) ([1-9]\d?), (20\d{2})$/u.exec(date)!;
-		const month = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].indexOf(parsed[1]!) + 1;
+		const month = [
+			"January",
+			"February",
+			"March",
+			"April",
+			"May",
+			"June",
+			"July",
+			"August",
+			"September",
+			"October",
+			"November",
+			"December"
+		].indexOf(parsed[1]!) + 1;
 		const day = publicationDay(Number(parsed[3]), month, Number(parsed[2]));
 		if (publicationDates.size !== 1 || day > electionDate || day > retrievedAt.slice(0, 10)) throw new Error("The Oregon state statement publication date is inconsistent.");
 		return { number, text };
@@ -221,13 +335,24 @@ function countyPages(body: string, electionDate: string, rcv: boolean, retrieved
 		const summary = /^Number of Contest\s*:\s*(\d+)\s*\nNumber of Filed Candidates:\s*(\d+)\s*$/mu.exec(page);
 		if (summary) {
 			if (rcv || number !== pages.length || /Number Candidates Filed:/u.test(page)) throw new Error("The Oregon county totals page changed.");
-			if ([summary[1], summary[2]].some(value => !Number.isSafeInteger(Number(value)) || Number(value) < 1 || Number(value) > 25000) || [...body.matchAll(/^Number of Contest\s*:/gmu)].length !== 1 || [...body.matchAll(/^Number of Filed Candidates:/gmu)].length !== 1) throw new Error("The Oregon county aggregate report metadata is invalid.");
+			if ([summary[1], summary[2]].some(value => !Number.isSafeInteger(Number(value)) || Number(value) < 1 || Number(value) > 25000) || [
+				...body.matchAll(/^Number of Contest\s*:/gmu)
+			].length !== 1 || [
+				...body.matchAll(/^Number of Filed Candidates:/gmu)
+			].length !== 1) {
+				throw new Error("The Oregon county aggregate report metadata is invalid.");
+			}
 			continue;
 		}
 		const firstMeasure = page.indexOf("Measure No:");
 		if (firstMeasure >= 0) {
 			if (rcv || /Number Candidates Filed:/u.test(page.slice(firstMeasure))) throw new Error("Candidate controls follow the Oregon measure boundary.");
-			if (!measures && /Number Candidates Filed:/u.test(page.slice(0, firstMeasure))) selected.push({ number, text: page.slice(0, firstMeasure) });
+			if (!measures && /Number Candidates Filed:/u.test(page.slice(0, firstMeasure))) {
+				selected.push({
+					number,
+					text: page.slice(0, firstMeasure)
+				});
+			}
 			measures = true;
 		}
 		else if (measures) {
@@ -244,21 +369,42 @@ export function parseOregonCandidateCapture(source: StateBallotSource, body: str
 	validateOregonSource(source);
 	if (Buffer.byteLength(body) > 12 * 1024 * 1024) throw new Error("The Oregon candidate capture exceeds its bounds.");
 	const value = JSON.parse(body);
-	if (!exactKeys(value, ["schemaVersion", "type", "discovery", "documents"]) || value.schemaVersion !== 1 || value.type !== "oregon-county-candidates" || typeof value.discovery !== "string" || !Array.isArray(value.documents) || value.documents.length !== 3) throw new Error("The Oregon candidate capture is incomplete.");
+	if (!exactKeys(value, [
+		"schemaVersion",
+		"type",
+		"discovery",
+		"documents"
+	]) || value.schemaVersion !== 1 || value.type !== "oregon-county-candidates" || typeof value.discovery !== "string" || !Array.isArray(value.documents) || value.documents.length !== 3) {
+		throw new Error("The Oregon candidate capture is incomplete.");
+	}
 	const election = readOregonElectionDiscovery(value.discovery).find(item => item.electionDate === source.electionDate);
 	if (!election || election.oregonDocuments.map(item => item.url).join("|") !== source.documentUrls!.join("|")) throw new Error("The Oregon capture is not bound to its offered election.");
 	const documents = value.documents.map((document, position) => {
 		if (!exactKeys(document, ["url", "sha256", "retrievedAt", "text"]) || document.url !== source.documentUrls![position] || typeof document.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(document.sha256) || typeof document.retrievedAt !== "string" || !Number.isFinite(Date.parse(document.retrievedAt)) || new Date(document.retrievedAt).toISOString() !== document.retrievedAt || Date.parse(document.retrievedAt) > now || typeof document.text !== "string") throw new Error("The Oregon document provenance is invalid.");
-		return position === 0 ? statePages(document.text, source.electionDate, document.retrievedAt) : countyPages(document.text, source.electionDate, position === 2, document.retrievedAt);
+		return position === 0
+			? statePages(document.text, source.electionDate, document.retrievedAt)
+			: countyPages(document.text, source.electionDate, position === 2, document.retrievedAt);
 	});
 	const result = reconcileOregonCandidatePages(extractOregonCandidatePages(documents, source.electionDate.slice(0, 4)));
 	const records = result.records.map(({ value, ballotDesignation, claimIndexes }) => {
 		const record = factory(source, value);
 		if (!record) throw new Error("The Oregon candidate record is incomplete.");
-		record.sourceStatus = result.claims[claimIndexes[0]!]!.documentIndex === 0 ? "Official Ballot Statement" : "County ballot content";
+		record.sourceStatus = result.claims[claimIndexes[0]!]!.documentIndex === 0
+			? "Official Ballot Statement"
+			: "County ballot content";
 		if (ballotDesignation) record.ballotDesignation = ballotDesignation;
 		return record;
 	});
-	const provenance = (value.documents as CapturedDocument[]).map(({ url, sha256, retrievedAt }, position) => ({ url, sha256, retrievedAt, includedRecordCount: result.records.filter(record => result.claims[record.claimIndexes[0]!]!.documentIndex === position).length }));
-	return { records, documents: provenance, retrievedAt: new Date(Math.min(...provenance.map(document => Date.parse(document.retrievedAt)))).toISOString(), sha256: digest(JSON.stringify(provenance.map(({ url, sha256 }) => ({ url, sha256 })))) };
+	const provenance = (value.documents as CapturedDocument[]).map(({ url, sha256, retrievedAt }, position) => ({
+		url,
+		sha256,
+		retrievedAt,
+		includedRecordCount: result.records.filter(record => result.claims[record.claimIndexes[0]!]!.documentIndex === position).length
+	}));
+	return {
+		records,
+		documents: provenance,
+		retrievedAt: new Date(Math.min(...provenance.map(document => Date.parse(document.retrievedAt)))).toISOString(),
+		sha256: digest(JSON.stringify(provenance.map(({ url, sha256 }) => ({ url, sha256 }))))
+	};
 }

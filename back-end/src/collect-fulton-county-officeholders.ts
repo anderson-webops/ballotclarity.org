@@ -29,15 +29,43 @@ export async function collectFultonCountyOfficeholders({ directory, includeClerk
 		if (await realpath(runDirectory) !== runDirectory) throw new Error("The county-office collection journal must not be redirected.");
 		const previous = await readAutomationRun(runDirectory, now());
 		if (previous && ["failed", "running"].includes(previous.status) && Date.parse(previous.startedAt) + fultonCountyOfficeholderPublication.minimumRefreshIntervalMs > now()) throw new Error("The failed or interrupted county-office collection is awaiting its next permitted retry.");
-		const prior = { schemaVersion: 1 as const, type: "ballot-automation-run" as const, startedAt: new Date(now()).toISOString(), lastImportAt, lastSuccessAt: previous?.lastSuccessAt ?? null, nextRunAt: null };
-		await writeAutomationRun(runDirectory, { ...prior, status: "running", finishedAt: null, results: [] }, now());
+		const prior = {
+			schemaVersion: 1 as const,
+			type: "ballot-automation-run" as const,
+			startedAt: new Date(now()).toISOString(),
+			lastImportAt,
+			lastSuccessAt: previous?.lastSuccessAt ?? null,
+			nextRunAt: null
+		};
+		await writeAutomationRun(runDirectory, {
+			...prior,
+			status: "running",
+			finishedAt: null,
+			results: []
+		}, now());
 		let prepared = false;
 		try {
 			const documents: FultonCountyOfficeholderCapture["documents"] = [];
 			const get = async (url: string) => {
-				if (documents.length) await pause(new URL(url).hostname === "www.fultonclerk.org" ? fultonClerkPublication.minimumRequestIntervalMs : 11000);
-				const body = await request(url, { allowedHosts: includeClerk ? ["fultoncountyga.gov", "www.fultonclerk.org"] : ["fultoncountyga.gov"], maxBytes: fultonCountyOfficeholderPublication.maximumDocumentBytes, maxRedirects: 0, timeoutMs: 15000 });
-				documents.push({ url, body, capturedAt: new Date(now()).toISOString(), sha256: digest(body) });
+				if (documents.length) {
+					await pause(new URL(url).hostname === "www.fultonclerk.org"
+						? fultonClerkPublication.minimumRequestIntervalMs
+						: 11000);
+				}
+				const body = await request(url, {
+					allowedHosts: includeClerk
+						? ["fultoncountyga.gov", "www.fultonclerk.org"]
+						: ["fultoncountyga.gov"],
+					maxBytes: fultonCountyOfficeholderPublication.maximumDocumentBytes,
+					maxRedirects: 0,
+					timeoutMs: 15000
+				});
+				documents.push({
+					url,
+					body,
+					capturedAt: new Date(now()).toISOString(),
+					sha256: digest(body)
+				});
 				if (Buffer.byteLength(JSON.stringify(documents)) > fultonClerkPublication.maximumCaptureBytes) throw new Error("The Fulton county-office capture exceeds its bounds.");
 				return body;
 			};
@@ -62,7 +90,11 @@ export async function collectFultonCountyOfficeholders({ directory, includeClerk
 				const office = parseFultonCountyOffice(await get(definition.pageUrl), definition);
 				if (office.person && "profilePrefix" in definition) await get(office.person.officialWebsiteUrl);
 			}
-			const capture: FultonCountyOfficeholderCapture = { schemaVersion: includeClerk ? 3 : 2, type: "fulton-county-officeholder-capture", documents };
+			const capture: FultonCountyOfficeholderCapture = {
+				schemaVersion: includeClerk ? 3 : 2,
+				type: "fulton-county-officeholder-capture",
+				documents
+			};
 			const snapshot = prepareFultonCountyOfficeholders(capture, now());
 			prepared = true;
 			const captures = join(canonical, "county-office-captures");
@@ -71,11 +103,37 @@ export async function collectFultonCountyOfficeholders({ directory, includeClerk
 			await writeFile(join(captures, `${snapshot.sourceSha256}.json`), `${JSON.stringify(capture)}\n`, { flag: "wx", mode: 0o600 });
 			await writeFultonCountyOfficeholders(canonical, snapshot, "collected", now());
 			const finishedAt = new Date(now()).toISOString();
-			await writeAutomationRun(runDirectory, { ...prior, status: "succeeded", finishedAt, lastImportAt: finishedAt, lastSuccessAt: finishedAt, results: [{ sourceId: "ga-fulton-county-offices", status: "imported", records: snapshot.offices.filter(office => office.person).length, reason: null }] }, now());
+			await writeAutomationRun(runDirectory, {
+				...prior,
+				status: "succeeded",
+				finishedAt,
+				lastImportAt: finishedAt,
+				lastSuccessAt: finishedAt,
+				results: [
+					{
+						sourceId: "ga-fulton-county-offices",
+						status: "imported",
+						records: snapshot.offices.filter(office => office.person).length,
+						reason: null
+					}
+				]
+			}, now());
 			return { collected: true, publisherRequests: documents.length, retrievedAt: snapshot.retrievedAt };
 		}
 		catch (error) {
-			await writeAutomationRun(runDirectory, { ...prior, status: "failed", finishedAt: new Date(now()).toISOString(), results: [{ sourceId: "ga-fulton-county-offices", status: "failed", records: 0, reason: prepared ? "persistence-failed" : "source-unavailable" }] }, now());
+			await writeAutomationRun(runDirectory, {
+				...prior,
+				status: "failed",
+				finishedAt: new Date(now()).toISOString(),
+				results: [
+					{
+						sourceId: "ga-fulton-county-offices",
+						status: "failed",
+						records: 0,
+						reason: prepared ? "persistence-failed" : "source-unavailable"
+					}
+				]
+			}, now());
 			throw error;
 		}
 	});

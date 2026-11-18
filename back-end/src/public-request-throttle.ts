@@ -33,7 +33,9 @@ function getNumberEnv(name: string | undefined, fallback: number) {
 		return fallback;
 
 	const raw = Number(process.env[name]);
-	return Number.isSafeInteger(raw) && raw > 0 ? raw : fallback;
+	return Number.isSafeInteger(raw) && raw > 0
+		? raw
+		: fallback;
 }
 
 function requirePositiveInteger(value: number, name: string) {

@@ -59,7 +59,9 @@ function buildMetadata({
 	timestamp: string;
 }): CoverageSnapshotMetadata {
 	return buildFultonReviewedCoverageSnapshotMetadata({
-		approvedAt: status === "production_approved" ? timestamp : undefined,
+		approvedAt: status === "production_approved"
+			? timestamp
+			: undefined,
 		importedAt: timestamp,
 		note,
 		reviewedAt: timestamp,
@@ -110,7 +112,9 @@ if (isDirectRun) {
 		runExportFultonReviewedCoverageCommand();
 	}
 	catch (error) {
-		console.error(error instanceof Error ? error.message : "Unable to export reviewed Fulton coverage snapshot.");
+		console.error(error instanceof Error
+			? error.message
+			: "Unable to export reviewed Fulton coverage snapshot.");
 		console.error(`Expected metadata sidecar path: ${coverageSnapshotMetadataPath(readFlag("--output") || defaultOutputPath())}`);
 		process.exit(1);
 	}

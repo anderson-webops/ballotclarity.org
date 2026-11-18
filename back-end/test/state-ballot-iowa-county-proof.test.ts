@@ -15,27 +15,60 @@ const hash = (body: string) => createHash("sha256").update(body).digest("hex");
 
 function fixture(county: IowaSampleContext["county"] = "Monona", electionDate = "2026-11-03") {
 	const native = iowaCountyNativeFixture(county, electionDate);
-	const crop = county === "Monona" ? [18.573, 66.596, 593.28, 974.929] : [0, 0, 612, 1008];
+	const crop = county === "Monona"
+		? [18.573, 66.596, 593.28, 974.929]
+		: [0, 0, 612, 1008];
 	const objects = {
-		pages: [{ object: "2 0 R" }, { object: "3 0 R" }],
-		qpdf: [{ jsonversion: 2 }, {
-			"obj:1 0 R": { value: { "/Type": "/Pages", "/MediaBox": [0, 0, 612, 1008], "/CropBox": crop, "/Rotate": 0 } },
-			"obj:2 0 R": { value: { "/Type": "/Page", "/Parent": "1 0 R" } },
-			"obj:3 0 R": { value: { "/Type": "/Page", "/Parent": "1 0 R" } }
-		}]
+		pages: [
+			{ object: "2 0 R" },
+			{ object: "3 0 R" }
+		],
+		qpdf: [
+			{ jsonversion: 2 },
+			{
+				"obj:1 0 R": {
+					value: {
+						"/Type": "/Pages",
+						"/MediaBox": [0, 0, 612, 1008],
+						"/CropBox": crop,
+						"/Rotate": 0
+					}
+				},
+				"obj:2 0 R": {
+					value: { "/Type": "/Page", "/Parent": "1 0 R" }
+				},
+				"obj:3 0 R": {
+					value: { "/Type": "/Page", "/Parent": "1 0 R" }
+				}
+			}
+		]
 	};
 	const body = JSON.stringify(objects);
 	const geometry = inspectIowaSampleGeometry(body, county);
 	const visible = native.bbox.replace("<doc>", "<pdf2xml><fontspec id=\"0\" size=\"10\" color=\"#000000\"/>").replace("</doc>", "</pdf2xml>").replace(/<word xMin="([\d.]+)" xMax="([\d.]+)" yMin="([\d.]+)" yMax="([\d.]+)">([\s\S]*?)<\/word>/gu, (_match, left: string, right: string, top: string, bottom: string, text: string) => `<text left="${left}" width="${Number(right) - Number(left)}" top="${top}" height="${Number(bottom) - Number(top)}" font="0">${text}</text>`);
 	const parsed = readIowaCountySample(native.bbox, native.layout, native.context);
 	const verify = (value = visible) => verifyIowaSampleNative(parsed, value, geometry, hash(body), native.context);
-	return { ...native, objects, body, geometry, visible, parsed, verify };
+	return {
+		...native,
+		objects,
+		body,
+		geometry,
+		visible,
+		parsed,
+		verify
+	};
 }
 
 for (const county of ["Monona", "Woodbury"] as const) {
 	test(`${county} native proof reconciles all fields, questions, tickets and inherited original-PDF geometry`, () => {
 		const source = fixture(county);
-		assert.deepEqual(source.verify(), { geometry: source.geometry, objectsSha256: hash(source.body), visibleSha256: hash(source.visible), choices: source.parsed.records.length, names: source.parsed.claims.length });
+		assert.deepEqual(source.verify(), {
+			geometry: source.geometry,
+			objectsSha256: hash(source.body),
+			visibleSha256: hash(source.visible),
+			choices: source.parsed.records.length,
+			names: source.parsed.claims.length
+		});
 		assert(source.parsed.records.some(record => record.recordKind === "joint-ticket"));
 		assert(source.parsed.records.some(record => record.recordKind === "judicial-retention-question"));
 	});
@@ -47,12 +80,23 @@ for (const county of ["Monona", "Woodbury"] as const) {
 	test(`${county} native proof rejects changed original page boxes, rotation and scale`, () => {
 		const source = fixture(county);
 		for (const change of [
-			{ cropBox: [0, 0, 611, 1008] },
-			{ mediaBox: [0, 0, 611, 1008] },
+			{
+				cropBox: [0, 0, 611, 1008]
+			},
+			{
+				mediaBox: [0, 0, 611, 1008]
+			},
 			{ rotation: 90 },
 			{ userUnit: 2 },
-			{ cropBox: [0, 0, Number.NaN, 1008] }
-		]) assert.throws(() => validateIowaSampleGeometry(source.geometry.map(page => ({ ...page, ...change })), county), /requires? review/u);
+			{
+				cropBox: [0, 0, Number.NaN, 1008]
+			}
+		]) {
+			assert.throws(() => validateIowaSampleGeometry(source.geometry.map(page => ({
+				...page,
+				...change
+			})), county), /requires? review/u);
+		}
 	});
 
 	for (const [before, after] of [

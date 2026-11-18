@@ -7,7 +7,12 @@ const { data: candidate, error, pending } = await useCandidate(candidateSlug);
 const breadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
 	overviewLink.value,
-	{ label: candidate.value?.name ?? "Candidate profile", to: candidate.value ? `/candidate/${candidate.value.slug}` : undefined },
+	{
+		label: candidate.value?.name ?? "Candidate profile",
+		to: candidate.value
+			? `/candidate/${candidate.value.slug}`
+			: undefined
+	},
 	{ label: "Influence" }
 ]);
 
@@ -22,14 +27,19 @@ const summaryItems = computed(() => {
 	return [
 		{ label: "Influence notes", value: candidate.value.lobbyingContext.length },
 		{ label: "Public statements", value: candidate.value.publicStatements.length },
-		{ label: "Updated", value: formatDateTime(candidate.value.updatedAt) }
+		{
+			label: "Updated",
+			value: formatDateTime(candidate.value.updatedAt)
+		}
 	];
 });
 
 usePageSeo({
 	description: candidate.value?.lobbyingContext[0]?.summary ?? "Candidate influence page with lobbying context, public statements, and source links.",
 	path: `/candidate/${candidateSlug.value}/influence`,
-	title: candidate.value ? `${candidate.value.name} Influence` : "Candidate influence"
+	title: candidate.value
+		? `${candidate.value.name} Influence`
+		: "Candidate influence"
 });
 </script>
 

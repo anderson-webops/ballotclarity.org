@@ -30,8 +30,18 @@ test("department records follow future names without portraits, party or ballot 
 });
 
 test("department identity conflicts, ambiguous statements, staff and changed policies require review", () => {
-	for (const body of [solicitorPage().replace("Morgan Future”", "Someone Else”"), solicitorPage().replace("Solicitor - General</h1>", "Former Solicitor - General</h1>"), solicitorPage().replace("</main>", `<h1 class="h3">Another Person, Solicitor - General</h1></main>`), solicitorPage().replace("Privacy Statement</a>", "Privacy Statement</a><a href='/other'>Terms of Use</a>")]) assert.throws(() => parseFultonCountyOffice(body, solicitor));
-	for (const body of [taxPage().replace("</main>", `<p>Fulton County Tax Commissioner Another Person is elected by the voters of Fulton County.</p></main>`), taxPage().replace("is elected", "was elected"), taxPage().replace("Tax Commissioner Dr.", "Deputy Tax Commissioner Dr."), taxPage("=FORMULA()")]) assert.throws(() => parseFultonCountyOffice(body, tax));
+	for (const body of [
+		solicitorPage().replace("Morgan Future”", "Someone Else”"),
+		solicitorPage().replace("Solicitor - General</h1>", "Former Solicitor - General</h1>"),
+		solicitorPage().replace("</main>", `<h1 class="h3">Another Person, Solicitor - General</h1></main>`),
+		solicitorPage().replace("Privacy Statement</a>", "Privacy Statement</a><a href='/other'>Terms of Use</a>")
+	]) assert.throws(() => parseFultonCountyOffice(body, solicitor));
+	for (const body of [
+		taxPage().replace("</main>", `<p>Fulton County Tax Commissioner Another Person is elected by the voters of Fulton County.</p></main>`),
+		taxPage().replace("is elected", "was elected"),
+		taxPage().replace("Tax Commissioner Dr.", "Deputy Tax Commissioner Dr."),
+		taxPage("=FORMULA()")
+	]) assert.throws(() => parseFultonCountyOffice(body, tax));
 });
 
 test("only an explicit vacant solicitor heading becomes a vacancy", () => {
@@ -43,8 +53,16 @@ test("legacy two-office envelopes remain exact and upgrade with a recoverable pr
 	const directory = await mkdtemp(join(tmpdir(), "ballot-department-compat-"));
 	try {
 		const legacy = exampleCountyOfficeholders();
-		const legacyDigest = countyOfficeHash(JSON.stringify({ ...fultonCountyOfficeholderPublication, offices: fultonCountyOfficeholderPublication.offices.slice(0, 2) }));
-		const bytes = `${JSON.stringify({ sourceConfigurationSha256: legacyDigest, importedAt: legacy.retrievedAt, acquisition: "imported", snapshot: legacy })}\n`;
+		const legacyDigest = countyOfficeHash(JSON.stringify({
+			...fultonCountyOfficeholderPublication,
+			offices: fultonCountyOfficeholderPublication.offices.slice(0, 2)
+		}));
+		const bytes = `${JSON.stringify({
+			sourceConfigurationSha256: legacyDigest,
+			importedAt: legacy.retrievedAt,
+			acquisition: "imported",
+			snapshot: legacy
+		})}\n`;
 		await writeFile(join(directory, "fulton-county-offices.json"), bytes);
 		assert.deepEqual(readFultonCountyOfficeholderEnvelope(directory).snapshot, legacy);
 		assert.equal(await readFile(join(directory, "fulton-county-offices.json"), "utf8"), bytes);
@@ -55,7 +73,12 @@ test("legacy two-office envelopes remain exact and upgrade with a recoverable pr
 		const accepted = await readFile(join(directory, "fulton-county-offices.json"), "utf8");
 		await assert.rejects(importFultonCountyOfficeholders(directory, legacy), /cannot be downgraded/u);
 		assert.equal(await readFile(join(directory, "fulton-county-offices.json"), "utf8"), accepted);
-		const invalid = { sourceConfigurationSha256: legacyDigest, importedAt: legacy.retrievedAt, acquisition: "imported", snapshot: expandedSnapshot() };
+		const invalid = {
+			sourceConfigurationSha256: legacyDigest,
+			importedAt: legacy.retrievedAt,
+			acquisition: "imported",
+			snapshot: expandedSnapshot()
+		};
 		await writeFile(join(directory, "fulton-county-offices.json"), JSON.stringify(invalid));
 		assert.throws(() => readFultonCountyOfficeholderEnvelope(directory));
 	}

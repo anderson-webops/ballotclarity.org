@@ -24,20 +24,71 @@ const now = Date.parse("2028-10-20T12:00:00Z");
 const url = "https://cboeprod.blob.core.usgovcloudapi.net/prod/2028-09/Synthetic%20Candidate%20List.pdf";
 function fixture(): StateBallotSnapshot {
 	const family = getStateBallotCycleFamily("il-chicago-2026");
-	const catalog = parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId: family.source.id, sourceConfigurationSha256: hash(JSON.stringify(family.source)), discovery: { url: chicagoDiscoveryUrl, sha256: hash("Synthetic discovery"), retrievedAt: new Date(now).toISOString() }, elections: [{ electionId: null, electionDate: "2028-11-07", pageUrl: chicagoDiscoveryUrl, chicagoDocuments: [{ kind: "general", url, sha256: hash("Synthetic PDF") }] }] }, now);
+	const catalog = parseStateBallotCycleCatalog({
+		schemaVersion: 1,
+		type: "state-ballot-cycle-catalog",
+		familyId: family.source.id,
+		sourceConfigurationSha256: hash(JSON.stringify(family.source)),
+		discovery: {
+			url: chicagoDiscoveryUrl,
+			sha256: hash("Synthetic discovery"),
+			retrievedAt: new Date(now).toISOString()
+		},
+		elections: [
+			{
+				electionId: null,
+				electionDate: "2028-11-07",
+				pageUrl: chicagoDiscoveryUrl,
+				chicagoDocuments: [
+					{
+						kind: "general",
+						url,
+						sha256: hash("Synthetic PDF")
+					}
+				]
+			}
+		]
+	}, now);
 	const source = stateBallotCycleSources(catalog, now)[0]!;
 	const parsed = readChicagoBallotDocument(source, chicagoFixture(2028), createStateCandidateRecord);
-	const documents = [{ url, sha256: hash("Synthetic PDF"), retrievedAt: new Date(now).toISOString(), includedRecordCount: parsed.records.length }];
-	return { source, records: parsed.records, ballotQuestions: parsed.questions, sourceAsOfDate: parsed.asOfDate, sourceAsOf: parsed.asOf, documents, retrievedAt: documents[0]!.retrievedAt, sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), collectionIndexSha256: chicagoDocumentDigest([{ kind: "general", url, sha256: documents[0]!.sha256 }]) };
+	const documents = [
+		{
+			url,
+			sha256: hash("Synthetic PDF"),
+			retrievedAt: new Date(now).toISOString(),
+			includedRecordCount: parsed.records.length
+		}
+	];
+	return {
+		source,
+		records: parsed.records,
+		ballotQuestions: parsed.questions,
+		sourceAsOfDate: parsed.asOfDate,
+		sourceAsOf: parsed.asOf,
+		documents,
+		retrievedAt: documents[0]!.retrievedAt,
+		sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+		collectionIndexSha256: chicagoDocumentDigest([
+			{ kind: "general", url, sha256: documents[0]!.sha256 }
+		])
+	};
 }
 const offered = (year: number, day: number, target = url) => `<a href="${target}">Click here for the full Candidate List for the November ${day}, ${year} General Election!</a>`;
 
 test("Chicago discovers only explicitly offered full-list dates, not filing reports, calendar years or guessed URLs", () => {
-	assert.deepEqual(chicagoOfferedElections(`<main>${offered(2028, 7)}<a href="https://example.org/new.pdf">Candidate Filing Report</a><p>2029 Chicago Election Calendar</p></main>`), [{ electionDate: "2028-11-07", url }]);
+	assert.deepEqual(chicagoOfferedElections(`<main>${offered(2028, 7)}<a href="https://example.org/new.pdf">Candidate Filing Report</a><p>2029 Chicago Election Calendar</p></main>`), [
+		{ electionDate: "2028-11-07", url }
+	]);
 	assert.deepEqual(chicagoOfferedElections("<a href=\"https://example.org/report.pdf\">Candidate Filing Report</a>"), []);
 	assert.throws(() => chicagoOfferedElections(offered(2028, 6)), /date/u);
 	assert.throws(() => chicagoOfferedElections(offered(2028, 7) + offered(2028, 7, url.replace("Synthetic", "Other"))), /ambiguous/u);
-	for (const target of ["https://example.org/list.pdf", `${url}?token=1`, `${url}#page=1`, url.replace("https:", "http:"), url.replace("Synthetic%20Candidate%20List.pdf", "..%2Flist.pdf")]) assert.throws(() => validateChicagoDocumentUrl(target));
+	for (const target of [
+		"https://example.org/list.pdf",
+		`${url}?token=1`,
+		`${url}#page=1`,
+		url.replace("https:", "http:"),
+		url.replace("Synthetic%20Candidate%20List.pdf", "..%2Flist.pdf")
+	]) assert.throws(() => validateChicagoDocumentUrl(target));
 });
 
 test("Chicago policy fingerprints normalize only a valid copyright year and retain new legal links", () => {
@@ -49,18 +100,42 @@ test("Chicago policy fingerprints normalize only a valid copyright year and reta
 
 test("Chicago can retain a verified empty future discovery without relaxing other catalog families", () => {
 	const family = getStateBallotCycleFamily("il-chicago-2026");
-	const catalog = { schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId: family.source.id, sourceConfigurationSha256: hash(JSON.stringify(family.source)), discovery: { url: chicagoDiscoveryUrl, sha256: hash("Synthetic index without a full list"), retrievedAt: new Date(now).toISOString() }, elections: [] };
+	const catalog = {
+		schemaVersion: 1,
+		type: "state-ballot-cycle-catalog",
+		familyId: family.source.id,
+		sourceConfigurationSha256: hash(JSON.stringify(family.source)),
+		discovery: {
+			url: chicagoDiscoveryUrl,
+			sha256: hash("Synthetic index without a full list"),
+			retrievedAt: new Date(now).toISOString()
+		},
+		elections: []
+	};
 	assert.equal(parseStateBallotCycleCatalog(catalog, now).elections.length, 0);
 	const other = getStateBallotCycleFamily("il-winnebago-2026");
-	assert.throws(() => parseStateBallotCycleCatalog({ ...catalog, familyId: other.source.id, sourceConfigurationSha256: hash(JSON.stringify(other.source)), discovery: { ...catalog.discovery, url: other.discoveryUrl } }, now), /bounds/u);
+	assert.throws(() => parseStateBallotCycleCatalog({
+		...catalog,
+		familyId: other.source.id,
+		sourceConfigurationSha256: hash(JSON.stringify(other.source)),
+		discovery: { ...catalog.discovery, url: other.discoveryUrl }
+	}, now), /bounds/u);
 });
 
 test("Chicago stops on an unavailable or changed robots policy before any index or PDF request", async () => {
 	const requests: string[] = [];
-	await assert.rejects(fetchChicagoCycleDiscovery({ request: async (target) => {
-		requests.push(target);
-		return { status: 403, contentType: "text/html", body: Buffer.alloc(0), etag: undefined };
-	}, sleep: async () => {} }), /robots policy/u);
+	await assert.rejects(fetchChicagoCycleDiscovery({
+		request: async (target) => {
+			requests.push(target);
+			return {
+				status: 403,
+				contentType: "text/html",
+				body: Buffer.alloc(0),
+				etag: undefined
+			};
+		},
+		sleep: async () => {}
+	}), /robots policy/u);
 	assert.deepEqual(requests, ["https://chicagoelections.gov/robots.txt"]);
 });
 
@@ -100,7 +175,19 @@ test("Chicago stored metadata rejects altered audiences, future dates, repeated 
 		mutate(value);
 		assert.throws(() => parseBundledStateSnapshot(snapshot.source, JSON.stringify(value), "automatic"));
 	}
-	const generic = { ...snapshot, source: { ...snapshot.source, format: "reviewed-pdf" as const, retrievalPolicy: "manual-snapshot" as const, documentUrls: [url] }, ballotQuestions: undefined, sourceAsOfDate: undefined, sourceAsOf: undefined, collectionIndexSha256: undefined };
+	const generic = {
+		...snapshot,
+		source: {
+			...snapshot.source,
+			format: "reviewed-pdf" as const,
+			retrievalPolicy: "manual-snapshot" as const,
+			documentUrls: [url]
+		},
+		ballotQuestions: undefined,
+		sourceAsOfDate: undefined,
+		sourceAsOf: undefined,
+		collectionIndexSha256: undefined
+	};
 	assert.throws(() => parseBundledStateSnapshot(generic.source, serializeStoredStateSnapshot(generic)), /vote limit/u);
 });
 
@@ -109,10 +196,15 @@ test("Chicago public readers import no data and see durable candidate and questi
 	try {
 		const snapshot = fixture();
 		let requests = 0;
-		const repository = createStateBallotRepository({ sources: [snapshot.source], dataDirectory: directory, now: () => now + 1000, fetchText: async () => {
-			requests++;
-			throw new Error("Publisher unavailable");
-		} });
+		const repository = createStateBallotRepository({
+			sources: [snapshot.source],
+			dataDirectory: directory,
+			now: () => now + 1000,
+			fetchText: async () => {
+				requests++;
+				throw new Error("Publisher unavailable");
+			}
+		});
 		assert.equal(await repository.getSnapshot("IL", snapshot.source.id), null);
 		const storage = createStateBallotStorage(directory);
 		await storage.write(snapshot);
@@ -130,17 +222,62 @@ test("Chicago public readers import no data and see durable candidate and questi
 
 test("Chicago source preference requires an address-matched city, not Cook County or a ZIP-only match", async () => {
 	const snapshot = fixture();
-	const fallback = { ...snapshot, source: { ...snapshot.source, id: "synthetic-other-source", placeName: undefined, countyName: "Cook County", defaultPriority: 10 } };
+	const fallback = {
+		...snapshot,
+		source: {
+			...snapshot.source,
+			id: "synthetic-other-source",
+			placeName: undefined,
+			countyName: "Cook County",
+			defaultPriority: 10
+		}
+	};
 	const requested: (string | undefined)[] = [];
-	const repository = { sources: [snapshot.source, fallback.source], async getSnapshot(_state: string, sourceId?: string) {
-		requested.push(sourceId);
-		return sourceId === snapshot.source.id ? snapshot : fallback;
-	} };
-	const county = { id: "county-17031", districtType: "county", label: "Cook County", sourceSystem: "Synthetic applicability context" };
-	const place = { id: "place-1714000", districtType: "place", label: "Chicago city", sourceSystem: "Synthetic applicability context" };
-	for (const [inputKind, districtMatches, expected] of [["address", [county], fallback.source.id], ["zip", [county, place], fallback.source.id], ["address", [county, place], snapshot.source.id]] as const) {
+	const repository = {
+		sources: [snapshot.source, fallback.source],
+		async getSnapshot(_state: string, sourceId?: string) {
+			requested.push(sourceId);
+			return sourceId === snapshot.source.id
+				? snapshot
+				: fallback;
+		}
+	};
+	const county = {
+		id: "county-17031",
+		districtType: "county",
+		label: "Cook County",
+		sourceSystem: "Synthetic applicability context"
+	};
+	const place = {
+		id: "place-1714000",
+		districtType: "place",
+		label: "Chicago city",
+		sourceSystem: "Synthetic applicability context"
+	};
+	for (const [inputKind, districtMatches, expected] of [
+		[
+			"address",
+			[county],
+			fallback.source.id
+		],
+		[
+			"zip",
+			[county, place],
+			fallback.source.id
+		],
+		[
+			"address",
+			[county, place],
+			snapshot.source.id
+		]
+	] as const) {
 		requested.length = 0;
-		const lookup = { result: "resolved", inputKind, location: { state: "IL" }, districtMatches: [...districtMatches] } as Parameters<typeof attachStateBallotPreview>[0];
+		const lookup = {
+			result: "resolved",
+			inputKind,
+			location: { state: "IL" },
+			districtMatches: [...districtMatches]
+		} as Parameters<typeof attachStateBallotPreview>[0];
 		await attachStateBallotPreview(lookup, repository);
 		assert.equal(requested[0], expected);
 	}
@@ -150,10 +287,13 @@ test("Chicago question routes preserve provenance and distinguish unavailable da
 	const snapshot = fixture();
 	let fail = false;
 	const app = express();
-	registerStateRecordRoutes(app, { sources: [snapshot.source], async getSnapshot() {
-		if (fail) throw new Error("Synthetic storage failure");
-		return snapshot;
-	} });
+	registerStateRecordRoutes(app, {
+		sources: [snapshot.source],
+		async getSnapshot() {
+			if (fail) throw new Error("Synthetic storage failure");
+			return snapshot;
+		}
+	});
 	const server = app.listen(0, "127.0.0.1");
 	await once(server, "listening");
 	try {

@@ -16,8 +16,16 @@ export function alabamaPdfFixture(body = ""): AlabamaPdfDocument {
 		qpdf: [
 			{ jsonversion: 2, calledgetallpages: true },
 			{
-				"obj:1 0 R": { value: { "/Type": "/Catalog", "/Pages": "2 0 R" } },
-				"obj:2 0 R": { value: { "/Type": "/Pages", "/Count": 1, "/Kids": ["3 0 R"] } },
+				"obj:1 0 R": {
+					value: { "/Type": "/Catalog", "/Pages": "2 0 R" }
+				},
+				"obj:2 0 R": {
+					value: {
+						"/Type": "/Pages",
+						"/Count": 1,
+						"/Kids": ["3 0 R"]
+					}
+				},
 				"obj:3 0 R": {
 					value: {
 						"/Type": "/Page",
@@ -25,15 +33,29 @@ export function alabamaPdfFixture(body = ""): AlabamaPdfDocument {
 						"/Rotate": 0,
 						"/MediaBox": [0, 0, 1224, 792],
 						"/CropBox": [0, 0, 1224, 792],
-						"/Resources": { "/Font": { "/TT1": "5 0 R" } },
+						"/Resources": {
+							"/Font": { "/TT1": "5 0 R" }
+						},
 						"/Contents": ["4 0 R"]
 					}
 				},
-				"obj:4 0 R": { stream: { dict: {}, data: Buffer.from(body, "latin1").toString("base64") } },
-				"obj:5 0 R": { value: { "/Type": "/Font", "/Subtype": "/TrueType", "/BaseFont": "/AAAAAA+ArialMT" } }
+				"obj:4 0 R": {
+					stream: {
+						dict: {},
+						data: Buffer.from(body, "latin1").toString("base64")
+					}
+				},
+				"obj:5 0 R": {
+					value: { "/Type": "/Font", "/Subtype": "/TrueType", "/BaseFont": "/AAAAAA+ArialMT" }
+				}
 			}
 		],
-		pages: [{ object: "3 0 R", contents: ["4 0 R"] }],
+		pages: [
+			{
+				object: "3 0 R",
+				contents: ["4 0 R"]
+			}
+		],
 		encrypt: { encrypted: false },
 		attachments: {},
 		acroform: { needappearances: false, fields: [] }
@@ -48,7 +70,12 @@ export function alabamaGlyph(character = "A", operation = 1, horizontal = 12, ve
 		font: "/TT1",
 		fontParsed: true,
 		fontProven: true,
-		ink: [horizontal, vertical, horizontal + 1, vertical + 1],
+		ink: [
+			horizontal,
+			vertical,
+			horizontal + 1,
+			vertical + 1
+		],
 		origin: [horizontal, vertical],
 		clip: [0, 0, 1224, 792],
 		clipped: false,
@@ -77,7 +104,9 @@ export function alabamaSpan(text: string, operation = 1, baseline = 31): Alabama
 		bounds: [12, baseline, 15, baseline + 1],
 		baseline,
 		fullyVisible: true,
-		glyphs: [alabamaGlyph("A", operation, 12, baseline)]
+		glyphs: [
+			alabamaGlyph("A", operation, 12, baseline)
+		]
 	};
 }
 export function alabamaCellsFixture() {
@@ -94,9 +123,20 @@ export function alabamaCellsFixture() {
 	});
 	const vote = alabamaSpan("(Vote for One)", 1, 36);
 	const header = cell(35, 40, [vote]);
-	const candidate = cell(25, 35, [alabamaSpan("ALPHA CANDIDATE", 2, 31), alabamaSpan("Democrat", 3, 27)]);
-	const end = cell(20, 25, [alabamaSpan("Write-in", 4, 21)]);
-	return { vote, header, candidate, end, cells: [header, candidate, end] };
+	const candidate = cell(25, 35, [
+		alabamaSpan("ALPHA CANDIDATE", 2, 31),
+		alabamaSpan("Democrat", 3, 27)
+	]);
+	const end = cell(20, 25, [
+		alabamaSpan("Write-in", 4, 21)
+	]);
+	return {
+		vote,
+		header,
+		candidate,
+		end,
+		cells: [header, candidate, end]
+	};
 }
 export function alabamaContentFixture(): AlabamaContent {
 	return readAlabamaContent(alabamaPdfFixture());

@@ -8,6 +8,8 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-	console.error(error instanceof Error ? error.message : "Maui native measure preparation failed.");
+	console.error(error instanceof Error
+		? error.message
+		: "Maui native measure preparation failed.");
 	process.exitCode = 1;
 });

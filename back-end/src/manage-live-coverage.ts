@@ -66,7 +66,9 @@ export function backupSnapshot(snapshotPath: string) {
 		copyFileSync(coverageSnapshotMetadataPath(snapshotPath), backupMetadataPath);
 
 	return {
-		metadataPath: existsSync(backupMetadataPath) ? backupMetadataPath : null,
+		metadataPath: existsSync(backupMetadataPath)
+			? backupMetadataPath
+			: null,
 		snapshotPath: backupSnapshotPath,
 		stamp
 	};
@@ -190,7 +192,9 @@ if (isDirectRun) {
 		runManageCoverageCommand();
 	}
 	catch (error) {
-		console.error(error instanceof Error ? error.message : "Unable to manage live coverage snapshot.");
+		console.error(error instanceof Error
+			? error.message
+			: "Unable to manage live coverage snapshot.");
 		process.exit(1);
 	}
 }

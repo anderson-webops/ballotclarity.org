@@ -114,7 +114,9 @@ export const stateBallotSources: readonly StateBallotSource[] = [
 		retrievalPolicy: "manual-snapshot",
 		snapshotStorage: "external",
 		documentUrls: ["https://www.washingtoncountyar.gov/government/departments-a-e/election-commission/november-3-2026-general-election-information"],
-		documentLinks: [{ label: "County candidate and runoff lists", url: "https://www.washingtoncountyar.gov/government/departments-a-e/election-commission/november-3-2026-general-election-information" }],
+		documentLinks: [
+			{ label: "County candidate and runoff lists", url: "https://www.washingtoncountyar.gov/government/departments-a-e/election-commission/november-3-2026-general-election-information" }
+		],
 		scopeNotice: "Washington County list is unofficial; other Arkansas races may be missing. Some unopposed local candidates are not printed on ballots.",
 	},
 	{
@@ -210,7 +212,9 @@ export const stateBallotSources: readonly StateBallotSource[] = [
 		retrievalPolicy: "manual-snapshot",
 		snapshotStorage: "external",
 		documentUrls: ["https://www.williamsoncounty-tn.gov/DocumentCenter/View/29633/2026-November-General-Election-With-Sample-SAMPLE-ExpressVote-English"],
-		documentLinks: [{ label: "November 3 sample ballot", url: "https://www.williamsoncounty-tn.gov/DocumentCenter/View/29633/2026-November-General-Election-With-Sample-SAMPLE-ExpressVote-English" }],
+		documentLinks: [
+			{ label: "November 3 sample ballot", url: "https://www.williamsoncounty-tn.gov/DocumentCenter/View/29633/2026-November-General-Election-With-Sample-SAMPLE-ExpressVote-English" }
+		],
 		withheldDistrictScopes: ["congressional"],
 		scopeNotice: "Williamson County sample only; other Tennessee races may be missing. Congressional records are not matched to addresses.",
 	},

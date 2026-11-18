@@ -19,14 +19,86 @@ const capturedAt = "2026-10-22T16:00:00.000Z";
 const source = judicialEvaluationSources[0];
 function fixture() {
 	const statuses = ["retain", "do-not-retain", "not-made"] as const;
-	const records = statuses.map((recommendation, index) => ({ officialRecordId: index.toString(16).padStart(24, "0"), officialName: `Synthetic Judge ${index}`, officialOffice: "Synthetic court, Judicial retention", officialScope: "local" as const, officialSourceDistrictLabel: `Court ${index}`, councilDisplayName: `Synthetic ${index}`, courtLabel: `Synthetic court ${index}`, recommendation, performanceFinding: ({ "retain": "met-standards", "do-not-retain": "did-not-meet-standards", "not-made": "not-made" } as const)[recommendation], criteriaCited: recommendation === "do-not-retain" ? ["integrity"] : [], sourcePage: index + 2, councilVote: recommendation === "not-made" ? { yes: 2, no: 3, abstain: 2, unanimous: false } : { yes: null, no: null, abstain: null, unanimous: true } }));
-	const roster: StateBallotSnapshot = { source: stateBallotSources.find(source => source.id === "ak-doe-2026")!, retrievedAt: capturedAt, sha256: "a".repeat(64), records: records.map(record => ({ id: record.officialRecordId, name: record.officialName, office: record.officialOffice, scope: record.officialScope, district: "", status: "qualified", sourceDistrictLabel: record.officialSourceDistrictLabel })) };
-	const snapshot: JudicialEvaluationSnapshot = { schemaVersion: 1, type: "official-judicial-evaluations", sourceId: source.id, stateCode: source.stateCode, electionDate: source.electionDate, issuer: source.issuer, publicationDate: source.publicationDate, researchSha256: "b".repeat(64), roster: { sourceId: source.rosterSourceId, sha256: roster.sha256, retrievedAt: capturedAt, recordCount: records.length }, documents: source.documentUrls.map(url => ({ url, sha256: "c".repeat(64), capturedAt })), records, publicationReview: { status: "unreviewed", reviewer: null, reviewedAt: null, contentSha256: "" } };
+	const records = statuses.map((recommendation, index) => ({
+		officialRecordId: index.toString(16).padStart(24, "0"),
+		officialName: `Synthetic Judge ${index}`,
+		officialOffice: "Synthetic court, Judicial retention",
+		officialScope: "local" as const,
+		officialSourceDistrictLabel: `Court ${index}`,
+		councilDisplayName: `Synthetic ${index}`,
+		courtLabel: `Synthetic court ${index}`,
+		recommendation,
+		performanceFinding: ({ "retain": "met-standards", "do-not-retain": "did-not-meet-standards", "not-made": "not-made" } as const)[recommendation],
+		criteriaCited: recommendation === "do-not-retain"
+			? ["integrity"]
+			: [],
+		sourcePage: index + 2,
+		councilVote: recommendation === "not-made"
+			? {
+					yes: 2,
+					no: 3,
+					abstain: 2,
+					unanimous: false
+				}
+			: {
+					yes: null,
+					no: null,
+					abstain: null,
+					unanimous: true
+				}
+	}));
+	const roster: StateBallotSnapshot = {
+		source: stateBallotSources.find(source => source.id === "ak-doe-2026")!,
+		retrievedAt: capturedAt,
+		sha256: "a".repeat(64),
+		records: records.map(record => ({
+			id: record.officialRecordId,
+			name: record.officialName,
+			office: record.officialOffice,
+			scope: record.officialScope,
+			district: "",
+			status: "qualified",
+			sourceDistrictLabel: record.officialSourceDistrictLabel
+		}))
+	};
+	const snapshot: JudicialEvaluationSnapshot = {
+		schemaVersion: 1,
+		type: "official-judicial-evaluations",
+		sourceId: source.id,
+		stateCode: source.stateCode,
+		electionDate: source.electionDate,
+		issuer: source.issuer,
+		publicationDate: source.publicationDate,
+		researchSha256: "b".repeat(64),
+		roster: {
+			sourceId: source.rosterSourceId,
+			sha256: roster.sha256,
+			retrievedAt: capturedAt,
+			recordCount: records.length
+		},
+		documents: source.documentUrls.map(url => ({
+			url,
+			sha256: "c".repeat(64),
+			capturedAt
+		})),
+		records,
+		publicationReview: {
+			status: "unreviewed",
+			reviewer: null,
+			reviewedAt: null,
+			contentSha256: ""
+		}
+	};
 	snapshot.publicationReview.contentSha256 = judicialEvaluationContentSha256(snapshot);
 	return { snapshot, roster };
 }
 function approve(snapshot: JudicialEvaluationSnapshot) {
-	snapshot.publicationReview = { status: "approved", reviewer: "Isolated test review", reviewedAt: new Date(epoch - 1000).toISOString(), contentSha256: judicialEvaluationContentSha256(snapshot) };
+	snapshot.publicationReview = {
+		status: "approved",
+		reviewer: "Isolated test review",
+		reviewedAt: new Date(epoch - 1000).toISOString(),
+		contentSha256: judicialEvaluationContentSha256(snapshot)
+	};
 	return snapshot;
 }
 async function storage(context: TestContext, snapshot: JudicialEvaluationSnapshot) {
@@ -34,7 +106,14 @@ async function storage(context: TestContext, snapshot: JudicialEvaluationSnapsho
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	const file = join(directory, `${source.id}.judicial-evaluations.json`);
 	await writeFile(file, JSON.stringify(snapshot));
-	return { directory, file, repository: createJudicialEvaluationRepository({ dataDirectory: directory, now: () => epoch }) };
+	return {
+		directory,
+		file,
+		repository: createJudicialEvaluationRepository({
+			dataDirectory: directory,
+			now: () => epoch
+		})
+	};
 }
 
 test("judicial evaluations preserve three institutional states without inferring member-vote outcomes", () => {
@@ -55,7 +134,10 @@ test("unreviewed, disabled, missing and expired evaluations never become public"
 	await rm(input.file);
 	assert.equal(await input.repository.getEvaluation(roster, recordId), null);
 	await writeFile(input.file, JSON.stringify(approve(snapshot)));
-	assert.equal(await createJudicialEvaluationRepository({ dataDirectory: input.directory, now: () => Date.parse("2026-11-05T00:00:00Z") }).getEvaluation(roster, recordId), null);
+	assert.equal(await createJudicialEvaluationRepository({
+		dataDirectory: input.directory,
+		now: () => Date.parse("2026-11-05T00:00:00Z")
+	}).getEvaluation(roster, recordId), null);
 });
 
 test("approved detail joins require exact official IDs, roster bytes, clock, office and court", async (context) => {
@@ -70,7 +152,15 @@ test("approved detail joins require exact official IDs, roster bytes, clock, off
 	assert.equal(result?.publicationDate, "2026-09-04");
 	assert.equal("councilVote" in result!, false);
 	assert.equal(await input.repository.getEvaluation(roster, "f".repeat(24)), null);
-	for (const change of ["hash", "clock", "name", "office", "court", "scope", "count"] as const) {
+	for (const change of [
+		"hash",
+		"clock",
+		"name",
+		"office",
+		"court",
+		"scope",
+		"count"
+	] as const) {
 		const changed = structuredClone(roster);
 		if (change === "hash") changed.sha256 = "d".repeat(64);
 		if (change === "clock") changed.retrievedAt = new Date(epoch - 1000).toISOString();
@@ -93,7 +183,22 @@ test("statewide judicial records use the existing canonical statewide scope", as
 
 test("source, document, identity, findings and review drift fail closed", () => {
 	const { snapshot } = fixture();
-	for (const change of ["source", "election", "issuer", "publication", "url", "capture", "duplicate", "finding", "page", "vote", "reviewer", "future-review", "stale-review", "unknown-field"] as const) {
+	for (const change of [
+		"source",
+		"election",
+		"issuer",
+		"publication",
+		"url",
+		"capture",
+		"duplicate",
+		"finding",
+		"page",
+		"vote",
+		"reviewer",
+		"future-review",
+		"stale-review",
+		"unknown-field"
+	] as const) {
 		const changed = approve(structuredClone(snapshot));
 		if (change === "source") changed.sourceId = "unknown";
 		if (change === "election") changed.electionDate = "2028-11-07";
@@ -125,10 +230,15 @@ test("evaluation storage rejects linked files and linked application directories
 	await writeFile(join(input.directory, "target.json"), JSON.stringify(snapshot));
 	await symlink(join(input.directory, "target.json"), input.file);
 	await assert.rejects(input.repository.getEvaluation(roster, roster.records[0]!.id));
-	assert.throws(() => createJudicialEvaluationRepository({ dataDirectory: fileURLToPath(new URL("../data", import.meta.url)) }), /outside/u);
+	assert.throws(() => createJudicialEvaluationRepository({
+		dataDirectory: fileURLToPath(new URL("../data", import.meta.url))
+	}), /outside/u);
 	const alias = join(input.directory, "application-alias");
 	await symlink(fileURLToPath(new URL("../data", import.meta.url)), alias);
-	await assert.rejects(createJudicialEvaluationRepository({ dataDirectory: alias, now: () => epoch }).getEvaluation(roster, roster.records[0]!.id), /outside/u);
+	await assert.rejects(createJudicialEvaluationRepository({
+		dataDirectory: alias,
+		now: () => epoch
+	}).getEvaluation(roster, roster.records[0]!.id), /outside/u);
 });
 
 test("evaluation routes validate identities, preserve failures and enforce public throttling", async (context) => {
@@ -153,7 +263,12 @@ test("evaluation routes validate identities, preserve failures and enforce publi
 	assert.equal(response.status, 200);
 	assert.equal(response.headers.get("cache-control"), "no-store");
 	assert.equal((await response.json()).recommendation, "not-made");
-	for (const query of ["", "?source[]=ak-doe-2026", "?source=../private", "?source=ak-doe-2026&extra=true"]) assert.equal((await fetch(base + query)).status, 400);
+	for (const query of [
+		"",
+		"?source[]=ak-doe-2026",
+		"?source=../private",
+		"?source=ak-doe-2026&extra=true"
+	]) assert.equal((await fetch(base + query)).status, 400);
 	assert.equal((await fetch(`${base}?source=another-source`)).status, 404);
 	await writeFile(input.file, "{}");
 	assert.equal((await fetch(`${base}?source=ak-doe-2026`)).status, 503);

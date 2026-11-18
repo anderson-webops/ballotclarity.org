@@ -31,7 +31,9 @@ export function readContactAddressNonce(cookieSource = globalThis.document?.cook
 		.map(value => value.trim())
 		.find(value => value.startsWith(prefix));
 
-	return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : "";
+	return cookie
+		? decodeURIComponent(cookie.slice(prefix.length))
+		: "";
 }
 
 async function fetchContactAddress(fetcher: ContactAddressFetcher, nonce: string) {
@@ -54,7 +56,9 @@ async function fetchContactAddress(fetcher: ContactAddressFetcher, nonce: string
 		return null;
 
 	const payload = await response.json() as ContactAddressResponse;
-	const address = typeof payload.address === "string" ? payload.address.trim() : "";
+	const address = typeof payload.address === "string"
+		? payload.address.trim()
+		: "";
 
 	return address || null;
 }

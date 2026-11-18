@@ -13,7 +13,11 @@ definePageMeta({
 
 const packageId = useRouteStringParam("id");
 const { data: record, error, pending, refresh } = await useAdminGuidePackage(packageId);
-const data = computed(() => record.value ? { packages: [record.value.package] } : null);
+const data = computed(() => record.value
+	? {
+			packages: [record.value.package]
+		}
+	: null);
 const { data: session } = await useAdminSession("admin-packages-session");
 
 const savingId = ref<string | null>(null);
@@ -46,7 +50,9 @@ function statusTone(status: GuidePackageStatus) {
 }
 
 function recommendationLabel(value: GuidePackageReviewRecommendation | undefined) {
-	return value ? value.replaceAll("_", " ") : "not set";
+	return value
+		? value.replaceAll("_", " ")
+		: "not set";
 }
 
 function recommendationTone(value: GuidePackageReviewRecommendation | undefined) {
@@ -95,7 +101,9 @@ async function savePackage(item: GuidePackageRecord) {
 				coverageNotes: item.workflow.coverageNotes,
 				reviewNotes: item.workflow.reviewNotes,
 				reviewRecommendation: item.workflow.reviewRecommendation,
-				status: item.workflow.status === "published" ? undefined : item.workflow.status,
+				status: item.workflow.status === "published"
+					? undefined
+					: item.workflow.status,
 			},
 			method: "PATCH",
 		});

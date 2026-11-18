@@ -26,7 +26,12 @@ export function parishReferenceSource(electionDate: string, publication: ParishR
 		electionDate,
 		optional: true,
 		candidateMatching: false,
-		documents: publication.pages.map(page => ({ url: `${publication.url}#page=${page}`, title: `${publication.parish} Parish unofficial sample`, publisher: "Power Coalition for Equity and Justice", kind: "public-dataset" })),
+		documents: publication.pages.map(page => ({
+			url: `${publication.url}#page=${page}`,
+			title: `${publication.parish} Parish unofficial sample`,
+			publisher: "Power Coalition for Equity and Justice",
+			kind: "public-dataset"
+		})),
 	};
 }
 
@@ -50,5 +55,8 @@ export async function configuredElectionReferenceSources(catalogPath: string | n
 	if (!metadata.isFile() || (metadata.mode & 0o077) !== 0) throw new Error("Parish reference catalogs must be owner-private regular files.");
 	const sources = parseParishReferenceCatalog(JSON.parse((await readBoundedStateDataBytes(catalogPath, 1024 * 1024)).toString("utf8")));
 	if (sources.some(source => electionReferenceSources.some(existing => existing.id === source.id))) throw new Error("Parish reference catalog conflicts with an existing source.");
-	return [...electionReferenceSources, ...sources];
+	return [
+		...electionReferenceSources,
+		...sources
+	];
 }

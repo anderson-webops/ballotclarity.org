@@ -39,7 +39,13 @@ test("key dates are sorted chronologically with the next upcoming date flagged",
 		"Early voting ends",
 		"Election Day polls close"
 	]);
-	assert.deepEqual(timeline.map(entry => entry.status), ["passed", "passed", "upcoming", "upcoming", "upcoming"]);
+	assert.deepEqual(timeline.map(entry => entry.status), [
+		"passed",
+		"passed",
+		"upcoming",
+		"upcoming",
+		"upcoming"
+	]);
 	assert.deepEqual(timeline.map(entry => entry.isNext), [false, false, true, false, false]);
 	assert.equal(timeline[2]?.relativeLabel, "In 3 days");
 });

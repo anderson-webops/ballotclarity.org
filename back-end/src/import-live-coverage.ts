@@ -47,10 +47,14 @@ function buildMetadata(argv = process.argv): CoverageSnapshotMetadata {
 		throw new Error("Coverage snapshot status must be one of: production_approved, reviewed, seed, unknown.");
 
 	return {
-		approvedAt: status === "production_approved" ? now : undefined,
+		approvedAt: status === "production_approved"
+			? now
+			: undefined,
 		importedAt: now,
 		note,
-		reviewedAt: status === "reviewed" || status === "production_approved" ? now : undefined,
+		reviewedAt: status === "reviewed" || status === "production_approved"
+			? now
+			: undefined,
 		sourceLabel,
 		sourceOrigin,
 		sourceType: "imported",
@@ -71,7 +75,9 @@ export async function runImportLiveCoverage(argv = process.argv) {
 		console.log(`Wrote coverage snapshot metadata to ${metadataPath}.`);
 	}
 	catch (error) {
-		console.error(error instanceof Error ? error.message : "Unable to import live coverage snapshot.");
+		console.error(error instanceof Error
+			? error.message
+			: "Unable to import live coverage snapshot.");
 		process.exit(1);
 	}
 }

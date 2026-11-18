@@ -45,7 +45,9 @@ export const cassiaPolicyReceipts = [
 function html(body: string) {
 	if (Buffer.byteLength(body) > 4 * 1024 * 1024) throw new Error("The Cassia document exceeds its bounds.");
 	const document = parseStateHtml(body);
-	const pending = [{ node: document, depth: 0 }];
+	const pending = [
+		{ node: document, depth: 0 }
+	];
 	let visited = 0;
 	while (pending.length) {
 		const entry = pending.pop()!;
@@ -62,7 +64,10 @@ export function cassiaPolicyFingerprint(body: string, region: "bytes" | "main-te
 		if (mains.length !== 1 || text(mains[0]!).length < 100) throw new Error("The Cassia policy region requires review.");
 		return hash(text(mains[0]!));
 	}
-	const links = descendants(document, node => node.nodeName === "a" && /accessib|privacy|disclaim|copyright|licen[cs]e|terms|polic(?:y|ies)/iu.test(`${text(node)} ${attribute(node, "href")}`)).map(node => ({ label: text(node), url: new URL(attribute(node, "href"), origin).href })).sort((first, second) => first.url.localeCompare(second.url) || first.label.localeCompare(second.label));
+	const links = descendants(document, node => node.nodeName === "a" && /accessib|privacy|disclaim|copyright|licen[cs]e|terms|polic(?:y|ies)/iu.test(`${text(node)} ${attribute(node, "href")}`)).map(node => ({
+		label: text(node),
+		url: new URL(attribute(node, "href"), origin).href
+	})).sort((first, second) => first.url.localeCompare(second.url) || first.label.localeCompare(second.label));
 	const footers = descendants(document, node => node.nodeName === "footer" || attribute(node, "role") === "contentinfo" || /(?:^|\s)(?:site-)?footer(?:\s|$)/u.test(attribute(node, "class"))).map(text);
 	if (footers.length !== 1) throw new Error("The Cassia legal inventory requires review.");
 	return hash(JSON.stringify({ links, footers }));
@@ -94,7 +99,11 @@ export function cassiaDocumentDigest(documents: CassiaElection["cassiaDocuments"
 	return hash(JSON.stringify(documents));
 }
 export function validateCassiaSource(source: StateBallotSource) {
-	if (!generalDate(source.electionDate) || source.stateCode !== "ID" || source.format !== "cassia-pdf" || source.countyName !== "Cassia County" || source.url !== cassiaDiscoveryUrl || source.pageUrl !== cassiaDiscoveryUrl || source.snapshotStorage !== "external" || source.retrievalPolicy || source.documentUrls || source.documentLinks || source.postBody || source.delimiter || source.id !== (source.electionDate === "2026-11-03" ? "id-cassia-2026" : `id-cassia-general-${source.electionDate}`)) throw new Error("The Cassia source contract is invalid.");
+	if (!generalDate(source.electionDate) || source.stateCode !== "ID" || source.format !== "cassia-pdf" || source.countyName !== "Cassia County" || source.url !== cassiaDiscoveryUrl || source.pageUrl !== cassiaDiscoveryUrl || source.snapshotStorage !== "external" || source.retrievalPolicy || source.documentUrls || source.documentLinks || source.postBody || source.delimiter || source.id !== (source.electionDate === "2026-11-03"
+		? "id-cassia-2026"
+		: `id-cassia-general-${source.electionDate}`)) {
+		throw new Error("The Cassia source contract is invalid.");
+	}
 }
 function offeredElections(body: string): CassiaElection[] {
 	const document = html(body);
@@ -125,7 +134,12 @@ function offeredElections(body: string): CassiaElection[] {
 			validateCassiaDocumentUrl(url, current.electionDate);
 			const label = text(link);
 			if (!/Sample Ballot\.pdf$/u.test(label) || label.length > 240) throw new Error("The Cassia publication label requires review.");
-			current.cassiaDocuments.push({ kind: label === "Cassia County General Election Sample Ballot.pdf" ? "general" : "supplement", url });
+			current.cassiaDocuments.push({
+				kind: label === "Cassia County General Election Sample Ballot.pdf"
+					? "general"
+					: "supplement",
+				url
+			});
 		}
 	}
 	finish();
@@ -134,10 +148,20 @@ function offeredElections(body: string): CassiaElection[] {
 }
 export function readCassiaDiscovery(body: string, now = Date.now()) {
 	const value = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "policies", "index"]) || value.schemaVersion !== 1 || value.type !== "cassia-discovery" || JSON.stringify(value.policies) !== JSON.stringify(cassiaPolicyReceipts) || !exact(value.index, ["url", "body", "sha256", "retrievedAt"]) || value.index.url !== cassiaDiscoveryUrl || typeof value.index.body !== "string" || value.index.sha256 !== hash(value.index.body) || cassiaPolicyFingerprint(value.index.body, "legal-inventory") !== cassiaPolicyReceipts[2].sha256) throw new Error("The Cassia discovery provenance or policy requires review.");
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"policies",
+		"index"
+	]) || value.schemaVersion !== 1 || value.type !== "cassia-discovery" || JSON.stringify(value.policies) !== JSON.stringify(cassiaPolicyReceipts) || !exact(value.index, ["url", "body", "sha256", "retrievedAt"]) || value.index.url !== cassiaDiscoveryUrl || typeof value.index.body !== "string" || value.index.sha256 !== hash(value.index.body) || cassiaPolicyFingerprint(value.index.body, "legal-inventory") !== cassiaPolicyReceipts[2].sha256) {
+		throw new Error("The Cassia discovery provenance or policy requires review.");
+	}
 	const index = value.index as unknown as PageCapture;
 	timestamp(index.retrievedAt, now);
-	return { index, elections: offeredElections(index.body) };
+	return {
+		index,
+		elections: offeredElections(index.body)
+	};
 }
 export async function fetchCassiaCycleDiscovery(options: Options = {}) {
 	const request = options.requestText ?? fetchRemoteSourceText;
@@ -146,19 +170,43 @@ export async function fetchCassiaCycleDiscovery(options: Options = {}) {
 		if (index) await pause(11000);
 		let body: string;
 		if (!index) {
-			const response = await (options.requestDocument ?? fetchRemoteSourceDocument)(policy.url, { allowedHosts: ["www.cassia.gov"], maxBytes: 1024 * 1024, timeoutMs: 30000 });
+			const response = await (options.requestDocument ?? fetchRemoteSourceDocument)(policy.url, {
+				allowedHosts: ["www.cassia.gov"],
+				maxBytes: 1024 * 1024,
+				timeoutMs: 30000
+			});
 			if (response.status !== 200 || response.contentType !== "text/plain") throw new Error("The Cassia robots policy requires review.");
 			body = response.body.toString("utf8");
 		}
 		else {
-			body = await request(policy.url, { allowedHosts: ["www.cassia.gov"], maxBytes: 2 * 1024 * 1024, maxRedirects: 0, timeoutMs: 30000 });
+			body = await request(policy.url, {
+				allowedHosts: ["www.cassia.gov"],
+				maxBytes: 2 * 1024 * 1024,
+				maxRedirects: 0,
+				timeoutMs: 30000
+			});
 		}
 		if (cassiaPolicyFingerprint(body, policy.region) !== policy.sha256) throw new Error("The Cassia access policy requires review.");
 	}
 	await pause(11000);
-	const body = await request(cassiaDiscoveryUrl, { allowedHosts: ["www.cassia.gov"], maxBytes: 2 * 1024 * 1024, maxRedirects: 0, timeoutMs: 30000 });
-	const index = { url: cassiaDiscoveryUrl, body, sha256: hash(body), retrievedAt: new Date((options.now ?? Date.now)()).toISOString() };
-	const capture = JSON.stringify({ schemaVersion: 1, type: "cassia-discovery", policies: cassiaPolicyReceipts, index });
+	const body = await request(cassiaDiscoveryUrl, {
+		allowedHosts: ["www.cassia.gov"],
+		maxBytes: 2 * 1024 * 1024,
+		maxRedirects: 0,
+		timeoutMs: 30000
+	});
+	const index = {
+		url: cassiaDiscoveryUrl,
+		body,
+		sha256: hash(body),
+		retrievedAt: new Date((options.now ?? Date.now)()).toISOString()
+	};
+	const capture = JSON.stringify({
+		schemaVersion: 1,
+		type: "cassia-discovery",
+		policies: cassiaPolicyReceipts,
+		index
+	});
 	readCassiaDiscovery(capture, (options.now ?? Date.now)());
 	return capture;
 }
@@ -169,7 +217,10 @@ function lines(words: Word[]): Line[] {
 		if (!group) groups.push(group = { top: word.top, words: [] });
 		group.words.push(word);
 	}
-	return groups.map(group => ({ top: group.top, text: clean(group.words.sort((first, second) => first.left - second.left).map(word => word.text).join(" ")) }));
+	return groups.map(group => ({
+		top: group.top,
+		text: clean(group.words.sort((first, second) => first.left - second.left).map(word => word.text).join(" "))
+	}));
 }
 function wordPages(body: string): WordPage[] {
 	const pages = descendants(html(body), node => node.nodeName === "page");
@@ -178,23 +229,55 @@ function wordPages(body: string): WordPage[] {
 		const width = Number(attribute(page, "width"));
 		const height = Number(attribute(page, "height"));
 		if (width !== 612 || height !== 1008) throw new Error("The Cassia PDF dimensions require review.");
-		const words = descendants(page, node => node.nodeName === "word").map(node => ({ text: text(node), left: Number(attribute(node, "xmin")), right: Number(attribute(node, "xmax")), top: Number(attribute(node, "ymin")), bottom: Number(attribute(node, "ymax")) }));
-		if (!words.length || words.length > 12000 || words.some(word => !word.text || word.text.length > 500 || containsControlCharacters(word.text) || [word.left, word.right, word.top, word.bottom].some(value => !Number.isFinite(value)) || word.left < 0 || word.top < 0 || word.right > width + 1 || word.bottom > height + 1 || word.right <= word.left || word.bottom <= word.top)) throw new Error("The Cassia PDF word geometry requires review.");
+		const words = descendants(page, node => node.nodeName === "word").map(node => ({
+			text: text(node),
+			left: Number(attribute(node, "xmin")),
+			right: Number(attribute(node, "xmax")),
+			top: Number(attribute(node, "ymin")),
+			bottom: Number(attribute(node, "ymax"))
+		}));
+		if (!words.length || words.length > 12000 || words.some(word => !word.text || word.text.length > 500 || containsControlCharacters(word.text) || [
+			word.left,
+			word.right,
+			word.top,
+			word.bottom
+		].some(value => !Number.isFinite(value)) || word.left < 0 || word.top < 0 || word.right > width + 1 || word.bottom > height + 1 || word.right <= word.left || word.bottom <= word.top)) {
+			throw new Error("The Cassia PDF word geometry requires review.");
+		}
 		const watermark = words.filter(word => word.bottom - word.top > 30).sort((first, second) => first.left - second.left);
 		if (watermark.length && (watermark.length > 6 || watermark.map(word => word.text).join("") !== "SAMPLE")) throw new Error("The Cassia oversized text requires review.");
-		return { width, height, words: words.filter(word => word.bottom - word.top <= 30) };
+		return {
+			width,
+			height,
+			words: words.filter(word => word.bottom - word.top <= 30)
+		};
 	});
 }
 function columnBoundaries(page: WordPage) {
-	const anchors = [...new Set(page.words.filter(word => word.text === "CANDIDATES").map(word => word.left))].sort((first, second) => first - second);
+	const anchors = [
+		...new Set(page.words.filter(word => word.text === "CANDIDATES").map(word => word.left))
+	].sort((first, second) => first - second);
 	if (anchors.length !== 3 || anchors[0]! < 60 || anchors[0]! > 95 || anchors[1]! - anchors[0]! < 175 || anchors[1]! - anchors[0]! > 190 || Math.abs((anchors[2]! - anchors[1]!) - (anchors[1]! - anchors[0]!)) > 1) throw new Error("The Cassia ballot columns require review.");
 	const offset = (anchors[1]! - anchors[0]!) / 4;
-	return [0, anchors[1]! - offset, anchors[2]! - offset, page.width];
+	return [
+		0,
+		anchors[1]! - offset,
+		anchors[2]! - offset,
+		page.width
+	];
 }
 function columns(page: WordPage, boundaries: number[]) {
 	return boundaries.slice(0, -1).map((left, index) => lines(page.words.filter(word => (word.left + word.right) / 2 >= left && (word.left + word.right) / 2 < boundaries[index + 1]!)));
 }
-const ordinals = ["First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh"];
+const ordinals = [
+	"First",
+	"Second",
+	"Third",
+	"Fourth",
+	"Fifth",
+	"Sixth",
+	"Seventh"
+];
 function candidateName(value: string) {
 	if (!value || value.length > 160 || !/^[\p{L}\p{M} .,'’“-]+$/u.test(value) || /^(?:Yes|No|SAMPLE|WRITE-IN)$/iu.test(value)) throw new Error("The Cassia candidate name requires review.");
 	return value;
@@ -205,33 +288,92 @@ function officeValues(title: string, group: string, suffix: string[]) {
 	let scope: StateContestScope = "statewide";
 	let designation = "";
 	let number = "";
-	if (group === "UNITED STATES OFFICES" && title === "United States Senator" && !suffix.length) return { office, scope, district: number, designation };
+	if (group === "UNITED STATES OFFICES" && title === "United States Senator" && !suffix.length) {
+		return {
+			office,
+			scope,
+			district: number,
+			designation
+		};
+	}
 	if (group === "UNITED STATES OFFICES" && title === "United States Representative" && district && suffix.length === 1) {
 		scope = "congressional";
 	}
-	else if (group === "STATE OFFICES" && ["Governor", "Lieutenant Governor", "Secretary of State", "State Controller", "State Treasurer", "Attorney General", "Superintendent of Public Instruction"].includes(title) && !suffix.length) {
-		return { office, scope, district: number, designation };
+	else if (group === "STATE OFFICES" && [
+		"Governor",
+		"Lieutenant Governor",
+		"Secretary of State",
+		"State Controller",
+		"State Treasurer",
+		"Attorney General",
+		"Superintendent of Public Instruction"
+	].includes(title) && !suffix.length) {
+		return {
+			office,
+			scope,
+			district: number,
+			designation
+		};
 	}
 	else if (group === "LEGISLATIVE OFFICES" && district && ((title === "State Senator" && suffix.length === 1) || (title === "State Representative" && suffix.length === 2 && /^Seat [A-Z]$/u.test(suffix[1]!)))) {
-		scope = title === "State Senator" ? "state-senate" : "state-house";
+		scope = title === "State Senator"
+			? "state-senate"
+			: "state-house";
 	}
 	else if (group === "COUNTY OFFICES" && title === "County Commissioner" && district && suffix.length === 2 && /^[1-9]\d? Year Term$/u.test(suffix[1]!)) {
 		scope = "local";
 		designation = suffix[1]!;
 	}
-	else if (group === "COUNTY OFFICES" && ["Clerk of the District Court", "County Treasurer", "County Assessor", "County Coroner", "County Sheriff", "County Prosecutor"].includes(title) && !suffix.length) {
-		return { office, scope: "local" as const, district: "", designation };
+	else if (group === "COUNTY OFFICES" && [
+		"Clerk of the District Court",
+		"County Treasurer",
+		"County Assessor",
+		"County Coroner",
+		"County Sheriff",
+		"County Prosecutor"
+	].includes(title) && !suffix.length) {
+		return {
+			office,
+			scope: "local" as const,
+			district: "",
+			designation
+		};
 	}
 	else {
 		throw new Error("The Cassia office or section requires review.");
 	}
 	number = district![1]!;
 	office += ` ${suffix.filter(value => !value.endsWith("Year Term")).join(" ")}`;
-	return { office, scope, district: number, designation };
+	return {
+		office,
+		scope,
+		district: number,
+		designation
+	};
 }
 function record(source: StateBallotSource, name: string, office: string, scope: StateContestScope, district: string, party = "", designation = "", districtLabel = ""): StateCandidateRecord {
 	candidateName(name);
-	return { id: hash(JSON.stringify([source.id, office, name])).slice(0, 24), name, office, scope, district, status: "listed", ...(party ? { party } : {}), ...(designation ? { ballotDesignation: designation } : {}), ...(scope === "statewide" ? { jurisdiction: "Idaho" } : {}), ...(district ? { sourceDistrictLabel: districtLabel || `District ${district}` } : {}), sourceAreaLabel: "Cassia County general-election sample" };
+	return {
+		id: hash(JSON.stringify([source.id, office, name])).slice(0, 24),
+		name,
+		office,
+		scope,
+		district,
+		status: "listed",
+		...(party
+			? { party }
+			: {}),
+		...(designation
+			? { ballotDesignation: designation }
+			: {}),
+		...(scope === "statewide"
+			? { jurisdiction: "Idaho" }
+			: {}),
+		...(district
+			? { sourceDistrictLabel: districtLabel || `District ${district}` }
+			: {}),
+		sourceAreaLabel: "Cassia County general-election sample"
+	};
 }
 function candidatePage(source: StateBallotSource, page: WordPage, boundaries: number[]) {
 	const header = clean(lines(page.words.filter(word => word.top < 120)).map(line => line.text).join(" "));
@@ -253,7 +395,14 @@ function candidatePage(source: StateBallotSource, page: WordPage, boundaries: nu
 			if (value === "CANDIDATES FOR") {
 				finish();
 				group = body[++index]?.text ?? "";
-				if (!["UNITED STATES OFFICES", "STATE OFFICES", "LEGISLATIVE OFFICES", "COUNTY OFFICES"].includes(group)) throw new Error("The Cassia candidate section requires review.");
+				if (![
+					"UNITED STATES OFFICES",
+					"STATE OFFICES",
+					"LEGISLATIVE OFFICES",
+					"COUNTY OFFICES"
+				].includes(group)) {
+					throw new Error("The Cassia candidate section requires review.");
+				}
 				continue;
 			}
 			if (!group) continue;
@@ -316,7 +465,10 @@ function questionPage(page: WordPage, boundaries: number[], sourceDocumentIndex:
 			if (title === "IDAHO ADVISORY QUESTION") {
 				const instruction = section.findIndex(line => line.text === "choose only one answer");
 				if (instruction < 1) throw new Error("The Cassia advisory voting instruction requires review.");
-				wording = section.slice(0, instruction).map(line => ({ ...line, text: line.text.replace(/\s+Please$/u, "") }));
+				wording = section.slice(0, instruction).map(line => ({
+					...line,
+					text: line.text.replace(/\s+Please$/u, "")
+				}));
 				choices = [];
 				let previous = -Infinity;
 				for (const line of section.slice(instruction + 1)) {
@@ -331,7 +483,16 @@ function questionPage(page: WordPage, boundaries: number[], sourceDocumentIndex:
 				if (choices.join("|") !== "Yes|No") throw new Error("The Cassia question choices require review.");
 				wording = section.filter(line => !/^(?:Yes|No)$/u.test(line.text));
 			}
-			result.push({ title: title.replace(/^PROPOSITION/u, "Proposition").replace(/^IDAHO ADVISORY QUESTION$/u, "Idaho advisory question"), audience: "Idaho", officialText: wording.map(line => line.text).join(" "), scope: "statewide", choices, textSha256: hash(section.map(line => line.text).join(" ")), sourceDocumentIndex, pageNumber });
+			result.push({
+				title: title.replace(/^PROPOSITION/u, "Proposition").replace(/^IDAHO ADVISORY QUESTION$/u, "Idaho advisory question"),
+				audience: "Idaho",
+				officialText: wording.map(line => line.text).join(" "),
+				scope: "statewide",
+				choices,
+				textSha256: hash(section.map(line => line.text).join(" ")),
+				sourceDocumentIndex,
+				pageNumber
+			});
 			index = end - 1;
 		}
 	}
@@ -349,7 +510,16 @@ function localQuestion(source: StateBallotSource, page: WordPage, sourceDocument
 	const start = full.findIndex(line => line.text.startsWith("The Board of Trustees of "));
 	const end = full.findIndex(line => line.text.startsWith("IN FAVOR OF "));
 	if (start < 0 || end <= start || !full.slice(start, end).some(line => line.text.startsWith("QUESTION: Shall "))) throw new Error("The Cassia school question wording requires review.");
-	return { title: `${heading.text} supplemental levy`, audience: heading.text, officialText: full.slice(start, end).map(line => line.text).join("\n"), scope: "local", choices, textSha256: hash(body), sourceDocumentIndex, pageNumber };
+	return {
+		title: `${heading.text} supplemental levy`,
+		audience: heading.text,
+		officialText: full.slice(start, end).map(line => line.text).join("\n"),
+		scope: "local",
+		choices,
+		textSha256: hash(body),
+		sourceDocumentIndex,
+		pageNumber
+	};
 }
 function fireQuestion(source: StateBallotSource, page: WordPage, boundaries: number[], sourceDocumentIndex: number, pageNumber: number): Question {
 	const column = columns(page, boundaries)[2]!.filter(line => line.text !== "VOTE BOTH SIDES" && !/^Typ:\d+ Seq:\d+ Spl:\d+$/u.test(line.text));
@@ -361,9 +531,21 @@ function fireQuestion(source: StateBallotSource, page: WordPage, boundaries: num
 	const choiceStart = section.findIndex(line => line.text.startsWith("IN FAVOR OF "));
 	const againstStart = section.findIndex(line => line.text.startsWith("AGAINST "));
 	if (choiceStart < 1 || againstStart <= choiceStart) throw new Error("The Cassia fire question choices require review.");
-	const choices = [section.slice(choiceStart, againstStart), section.slice(againstStart)].map(value => value.map(line => line.text).join(" "));
+	const choices = [
+		section.slice(choiceStart, againstStart),
+		section.slice(againstStart)
+	].map(value => value.map(line => line.text).join(" "));
 	const audience = `${section[0]!.text} ${section[1]!.text}`;
-	return { title: `${audience} temporary override levy`, audience, officialText: section.slice(2, choiceStart).map(line => line.text).join(" "), scope: "local", choices, textSha256: hash(body), sourceDocumentIndex, pageNumber };
+	return {
+		title: `${audience} temporary override levy`,
+		audience,
+		officialText: section.slice(2, choiceStart).map(line => line.text).join(" "),
+		scope: "local",
+		choices,
+		textSha256: hash(body),
+		sourceDocumentIndex,
+		pageNumber
+	};
 }
 export function readCassiaCandidateDocuments(source: StateBallotSource, documents: string[]) {
 	validateCassiaSource(source);
@@ -379,7 +561,14 @@ export function readCassiaCandidateDocuments(source: StateBallotSource, document
 		if (lines(page.words)[0]?.text === "BALLOT MEASURES") {
 			const repeated = questionPage(page, boundaries, index + 1, 1);
 			for (const question of repeated) {
-				if (!questions.some(original => original.scope === "statewide" && original.title === question.title && original.textSha256 === question.textSha256 && JSON.stringify(original.choices) === JSON.stringify(question.choices))) throw new Error("The Cassia repeated statewide question disagrees with the general sample.", { cause: { question, general: questions.filter(original => original.title === question.title) } });
+				if (!questions.some(original => original.scope === "statewide" && original.title === question.title && original.textSha256 === question.textSha256 && JSON.stringify(original.choices) === JSON.stringify(question.choices))) {
+					throw new Error("The Cassia repeated statewide question disagrees with the general sample.", {
+						cause: {
+							question,
+							general: questions.filter(original => original.title === question.title)
+						}
+					});
+				}
 			}
 			questions.push(...repeated, fireQuestion(source, page, boundaries, index + 1, 1));
 		}
@@ -392,25 +581,46 @@ export function readCassiaCandidateDocuments(source: StateBallotSource, document
 export async function fetchCassiaCandidateCapture(source: StateBallotSource, options: Options = {}) {
 	validateCassiaSource(source);
 	const now = options.now ?? Date.now;
-	const configuredExtractor = !options.discovery && !options.extractor ? await resolveStateBallotPdfExtractor() : null;
+	const configuredExtractor = !options.discovery && !options.extractor
+		? await resolveStateBallotPdfExtractor()
+		: null;
 	const discovery = options.discovery ?? await fetchCassiaCycleDiscovery(options);
 	const election = readCassiaDiscovery(discovery, now()).elections.find(item => item.electionDate === source.electionDate);
 	if (!election) throw new Error("The Cassia offered election disappeared.");
 	const documents = [];
 	if (election.cassiaDocuments.length) {
-		const executable = options.extractor ? null : configuredExtractor ?? await resolveStateBallotPdfExtractor();
+		const executable = options.extractor
+			? null
+			: configuredExtractor ?? await resolveStateBallotPdfExtractor();
 		for (const document of election.cassiaDocuments) {
 			await (options.sleep ?? wait)(11000);
-			documents.push(await fetchStateBallotPdfDocument(document.url, { allowedHosts: ["www.cassia.gov"], request: options.requestDocument, extractor: options.extractor ?? (bytes => extractStateBallotPdfText(bytes, executable!, 12000, "bbox-layout")), now }));
+			documents.push(await fetchStateBallotPdfDocument(document.url, {
+				allowedHosts: ["www.cassia.gov"],
+				request: options.requestDocument,
+				extractor: options.extractor ?? (bytes => extractStateBallotPdfText(bytes, executable!, 12000, "bbox-layout")),
+				now
+			}));
 		}
 	}
-	return JSON.stringify({ schemaVersion: 1, type: "cassia-candidate-capture", discovery: JSON.parse(discovery), documents });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "cassia-candidate-capture",
+		discovery: JSON.parse(discovery),
+		documents
+	});
 }
 export function parseCassiaCandidateCapture(source: StateBallotSource, body: string, now = Date.now(), previous?: StateBallotQuestion[]) {
 	validateCassiaSource(source);
 	if (Buffer.byteLength(body) > 32 * 1024 * 1024) throw new Error("The Cassia candidate capture exceeds its bounds.");
 	const capture = JSON.parse(body);
-	if (!exact(capture, ["schemaVersion", "type", "discovery", "documents"]) || capture.schemaVersion !== 1 || capture.type !== "cassia-candidate-capture" || !Array.isArray(capture.documents)) throw new Error("The Cassia candidate capture requires review.");
+	if (!exact(capture, [
+		"schemaVersion",
+		"type",
+		"discovery",
+		"documents"
+	]) || capture.schemaVersion !== 1 || capture.type !== "cassia-candidate-capture" || !Array.isArray(capture.documents)) {
+		throw new Error("The Cassia candidate capture requires review.");
+	}
 	const election = readCassiaDiscovery(JSON.stringify(capture.discovery), now).elections.find(item => item.electionDate === source.electionDate);
 	if (!election || election.cassiaDocuments.length !== capture.documents.length) throw new Error("The Cassia captured publication set is incomplete.");
 	if (!capture.documents.length) throw new StateBallotAwaitingRecordsError(source.id);
@@ -420,5 +630,17 @@ export function parseCassiaCandidateCapture(source: StateBallotSource, body: str
 		return document as unknown as PdfCapture;
 	});
 	const facts = readCassiaCandidateDocuments(source, documents.map(document => document.text));
-	return { ...facts, ballotQuestions: buildCassiaBallotQuestions(source, facts.questions, documents, previous), retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString(), sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), documents: documents.map(({ url, sha256, retrievedAt }, index) => ({ url, sha256, retrievedAt, includedRecordCount: index ? 0 : facts.records.length })), collectionIndexSha256: cassiaDocumentDigest(election.cassiaDocuments) };
+	return {
+		...facts,
+		ballotQuestions: buildCassiaBallotQuestions(source, facts.questions, documents, previous),
+		retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString(),
+		sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+		documents: documents.map(({ url, sha256, retrievedAt }, index) => ({
+			url,
+			sha256,
+			retrievedAt,
+			includedRecordCount: index ? 0 : facts.records.length
+		})),
+		collectionIndexSha256: cassiaDocumentDigest(election.cassiaDocuments)
+	};
 }

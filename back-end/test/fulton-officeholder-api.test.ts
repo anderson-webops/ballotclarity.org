@@ -26,12 +26,61 @@ async function fixture(context: TestContext, getSnapshot: () => FultonOfficehold
 		ldaClient: null,
 		openFecClient: null,
 		openStatesClient: null,
-		fultonOfficeholderRepository: { getSnapshot, inspectSources: async () => [{ id: "ga-fulton-board", label: "Fulton County commissioners", kind: "officeholders", mode: "automatic", stateCode: "GA", electionDate: "", status: "current", records: 6, retrievedAt: getSnapshot().retrievedAt, lastAttemptAt: null, lastImportAt: getSnapshot().retrievedAt, failure: null }] },
-		zipLocationService: { async lookupZip(postalCode) { return { postalCode, matches: [{ id: "county:121", locality: "Fulton County", stateAbbreviation: "GA", stateName: "Georgia", postalCode, latitude: 34, longitude: -84.3, sourceSystem: "Controlled geography", districtMatches: [{ id: "county:121", districtType: "county", districtCode: "121", label: "Fulton County", stateFips: "13", sourceSystem: "Controlled geography" }], representativeMatches: [] }] }; } },
+		fultonOfficeholderRepository: {
+			getSnapshot,
+			inspectSources: async () => [
+				{
+					id: "ga-fulton-board",
+					label: "Fulton County commissioners",
+					kind: "officeholders",
+					mode: "automatic",
+					stateCode: "GA",
+					electionDate: "",
+					status: "current",
+					records: 6,
+					retrievedAt: getSnapshot().retrievedAt,
+					lastAttemptAt: null,
+					lastImportAt: getSnapshot().retrievedAt,
+					failure: null
+				}
+			]
+		},
+		zipLocationService: {
+			async lookupZip(postalCode) {
+				return {
+					postalCode,
+					matches: [
+						{
+							id: "county:121",
+							locality: "Fulton County",
+							stateAbbreviation: "GA",
+							stateName: "Georgia",
+							postalCode,
+							latitude: 34,
+							longitude: -84.3,
+							sourceSystem: "Controlled geography",
+							districtMatches: [
+								{
+									id: "county:121",
+									districtType: "county",
+									districtCode: "121",
+									label: "Fulton County",
+									stateFips: "13",
+									sourceSystem: "Controlled geography"
+								}
+							],
+							representativeMatches: []
+						}
+					]
+				};
+			}
+		},
 	});
 	const server = app.listen(0, "127.0.0.1");
 	await once(server, "listening");
-	context.after(() => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())));
+	context.after(() => new Promise<void>((resolve, reject) => server.close(error => error
+		? reject(error)
+		: resolve())));
 	return `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 }
 
@@ -68,7 +117,14 @@ test("Fulton county and individual district pages expose all current board recor
 		}
 	}
 	assert.equal((await fetch(`${base}/api/admin/operations`)).status, 401);
-	const operations = await fetch(`${base}/api/admin/operations`, { headers: { "x-admin-api-key": "controlled-officeholder-test-key", "x-admin-actor-username": "fixture-admin", "x-admin-actor-display-name": "Fixture Admin", "x-admin-actor-role": "admin" } }).then(result => result.json());
+	const operations = await fetch(`${base}/api/admin/operations`, {
+		headers: {
+			"x-admin-api-key": "controlled-officeholder-test-key",
+			"x-admin-actor-username": "fixture-admin",
+			"x-admin-actor-display-name": "Fixture Admin",
+			"x-admin-actor-role": "admin"
+		}
+	}).then(result => result.json());
 	assert.equal(operations.datasets.find((item: { id: string }) => item.id === "ga-fulton-board").kind, "officeholders");
 	const resident = await fetch(`${base}/api/representatives?lookup=30022`).then(result => result.json());
 	assert.deepEqual(resident.representatives.map((person: { name: string }) => person.name), ["Avery Chair"]);

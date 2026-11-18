@@ -22,7 +22,10 @@ function polygons(body: string) {
 			continue;
 		}
 		if (!["M", "L"].includes(command ?? "")) return reject("rule command");
-		const point = [Number(tokens[index++]), Number(tokens[index++])];
+		const point = [
+			Number(tokens[index++]),
+			Number(tokens[index++])
+		];
 		if (point.some(value => !Number.isFinite(value))) return reject("rule point");
 		if (command === "M" && current.length) {
 			if (current.length !== 2) return reject("rule move");
@@ -36,7 +39,14 @@ function polygons(body: string) {
 	if (!result.length || result.length > 1000) return reject("rule inventory");
 	return result;
 }
-const bounds = (points: number[][]) => [Math.min(...points.map(point => point[0]!)), Math.min(...points.map(point => point[1]!)), Math.max(...points.map(point => point[0]!)), Math.max(...points.map(point => point[1]!))];
+function bounds(points: number[][]) {
+	return [
+		Math.min(...points.map(point => point[0]!)),
+		Math.min(...points.map(point => point[1]!)),
+		Math.max(...points.map(point => point[0]!)),
+		Math.max(...points.map(point => point[1]!))
+	];
+}
 const enclosed = (ink: number[], box: number[]) => ink[0]! >= box[0]! - 0.01 && ink[1]! >= box[1]! - 0.01 && ink[2]! <= box[2]! + 0.01 && ink[3]! <= box[3]! + 0.01;
 const overlaps = (first: number[], second: number[]) => first[0]! < second[2]! - 0.01 && first[2]! > second[0]! + 0.01 && first[1]! < second[3]! - 0.01 && first[3]! > second[1]! + 0.01;
 
@@ -45,31 +55,76 @@ export function inspectNycVisual(xml: string, svg: string, page: number, approva
 	if (!native || Buffer.byteLength(svg) > 4 * 1024 * 1024 || !svg.trimEnd().endsWith("</svg>")) return reject("page");
 	const roots = descendants(parseStateHtml(svg), node => node.nodeName === "svg");
 	if (roots.length !== 1 || attribute(roots[0]!, "width") !== "792pt" || attribute(roots[0]!, "height") !== "612pt" || attribute(roots[0]!, "viewBox") !== "0 0 792 612") return reject("dimensions");
-	if (descendants(roots[0]!, node => !["svg", "g", "defs", "path", "use", "clippath", "image", "#text"].includes(node.nodeName.toLowerCase())).length) return reject("unsupported element");
+	if (descendants(roots[0]!, node => ![
+		"svg",
+		"g",
+		"defs",
+		"path",
+		"use",
+		"clippath",
+		"image",
+		"#text"
+	].includes(node.nodeName.toLowerCase())).length) {
+		return reject("unsupported element");
+	}
 	const identified = descendants(roots[0]!, node => Boolean(attribute(node, "id")));
 	if (new Set(identified.map(node => attribute(node, "id"))).size !== identified.length) return reject("identifiers");
 	const glyphs = new Map(identified.filter(node => /^glyph-\d+-\d+$/u.test(attribute(node, "id"))).map((node) => {
 		const paths = descendants(node, child => child.nodeName === "path");
 		if (node.nodeName !== "g" || node.attrs?.some(item => item.name !== "id") || descendants(node, child => !["#text", "path"].includes(child.nodeName)).length || paths.length > 1 || paths.some(path => path.attrs?.some(item => item.name !== "d"))) return reject("glyph definition");
-		const definition = paths[0] ? attribute(paths[0], "d") : "";
-		return [attribute(node, "id"), { bounds: definition.trim() ? glyphBounds(definition) : [0, 0, 0, 0], sha256: createHash("sha256").update(definition).digest("hex") }] as const;
+		const definition = paths[0]
+			? attribute(paths[0], "d")
+			: "";
+		return [
+			attribute(node, "id"),
+			{
+				bounds: definition.trim()
+					? glyphBounds(definition)
+					: [0, 0, 0, 0],
+				sha256: createHash("sha256").update(definition).digest("hex")
+			}
+		] as const;
 	}));
 	const clips = new Map(identified.filter(node => node.nodeName.toLowerCase() === "clippath").map((node) => {
 		const paths = descendants(node, child => child.nodeName === "path");
 		if (paths.length !== 1 || node.attrs?.some(item => item.name !== "id")) return reject("clip definition");
 		const shapes = polygons(attribute(paths[0]!, "d"));
 		if (shapes.length !== 1 || !shapes[0]!.closed || new Set(shapes[0]!.points.map(point => point[0])).size !== 2 || new Set(shapes[0]!.points.map(point => point[1])).size !== 2 || new Set(shapes[0]!.points.map(point => point.join(","))).size !== 4 || shapes[0]!.points.some((point, index, points) => point[0] !== points[(index + 1) % 4]![0] && point[1] !== points[(index + 1) % 4]![1])) return reject("clip shape");
-		return [attribute(node, "id"), bounds(shapes[0]!.points)] as const;
+		return [
+			attribute(node, "id"),
+			bounds(shapes[0]!.points)
+		] as const;
 	}));
 	const images = new Map<string, number>(identified.filter(node => node.nodeName === "image").map((node) => {
 		const image = /^data:image\/png;base64,([a-zA-Z0-9+/]*={0,2})$/u.exec(attribute(node, "href"));
-		if (!image || attribute(node, "x") !== "0" || attribute(node, "y") !== "0" || attribute(node, "width") !== "290" || attribute(node, "height") !== "306" || node.attrs?.some(item => !["id", "x", "y", "width", "height", "href"].includes(item.name)) || createHash("sha256").update(Buffer.from(image[1]!, "base64")).digest("hex") !== "8df7d5fcc0db09feb27b426ceabac51f9a130836d78c2e85845502b586797be0") return reject("header seal");
-		return [attribute(node, "id"), 0] as const;
+		if (!image || attribute(node, "x") !== "0" || attribute(node, "y") !== "0" || attribute(node, "width") !== "290" || attribute(node, "height") !== "306" || node.attrs?.some(item => ![
+			"id",
+			"x",
+			"y",
+			"width",
+			"height",
+			"href"
+		].includes(item.name)) || createHash("sha256").update(Buffer.from(image[1]!, "base64")).digest("hex") !== "8df7d5fcc0db09feb27b426ceabac51f9a130836d78c2e85845502b586797be0") {
+			return reject("header seal");
+		}
+		return [
+			attribute(node, "id"),
+			0
+		] as const;
 	}));
 	if (identified.length !== glyphs.size + clips.size + images.size) return reject("unknown definition");
-	const fields = native.map(field => ({ ...field, left: field.left / 1.5, right: (field.left + field.width) / 1.5, top: field.top / 1.5, bottom: (field.top + field.height) / 1.5, glyphs: [] as { left: number; ink: number[]; clipping: number[][]; sha256: string }[] }));
+	const fields = native.map(field => ({
+		...field,
+		left: field.left / 1.5,
+		right: (field.left + field.width) / 1.5,
+		top: field.top / 1.5,
+		bottom: (field.top + field.height) / 1.5,
+		glyphs: [] as { left: number; ink: number[]; clipping: number[][]; sha256: string }[]
+	}));
 	const obstacles: number[][] = [];
-	const pending = [{ node: roots[0]!, clipping: [] as number[][], black: true }];
+	const pending = [
+		{ node: roots[0]!, clipping: [] as number[][], black: true }
+	];
 	let visited = 0;
 	let rules = 0;
 	while (pending.length) {
@@ -85,15 +140,29 @@ export function inspectNycVisual(xml: string, svg: string, page: number, approva
 			if (node.nodeName !== "g" || !/^url\(#clip-\d+\)$/u.test(clip) || !box || clipping.length > 8) return reject("clip reference");
 			clipping.push(box);
 		}
-		const black = attribute(node, "fill") ? attribute(node, "fill") === "rgb(0%, 0%, 0%)" : item.black;
+		const black = attribute(node, "fill")
+			? attribute(node, "fill") === "rgb(0%, 0%, 0%)"
+			: item.black;
 		if (node.nodeName === "use") {
 			const reference = attribute(node, "href").slice(1);
 			if (images.has(reference)) {
 				const transform = /^matrix\((\d+(?:\.\d+)?), 0, 0, (\d+(?:\.\d+)?), (\d+(?:\.\d+)?), (\d+(?:\.\d+)?)\)$/u.exec(attribute(node, "transform"));
 				if (!transform || images.get(reference) || node.attrs?.some(item => !["href", "transform"].includes(item.name))) return reject("seal placement");
 				const [horizontal, vertical, left, top] = transform.slice(1).map(Number);
-				const box = [left!, top!, left! + horizontal! * 290, top! + vertical! * 306];
-				if (horizontal! < 0.1875 || horizontal! > 0.1877 || vertical! < 0.1875 || vertical! > 0.1877 || left! < 700 || left! > 702 || top! < 18 || top! > 27 || fields.some(field => overlaps(box, [field.left, field.top, field.right, field.bottom]))) return reject("seal bounds");
+				const box = [
+					left!,
+					top!,
+					left! + horizontal! * 290,
+					top! + vertical! * 306
+				];
+				if (horizontal! < 0.1875 || horizontal! > 0.1877 || vertical! < 0.1875 || vertical! > 0.1877 || left! < 700 || left! > 702 || top! < 18 || top! > 27 || fields.some(field => overlaps(box, [
+					field.left,
+					field.top,
+					field.right,
+					field.bottom
+				]))) {
+					return reject("seal bounds");
+				}
 				images.set(reference, 1);
 			}
 			else {
@@ -106,7 +175,14 @@ export function inspectNycVisual(xml: string, svg: string, page: number, approva
 					if (!Number.isFinite(left) || !Number.isFinite(top)) return reject("glyph position");
 					const matched = fields.filter(field => left >= field.left - 0.75 && left < field.right + 0.75 && top >= field.top - 0.75 && top <= field.bottom + 0.75);
 					if (matched.length !== 1) return reject("glyph assignment");
-					matched[0]!.glyphs.push({ left, ink: box.map((value, index) => value + (index % 2 ? top : left)), clipping, sha256: definition.sha256 });
+					matched[0]!.glyphs.push({
+						left,
+						ink: box.map((value, index) => value + (index % 2
+							? top
+							: left)),
+						clipping,
+						sha256: definition.sha256
+					});
 				}
 			}
 		}
@@ -119,14 +195,28 @@ export function inspectNycVisual(xml: string, svg: string, page: number, approva
 				return reject("filled rule");
 			}
 			for (const polygon of polygons(attribute(node, "d"))) {
-				const points = polygon.points.map(point => [point[0]!, stroke ? -point[1]! : point[1]!]);
-				if ((polygon.closed ? points.length !== 4 : !stroke || points.length !== 2) || points.some((point, index) => (index || polygon.closed) && point[0] !== points[(index + points.length - 1) % points.length]![0] && point[1] !== points[(index + points.length - 1) % points.length]![1])) return reject("rule shape");
+				const points = polygon.points.map(point => [
+					point[0]!,
+					stroke
+						? -point[1]!
+						: point[1]!
+				]);
+				if ((polygon.closed
+					? points.length !== 4
+					: !stroke || points.length !== 2) || points.some((point, index) => (index || polygon.closed) && point[0] !== points[(index + points.length - 1) % points.length]![0] && point[1] !== points[(index + points.length - 1) % points.length]![1])) {
+					return reject("rule shape");
+				}
 				const box = bounds(points);
 				if (box[0]! < 0 || box[1]! < 0 || box[2]! > 792 || box[3]! > 612) return reject("rule bounds");
 				if (stroke) {
 					for (let index = 1; index < points.length + Number(polygon.closed); index++) {
 						const segment = bounds([points[index - 1]!, points[index % points.length]!]);
-						obstacles.push([segment[0]! - 0.5, segment[1]! - 0.5, segment[2]! + 0.5, segment[3]! + 0.5]);
+						obstacles.push([
+							segment[0]! - 0.5,
+							segment[1]! - 0.5,
+							segment[2]! + 0.5,
+							segment[3]! + 0.5
+						]);
 					}
 				}
 				else {
@@ -149,7 +239,9 @@ export function inspectNycVisual(xml: string, svg: string, page: number, approva
 	for (const field of fields) {
 		const characters = field.text.replace(/\s/gu, "");
 		field.glyphs.sort((first, second) => first.left - second.left);
-		const metadata = /^Proposal Number [1-9]\d?, a Question: .+ - Citywide, # to be elected: 1$/u.test(field.text) ? field.text.split(", # to be elected:")[0]!.replace(/\s/gu, "").length : Number.POSITIVE_INFINITY;
+		const metadata = /^Proposal Number [1-9]\d?, a Question: .+ - Citywide, # to be elected: 1$/u.test(field.text)
+			? field.text.split(", # to be elected:")[0]!.replace(/\s/gu, "").length
+			: Number.POSITIVE_INFINITY;
 		if (field.glyphs.length !== characters.length && (field.glyphs.length < metadata || field.glyphs.length > characters.length)) return reject("field glyph inventory");
 		omittedProposalSuffixGlyphs += characters.length - field.glyphs.length;
 		const columnLabel = field.size === 12 && field.top < 100 && ["Party\\Ind. Body", "Name", "Address"].includes(field.text);
@@ -168,6 +260,22 @@ export function inspectNycVisual(xml: string, svg: string, page: number, approva
 			nonspaceGlyphs++;
 		}
 	}
-	if (images.size !== (page === 1 ? 0 : 1) || [...images.values()].some(count => count !== 1)) return reject("seal inventory");
-	return { svgSha256: createHash("sha256").update(svg).digest("hex"), fields: fields.length, nonspaceGlyphs, fullInkClips, clippedProposalSuffixGlyphs, omittedProposalSuffixGlyphs, intersectedColumnLabelGlyphs, headerSeals: images.size, rules };
+	if (images.size !== (page === 1
+		? 0
+		: 1) || [
+		...images.values()
+	].some(count => count !== 1)) {
+		return reject("seal inventory");
+	}
+	return {
+		svgSha256: createHash("sha256").update(svg).digest("hex"),
+		fields: fields.length,
+		nonspaceGlyphs,
+		fullInkClips,
+		clippedProposalSuffixGlyphs,
+		omittedProposalSuffixGlyphs,
+		intersectedColumnLabelGlyphs,
+		headerSeals: images.size,
+		rules
+	};
 }

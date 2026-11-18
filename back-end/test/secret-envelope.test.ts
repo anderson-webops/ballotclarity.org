@@ -32,10 +32,17 @@ test("secret envelopes bind ciphertext to its key and purpose", () => {
 test("secret envelopes reject tampering and extra segments", () => {
 	const envelope = sealSecretValue("sensitive", secret, "active-lookup-cookie");
 	const parts = envelope.split(".");
-	const tamperedCiphertext = `${parts[2]?.slice(0, -1)}${parts[2]?.endsWith("A") ? "B" : "A"}`;
+	const tamperedCiphertext = `${parts[2]?.slice(0, -1)}${parts[2]?.endsWith("A")
+		? "B"
+		: "A"}`;
 
 	assert.throws(() => openSecretValue(
-		[parts[0], parts[1], tamperedCiphertext, parts[3]].join("."),
+		[
+			parts[0],
+			parts[1],
+			tamperedCiphertext,
+			parts[3]
+		].join("."),
 		secret,
 		"active-lookup-cookie"
 	));

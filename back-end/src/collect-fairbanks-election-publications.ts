@@ -23,6 +23,8 @@ async function main() {
 	console.log(JSON.stringify(await writeFairbanksElectionPublications(plan.outputDirectory, capture)));
 }
 main().catch((error: unknown) => {
-	console.error(error instanceof Error ? error.message : "Fairbanks publication collection failed.");
+	console.error(error instanceof Error
+		? error.message
+		: "Fairbanks publication collection failed.");
 	process.exitCode = 1;
 });

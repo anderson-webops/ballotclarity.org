@@ -21,7 +21,9 @@ const limits = {
 	subject: 160,
 } as const;
 function readString(value: unknown) {
-	return typeof value === "string" ? value : "";
+	return typeof value === "string"
+		? value
+		: "";
 }
 
 function isValidEmail(value: string) {
@@ -130,7 +132,9 @@ function normalizeSourceLinks(value: unknown) {
 			uniqueLinks.push(normalized);
 	}
 
-	return uniqueLinks.length ? uniqueLinks.join("\n") : undefined;
+	return uniqueLinks.length
+		? uniqueLinks.join("\n")
+		: undefined;
 }
 
 export function normalizeCorrectionSubmission(

@@ -23,9 +23,15 @@ export interface RouteLayerNavigation {
 
 export function buildRouteLayerNavigation(input: RouteLayerNavigationInput): RouteLayerNavigation {
 	if (input.hasVerifiedGuideContext) {
-		const ballotGuidePath = input.selectedElectionSlug ? `/ballot/${input.selectedElectionSlug}` : "/ballot";
-		const electionOverviewPath = input.selectedElectionSlug ? `/elections/${input.selectedElectionSlug}` : "/coverage";
-		const locationHubPath = input.selectedElectionSlug ? `${electionOverviewPath}#voting-info` : "/coverage";
+		const ballotGuidePath = input.selectedElectionSlug
+			? `/ballot/${input.selectedElectionSlug}`
+			: "/ballot";
+		const electionOverviewPath = input.selectedElectionSlug
+			? `/elections/${input.selectedElectionSlug}`
+			: "/coverage";
+		const locationHubPath = input.selectedElectionSlug
+			? `${electionOverviewPath}#voting-info`
+			: "/coverage";
 
 		return {
 			backToLayer: {
@@ -52,8 +58,12 @@ export function buildRouteLayerNavigation(input: RouteLayerNavigationInput): Rou
 	}
 
 	if (input.hasGuideShellContext) {
-		const electionOverviewPath = input.selectedElectionSlug ? `/elections/${input.selectedElectionSlug}` : "/coverage";
-		const locationHubPath = input.selectedElectionSlug ? `${electionOverviewPath}#voting-info` : "/coverage";
+		const electionOverviewPath = input.selectedElectionSlug
+			? `/elections/${input.selectedElectionSlug}`
+			: "/coverage";
+		const locationHubPath = input.selectedElectionSlug
+			? `${electionOverviewPath}#voting-info`
+			: "/coverage";
 
 		return {
 			backToLayer: {

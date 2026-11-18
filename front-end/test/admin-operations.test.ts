@@ -7,7 +7,13 @@ test("admin navigation has three primary areas while account and editorial tools
 	const layout = source("src/layouts/admin.vue");
 	for (const label of ["Operations", "Exceptions", "Settings"]) assert.match(layout, new RegExp(`label: "${label}"`, "u"));
 	assert.doesNotMatch(layout, /label: "(?:Dashboard|Guide packages|Content|Review queue|Corrections|Source health|Audit trail|Users)"/u);
-	for (const route of ["/admin/account", "/admin/users", "/admin/audit", "/admin/sources", "/admin/datasets"]) assert.ok(source("src/pages/admin/settings.vue").includes(route));
+	for (const route of [
+		"/admin/account",
+		"/admin/users",
+		"/admin/audit",
+		"/admin/sources",
+		"/admin/datasets"
+	]) assert.ok(source("src/pages/admin/settings.vue").includes(route));
 });
 test("operations read real dataset status and distinguish loading failures from empty queues", () => {
 	assert.match(source("src/pages/admin/index.vue"), /useAdminOperations/u);

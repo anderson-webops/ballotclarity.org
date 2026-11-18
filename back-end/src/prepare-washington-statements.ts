@@ -38,18 +38,48 @@ export async function prepareWashingtonStatementFiles(path: string) {
 		const body = await readBoundedStateData(document.path);
 		capturedBytes += Buffer.byteLength(body);
 		if (capturedBytes > 128 * 1024 * 1024) throw new Error("Washington statement captures exceed their combined size limit.");
-		documents.push({ url: document.url, capturedAt: document.capturedAt, sha256: document.sha256, body });
+		documents.push({
+			url: document.url,
+			capturedAt: document.capturedAt,
+			sha256: document.sha256,
+			body
+		});
 	}
 	const review = JSON.parse(await readBoundedStateData(plan.reviewedFactsFile));
 	if (!review || typeof review !== "object" || Array.isArray(review) || Object.keys(review).sort().join(",") !== "facts,reviewed,schemaVersion,sourceId,type" || review.schemaVersion !== 1 || review.type !== "washington-statement-review" || review.sourceId !== source.id || review.reviewed !== true || !Array.isArray(review.facts)) throw new Error("Provide explicitly reviewed Washington factual paraphrases, not raw statements.");
-	const prepared = prepareWashingtonStatements({ source, candidates, previous, documents, facts: review.facts });
+	const prepared = prepareWashingtonStatements({
+		source,
+		candidates,
+		previous,
+		documents,
+		facts: review.facts
+	});
 	parseElectionReferenceSnapshot(source, JSON.stringify(prepared.snapshot));
 	await mkdir(plan.outputDirectory, { recursive: true });
 	assertExternalStateDataDirectory(await realpath(plan.outputDirectory));
 	const filename = `election-references-${source.id}.json`;
 	const content = `${JSON.stringify(prepared.snapshot, null, 2)}\n`;
 	await writeFile(join(plan.outputDirectory, filename), content, { flag: "wx" });
-	const result = { schemaVersion: 1, type: "washington-statement-preparation-result", sourceId: source.id, file: filename, sha256: createHash("sha256").update(content).digest("hex"), profiles: prepared.snapshot.recordCount, facts: prepared.snapshot.records.reduce((total, record) => total + record.facts.length, 0), identities: prepared.identities, holds: prepared.holds, imported: false, publisherRequests: 0 };
+	const result = {
+		schemaVersion: 1,
+		type: "washington-statement-preparation-result",
+		sourceId: source.id,
+		file: filename,
+		sha256: createHash("sha256").update(content).digest("hex"),
+		profiles: prepared.snapshot.recordCount,
+		facts: prepared.snapshot.records.reduce((total, record) => total + record.facts.length, 0),
+		identities: prepared.identities,
+		holds: prepared.holds,
+		imported: false,
+		publisherRequests: 0
+	};
 	await writeFile(join(plan.outputDirectory, "washington-statement-preparation.json"), `${JSON.stringify(result, null, 2)}\n`, { flag: "wx" });
-	return { prepared: 1, profiles: result.profiles, facts: result.facts, outputDirectory: plan.outputDirectory, imported: false, publisherRequests: 0 };
+	return {
+		prepared: 1,
+		profiles: result.profiles,
+		facts: result.facts,
+		outputDirectory: plan.outputDirectory,
+		imported: false,
+		publisherRequests: 0
+	};
 }

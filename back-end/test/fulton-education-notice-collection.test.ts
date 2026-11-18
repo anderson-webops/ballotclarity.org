@@ -23,26 +23,73 @@ async function fixture(context: test.TestContext) {
 	context.after(() => rm(root, { recursive: true, force: true }));
 	const directory = join(root, "data");
 	const planPath = join(root, "plan.json");
-	const plan = { schemaVersion: 1, type: "fulton-education-notice-collection", directory, electionDate: "latest-published" };
+	const plan = {
+		schemaVersion: 1,
+		type: "fulton-education-notice-collection",
+		directory,
+		electionDate: "latest-published"
+	};
 	await writeFile(planPath, JSON.stringify(plan));
-	const state = { now: initialTime, year: "2030", index, text, status: 200, contentType: "application/pdf", outage: false, policy: privacy, afterPdf: async () => {} };
+	const state = {
+		now: initialTime,
+		year: "2030",
+		index,
+		text,
+		status: 200,
+		contentType: "application/pdf",
+		outage: false,
+		policy: privacy,
+		afterPdf: async () => {}
+	};
 	const urls: string[] = [];
 	const pauses: number[] = [];
-	const options = { now: () => state.now, pause: async (milliseconds: number) => {
-		pauses.push(milliseconds);
-		state.now += milliseconds;
-	}, extract: async (body: Buffer) => body.toString("utf8").split("\n").slice(1).join("\n"), request: async (url: string, bounds?: Parameters<typeof fetchRemoteSourceDocument>[1]) => {
-		urls.push(url);
-		assert.deepEqual(bounds?.allowedHosts, ["fultoncountyga.gov"]);
-		assert.equal(bounds?.timeoutMs, 15000);
-		if (state.outage) throw new Error("Controlled publisher outage");
-		const pdf = url.endsWith(".pdf");
-		assert.equal(bounds?.maxBytes, (pdf ? 12 : 3) * 1024 * 1024);
-		const body = url.endsWith("/robots.txt") ? robots : url.endsWith("/Privacy-Statement") ? state.policy : pdf ? `%PDF-fixture-${state.year}\n${state.text}` : state.index;
-		if (pdf) await state.afterPdf();
-		return { status: pdf ? state.status : 200, body: Buffer.from(body), contentType: pdf ? state.contentType : url.endsWith("/robots.txt") ? "text/plain" : "text/html", etag: undefined };
-	} };
-	return { root, directory, planPath, plan, state, urls, pauses, options, collect: () => collectFultonEducationNotice(planPath, options), pointer: async () => readFile(join(directory, "notice-current.json"), "utf8"), journal: async () => JSON.parse(await readFile(join(directory, "notice-run.json"), "utf8")) };
+	const options = {
+		now: () => state.now,
+		pause: async (milliseconds: number) => {
+			pauses.push(milliseconds);
+			state.now += milliseconds;
+		},
+		extract: async (body: Buffer) => body.toString("utf8").split("\n").slice(1).join("\n"),
+		request: async (url: string, bounds?: Parameters<typeof fetchRemoteSourceDocument>[1]) => {
+			urls.push(url);
+			assert.deepEqual(bounds?.allowedHosts, ["fultoncountyga.gov"]);
+			assert.equal(bounds?.timeoutMs, 15000);
+			if (state.outage) throw new Error("Controlled publisher outage");
+			const pdf = url.endsWith(".pdf");
+			assert.equal(bounds?.maxBytes, (pdf ? 12 : 3) * 1024 * 1024);
+			const body = url.endsWith("/robots.txt")
+				? robots
+				: url.endsWith("/Privacy-Statement")
+					? state.policy
+					: pdf
+						? `%PDF-fixture-${state.year}\n${state.text}`
+						: state.index;
+			if (pdf) await state.afterPdf();
+			return {
+				status: pdf ? state.status : 200,
+				body: Buffer.from(body),
+				contentType: pdf
+					? state.contentType
+					: url.endsWith("/robots.txt")
+						? "text/plain"
+						: "text/html",
+				etag: undefined
+			};
+		}
+	};
+	return {
+		root,
+		directory,
+		planPath,
+		plan,
+		state,
+		urls,
+		pauses,
+		options,
+		collect: () => collectFultonEducationNotice(planPath, options),
+		pointer: async () => readFile(join(directory, "notice-current.json"), "utf8"),
+		journal: async () => JSON.parse(await readFile(join(directory, "notice-run.json"), "utf8"))
+	};
 }
 
 test("notice collection paces four reviewed inputs and prepares future-edition research without importing", async (context) => {
@@ -107,7 +154,10 @@ test("changed notice fiscal facts and project removal retain the previous curren
 	await assert.rejects(source.collect(), /next permitted attempt/u);
 	assert.equal(source.urls.length, requests);
 	const prior = readFultonEducationNotice(text, "2030-11-05");
-	assert.throws(() => compareFultonEducationNotice(prior, { ...prior, projects: prior.projects.slice(1) }), /projects require review/u);
+	assert.throws(() => compareFultonEducationNotice(prior, {
+		...prior,
+		projects: prior.projects.slice(1)
+	}), /projects require review/u);
 	assert.throws(() => compareFultonEducationNotice(prior, { ...prior, electionDate: "2026-11-03" }), /older education notice/u);
 });
 
@@ -115,13 +165,30 @@ test("notice publisher failures and policy changes preserve originals and bound 
 	const source = await fixture(context);
 	const first = await source.collect();
 	const before = await source.pointer();
-	for (const failure of ["outage", "policy", "redirect", "denial", "format", "missing-edition"]) {
+	for (const failure of [
+		"outage",
+		"policy",
+		"redirect",
+		"denial",
+		"format",
+		"missing-edition"
+	]) {
 		source.state.now += interval;
 		source.state.outage = failure === "outage";
-		source.state.policy = failure === "policy" ? "<main>Changed terms</main>" : privacy;
-		source.state.status = failure === "redirect" ? 302 : failure === "denial" ? 403 : 200;
-		source.state.contentType = failure === "format" ? "text/html" : "application/pdf";
-		source.state.index = failure === "missing-edition" ? index.replace("Call for Election - ESPLOST", "Missing notice") : index;
+		source.state.policy = failure === "policy"
+			? "<main>Changed terms</main>"
+			: privacy;
+		source.state.status = failure === "redirect"
+			? 302
+			: failure === "denial"
+				? 403
+				: 200;
+		source.state.contentType = failure === "format"
+			? "text/html"
+			: "application/pdf";
+		source.state.index = failure === "missing-edition"
+			? index.replace("Call for Election - ESPLOST", "Missing notice")
+			: index;
 		await assert.rejects(source.collect());
 		assert.equal(await source.pointer(), before);
 		assert.equal((await source.journal()).status, "failed");
@@ -205,7 +272,15 @@ test("interrupted notice collection releases actual process ownership and preser
 	const source = await fixture(context);
 	const module = new URL("../src/collect-fulton-education-notice.ts", import.meta.url).href;
 	const script = `import {collectFultonEducationNotice} from ${JSON.stringify(module)};await collectFultonEducationNotice(${JSON.stringify(source.planPath)},{now:()=>${initialTime},request:async()=>{console.log('request-started');await new Promise(resolve=>setTimeout(resolve,30000));throw Error('fixture');}});`;
-	const child = spawn(process.execPath, ["--import", "tsx", "--input-type=module", "-e", script], { stdio: ["ignore", "pipe", "pipe"] });
+	const child = spawn(process.execPath, [
+		"--import",
+		"tsx",
+		"--input-type=module",
+		"-e",
+		script
+	], {
+		stdio: ["ignore", "pipe", "pipe"]
+	});
 	try {
 		let output = "";
 		child.stdout!.on("data", (chunk) => {

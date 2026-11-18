@@ -4,22 +4,51 @@ import test from "node:test";
 import { parseBooneCandidateSheets } from "../src/state-ballot-boone-native.js";
 
 function sheets(): StateBallotWorkbookSheet[] {
-	return [{ sheet: "Sheet1", data: [
-		["Candidate Name", null, "Office", "Party", "Address", "Contact"],
-		[null, null, "Assessor"],
-		["Alex Example", null, null, "R", "Excluded residence", "excluded@example.invalid"],
-		[],
-		[null, null, "County Council District #2"],
-		["Blair Example", null, "District #2", "D"],
-		[null, null, "Center 1,3-6, Union 2"],
-		[null, null, "Trustee (Center Twp.)"],
-		["Casey Example", null, "Do not put on ballot", "I"],
-		[null, null, "Western Boone"],
-		[null, null, "Clinton"],
-		["Drew Example"],
-		[null, null, "Jackson"],
-		["Drew Example"],
-	] }];
+	return [
+		{
+			sheet: "Sheet1",
+			data: [
+				[
+					"Candidate Name",
+					null,
+					"Office",
+					"Party",
+					"Address",
+					"Contact"
+				],
+				[null, null, "Assessor"],
+				[
+					"Alex Example",
+					null,
+					null,
+					"R",
+					"Excluded residence",
+					"excluded@example.invalid"
+				],
+				[],
+				[null, null, "County Council District #2"],
+				[
+					"Blair Example",
+					null,
+					"District #2",
+					"D"
+				],
+				[null, null, "Center 1,3-6, Union 2"],
+				[null, null, "Trustee (Center Twp.)"],
+				[
+					"Casey Example",
+					null,
+					"Do not put on ballot",
+					"I"
+				],
+				[null, null, "Western Boone"],
+				[null, null, "Clinton"],
+				["Drew Example"],
+				[null, null, "Jackson"],
+				["Drew Example"],
+			]
+		}
+	];
 }
 
 test("Boone native facts preserve source offices, party codes and separate school areas", () => {
@@ -31,9 +60,14 @@ test("Boone native facts preserve source offices, party codes and separate schoo
 	assert.equal(result.claims[1]!.sourceDistrictLabel, "District #2");
 	assert.equal(result.claims[1]!.party, "Democratic");
 	assert.equal(result.claims[2]!.party, "Independent");
-	assert.deepEqual(result.claims.slice(3).map(claim => claim.officePath), [["Western Boone", "Clinton"], ["Western Boone", "Jackson"]]);
+	assert.deepEqual(result.claims.slice(3).map(claim => claim.officePath), [
+		["Western Boone", "Clinton"],
+		["Western Boone", "Jackson"]
+	]);
 	assert.equal(result.claims[3]!.party, undefined);
-	assert.deepEqual(result.offices[1]!.areaNotes, [{ text: "Center 1,3-6, Union 2", sourceRow: 7 }]);
+	assert.deepEqual(result.offices[1]!.areaNotes, [
+		{ text: "Center 1,3-6, Union 2", sourceRow: 7 }
+	]);
 });
 
 test("an explicit Boone ballot exclusion remains evidence rather than active ballot qualification", () => {

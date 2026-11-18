@@ -19,6 +19,8 @@ const scratch = mkdtempSync(join(parent, "retained-release-"));
 const assets = join(scratch, "assets");
 const frozen = join(scratch, "frozen");
 const unpacked = join(scratch, "unpacked");
+const retainedSource = join(scratch, "retained-source");
+let registeredSource = false;
 const digest = bytes => createHash("sha256").update(bytes).digest("hex");
 const run = (command, argumentsList) => execFileSync(command, argumentsList, { cwd: root, stdio: "inherit", timeout: 600_000 });
 
@@ -54,10 +56,14 @@ try {
 		"    archive.extractall(sys.argv[2], members=members, filter='data')",
 	].join("\n"), join(assets, retained.archive), unpacked]);
 	const runtime = join(unpacked, "ballot-clarity-runtime");
-	run(process.execPath, [join(root, "scripts/verify-runtime-artifact.mjs"), runtime]);
+	run("git", ["worktree", "add", "--detach", retainedSource, retained.commit]);
+	registeredSource = true;
+	run(process.execPath, [join(retainedSource, "scripts/verify-runtime-artifact.mjs"), runtime]);
 	run(process.execPath, [join(root, "scripts/verify-postgres-recovery.mjs"), runtime]);
 	console.log(`Exact retained ${retained.tag} passed receipt, attestation and unpacked Node ${process.versions.node} runtime/recovery checks.`);
 }
 finally {
+	if (registeredSource)
+		run("git", ["worktree", "remove", "--force", retainedSource]);
 	rmSync(scratch, { recursive: true, force: true });
 }

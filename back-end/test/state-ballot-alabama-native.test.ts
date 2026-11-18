@@ -27,14 +27,20 @@ import {
 } from "./helpers/alabama-native-fixture.js";
 
 test("Alabama literal, octal, hexadecimal and array tokens preserve source bytes", () => {
-	const tokens = [...tokenizePdfContent("% comment\n[(A\\(B\\)\\040C) -20 <4445>] TJ")];
+	const tokens = [
+		...tokenizePdfContent("% comment\n[(A\\(B\\)\\040C) -20 <4445>] TJ")
+	];
 	assert.equal(tokens.length, 2);
 	const first = tokens[0];
 	assert.equal(first.kind, "array");
 	if (first.kind !== "array") return;
 	assert.deepEqual(
 		first.values.map(value =>
-			value.kind === "bytes" ? value.bytes.toString() : value.kind === "number" ? value.value : null
+			value.kind === "bytes"
+				? value.bytes.toString()
+				: value.kind === "number"
+					? value.value
+					: null
 		),
 		["A(B) C", -20, "DE"]
 	);
@@ -48,8 +54,11 @@ test("Alabama malformed, duplicate and oversized lexical content rejects", () =>
 		"1".repeat(129),
 		"x".repeat(12 * 1024 * 1024 + 1),
 		"<< /MCID 1 /MCID 2 >>"
-	])
-		assert.throws(() => [...tokenizePdfContent(body)]);
+	]) {
+		assert.throws(() => [
+			...tokenizePdfContent(body)
+		]);
+	}
 });
 test("Alabama native admission validates one explicit page, ordered streams and bounded resources", () => {
 	const result = inspectAlabamaObjects(alabamaPdfFixture());
@@ -85,7 +94,10 @@ test("Alabama transformed, encrypted and ambiguous native page inventories fail 
 		["/Rotate", 90],
 		["/UserUnit", 2],
 		["/Group", {}],
-		["/CropBox", [0, 0, 20, 20]],
+		[
+			"/CropBox",
+			[0, 0, 20, 20]
+		],
 		["/Contents", []]
 	] as const) {
 		const document = alabamaPdfFixture();
@@ -136,8 +148,12 @@ test("Alabama unknown border overpaint cannot leave a phantom closed frame", () 
 test("Alabama background contrast and later opaque paint remain part of glyph visibility", () => {
 	const make = () => {
 		const content = alabamaContentFixture();
-		content.glyphs = [alabamaGlyph()];
-		content.textSpans = [alabamaSpan("A")];
+		content.glyphs = [
+			alabamaGlyph()
+		];
+		content.textSpans = [
+			alabamaSpan("A")
+		];
 		return content;
 	};
 	const black = make();
@@ -197,7 +213,12 @@ test("Alabama candidate ambiguity, outside glyphs and second voting rules keep t
 	const frame = {
 		...data.header,
 		bounds: [10, 20, 50, 40],
-		spans: [data.vote, ...data.candidate.spans, ...data.end.spans, { ...data.vote, operation: 10, baseline: 26 }]
+		spans: [
+			data.vote,
+			...data.candidate.spans,
+			...data.end.spans,
+			{ ...data.vote, operation: 10, baseline: 26 }
+		]
 	};
 	assert.equal(proveAlabamaOfficeFrame(data.header, data.vote, [frame]), null);
 });
@@ -224,7 +245,10 @@ test("Alabama unparsed images, vectors and unproved text inside an office requir
 		assert.throws(() => proveAlabamaFieldDrawings(content, field, data.candidate.spans), /unparsed drawing/u);
 	}
 	const content = resolveAlabamaVisibility(alabamaContentFixture());
-	content.glyphs.push({ ...alabamaGlyph(), fontProven: false });
+	content.glyphs.push({
+		...alabamaGlyph(),
+		fontProven: false
+	});
 	assert.throws(() => proveAlabamaFieldDrawings(content, field, data.candidate.spans), /Unproved text/u);
 });
 test("Alabama office identities keep education and local subdistricts distinct from statewide races", () => {
@@ -237,7 +261,10 @@ test("Alabama office identities keep education and local subdistricts distinct f
 		officeContext("FOR MEMBER, MACON COUNTY COMMISSION, DISTRICT NO. 1", "Macon").jurisdiction,
 		"Macon County Commission District 1"
 	);
-	assert.equal(headingText([alabamaSpan("FOR GOVERNOR"), alabamaSpan("FOR GOVERNOR")]), "FOR GOVERNOR");
+	assert.equal(headingText([
+		alabamaSpan("FOR GOVERNOR"),
+		alabamaSpan("FOR GOVERNOR")
+	]), "FOR GOVERNOR");
 	assert.throws(() => officeContext("FOR UNREVIEWED OFFICE", "Macon"), /requires review/u);
 });
 test("Alabama original PDF identity fails before inspector work and capabilities remain explicit", async () => {
@@ -249,12 +276,20 @@ test("Alabama original PDF identity fails before inspector work and capabilities
 		sourceSha256: alabamaHash(bytes)
 	};
 	await assert.rejects(
-		verifyAlabamaOriginal(bytes, { ...input, sourceSha256: "0".repeat(64) }, { scratchDirectory: tmpdir() }),
+		verifyAlabamaOriginal(bytes, {
+			...input,
+			sourceSha256: "0".repeat(64)
+		}, {
+			scratchDirectory: tmpdir()
+		}),
 		/capture/u
 	);
 	await assert.rejects(verifyAlabamaOriginal(bytes, input, { scratchDirectory: "relative" }), /absolute private/u);
 	await assert.rejects(
-		verifyAlabamaOriginal(bytes, input, { scratchDirectory: tmpdir(), objectExecutable: "/nonexistent/qpdf" }),
+		verifyAlabamaOriginal(bytes, input, {
+			scratchDirectory: tmpdir(),
+			objectExecutable: "/nonexistent/qpdf"
+		}),
 		/unavailable/u
 	);
 	assert.equal(alabamaNativeContract.workerOldGenerationMiB, 128);

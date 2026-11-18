@@ -16,14 +16,46 @@ export function nycUnicodeMappings(body: string, name: string) {
 	const middle = text.slice(prefix.length, -suffix.length);
 	const envelope = /^<[\da-f]{2}> <[\da-f]{2}> endcodespacerange (\d{1,3}) beginbfrange (.+)$/iu.exec(middle);
 	if (!envelope) return reject();
-	const entries = [...envelope[2]!.matchAll(/<([\da-f]{2})> <([\da-f]{2})> <([\da-f]{4})>/giu)];
+	const entries = [
+		...envelope[2]!.matchAll(/<([\da-f]{2})> <([\da-f]{2})> <([\da-f]{4})>/giu)
+	];
 	if (entries.length !== Number(envelope[1]) || !entries.length || entries.length > 224 || envelope[2]!.replace(/<[\da-f]{2}> <[\da-f]{2}> <[\da-f]{4}>/giu, "").trim()) return reject();
 	const mappings = new Map<number, string>();
 	const decoder = new TextDecoder("windows-1252");
 	for (const entry of entries) {
 		const code = Number.parseInt(entry[1]!, 16);
 		const unicode = Number.parseInt(entry[3]!, 16);
-		if (entry[1]!.toLowerCase() !== entry[2]!.toLowerCase() || mappings.has(code) || code < 32 || (code >= 127 && code <= 159 && ![128, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 142, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 158, 159].includes(code)) || decoder.decode(Buffer.from([code])).codePointAt(0) !== unicode) return reject();
+		if (entry[1]!.toLowerCase() !== entry[2]!.toLowerCase() || mappings.has(code) || code < 32 || (code >= 127 && code <= 159 && ![
+			128,
+			130,
+			131,
+			132,
+			133,
+			134,
+			135,
+			136,
+			137,
+			138,
+			139,
+			140,
+			142,
+			145,
+			146,
+			147,
+			148,
+			149,
+			150,
+			151,
+			152,
+			153,
+			154,
+			155,
+			156,
+			158,
+			159
+		].includes(code)) || decoder.decode(Buffer.from([code])).codePointAt(0) !== unicode) {
+			return reject();
+		}
 		mappings.set(code, entry[3]!.toLowerCase());
 	}
 	return mappings;
@@ -63,7 +95,9 @@ export function nycSymbolFontMappings(program: Buffer, mappings: ReadonlyMap<num
 				const address = position + offset + (character - first) * 2;
 				if (address + 2 > end) return reject();
 				const value = table.readUInt16BE(address);
-				glyph = value ? (value + delta) & 0xFFFF : 0;
+				glyph = value
+					? (value + delta) & 0xFFFF
+					: 0;
 			}
 		}
 		if (!glyph || result.has(glyph)) return reject();
@@ -84,7 +118,9 @@ export function readNycPdfFontPrograms(body: string) {
 		return object.value;
 	}
 	function stream(value: unknown) {
-		const object = typeof value === "string" ? objects[`obj:${value}`] : null;
+		const object = typeof value === "string"
+			? objects[`obj:${value}`]
+			: null;
 		if (!plain(object) || !plain(object.stream) || typeof object.stream.data !== "string" || object.stream.data.length > 3 * 1024 * 1024 || !/^[a-zA-Z0-9+/]*={0,2}$/u.test(object.stream.data)) return reject();
 		return Buffer.from(object.stream.data, "base64");
 	}
@@ -99,7 +135,17 @@ export function readNycPdfFontPrograms(body: string) {
 			pending.push(...item);
 		}
 		else if (plain(item)) {
-			if (Object.keys(item).some(key => ["/OpenAction", "/AA", "/JS", "/JavaScript", "/EmbeddedFiles", "/AcroForm", "/XFA"].includes(key))) return reject();
+			if (Object.keys(item).some(key => [
+				"/OpenAction",
+				"/AA",
+				"/JS",
+				"/JavaScript",
+				"/EmbeddedFiles",
+				"/AcroForm",
+				"/XFA"
+			].includes(key))) {
+				return reject();
+			}
 			if (item["/Font"]) {
 				const resources = resolved(item["/Font"]);
 				if (!plain(resources) || !Object.keys(resources).length || Object.keys(resources).length > 2) return reject();
@@ -108,7 +154,18 @@ export function readNycPdfFontPrograms(body: string) {
 					if (checked.has(reference)) continue;
 					checked.add(reference);
 					const font = resolved(reference);
-					if (!plain(font) || font["/Type"] !== "/Font" || font["/Subtype"] !== "/TrueType" || typeof font["/BaseFont"] !== "string" || !/^\/[A-Z]{6}\+Arial(?:,Bold)?$/u.test(font["/BaseFont"]) || Object.keys(font).some(key => !["/BaseFont", "/FirstChar", "/FontDescriptor", "/LastChar", "/Subtype", "/ToUnicode", "/Type", "/Widths"].includes(key))) return reject();
+					if (!plain(font) || font["/Type"] !== "/Font" || font["/Subtype"] !== "/TrueType" || typeof font["/BaseFont"] !== "string" || !/^\/[A-Z]{6}\+Arial(?:,Bold)?$/u.test(font["/BaseFont"]) || Object.keys(font).some(key => ![
+						"/BaseFont",
+						"/FirstChar",
+						"/FontDescriptor",
+						"/LastChar",
+						"/Subtype",
+						"/ToUnicode",
+						"/Type",
+						"/Widths"
+					].includes(key))) {
+						return reject();
+					}
 					const descriptor = resolved(font["/FontDescriptor"]);
 					const widths = resolved(font["/Widths"]);
 					if (!plain(descriptor) || descriptor["/Type"] !== "/FontDescriptor" || descriptor["/FontName"] !== font["/BaseFont"] || descriptor["/Flags"] !== 4 || descriptor["/FontFile"] || descriptor["/FontFile3"] || !Number.isInteger(font["/FirstChar"]) || !Number.isInteger(font["/LastChar"]) || Number(font["/FirstChar"]) < 32 || Number(font["/LastChar"]) > 255 || !Array.isArray(widths) || widths.length !== Number(font["/LastChar"]) - Number(font["/FirstChar"]) + 1 || widths.some(value => typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 3000)) return reject();
@@ -127,5 +184,8 @@ export function readNycPdfFontPrograms(body: string) {
 export function inspectNycPdfFonts(body: string) {
 	const programs = readNycPdfFontPrograms(body);
 	for (const program of programs) validateChicagoFontProgram(program, nycGlyphApprovals);
-	return { fonts: programs.length, mappedCharacters: programs.reduce((sum, program) => sum + program.characters.length, 0) };
+	return {
+		fonts: programs.length,
+		mappedCharacters: programs.reduce((sum, program) => sum + program.characters.length, 0)
+	};
 }

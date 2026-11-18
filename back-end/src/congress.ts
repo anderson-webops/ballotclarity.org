@@ -187,7 +187,10 @@ export function createCongressClient({
 					bioguideId: member.bioguideId?.trim() || "unknown-member",
 					currentMember: deriveCurrentMemberFromTerms(member.terms?.item),
 					depiction: member.depiction?.imageUrl?.trim()
-						? { imageUrl: member.depiction.imageUrl.trim(), attribution: member.depiction.attribution?.trim() || undefined }
+						? {
+								imageUrl: member.depiction.imageUrl.trim(),
+								attribution: member.depiction.attribution?.trim() || undefined
+							}
 						: undefined,
 					district: member.district,
 					name: member.name?.trim() || "Unknown member",
@@ -295,7 +298,10 @@ export function createCongressClient({
 				bioguideId: member.bioguideId?.trim() || "unknown-member",
 				currentMember: deriveCurrentMemberFromTerms(member.terms?.item),
 				depiction: member.depiction?.imageUrl?.trim()
-					? { imageUrl: member.depiction.imageUrl.trim(), attribution: member.depiction.attribution?.trim() || undefined }
+					? {
+							imageUrl: member.depiction.imageUrl.trim(),
+							attribution: member.depiction.attribution?.trim() || undefined
+						}
 					: undefined,
 				district: member.district,
 				name: member.name?.trim() || "Unknown member",

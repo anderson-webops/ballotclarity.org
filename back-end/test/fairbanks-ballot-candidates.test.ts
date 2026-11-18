@@ -84,7 +84,15 @@ test("Unexpected printed rows before or after known candidates hold even at low 
 	}
 });
 test("Missing proof, mixed source bytes, malformed OCR and altered vote limits remain held", () => {
-	for (const change of ["missing", "source", "geometry", "columns", "limit", "term", "write-in"]) {
+	for (const change of [
+		"missing",
+		"source",
+		"geometry",
+		"columns",
+		"limit",
+		"term",
+		"write-in"
+	]) {
 		const data = sample();
 		if (change === "missing") data.documents[1]!.pages.pop();
 		if (change === "source") data.documents[0]!.sourceSha256 = "0".repeat(64);
@@ -106,7 +114,15 @@ test("Preparation rejects malformed plans and altered pinned inputs without chan
 		const path = join(directory, "publications.json");
 		const original = Buffer.from("Preserved unrelated evidence\n");
 		await writeFile(path, original);
-		await writeFile(planPath, JSON.stringify({ schemaVersion: 1, type: "fairbanks-native-candidate-preparation", publicationBundle: { path, sha256: "0".repeat(64) }, outputDirectory: directory }));
+		await writeFile(planPath, JSON.stringify({
+			schemaVersion: 1,
+			type: "fairbanks-native-candidate-preparation",
+			publicationBundle: {
+				path,
+				sha256: "0".repeat(64)
+			},
+			outputDirectory: directory
+		}));
 		await assert.rejects(prepareFairbanksCandidateFiles(planPath), /bundle changed/u);
 		assert.deepEqual(await readFile(path), original);
 	}

@@ -12,11 +12,24 @@ function assertBooneDisplay(xml: string) {
 	for (const tag of xml.matchAll(/<(?:[^"'<>]|"[^"]*"|'[^']*')+>/gu)) {
 		const element = /^<(?:[A-Za-z_][\w.-]*:)?([A-Za-z_][\w.-]*)/u.exec(tag[0])?.[1];
 		if (!element) continue;
-		if (["f", "strike", "conditionalFormatting", "drawing", "legacyDrawing", "rPh"].includes(element)) throw workbookError();
+		if ([
+			"f",
+			"strike",
+			"conditionalFormatting",
+			"drawing",
+			"legacyDrawing",
+			"rPh"
+		].includes(element)) {
+			throw workbookError();
+		}
 		for (const attribute of tag[0].matchAll(/\b(hidden|state)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gu)) {
 			if (attribute[1] === "state" && element !== "sheet") continue;
 			const value = attribute[2] ?? attribute[3] ?? attribute[4];
-			if (!(attribute[1] === "hidden" ? ["0", "false"] : ["visible"]).includes(value!)) throw workbookError();
+			if (!(attribute[1] === "hidden"
+				? ["0", "false"]
+				: ["visible"]).includes(value!)) {
+				throw workbookError();
+			}
 		}
 	}
 }
@@ -113,7 +126,9 @@ function assertWorkbookArchive(bytes: Buffer) {
 		const content
 			= method === 0
 				? bytes.subarray(dataStart, dataEnd)
-				: inflateRawSync(bytes.subarray(dataStart, dataEnd), { maxOutputLength: Math.max(1, size) });
+				: inflateRawSync(bytes.subarray(dataStart, dataEnd), {
+						maxOutputLength: Math.max(1, size)
+					});
 		if (content.length !== size || crc32(content) !== checksum) throw workbookError();
 		if (passivePrinter) {
 			printerSettings = true;
@@ -131,7 +146,9 @@ function assertWorkbookArchive(bytes: Buffer) {
 			for (const reference of [
 				dimension[1]!,
 				dimension[2] ?? dimension[1]!,
-				...[...xml.matchAll(/<c\s[^>]*\br="([A-Z]+\d+)"/gu)].map(match => match[1]!)
+				...[
+					...xml.matchAll(/<c\s[^>]*\br="([A-Z]+\d+)"/gu)
+				].map(match => match[1]!)
 			]) {
 				const cell = /^([A-Z]+)([1-9]\d*)$/u.exec(reference)!;
 				const column = [...cell[1]!].reduce((value, character) => value * 26 + character.charCodeAt(0) - 64, 0);

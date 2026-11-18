@@ -19,7 +19,18 @@ async function stored(context: TestContext) {
 	const response = await service.request(service.endpoint, { method: "POST", headers, body: service.body });
 	assert.equal(response.status, 201);
 	const accepted = await response.json();
-	return { ...service, id, headers, accepted, packet: join(service.directory, "inbox", id), options: { audience: handoffAudience, publicKeys: [service.keys.publicKey], release: service.envelope.release } };
+	return {
+		...service,
+		id,
+		headers,
+		accepted,
+		packet: join(service.directory, "inbox", id),
+		options: {
+			audience: handoffAudience,
+			publicKeys: [service.keys.publicKey],
+			release: service.envelope.release
+		}
+	};
 }
 
 test("durable authentication preserves the original headers and is independently verified after ingress expiry", async (context) => {
@@ -64,10 +75,22 @@ test("at-rest verification rejects evidence tampering, swapped identities and un
 		await assert.rejects(() => verifyStoredHandoff(packet.packet, packet.options));
 	}
 	await writeFile(filename, original);
-	await assert.rejects(() => verifyStoredHandoff(packet.packet, { ...packet.options, publicKeys: [generateKeyPairSync("ed25519").publicKey] }));
+	await assert.rejects(() => verifyStoredHandoff(packet.packet, {
+		...packet.options,
+		publicKeys: [generateKeyPairSync("ed25519").publicKey]
+	}));
 	await assert.rejects(() => verifyStoredHandoff(packet.packet, { ...packet.options, audience: "wrong-audience" }));
-	await assert.rejects(() => verifyStoredHandoff(packet.packet, { ...packet.options, release: { ...packet.options.release, commit: "c".repeat(40) } }));
-	await assert.rejects(() => verifyStoredHandoff(packet.packet, { ...packet.options, publicKeys: [packet.keys.privateKey] }));
+	await assert.rejects(() => verifyStoredHandoff(packet.packet, {
+		...packet.options,
+		release: {
+			...packet.options.release,
+			commit: "c".repeat(40)
+		}
+	}));
+	await assert.rejects(() => verifyStoredHandoff(packet.packet, {
+		...packet.options,
+		publicKeys: [packet.keys.privateKey]
+	}));
 });
 
 test("signed envelope, independent stored files and custody assertions must all agree", async (context) => {
@@ -75,7 +98,15 @@ test("signed envelope, independent stored files and custody assertions must all 
 	for (const name of ["envelope.json", "CURRENT-SERVER-HANDOFF.md", "receipt.json"]) {
 		const filename = join(packet.packet, name);
 		const original = await readFile(filename);
-		await writeFile(filename, name === "receipt.json" ? JSON.stringify({ ...packet.accepted.receipt, keyId: "e".repeat(64) }) : Buffer.concat([original, Buffer.from(" ")]));
+		await writeFile(filename, name === "receipt.json"
+			? JSON.stringify({
+					...packet.accepted.receipt,
+					keyId: "e".repeat(64)
+				})
+			: Buffer.concat([
+					original,
+					Buffer.from(" ")
+				]));
 		await assert.rejects(() => verifyStoredHandoff(packet.packet, packet.options));
 		await writeFile(filename, original);
 	}
@@ -109,10 +140,26 @@ test("verification CLI uses a separate owner-trusted enrollment file and emits m
 	const trusted = join(packet.directory, "trusted");
 	await mkdir(trusted, { mode: 0o700 });
 	const config = join(trusted, "enrollment.json");
-	await writeFile(config, JSON.stringify({ schemaVersion: 1, audience: handoffAudience, publicKeys: [packet.keys.publicKey.export({ format: "pem", type: "spki" })] }), { mode: 0o600 });
+	await writeFile(config, JSON.stringify({
+		schemaVersion: 1,
+		audience: handoffAudience,
+		publicKeys: [
+			packet.keys.publicKey.export({ format: "pem", type: "spki" })
+		]
+	}), { mode: 0o600 });
 	assert.equal((await verifyStoredHandoffWithConfig(packet.packet, config, packet.envelope.release)).status, "verified");
 	const root = fileURLToPath(new URL("../../", import.meta.url));
-	const command = ["--import", "tsx", "back-end/src/manage-private-handoff.ts", "verify", packet.packet, config, packet.envelope.release.tag, packet.envelope.release.commit, packet.envelope.release.archiveSha256];
+	const command = [
+		"--import",
+		"tsx",
+		"back-end/src/manage-private-handoff.ts",
+		"verify",
+		packet.packet,
+		config,
+		packet.envelope.release.tag,
+		packet.envelope.release.commit,
+		packet.envelope.release.archiveSha256
+	];
 	const result = JSON.parse(execFileSync(process.execPath, command, { cwd: root, encoding: "utf8" }));
 	assert.equal(result.status, "verified");
 	assert.equal(result.signatureEvidenceVersion, 1);
@@ -125,8 +172,22 @@ test("verification CLI uses a separate owner-trusted enrollment file and emits m
 
 test("signed evidence cannot be detached from its body or presented as an unbounded signature profile", () => {
 	const fixture = handoffFixture();
-	const keys = new Map([[handoffKeyId(fixture.keys.publicKey), fixture.keys.publicKey]]);
+	const keys = new Map([
+		[
+			handoffKeyId(fixture.keys.publicKey),
+			fixture.keys.publicKey
+		]
+	]);
 	const evidence = captureHandoffEvidence(signHandoff(fixture.body, handoffAudience, fixture.keys.privateKey, randomUUID(), handoffNow), handoffNow);
-	assert.throws(() => verifyHandoffEvidence(Buffer.concat([fixture.body, Buffer.from(" ")]), evidence, handoffAudience, keys));
-	assert.throws(() => verifyHandoffEvidence(fixture.body, { ...evidence, headers: { ...evidence.headers, signature: "x".repeat(20_000) } }, handoffAudience, keys));
+	assert.throws(() => verifyHandoffEvidence(Buffer.concat([
+		fixture.body,
+		Buffer.from(" ")
+	]), evidence, handoffAudience, keys));
+	assert.throws(() => verifyHandoffEvidence(fixture.body, {
+		...evidence,
+		headers: {
+			...evidence.headers,
+			signature: "x".repeat(20_000)
+		}
+	}, handoffAudience, keys));
 });

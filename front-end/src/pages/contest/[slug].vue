@@ -11,11 +11,17 @@ const openLayerLink = computed(() => data.value
 const overviewLink = computed(() => data.value
 	? { label: "Election overview", to: `/elections/${data.value.election.slug}` }
 	: fallbackOverviewLink.value);
-const displayTitle = computed(() => data.value?.contest.type === "measure" ? data.value.contest.title : data.value?.contest.office);
+const displayTitle = computed(() => data.value?.contest.type === "measure"
+	? data.value.contest.title
+	: data.value?.contest.office);
 // A side-by-side matrix only helps when there is more than one option to compare.
 const contestComparisonMatrix = computed(() => {
-	const matrix = data.value ? buildContestComparisonMatrix(data.value.contest) : null;
-	return matrix && matrix.columns.length > 1 ? matrix : null;
+	const matrix = data.value
+		? buildContestComparisonMatrix(data.value.contest)
+		: null;
+	return matrix && matrix.columns.length > 1
+		? matrix
+		: null;
 });
 
 const compareHref = computed(() => {

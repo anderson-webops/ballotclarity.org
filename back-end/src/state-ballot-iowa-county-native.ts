@@ -116,7 +116,11 @@ function validName(value: string) {
 			value
 		);
 }
-const edges = (county: IowaSampleCounty) => (county === "Woodbury" ? [33, 215, 395, 577] : [19, 211, 403, 593.28]);
+function edges(county: IowaSampleCounty) {
+	return county === "Woodbury"
+		? [33, 215, 395, 577]
+		: [19, 211, 403, 593.28];
+}
 
 function checkedSampleContext(context: IowaSampleContext) {
 	assert(["Monona", "Woodbury"].includes(context.county), "The Iowa sample county requires review.");
@@ -159,7 +163,9 @@ export function readIowaSampleColumns(body: string, county: IowaSampleCounty): I
 		"The Iowa native sample exceeds its bounds."
 	);
 	const tree = parseStateHtml(body);
-	const pending = [{ node: tree, depth: 0 }];
+	const pending = [
+		{ node: tree, depth: 0 }
+	];
 	let visited = 0;
 	while (pending.length) {
 		const item = pending.pop()!;
@@ -209,8 +215,12 @@ export function readIowaSampleColumns(body: string, county: IowaSampleCounty): I
 			}
 			if (
 				column < 0
-				|| ymin < (county === "Monona" ? 33.07 : 25)
-				|| ymax > (county === "Monona" ? 941.4 : height - 30)
+				|| ymin < (county === "Monona"
+					? 33.07
+					: 25)
+				|| ymax > (county === "Monona"
+					? 941.4
+					: height - 30)
 			) {
 				continue;
 			}
@@ -232,7 +242,11 @@ export function readIowaSampleColumns(body: string, county: IowaSampleCounty): I
 					line.ymax = Math.max(line.ymax, word.ymax);
 				}
 				else {
-					lines.push({ ymin: word.ymin, ymax: word.ymax, words: [word] });
+					lines.push({
+						ymin: word.ymin,
+						ymax: word.ymax,
+						words: [word]
+					});
 				}
 			}
 			return lines
@@ -274,10 +288,20 @@ function officeContext(caption: string, county: IowaSampleCounty): Office {
 				: "state-house";
 		assert(
 			Number(district[1]) > 0
-			&& Number(district[1]) <= (scope === "congressional" ? 4 : scope === "state-senate" ? 50 : 100),
+			&& Number(district[1]) <= (scope === "congressional"
+				? 4
+				: scope === "state-senate"
+					? 50
+					: 100),
 			"The Iowa district number requires review."
 		);
-		return { office, scope, districtCode: district[1]!, jurisdiction: "Iowa", team: false };
+		return {
+			office,
+			scope,
+			districtCode: district[1]!,
+			jurisdiction: "Iowa",
+			team: false
+		};
 	}
 	if (
 		[
@@ -291,7 +315,13 @@ function officeContext(caption: string, county: IowaSampleCounty): Office {
 			"Attorney General"
 		].includes(office)
 	) {
-		return { office, scope: "statewide", districtCode: null, jurisdiction: "Iowa", team: office.includes(" / ") };
+		return {
+			office,
+			scope: "statewide",
+			districtCode: null,
+			jurisdiction: "Iowa",
+			team: office.includes(" / ")
+		};
 	}
 	assert(
 		/^(?:Board of Supervisors District [1-9]\d?|County (?:Treasurer|Recorder|Attorney|Agricultural Extension(?: To Fill Vacancy)?)|Soil and Water Conservation District|[\p{L} ]+ Township (?:Trustee|Clerk))$/u.test(
@@ -304,7 +334,9 @@ function officeContext(caption: string, county: IowaSampleCounty): Office {
 		office,
 		scope: "local",
 		districtCode: /Supervisors District (\d+)/u.exec(office)?.[1] ?? null,
-		jurisdiction: township ? `${county} County · ${township} Township` : `${county} County`,
+		jurisdiction: township
+			? `${county} County · ${township} Township`
+			: `${county} County`,
 		team: false
 	};
 }
@@ -345,7 +377,12 @@ export function readIowaSampleFields(pages: IowaSampleLine[][][], context: IowaS
 		]);
 		const key = createHash("sha256").update(identity).digest("hex").slice(0, 24);
 		assert(!records.some(record => record.key === key), "An Iowa choice is duplicated within its printed style.");
-		records.push({ key, stateCode: "IA", electionDate: context.electionDate, ...values });
+		records.push({
+			key,
+			stateCode: "IA",
+			electionDate: context.electionDate,
+			...values
+		});
 		for (const line of evidence) {
 			claims.push({
 				key,
@@ -390,12 +427,18 @@ export function readIowaSampleFields(pages: IowaSampleLine[][][], context: IowaS
 					{
 						...office,
 						name: candidates.join(" / "),
-						...(office.team ? { members: [...candidates] } : {}),
+						...(office.team
+							? {
+									members: [...candidates]
+								}
+							: {}),
 						party: candidateParty ?? null,
 						nonpartisanOffice: nonpartisan,
 						voteLimit: limit,
 						recordKind: office.team ? "joint-ticket" : "candidate",
-						termType: /To Fill Vacancy/u.test(office.office) ? "to-fill-vacancy" : null
+						termType: /To Fill Vacancy/u.test(office.office)
+							? "to-fill-vacancy"
+							: null
 					},
 					candidateLines.map((line, index) => ({ ...line, sourceName: candidates[index]! }))
 				);
@@ -420,7 +463,9 @@ export function readIowaSampleFields(pages: IowaSampleLine[][][], context: IowaS
 						recordKind: "judicial-retention-question",
 						choices: ["Yes", "No"]
 					},
-					[{ ...pendingJudge.line, sourceName: pendingJudge.name }]
+					[
+						{ ...pendingJudge.line, sourceName: pendingJudge.name }
+					]
 				);
 				pendingJudge = undefined;
 				judgeChoices = [];
@@ -585,7 +630,12 @@ export function readIowaSampleFields(pages: IowaSampleLine[][][], context: IowaS
 		records.length > 0 && records.length <= 1000 && contests.length <= 100 && questionLines.length <= 500,
 		"The Iowa sample record bounds require review."
 	);
-	return { records, claims, contests, questionLines };
+	return {
+		records,
+		claims,
+		contests,
+		questionLines
+	};
 }
 
 export function readIowaCountySamples(
@@ -595,7 +645,9 @@ export function readIowaCountySamples(
 ): IowaCountyNativeRead {
 	assert(documents.length > 0 && documents.length <= 100, "The Iowa offered sample set requires review.");
 	const origin
-		= context.county === "Monona" ? "https://mononacountyiowa.gov" : "https://elections.woodburycountyiowa.gov";
+		= context.county === "Monona"
+			? "https://mononacountyiowa.gov"
+			: "https://elections.woodburycountyiowa.gov";
 	const records = new Map<string, IowaSampleChoice>();
 	const claims: IowaCountyNativeRead["claims"] = [];
 	const metadata: IowaCountyNativeRead["documents"] = [];
@@ -653,7 +705,9 @@ export function readIowaCountySamples(
 	}
 	const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 	return {
-		records: [...records.values()],
+		records: [
+			...records.values()
+		],
 		claims,
 		documents: metadata,
 		contests,

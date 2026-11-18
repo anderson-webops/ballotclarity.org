@@ -12,9 +12,24 @@ export const clarkDiscoveryUrl = "https://www.clarkcountynv.gov/government/depar
 export const clarkDigest = (body: string) => createHash("sha256").update(body).digest("hex");
 export const clarkIndexDigest = (documents: readonly { url: string }[]) => clarkDigest(JSON.stringify(documents.map(({ url }) => ({ url }))));
 const policyPages = [
-	{ id: "robots", url: "https://www.clarkcountynv.gov/robots.txt", format: "robots", sha256: "67e79ffcb4c3f0f949e797f7b7ab860a1f4318377348729615dc32aa8e21cc0c" },
-	{ id: "home-links", url: "https://www.clarkcountynv.gov/", format: "links", sha256: "587109450d8a3b2b21be9e2647fe9366f3c4c42e07270655aa2df5d215abe3cd" },
-	{ id: "privacy", url: "https://www.clarkcountynv.gov/government/privacy-policy", format: "main", sha256: "951f2e61c56ae7a3ae51dbb4ddf746faafec29de1eec5ab9980ba9173b0d1a5f" },
+	{
+		id: "robots",
+		url: "https://www.clarkcountynv.gov/robots.txt",
+		format: "robots",
+		sha256: "67e79ffcb4c3f0f949e797f7b7ab860a1f4318377348729615dc32aa8e21cc0c"
+	},
+	{
+		id: "home-links",
+		url: "https://www.clarkcountynv.gov/",
+		format: "links",
+		sha256: "587109450d8a3b2b21be9e2647fe9366f3c4c42e07270655aa2df5d215abe3cd"
+	},
+	{
+		id: "privacy",
+		url: "https://www.clarkcountynv.gov/government/privacy-policy",
+		format: "main",
+		sha256: "951f2e61c56ae7a3ae51dbb4ddf746faafec29de1eec5ab9980ba9173b0d1a5f"
+	},
 ] as const;
 export const clarkPolicyReceipts = policyPages.map(({ id, url, sha256 }) => ({ id, url, sha256 }));
 const text = (node: Parameters<typeof stateHtmlText>[0]) => stateHtmlText(node).replace(/\s+/gu, " ").trim();
@@ -36,7 +51,11 @@ export function validateClarkElection(value: unknown): asserts value is ClarkEle
 }
 export function validateClarkSource(source: StateBallotSource) {
 	validateClarkElection({ electionId: null, electionDate: source.electionDate, pageUrl: source.pageUrl });
-	if (source.stateCode !== "NV" || source.format !== "clark-pdf" || source.retrievalPolicy || source.postBody || source.delimiter || source.documentUrls || source.documentLinks || source.url !== source.pageUrl || source.snapshotStorage !== "external" || source.id !== (source.electionDate === "2026-11-03" ? "nv-clark-2026" : `nv-clark-general-${source.electionDate}`)) throw new Error("The automatic Clark County source identity is invalid.");
+	if (source.stateCode !== "NV" || source.format !== "clark-pdf" || source.retrievalPolicy || source.postBody || source.delimiter || source.documentUrls || source.documentLinks || source.url !== source.pageUrl || source.snapshotStorage !== "external" || source.id !== (source.electionDate === "2026-11-03"
+		? "nv-clark-2026"
+		: `nv-clark-general-${source.electionDate}`)) {
+		throw new Error("The automatic Clark County source identity is invalid.");
+	}
 }
 function main(body: string) {
 	if (Buffer.byteLength(body) > 2 * 1024 * 1024) throw new Error("The Clark County page exceeds its bounds.");
@@ -56,24 +75,41 @@ function offeredDocument(body: string, label: string, kind: ClarkDocument["kind"
 export function readClarkElectionIndex(body: string): ClarkElection {
 	const region = main(body);
 	if (!stateHtmlDescendants(region, node => node.nodeName === "h2" && text(node) === "Current Interest").length) throw new Error("The Clark County current-election region changed.");
-	const dates = [...text(region).matchAll(/Election Day is November ([2-8]), (20\d{2})/gu)].map(match => `${match[2]}-11-0${match[1]}`);
+	const dates = [
+		...text(region).matchAll(/Election Day is November ([2-8]), (20\d{2})/gu)
+	].map(match => `${match[2]}-11-0${match[1]}`);
 	if (!dates.length || new Set(dates).size !== 1) throw new Error("The Clark County current election has no unambiguous printed date.");
 	const date = dates[0]!;
 	const anchors = stateHtmlDescendants(region, node => node.nodeName === "a" && /^One-Stop Page for Information about the 20\d{2} General Election$/u.test(text(node)));
 	if (anchors.length !== 1 || text(anchors[0]!) !== `One-Stop Page for Information about the ${date.slice(0, 4)} General Election`) throw new Error("The Clark County current-election control requires review.");
-	const election: ClarkElection = { electionId: null, electionDate: date, pageUrl: publicUrl(stateHtmlAttribute(anchors[0]!, "href")) };
+	const election: ClarkElection = {
+		electionId: null,
+		electionDate: date,
+		pageUrl: publicUrl(stateHtmlAttribute(anchors[0]!, "href"))
+	};
 	validateClarkElection(election);
 	return election;
 }
 export function readClarkDiscovery(body: string) {
 	if (Buffer.byteLength(body) > 6 * 1024 * 1024) throw new Error("The Clark County discovery exceeds its bounds.");
 	const value = JSON.parse(body);
-	if (!clarkExactKeys(value, ["schemaVersion", "type", "index", "page", "policies"]) || value.schemaVersion !== 1 || value.type !== "clark-candidate-discovery" || typeof value.index !== "string" || !clarkExactKeys(value.page, ["url", "body"]) || typeof value.page.body !== "string" || JSON.stringify(value.policies) !== JSON.stringify(clarkPolicyReceipts)) throw new Error("The Clark County discovery is incomplete or its policies changed.");
+	if (!clarkExactKeys(value, [
+		"schemaVersion",
+		"type",
+		"index",
+		"page",
+		"policies"
+	]) || value.schemaVersion !== 1 || value.type !== "clark-candidate-discovery" || typeof value.index !== "string" || !clarkExactKeys(value.page, ["url", "body"]) || typeof value.page.body !== "string" || JSON.stringify(value.policies) !== JSON.stringify(clarkPolicyReceipts)) {
+		throw new Error("The Clark County discovery is incomplete or its policies changed.");
+	}
 	const election = readClarkElectionIndex(value.index);
 	const headings = stateHtmlDescendants(main(value.page.body), node => node.nodeName === "h2" && stateHtmlAttribute(node, "id") === "general-election-information-index");
 	if (value.page.url !== election.pageUrl || headings.length !== 1 || text(headings[0]!) !== `${election.electionDate.slice(0, 4)} General Election Information Index`) throw new Error("The Clark County election page does not match its offered election.");
 	const year = election.electionDate.slice(0, 4);
-	const documents = [offeredDocument(value.page.body, `Contests/Candidates in the ${year} General Election`, "candidate-table"), offeredDocument(value.index, `All Contests and Candidates in the ${year} General Election`, "newsletter")].filter((document): document is ClarkDocument => Boolean(document));
+	const documents = [
+		offeredDocument(value.page.body, `Contests/Candidates in the ${year} General Election`, "candidate-table"),
+		offeredDocument(value.index, `All Contests and Candidates in the ${year} General Election`, "newsletter")
+	].filter((document): document is ClarkDocument => Boolean(document));
 	if (new Set(documents.map(document => document.url)).size !== documents.length) throw new Error("The Clark County independent publications have the same URL.");
 	return { election, documents };
 }
@@ -83,7 +119,12 @@ export function readClarkElectionDiscovery(body: string) {
 export async function fetchClarkCycleDiscovery(options: { requestText?: TextRequest; wait?: (delay: number) => Promise<void> } = {}) {
 	const request = options.requestText ?? fetchRemoteSourceText;
 	const wait = options.wait ?? (delay => new Promise(resolve => setTimeout(resolve, delay)));
-	const transport = { allowedHosts: ["www.clarkcountynv.gov"], maxBytes: 2 * 1024 * 1024, maxRedirects: 0, timeoutMs: 25000 };
+	const transport = {
+		allowedHosts: ["www.clarkcountynv.gov"],
+		maxBytes: 2 * 1024 * 1024,
+		maxRedirects: 0,
+		timeoutMs: 25000
+	};
 	let robots: ReturnType<typeof electionDocumentRobotsPolicy> | undefined;
 	const read = async (url: string) => {
 		if (robots) {
@@ -99,7 +140,13 @@ export async function fetchClarkCycleDiscovery(options: { requestText?: TextRequ
 	}
 	const index = await read(clarkDiscoveryUrl);
 	const election = readClarkElectionIndex(index);
-	const body = JSON.stringify({ schemaVersion: 1, type: "clark-candidate-discovery", index, page: { url: election.pageUrl, body: await read(election.pageUrl) }, policies: clarkPolicyReceipts });
+	const body = JSON.stringify({
+		schemaVersion: 1,
+		type: "clark-candidate-discovery",
+		index,
+		page: { url: election.pageUrl, body: await read(election.pageUrl) },
+		policies: clarkPolicyReceipts
+	});
 	readClarkDiscovery(body);
 	return body;
 }

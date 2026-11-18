@@ -25,7 +25,14 @@ test("Alabama offered annual pages can wait without inferred dates, candidates o
 	const capture = pendingCapture();
 	const prepared = prepareAlabamaReferences(capture, now);
 	assert.deepEqual(prepared.elections, []);
-	assert.deepEqual(prepared.pendingPublications, [{ status: "pending", year: "2028", pageUrl: `${alabamaDiscoveryUrl}/2028`, reason: "general-election-not-published" }]);
+	assert.deepEqual(prepared.pendingPublications, [
+		{
+			status: "pending",
+			year: "2028",
+			pageUrl: `${alabamaDiscoveryUrl}/2028`,
+			reason: "general-election-not-published"
+		}
+	]);
 	assert.equal(prepared.candidateQualificationInferred, false);
 	const catalog = discoverStateBallotElectionCycles(JSON.stringify(capture), "al-sos-2026", now);
 	assert.deepEqual(catalog.elections, []);
@@ -48,11 +55,23 @@ test("Alabama incomplete publication controls remain pending until their full in
 
 test("Alabama malformed, duplicate or cross-year links never become pending", () => {
 	const body = `<main><h2>General Election – November 7, 2028</h2><a href="/alabama-votes/2028-general-election-sample-ballots">Sample Ballots</a><a href="/sites/default/files/election-2028/dem.pdf">State Certification of Democratic Party Candidates</a></main>`;
-	for (const changed of [body.replace("/alabama-votes/2028-", "/alabama-votes/2030-"), body.replace("election-2028", "election-2030"), body.replace("Democratic Party Candidates", "Unreviewed Candidates"), body.replace("</main>", "<a href=\"/sites/default/files/election-2028/other.pdf\">State Certification of Democratic Party Candidates</a></main>"), body.replace("November 7", "November 6")]) assert.throws(() => alabamaGeneralElection(changed, "2028", now));
+	for (const changed of [
+		body.replace("/alabama-votes/2028-", "/alabama-votes/2030-"),
+		body.replace("election-2028", "election-2030"),
+		body.replace("Democratic Party Candidates", "Unreviewed Candidates"),
+		body.replace("</main>", "<a href=\"/sites/default/files/election-2028/other.pdf\">State Certification of Democratic Party Candidates</a></main>"),
+		body.replace("November 7", "November 6")
+	]) assert.throws(() => alabamaGeneralElection(changed, "2028", now));
 });
 
 test("Alabama missing content is not a pending state for an unknown or ambiguous annual page", () => {
-	for (const body of ["<main>Unavailable</main>", "<main><h1>2028 Election Information</h1><p>General Election November 7, 2028</p></main>", "<main><h1>2030 Election Information</h1></main>", "<main><h1>2028 Election Information</h1><h1>2028 Election Information</h1></main>", "<main><h1>2028 Election Information</h1><h2>General Election November 7, 2028</h2></main>"]) assert.throws(() => alabamaGeneralElection(body, "2028", now));
+	for (const body of [
+		"<main>Unavailable</main>",
+		"<main><h1>2028 Election Information</h1><p>General Election November 7, 2028</p></main>",
+		"<main><h1>2030 Election Information</h1></main>",
+		"<main><h1>2028 Election Information</h1><h1>2028 Election Information</h1></main>",
+		"<main><h1>2028 Election Information</h1><h2>General Election November 7, 2028</h2></main>"
+	]) assert.throws(() => alabamaGeneralElection(body, "2028", now));
 });
 
 test("Alabama pending publications expire rather than hiding missing election-day resources", () => {
@@ -82,14 +101,23 @@ test("Alabama unpublished cycles are discovered without speculative sample reque
 	const capture = pendingCapture();
 	const urls: string[] = [];
 	let instant = now;
-	const body = await fetchAlabamaCycleDiscovery({ now: () => instant, sleep: async (milliseconds) => {
-		instant += milliseconds;
-	}, request: async (url) => {
-		urls.push(url);
-		const item = capture.documents.find(item => item.url === url);
-		assert(item);
-		return { status: 200, contentType: "text/html", body: Buffer.from(item.body), etag: undefined };
-	} });
+	const body = await fetchAlabamaCycleDiscovery({
+		now: () => instant,
+		sleep: async (milliseconds) => {
+			instant += milliseconds;
+		},
+		request: async (url) => {
+			urls.push(url);
+			const item = capture.documents.find(item => item.url === url);
+			assert(item);
+			return {
+				status: 200,
+				contentType: "text/html",
+				body: Buffer.from(item.body),
+				etag: undefined
+			};
+		}
+	});
 	assert.equal(urls.length, 3);
 	assert.equal(readAlabamaDiscovery(body, instant).pendingPublications?.length, 1);
 });
@@ -98,9 +126,17 @@ test("Alabama pending synchronization reports an explicit wait and later admits 
 	const directory = await mkdtemp(join(tmpdir(), "alabama-pending-"));
 	try {
 		let body = JSON.stringify(pendingCapture());
-		const options = { familyId: "al-sos-2026", catalogPath: join(directory, "catalog.json"), dataDirectory: directory, now: () => now, enabledSourceIds: [] as string[], fetchDiscovery: async () => body, fetchCandidates: async () => {
-			throw new Error("No selected source should be fetched.");
-		} };
+		const options = {
+			familyId: "al-sos-2026",
+			catalogPath: join(directory, "catalog.json"),
+			dataDirectory: directory,
+			now: () => now,
+			enabledSourceIds: [] as string[],
+			fetchDiscovery: async () => body,
+			fetchCandidates: async () => {
+				throw new Error("No selected source should be fetched.");
+			}
+		};
 		const pending = await syncStateBallotCycles(options);
 		assert.equal(pending.pendingPublications?.length, 1);
 		assert.deepEqual(pending.results, []);
@@ -132,12 +168,23 @@ test("Alabama future-page access failures are not relabeled as unpublished", asy
 	const capture = pendingCapture();
 	for (const status of [403, 404, 503]) {
 		let instant = now;
-		await assert.rejects(fetchAlabamaCycleDiscovery({ now: () => instant, sleep: async (milliseconds) => {
-			instant += milliseconds;
-		}, request: async (url) => {
-			const item = capture.documents.find(item => item.url === url);
-			assert(item);
-			return { status: url.endsWith("/2028") ? status : 200, contentType: "text/html", body: Buffer.from(item.body), etag: undefined };
-		} }), /requires review/u);
+		await assert.rejects(fetchAlabamaCycleDiscovery({
+			now: () => instant,
+			sleep: async (milliseconds) => {
+				instant += milliseconds;
+			},
+			request: async (url) => {
+				const item = capture.documents.find(item => item.url === url);
+				assert(item);
+				return {
+					status: url.endsWith("/2028")
+						? status
+						: 200,
+					contentType: "text/html",
+					body: Buffer.from(item.body),
+					etag: undefined
+				};
+			}
+		}), /requires review/u);
 	}
 });

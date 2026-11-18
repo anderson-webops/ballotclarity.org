@@ -81,7 +81,11 @@ function pages(body: string, electionDate: string) {
 		Buffer.byteLength(body) > 4 * 1024 * 1024
 		|| /<!ENTITY|<!DOCTYPE[^>]*\[/iu.test(body)
 		|| !body.trimEnd().endsWith("</html>")
-		|| [...body.matchAll(/<page\b/gu)].length !== [...body.matchAll(/<\/page>/gu)].length
+		|| [
+			...body.matchAll(/<page\b/gu)
+		].length !== [
+			...body.matchAll(/<\/page>/gu)
+		].length
 	) {
 		throw new Error("The Tuscola listing is incomplete or exceeds its bounds.");
 	}
@@ -159,7 +163,9 @@ function status(entry: Person, electionDate: string) {
 		}
 		return {
 			status: "withdrawn" as const,
-			sourceStatus: `Withdrawal date: ${entry.withdrawal}${entry.printedStatus ? `; ${entry.printedStatus}` : ""}`
+			sourceStatus: `Withdrawal date: ${entry.withdrawal}${entry.printedStatus
+				? `; ${entry.printedStatus}`
+				: ""}`
 		};
 	}
 	if (entry.withdrawal || !/^(?:withdrawn|disqualified|inactive)$/iu.test(entry.printedStatus))
@@ -192,7 +198,9 @@ function geography(office: string) {
 	}
 	const area = /\(([^)]+)\)/u.exec(office)?.[1] ?? "";
 	return {
-		district: scope === "statewide" ? "" : district,
+		district: scope === "statewide"
+			? ""
+			: district,
 		scope,
 		jurisdiction:
 			scope !== "local"
@@ -307,7 +315,14 @@ export function readTuscolaCandidateDocuments(source: StateBallotSource, listing
 			}
 			else {
 				if (!Object.hasOwn(partyNames, party)) throw new Error("The Tuscola candidate party requires review.");
-				current!.people.push({ name, party, withdrawal, printedStatus, page: pageIndex + 1, top: row.top });
+				current!.people.push({
+					name,
+					party,
+					withdrawal,
+					printedStatus,
+					page: pageIndex + 1,
+					top: row.top
+				});
 			}
 		}
 		printedCounts.push(counted);
@@ -336,7 +351,9 @@ export function readTuscolaCandidateDocuments(source: StateBallotSource, listing
 		|| ballotPages.some(
 			(page, index) =>
 				!page.includes("VOTE BOTH FRONT AND BACK OF BALLOT")
-				|| (index % 2 === 0 ? !normalized(page).includes(sampleDate) : page.includes("OFFICIAL BALLOT"))
+				|| (index % 2 === 0
+					? !normalized(page).includes(sampleDate)
+					: page.includes("OFFICIAL BALLOT"))
 		)
 	) {
 		throw new Error("The Tuscola sample election identity or paired page set requires review.");
@@ -394,7 +411,9 @@ export function readTuscolaCandidateDocuments(source: StateBallotSource, listing
 		) {
 			throw new Error("The Tuscola negative vote limit requires review.");
 		}
-		for (let index = 0; index < contest.people.length; index += governor === contest ? 2 : 1) {
+		for (let index = 0; index < contest.people.length; index += governor === contest
+			? 2
+			: 1) {
 			const entry = contest.people[index]!;
 			let name = person(entry.name);
 			if (governor === contest) {
@@ -410,7 +429,9 @@ export function readTuscolaCandidateDocuments(source: StateBallotSource, listing
 				}
 				name += ` / ${mate.name}`;
 			}
-			const marker = / \(I\)$/u.test(name) ? "; (I)" : "";
+			const marker = / \(I\)$/u.test(name)
+				? "; (I)"
+				: "";
 			name = name.replace(/ \(I\)$/u, "");
 			const ballotDesignation = contest.term + marker;
 			const identity = [
@@ -434,7 +455,9 @@ export function readTuscolaCandidateDocuments(source: StateBallotSource, listing
 				party: entry.party,
 				district: fields.district,
 				scope: fields.scope,
-				...(fields.jurisdiction ? { jurisdiction: fields.jurisdiction } : {}),
+				...(fields.jurisdiction
+					? { jurisdiction: fields.jurisdiction }
+					: {}),
 				ballotDesignation,
 				...status(entry, source.electionDate),
 				sourceDistrictLabel: contest.office,

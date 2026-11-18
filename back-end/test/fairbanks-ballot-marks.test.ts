@@ -6,14 +6,31 @@ const oval = "<path fill=\"none\" stroke=\"rgb(0%,0%,0%)\" stroke-width=\"0.6\" 
 const wrap = (body: string) => `<svg width="612pt" height="1008pt" viewBox="0 0 612 1008">${body}</svg>`;
 
 test("Fairbanks rendered selection inventory identifies visible closed ovals", () => {
-	assert.deepEqual(inspectFairbanksSelectionMarks(wrap(oval), 612, 1008), [{ left: 85, top: 260, right: 95, bottom: 268 }]);
+	assert.deepEqual(inspectFairbanksSelectionMarks(wrap(oval), 612, 1008), [
+		{
+			left: 85,
+			top: 260,
+			right: 95,
+			bottom: 268
+		}
+	]);
 	const clipped = `<defs><clipPath id="clip"><path d="M 80 255 L 100 255 L 100 275 L 80 275 Z"/></clipPath></defs><g clip-path="url(#clip)">${oval}</g>`;
 	assert.equal(inspectFairbanksSelectionMarks(wrap(clipped), 612, 1008).length, 1);
 });
 
 test("Clipping, transparency, masks and low-contrast selection marks require review", () => {
-	for (const attribute of ["opacity=\"0\"", "mask=\"url(#mask)\"", "filter=\"url(#filter)\"", "style=\"display:none\"", "display=\"none\"", "visibility=\"hidden\""]) {
-		for (const body of [oval.replace("<path ", `<path ${attribute} `), `<g ${attribute}>${oval}</g>`]) assert.throws(() => inspectFairbanksSelectionMarks(wrap(body), 612, 1008), /visibility/u);
+	for (const attribute of [
+		"opacity=\"0\"",
+		"mask=\"url(#mask)\"",
+		"filter=\"url(#filter)\"",
+		"style=\"display:none\"",
+		"display=\"none\"",
+		"visibility=\"hidden\""
+	]) {
+		for (const body of [
+			oval.replace("<path ", `<path ${attribute} `),
+			`<g ${attribute}>${oval}</g>`
+		]) assert.throws(() => inspectFairbanksSelectionMarks(wrap(body), 612, 1008), /visibility/u);
 	}
 	for (const color of ["rgb(100%,100%,100%)", "rgb(90%,90%,90%)", "transparent"]) assert.throws(() => inspectFairbanksSelectionMarks(wrap(oval.replace("rgb(0%,0%,0%)", color)), 612, 1008), /stroke/u);
 	const clipped = `<defs><clipPath id="clip"><path d="M 89 255 L 100 255 L 100 275 L 89 275 Z"/></clipPath></defs><g clip-path="url(#clip)">${oval}</g>`;

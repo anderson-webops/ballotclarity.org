@@ -8,6 +8,8 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-	console.error(error instanceof Error ? error.message : "Candidate preparation failed.");
+	console.error(error instanceof Error
+		? error.message
+		: "Candidate preparation failed.");
 	process.exitCode = 1;
 });

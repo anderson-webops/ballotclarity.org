@@ -42,7 +42,9 @@ async function archive(selectedCommit = commit, dedication = readme, biography =
 }
 
 function commitResponse(selectedCommit = commit) {
-	return Response.json({ sha: selectedCommit, url: `https://api.github.com/repos/openstates/people/commits/${selectedCommit}`, html_url: `https://github.com/openstates/people/commit/${selectedCommit}` }, { headers: { etag: "\"commit-one\"" } });
+	return Response.json({ sha: selectedCommit, url: `https://api.github.com/repos/openstates/people/commits/${selectedCommit}`, html_url: `https://github.com/openstates/people/commit/${selectedCommit}` }, {
+		headers: { etag: "\"commit-one\"" }
+	});
 }
 
 async function fixture(context: { after: (callback: () => Promise<void>) => void }, secondPerson = false) {
@@ -50,43 +52,156 @@ async function fixture(context: { after: (callback: () => Promise<void>) => void
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	let clock = initialTime;
 	const now = () => clock;
-	const candidateRecords = [{ id: "a".repeat(24), name: "Alex Rivera", office: "State Senator", scope: "state-senate" as const, district: "12", status: "listed" as const }];
-	if (secondPerson) candidateRecords.push({ id: "b".repeat(24), name: "Blake Chen", office: "State Senator", scope: "state-senate", district: "13", status: "listed" });
+	const candidateRecords = [
+		{
+			id: "a".repeat(24),
+			name: "Alex Rivera",
+			office: "State Senator",
+			scope: "state-senate" as const,
+			district: "12",
+			status: "listed" as const
+		}
+	];
+	if (secondPerson) {
+		candidateRecords.push({
+			id: "b".repeat(24),
+			name: "Blake Chen",
+			office: "State Senator",
+			scope: "state-senate",
+			district: "13",
+			status: "listed"
+		});
+	}
 	const selectedCsv = csv + (secondPerson ? "ocd-person/00000000-0000-0000-0000-000000000002,Blake Chen,upper,13\n" : "");
-	const documents = official.documentUrls!.map((url, index) => ({ url, retrievedAt: new Date(clock).toISOString(), sha256: hash(url), includedRecordCount: index === 0 ? candidateRecords.length : 0 }));
+	const documents = official.documentUrls!.map((url, index) => ({
+		url,
+		retrievedAt: new Date(clock).toISOString(),
+		sha256: hash(url),
+		includedRecordCount: index === 0
+			? candidateRecords.length
+			: 0
+	}));
 	const candidateFile = join(directory, "candidates.json");
-	await writeFile(candidateFile, serializeStoredStateSnapshot({ source: official, retrievedAt: new Date(clock).toISOString(), sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), documents, records: candidateRecords }));
-	const collection: OpenStatesCollectionPlan = { schemaVersion: 1, type: "openstates-collection", sourceIds: [source.id], cacheDirectory: join(directory, "csv-cache"), outputRoot: join(directory, "runs"), candidateFiles: [candidateFile], allowedCandidateSourceIds: [official.id], accessReview: { reviewedAt: new Date(clock).toISOString(), termsTextSha256: openStatesPolicyFingerprint(policy) } };
-	await seedOpenStatesCollection(collection, { policy: { body: policy, capturedAt: new Date(clock).toISOString() }, downloads: [{ sourceId: source.id, body: selectedCsv, capturedAt: new Date(clock).toISOString(), etag: "\"csv-one\"" }] }, clock);
-	const plan: OpenStatesProfileCollectionPlan = { schemaVersion: 1, type: "openstates-profile-collection", collection, archiveCacheDirectory: join(directory, "archive-cache"), accessReview: { reviewedAt: new Date(clock).toISOString(), collectionPolicySha256: openStatesProfileCollectionPolicySha256, readmeSha256: hash(readme) } };
+	await writeFile(candidateFile, serializeStoredStateSnapshot({
+		source: official,
+		retrievedAt: new Date(clock).toISOString(),
+		sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+		documents,
+		records: candidateRecords
+	}));
+	const collection: OpenStatesCollectionPlan = {
+		schemaVersion: 1,
+		type: "openstates-collection",
+		sourceIds: [source.id],
+		cacheDirectory: join(directory, "csv-cache"),
+		outputRoot: join(directory, "runs"),
+		candidateFiles: [candidateFile],
+		allowedCandidateSourceIds: [official.id],
+		accessReview: {
+			reviewedAt: new Date(clock).toISOString(),
+			termsTextSha256: openStatesPolicyFingerprint(policy)
+		}
+	};
+	await seedOpenStatesCollection(collection, {
+		policy: {
+			body: policy,
+			capturedAt: new Date(clock).toISOString()
+		},
+		downloads: [
+			{
+				sourceId: source.id,
+				body: selectedCsv,
+				capturedAt: new Date(clock).toISOString(),
+				etag: "\"csv-one\""
+			}
+		]
+	}, clock);
+	const plan: OpenStatesProfileCollectionPlan = {
+		schemaVersion: 1,
+		type: "openstates-profile-collection",
+		collection,
+		archiveCacheDirectory: join(directory, "archive-cache"),
+		accessReview: {
+			reviewedAt: new Date(clock).toISOString(),
+			collectionPolicySha256: openStatesProfileCollectionPolicySha256,
+			readmeSha256: hash(readme)
+		}
+	};
 	const bytes = await archive();
-	const capture = { path: join(directory, "reviewed.tar.gz"), commit, sha256: hash(bytes), capturedAt: new Date(clock).toISOString() };
+	const capture = {
+		path: join(directory, "reviewed.tar.gz"),
+		commit,
+		sha256: hash(bytes),
+		capturedAt: new Date(clock).toISOString()
+	};
 	await writeFile(capture.path, bytes);
 	const requests: { url: string; options: RequestInit }[] = [];
 	async function fetchImpl(url: string, options: RequestInit) {
 		requests.push({ url, options });
-		if (url === openStatesBulkPublication.termsUrl) return new Response(policy, { headers: { "content-type": "text/html" } });
+		if (url === openStatesBulkPublication.termsUrl) {
+			return new Response(policy, {
+				headers: { "content-type": "text/html" }
+			});
+		}
 		if (url === source.documents[0]!.url) return new Response(null, { status: 304 });
 		if (url === openStatesProfilePublication.commitUrl) return commitResponse();
-		if (url === `https://api.github.com/repos/openstates/people/tarball/${commit}`) return new Response(null, { status: 302, headers: { location: `https://codeload.github.com/openstates/people/legacy.tar.gz/${commit}` } });
-		if (url === `https://codeload.github.com/openstates/people/legacy.tar.gz/${commit}`) return new Response(bytes, { headers: { "content-type": "application/x-gzip" } });
+		if (url === `https://api.github.com/repos/openstates/people/tarball/${commit}`) {
+			return new Response(null, {
+				status: 302,
+				headers: { location: `https://codeload.github.com/openstates/people/legacy.tar.gz/${commit}` }
+			});
+		}
+		if (url === `https://codeload.github.com/openstates/people/legacy.tar.gz/${commit}`) {
+			return new Response(bytes, {
+				headers: { "content-type": "application/x-gzip" }
+			});
+		}
 		throw new Error("Unexpected publisher request.");
 	}
-	const options = { now, fetchImpl, sleep: async () => {} };
+	const options = {
+		now,
+		fetchImpl,
+		sleep: async () => {}
+	};
 	async function seed() {
 		const collected = await collectOpenStates(collection, options);
 		const manifest = JSON.parse(await readFile(join(collected.outputDirectory, "openstates-reference-preparation.json"), "utf8"));
 		return seedOpenStatesProfileCollection(plan, capture, manifest.files.map((file: { path: string }) => join(collected.outputDirectory, file.path)), clock);
 	}
-	return { directory, plan, capture, bytes, requests, fetchImpl, options, now, seed, advance: (time: number) => {
-		clock = time;
-	}, current: join(plan.archiveCacheDirectory, "current.json"), hold: join(plan.archiveCacheDirectory, "hold.json") };
+	return {
+		directory,
+		plan,
+		capture,
+		bytes,
+		requests,
+		fetchImpl,
+		options,
+		now,
+		seed,
+		advance: (time: number) => {
+			clock = time;
+		},
+		current: join(plan.archiveCacheDirectory, "current.json"),
+		hold: join(plan.archiveCacheDirectory, "hold.json")
+	};
 }
 
 async function runFixtureCommand(directory: string, planPath: string) {
 	const preload = join(directory, "cli-fixture.mjs");
 	await writeFile(preload, `Date.now = () => ${initialTime}; globalThis.fetch = async () => { throw new Error("Publisher requests are forbidden in the CLI fixture."); };`, { flag: "wx" });
-	return spawnSync(process.execPath, ["--import", preload, "--import", "tsx", fileURLToPath(new URL("../src/manage-election-references.ts", import.meta.url)), "collect-openstates-profiles", planPath], { encoding: "utf8", env: { ...process.env, STATE_BALLOT_DATA_DIR: "" }, timeout: 30_000 });
+	return spawnSync(process.execPath, [
+		"--import",
+		preload,
+		"--import",
+		"tsx",
+		fileURLToPath(new URL("../src/manage-election-references.ts", import.meta.url)),
+		"collect-openstates-profiles",
+		planPath
+	], {
+		encoding: "utf8",
+		env: { ...process.env, STATE_BALLOT_DATA_DIR: "" },
+		timeout: 30_000
+	});
 }
 
 test("profile collection downloads one pinned archive through only GitHub's documented redirect", async (context) => {
@@ -127,7 +242,12 @@ test("conditional checks retain original body capture times and immutable archiv
 	const state = await fixture(context);
 	const first = await collectOpenStatesProfiles(state.plan, state.options);
 	state.advance(initialTime + day);
-	const result = await collectOpenStatesProfiles(state.plan, { ...state.options, fetchImpl: async (url, options) => url === openStatesProfilePublication.commitUrl ? new Response(null, { status: 304 }) : state.fetchImpl(url, options) });
+	const result = await collectOpenStatesProfiles(state.plan, {
+		...state.options,
+		fetchImpl: async (url, options) => url === openStatesProfilePublication.commitUrl
+			? new Response(null, { status: 304 })
+			: state.fetchImpl(url, options)
+	});
 	assert.equal(result.archive.status, "not-modified");
 	assert.equal(result.archive.capturedAt, first.archive.capturedAt);
 	assert.equal(result.archive.sha256, first.archive.sha256);
@@ -146,12 +266,24 @@ test("a new observed commit gets its own source-bound body while retaining the p
 	const nextCommit = "2".repeat(40);
 	const bytes = await archive(nextCommit);
 	state.advance(initialTime + day);
-	const result = await collectOpenStatesProfiles(state.plan, { ...state.options, fetchImpl: async (url, options) => {
-		if (url === openStatesProfilePublication.commitUrl) return commitResponse(nextCommit);
-		if (url.endsWith(`/tarball/${nextCommit}`)) return new Response(null, { status: 302, headers: { location: `https://codeload.github.com/openstates/people/legacy.tar.gz/${nextCommit}` } });
-		if (url.endsWith(`/legacy.tar.gz/${nextCommit}`)) return new Response(bytes, { headers: { "content-type": "application/gzip" } });
-		return state.fetchImpl(url, options);
-	} });
+	const result = await collectOpenStatesProfiles(state.plan, {
+		...state.options,
+		fetchImpl: async (url, options) => {
+			if (url === openStatesProfilePublication.commitUrl) return commitResponse(nextCommit);
+			if (url.endsWith(`/tarball/${nextCommit}`)) {
+				return new Response(null, {
+					status: 302,
+					headers: { location: `https://codeload.github.com/openstates/people/legacy.tar.gz/${nextCommit}` }
+				});
+			}
+			if (url.endsWith(`/legacy.tar.gz/${nextCommit}`)) {
+				return new Response(bytes, {
+					headers: { "content-type": "application/gzip" }
+				});
+			}
+			return state.fetchImpl(url, options);
+		}
+	});
 	assert.equal(result.archive.commit, nextCommit);
 	assert.equal(result.archive.status, "downloaded");
 	assert.equal(result.archive.sha256, hash(bytes));
@@ -161,9 +293,14 @@ test("a new observed commit gets its own source-bound body while retaining the p
 for (const status of [403, 429]) {
 	test(`publisher ${status} creates a persistent hold before future network requests`, async (context) => {
 		const state = await fixture(context);
-		await assert.rejects(collectOpenStatesProfiles(state.plan, { ...state.options, fetchImpl: async () => new Response(new ReadableStream({ cancel() {
-			throw new Error("Cancellation failed.");
-		} }), { status }) }), /stopped for review/u);
+		await assert.rejects(collectOpenStatesProfiles(state.plan, {
+			...state.options,
+			fetchImpl: async () => new Response(new ReadableStream({
+				cancel() {
+					throw new Error("Cancellation failed.");
+				}
+			}), { status })
+		}), /stopped for review/u);
 		assert.equal(JSON.parse(await readFile(state.hold, "utf8")).status, status);
 		await assert.rejects(collectOpenStatesProfiles(state.plan, state.options), /on hold/u);
 		assert.equal(state.requests.length, 0);
@@ -175,35 +312,90 @@ test("a transient commit failure preserves accepted bytes and enforces the attem
 	await state.seed();
 	const before = await readFile(state.current, "utf8");
 	state.advance(initialTime + day);
-	await assert.rejects(collectOpenStatesProfiles(state.plan, { ...state.options, fetchImpl: async (url, options) => url === openStatesProfilePublication.commitUrl ? new Response(null, { status: 503 }) : state.fetchImpl(url, options) }), /temporarily unavailable/u);
+	await assert.rejects(collectOpenStatesProfiles(state.plan, {
+		...state.options,
+		fetchImpl: async (url, options) => url === openStatesProfilePublication.commitUrl
+			? new Response(null, { status: 503 })
+			: state.fetchImpl(url, options)
+	}), /temporarily unavailable/u);
 	await assert.rejects(readFile(state.hold), { code: "ENOENT" });
 	assert.equal(await readFile(state.current, "utf8"), before);
 	await assert.rejects(collectOpenStatesProfiles(state.plan, state.options), /cooldown/u);
 	assert.equal(await readFile(state.current, "utf8"), before);
 });
 
-for (const variant of ["commit-identity", "commit-redirect", "archive-host", "archive-query", "content-type", "archive-size", "stream-size", "invalid-gzip", "dedication"]) {
+for (const variant of [
+	"commit-identity",
+	"commit-redirect",
+	"archive-host",
+	"archive-query",
+	"content-type",
+	"archive-size",
+	"stream-size",
+	"invalid-gzip",
+	"dedication"
+]) {
 	test(`profile collection holds ${variant} without promoting archive metadata`, async (context) => {
 		const state = await fixture(context);
-		await assert.rejects(collectOpenStatesProfiles(state.plan, { ...state.options, fetchImpl: async (url, options) => {
-			if (url === openStatesProfilePublication.commitUrl && variant === "commit-identity") return Response.json({ sha: commit, url: "https://example.test/commit", html_url: `https://github.com/openstates/people/commit/${commit}` });
-			if (url === openStatesProfilePublication.commitUrl && variant === "commit-redirect") return new Response(null, { status: 302, headers: { location: "https://example.test/commit" } });
-			if (url.includes("/tarball/") && variant.startsWith("archive-") && variant !== "archive-size") return new Response(null, { status: 302, headers: { location: variant === "archive-host" ? `https://example.test/${commit}` : `https://codeload.github.com/openstates/people/legacy.tar.gz/${commit}?extra=1` } });
-			if (url.includes("/legacy.tar.gz/")) {
-				if (variant === "content-type") return new Response("challenge", { headers: { "content-type": "text/html" } });
-				if (variant === "archive-size") return new Response("too large", { headers: { "content-type": "application/gzip", "content-length": String(33 * 1024 * 1024) } });
-				if (variant === "stream-size") {
-					return new Response(new ReadableStream({ start(controller) {
-						controller.enqueue(new Uint8Array(32 * 1024 * 1024));
-						controller.enqueue(new Uint8Array(1));
-						controller.close();
-					} }), { headers: { "content-type": "application/gzip" } });
+		await assert.rejects(collectOpenStatesProfiles(state.plan, {
+			...state.options,
+			fetchImpl: async (url, options) => {
+				if (url === openStatesProfilePublication.commitUrl && variant === "commit-identity") return Response.json({ sha: commit, url: "https://example.test/commit", html_url: `https://github.com/openstates/people/commit/${commit}` });
+				if (url === openStatesProfilePublication.commitUrl && variant === "commit-redirect") {
+					return new Response(null, {
+						status: 302,
+						headers: { location: "https://example.test/commit" }
+					});
 				}
-				if (variant === "invalid-gzip") return new Response("not gzip", { headers: { "content-type": "application/gzip" } });
-				if (variant === "dedication") return new Response(await archive(commit, `${readme}\nChanged dedication.`), { headers: { "content-type": "application/gzip" } });
+				if (url.includes("/tarball/") && variant.startsWith("archive-") && variant !== "archive-size") {
+					return new Response(null, {
+						status: 302,
+						headers: {
+							location: variant === "archive-host"
+								? `https://example.test/${commit}`
+								: `https://codeload.github.com/openstates/people/legacy.tar.gz/${commit}?extra=1`
+						}
+					});
+				}
+				if (url.includes("/legacy.tar.gz/")) {
+					if (variant === "content-type") {
+						return new Response("challenge", {
+							headers: { "content-type": "text/html" }
+						});
+					}
+					if (variant === "archive-size") {
+						return new Response("too large", {
+							headers: {
+								"content-type": "application/gzip",
+								"content-length": String(33 * 1024 * 1024)
+							}
+						});
+					}
+					if (variant === "stream-size") {
+						return new Response(new ReadableStream({
+							start(controller) {
+								controller.enqueue(new Uint8Array(32 * 1024 * 1024));
+								controller.enqueue(new Uint8Array(1));
+								controller.close();
+							}
+						}), {
+							headers: { "content-type": "application/gzip" }
+						});
+					}
+					if (variant === "invalid-gzip") {
+						return new Response("not gzip", {
+							headers: { "content-type": "application/gzip" }
+						});
+					}
+					if (variant === "dedication") {
+						return new Response(await archive(commit, `${readme}\nChanged dedication.`), {
+							headers: { "content-type": "application/gzip" }
+						});
+					}
+				}
+				return state.fetchImpl(url, options);
 			}
-			return state.fetchImpl(url, options);
-		} }), /stopped for review/u);
+		}), /stopped for review/u);
 		await assert.rejects(readFile(state.current), { code: "ENOENT" });
 		assert.ok(JSON.parse(await readFile(state.hold, "utf8")).reason);
 		const count = state.requests.length;
@@ -226,7 +418,13 @@ test("corrupt or linked archive bodies fail locally rather than trigger a replac
 
 test("expired policy reviews, extra configuration and shared caches fail before collection", async (context) => {
 	const state = await fixture(context);
-	await assert.rejects(collectOpenStatesProfiles({ ...state.plan, accessReview: { ...state.plan.accessReview, reviewedAt: new Date(initialTime - 31 * day).toISOString() } }, state.options), /current explicit/u);
+	await assert.rejects(collectOpenStatesProfiles({
+		...state.plan,
+		accessReview: {
+			...state.plan.accessReview,
+			reviewedAt: new Date(initialTime - 31 * day).toISOString()
+		}
+	}, state.options), /current explicit/u);
 	await assert.rejects(collectOpenStatesProfiles({ ...state.plan, extra: true } as OpenStatesProfileCollectionPlan, state.options), /current explicit/u);
 	await assert.rejects(collectOpenStatesProfiles({ ...state.plan, archiveCacheDirectory: state.plan.collection.cacheDirectory }, state.options), /separate caches/u);
 	assert.equal(state.requests.length, 0);
@@ -249,12 +447,22 @@ for (const failedStep of ["archive", "content"]) {
 		const previous = await readFile(state.current, "utf8");
 		state.advance(initialTime + day);
 		const nextCommit = "2".repeat(40);
-		await assert.rejects(collectOpenStatesProfiles(state.plan, { ...state.options, fetchImpl: async (url, options) => {
-			if (url === openStatesProfilePublication.commitUrl) return commitResponse(nextCommit);
-			if (url.includes("/tarball/")) return failedStep === "archive" ? new Response(null, { status: 503 }) : new Response(null, { status: 302, headers: { location: `https://codeload.github.com/openstates/people/legacy.tar.gz/${nextCommit}` } });
-			if (url.includes("/legacy.tar.gz/")) return new Response(null, { status: 503 });
-			return state.fetchImpl(url, options);
-		} }), /temporarily unavailable/u);
+		await assert.rejects(collectOpenStatesProfiles(state.plan, {
+			...state.options,
+			fetchImpl: async (url, options) => {
+				if (url === openStatesProfilePublication.commitUrl) return commitResponse(nextCommit);
+				if (url.includes("/tarball/")) {
+					return failedStep === "archive"
+						? new Response(null, { status: 503 })
+						: new Response(null, {
+								status: 302,
+								headers: { location: `https://codeload.github.com/openstates/people/legacy.tar.gz/${nextCommit}` }
+							});
+				}
+				if (url.includes("/legacy.tar.gz/")) return new Response(null, { status: 503 });
+				return state.fetchImpl(url, options);
+			}
+		}), /temporarily unavailable/u);
 		assert.equal(await readFile(state.current, "utf8"), previous);
 		await assert.rejects(readFile(state.hold), { code: "ENOENT" });
 	});
@@ -265,7 +473,12 @@ test("a not-modified response without a prior validator is held rather than inve
 	await state.seed();
 	const previous = await readFile(state.current, "utf8");
 	state.advance(initialTime + day);
-	await assert.rejects(collectOpenStatesProfiles(state.plan, { ...state.options, fetchImpl: async (url, options) => url === openStatesProfilePublication.commitUrl ? new Response(null, { status: 304 }) : state.fetchImpl(url, options) }), /unexpected-not-modified/u);
+	await assert.rejects(collectOpenStatesProfiles(state.plan, {
+		...state.options,
+		fetchImpl: async (url, options) => url === openStatesProfilePublication.commitUrl
+			? new Response(null, { status: 304 })
+			: state.fetchImpl(url, options)
+	}), /unexpected-not-modified/u);
 	assert.equal(await readFile(state.current, "utf8"), previous);
 });
 

@@ -24,10 +24,54 @@ function text(index: number, rows: string[], election = "NOVEMBER 3, 2026") {
 }
 function fixture() {
 	const source = configuredStateBallotSources.find(source => source.id === "ga-fulton-2026")!;
-	const records: StateBallotSnapshot["records"] = names.map((name, index) => ({ id: hash(name).slice(0, 24), name, office: fultonFilingDocuments[index ? 1 : 0]!.office, district: index ? "4" : "", scope: "local", status: "listed", party: "Original party" }));
-	const documents = source.documentUrls!.map((url, index) => ({ url, sha256: hash(url), retrievedAt: capturedAt, includedRecordCount: index ? 0 : records.length }));
-	const candidates: StateBallotSnapshot = { source, sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), retrievedAt: capturedAt, records, documents };
-	return { candidates, now, documents: [text(0, [row(names[0]!)]), text(1, [row("Karen Rene'", "Manager", "4/29/2026"), row("Aaron A. Sampson, Jr.", "Director", "5/1/2026")])].map((text, index) => ({ text, sha256: hash(String(index)), capturedAt })), bindings: names.map((name, index) => ({ documentIndex: index ? 1 : 0, name: index === 1 ? "Karen Rene'" : index === 2 ? "Aaron A. Sampson, Jr." : name, recordId: hash(name).slice(0, 24) })) };
+	const records: StateBallotSnapshot["records"] = names.map((name, index) => ({
+		id: hash(name).slice(0, 24),
+		name,
+		office: fultonFilingDocuments[index ? 1 : 0]!.office,
+		district: index ? "4" : "",
+		scope: "local",
+		status: "listed",
+		party: "Original party"
+	}));
+	const documents = source.documentUrls!.map((url, index) => ({
+		url,
+		sha256: hash(url),
+		retrievedAt: capturedAt,
+		includedRecordCount: index ? 0 : records.length
+	}));
+	const candidates: StateBallotSnapshot = {
+		source,
+		sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+		retrievedAt: capturedAt,
+		records,
+		documents
+	};
+	return {
+		candidates,
+		now,
+		documents: [
+			text(0, [
+				row(names[0]!)
+			]),
+			text(1, [
+				row("Karen Rene'", "Manager", "4/29/2026"),
+				row("Aaron A. Sampson, Jr.", "Director", "5/1/2026")
+			])
+		].map((text, index) => ({
+			text,
+			sha256: hash(String(index)),
+			capturedAt
+		})),
+		bindings: names.map((name, index) => ({
+			documentIndex: index ? 1 : 0,
+			name: index === 1
+				? "Karen Rene'"
+				: index === 2
+					? "Aaron A. Sampson, Jr."
+					: name,
+			recordId: hash(name).slice(0, 24)
+		}))
+	};
 }
 
 test("filing context exposes only dated occupation facts with exact candidate bindings", () => {
@@ -50,14 +94,29 @@ test("filing context exposes only dated occupation facts with exact candidate bi
 });
 
 test("the parser is election-parameterized without guessing future candidates or URLs", () => {
-	const body = text(0, [row("Example Candidate")], "NOVEMBER 7, 2028");
+	const body = text(0, [
+		row("Example Candidate")
+	], "NOVEMBER 7, 2028");
 	assert.equal(parseFultonFilingOccupations(body, fultonFilingDocuments[0], "2028-11-07")[0]!.occupation, "Analyst");
 	assert.throws(() => parseFultonFilingOccupations(body, fultonFilingDocuments[0], "2026-11-03"), /election/u);
 });
 
 test("primary, foreign office, changed publication, page count and malformed table data hold", () => {
 	const body = fixture().documents[0]!.text;
-	for (const changed of [body.replace("GENERAL/SPECIAL ELECTION", "PRIMARY"), body.replace("NOVEMBER 3", "NOVEMBER 4"), body.replace("3/7/2026", "3/8/2026"), body.replace("Conservation District Supervisor", "Other Office"), body.replace("OCCUPATION", "ADDRESS"), `${body}second page\f`, body.replace("Analyst", "contact@example.test"), body.replace("3/2/2026", "4/1/2026"), body.replace("No    Fulton", "Unknown    Fulton"), body.replace("Page 1 of 1", "Page 1 of 2"), body.replace("Analyst", "Analyst\nunknown row"), body + "x".repeat(256 * 1024)]) assert.throws(() => parseFultonFilingOccupations(changed, fultonFilingDocuments[0], "2026-11-03"));
+	for (const changed of [
+		body.replace("GENERAL/SPECIAL ELECTION", "PRIMARY"),
+		body.replace("NOVEMBER 3", "NOVEMBER 4"),
+		body.replace("3/7/2026", "3/8/2026"),
+		body.replace("Conservation District Supervisor", "Other Office"),
+		body.replace("OCCUPATION", "ADDRESS"),
+		`${body}second page\f`,
+		body.replace("Analyst", "contact@example.test"),
+		body.replace("3/2/2026", "4/1/2026"),
+		body.replace("No    Fulton", "Unknown    Fulton"),
+		body.replace("Page 1 of 1", "Page 1 of 2"),
+		body.replace("Analyst", "Analyst\nunknown row"),
+		body + "x".repeat(256 * 1024)
+	]) assert.throws(() => parseFultonFilingOccupations(changed, fultonFilingDocuments[0], "2026-11-03"));
 });
 
 test("missing, duplicate, mismatched and inactive candidate mappings hold", () => {
@@ -67,7 +126,12 @@ test("missing, duplicate, mismatched and inactive candidate mappings hold", () =
 		(input: ReturnType<typeof fixture>) => { input.candidates.records[0]!.name = "Someone Else"; },
 		(input: ReturnType<typeof fixture>) => { input.candidates.records[0]!.office = "County Commission Chairperson"; },
 		(input: ReturnType<typeof fixture>) => { input.candidates.records[0]!.status = "withdrawn"; },
-		(input: ReturnType<typeof fixture>) => { input.candidates.records.push({ ...input.candidates.records[0]!, id: hash("duplicate").slice(0, 24) }); },
+		(input: ReturnType<typeof fixture>) => {
+			input.candidates.records.push({
+				...input.candidates.records[0]!,
+				id: hash("duplicate").slice(0, 24)
+			});
+		},
 		(input: ReturnType<typeof fixture>) => { input.documents[0]!.capturedAt = "2026-11-04T00:00:00Z"; },
 	]) {
 		const input = fixture();
@@ -89,13 +153,29 @@ test("file preparation verifies original bytes, preserves official inputs and re
 	const candidateFile = join(directory, "candidates.json");
 	const original = serializeStoredStateSnapshot(input.candidates);
 	await writeFile(candidateFile, original);
-	const bodies = [Buffer.from("%PDF-first"), Buffer.from("%PDF-second")];
+	const bodies = [
+		Buffer.from("%PDF-first"),
+		Buffer.from("%PDF-second")
+	];
 	const documents = await Promise.all(bodies.map(async (body, index) => {
 		const path = join(directory, `document-${index}.pdf`);
 		await writeFile(path, body);
-		return { path, url: fultonFilingDocuments[index]!.url, sha256: hash(body), capturedAt };
+		return {
+			path,
+			url: fultonFilingDocuments[index]!.url,
+			sha256: hash(body),
+			capturedAt
+		};
 	}));
-	const plan = { schemaVersion: 1, type: "fulton-filing-context-preparation", reviewedAt: capturedAt, candidateFile, documents, bindings: input.bindings, outputDirectory: join(directory, "prepared") };
+	const plan = {
+		schemaVersion: 1,
+		type: "fulton-filing-context-preparation",
+		reviewedAt: capturedAt,
+		candidateFile,
+		documents,
+		bindings: input.bindings,
+		outputDirectory: join(directory, "prepared")
+	};
 	const path = join(directory, "review.json");
 	await writeFile(path, JSON.stringify(plan));
 	const extractor = async (body: Buffer) => input.documents[bodies.findIndex(value => value.equals(body))]!.text;

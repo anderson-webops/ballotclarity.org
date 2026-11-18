@@ -75,7 +75,9 @@ export function buildNationwidePersonProfileResponse(
 
 	const directoryBundle = buildNationwideDirectoryResponses(context);
 	const representativeMatch = context.representativeMatches.find(match => buildNationwideRepresentativeRouteAliases(match).includes(representativeSlug)) ?? null;
-	const representative = directoryBundle.representatives.representatives.find(item => item.slug === (representativeMatch ? buildNationwideRepresentativeSlug(representativeMatch) : representativeSlug));
+	const representative = directoryBundle.representatives.representatives.find(item => item.slug === (representativeMatch
+		? buildNationwideRepresentativeSlug(representativeMatch)
+		: representativeSlug));
 
 	if (!representative)
 		return null;
@@ -128,7 +130,10 @@ export function buildNationwidePersonProfileResponse(
 		}));
 	}
 
-	const sources = [...providerSources, ...officialSources];
+	const sources = [
+		...providerSources,
+		...officialSources
+	];
 	const districtAvailabilityNote = district
 		? buildDistrictRepresentativeAvailabilityNote(district, 1)
 		: "District information is attached when available.";

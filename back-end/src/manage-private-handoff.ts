@@ -17,7 +17,9 @@ if (
 		.then(value => console.log(JSON.stringify(value)))
 		.catch((error: unknown) => {
 			const legacy = error instanceof HandoffError && error.code === "legacy-signature-unavailable";
-			console.error(JSON.stringify({ status: legacy ? "legacy-custody-unverifiable" : "verification-failed" }));
+			console.error(JSON.stringify({
+				status: legacy ? "legacy-custody-unverifiable" : "verification-failed"
+			}));
 			process.exitCode = legacy ? 76 : 1;
 		});
 }

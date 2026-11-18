@@ -54,7 +54,9 @@ export const additionalStateBallotSources: readonly StateBallotSource[] = [
 		snapshotStorage: "external",
 		defaultPriority: -100,
 		documentUrls: ["https://fayettecountyga.gov/Documents/Departments/Elections/Sample%20Ballots/2026%20Certified%20Write-In%20Candidates%20v3.pdf?t=202610131910270"],
-		documentLinks: [{ label: "State and federal write-ins", url: "https://fayettecountyga.gov/Documents/Departments/Elections/Sample%20Ballots/2026%20Certified%20Write-In%20Candidates%20v3.pdf?t=202610131910270" }],
+		documentLinks: [
+			{ label: "State and federal write-ins", url: "https://fayettecountyga.gov/Documents/Departments/Elections/Sample%20Ballots/2026%20Certified%20Write-In%20Candidates%20v3.pdf?t=202610131910270" }
+		],
 	},
 	{
 		stateCode: "NH",
@@ -147,7 +149,9 @@ export const additionalStateBallotSources: readonly StateBallotSource[] = [
 		retrievalPolicy: "manual-snapshot",
 		snapshotStorage: "external",
 		documentUrls: ["https://www.stcharlesparish.gov/home/showpublisheddocument/13854/639254309447270000"],
-		documentLinks: [{ label: "November unofficial sample ballot", url: "https://www.stcharlesparish.gov/home/showpublisheddocument/13854/639254309447270000" }],
+		documentLinks: [
+			{ label: "November unofficial sample ballot", url: "https://www.stcharlesparish.gov/home/showpublisheddocument/13854/639254309447270000" }
+		],
 		withheldDistrictScopes: ["congressional", "state-senate", "state-house"],
 		withheldStatewideOffices: ["Member, Louisiana Public Service Commission District 1"],
 		scopeNotice: "Unofficial St. Charles Parish sample only. Senate general and U.S. House primary; district-based ballot matching is unverified.",
@@ -184,7 +188,9 @@ export const additionalStateBallotSources: readonly StateBallotSource[] = [
 		retrievalPolicy: "manual-snapshot",
 		snapshotStorage: "external",
 		documentUrls: ["https://warrencountyclerk.ky.gov/wp-content/uploads/2026/09/Warren-2026G.pdf"],
-		documentLinks: [{ label: "County general-election sample", url: "https://warrencountyclerk.ky.gov/wp-content/uploads/2026/09/Warren-2026G.pdf" }],
+		documentLinks: [
+			{ label: "County general-election sample", url: "https://warrencountyclerk.ky.gov/wp-content/uploads/2026/09/Warren-2026G.pdf" }
+		],
 		withheldDistrictScopes: ["congressional", "state-senate", "state-house"],
 		scopeNotice: "Warren County local races only; voter-specific eligibility is unverified.",
 	},
@@ -199,7 +205,9 @@ export const additionalStateBallotSources: readonly StateBallotSource[] = [
 		retrievalPolicy: "manual-snapshot",
 		snapshotStorage: "external",
 		documentUrls: ["https://votepulaskiar.gov/wp-content/uploads/11032026_Notice-of-Election_v1.pdf"],
-		documentLinks: [{ label: "County general-election notice", url: "https://votepulaskiar.gov/wp-content/uploads/11032026_Notice-of-Election_v1.pdf" }],
+		documentLinks: [
+			{ label: "County general-election notice", url: "https://votepulaskiar.gov/wp-content/uploads/11032026_Notice-of-Election_v1.pdf" }
+		],
 		withheldDistrictScopes: ["congressional", "state-senate", "state-house"],
 		scopeNotice: "Local coverage: Pulaski County.",
 	},
@@ -313,25 +321,179 @@ export const additionalStateBallotSources: readonly StateBallotSource[] = [
 
 function automaticReviewedSource(source: StateBallotSource): StateBallotSource {
 	if (source.id === "ma-everett-2026") return everettAutomaticSource(source.electionDate);
-	if (source.id === "ri-east-greenwich-2026") return { ...source, format: "east-greenwich-pdf", url: source.pageUrl, retrievalPolicy: undefined, documentUrls: undefined, documentLinks: undefined, snapshotStorage: "external" };
-	if (source.id === "wi-town-dane-2026") return { ...source, format: "dane-pdf", url: "https://townofdane.gov/news-notices/", retrievalPolicy: undefined, documentUrls: undefined, documentLinks: undefined, snapshotStorage: "external" };
-	if (source.id === "ar-pulaski-candidates-2026") return { ...source, format: "pulaski-pdf", countyName: "Pulaski County", url: "https://votepulaskiar.gov/", pageUrl: "https://votepulaskiar.gov/", retrievalPolicy: undefined, documentUrls: undefined, documentLinks: undefined, snapshotStorage: "external" };
-	if (source.id === "mi-tuscola-candidates-2026") return { ...source, format: "tuscola-pdf", countyName: "Tuscola County", url: source.pageUrl, retrievalPolicy: undefined, documentUrls: undefined, documentLinks: undefined, snapshotStorage: "external" };
-	if (source.id === "dc-boe-2026") return { ...source, format: "dc-pdf", retrievalPolicy: undefined, documentUrls: undefined, snapshotStorage: "external" };
-	if (source.id === "oh-franklin-2026") return { ...source, format: "franklin-pdf", countyName: "Franklin County", url: source.pageUrl, retrievalPolicy: undefined, documentUrls: undefined, snapshotStorage: "external", scopeNotice: "District and local coverage is limited to Franklin County." };
-	if (source.id === "id-cassia-2026") return { ...source, format: "cassia-pdf", countyName: "Cassia County", url: source.pageUrl, retrievalPolicy: undefined, documentUrls: undefined, documentLinks: undefined, snapshotStorage: "external" };
-	if (source.id === "nv-clark-2026") return { ...source, format: "clark-pdf", url: source.pageUrl, retrievalPolicy: undefined, documentUrls: undefined, documentLinks: undefined, snapshotStorage: "external" };
-	if (source.id === "ct-sots-2026") return { ...source, format: "connecticut-pdf", retrievalPolicy: undefined, documentUrls: undefined, snapshotStorage: "external", scopeNotice: "Town samples may omit races or district identifiers; personal ballot matching is unverified." };
-	return { ...source, format: source.id === "or-sos-multnomah-2026" ? "oregon-pdf" : source.id === "tx-sos-2026" ? "texas-certified-pdf" : source.id === "ga-fulton-2026" ? "fulton-pdf" : "certified-pdf", retrievalPolicy: undefined, ...(source.id === "tx-sos-2026" ? { withheldDistrictScopes: ["congressional"] as const } : {}), ...(source.id === "or-sos-multnomah-2026" ? { scopeNotice: "County-filed contests outside Multnomah County are not included." } : {}) };
+	if (source.id === "ri-east-greenwich-2026") {
+		return {
+			...source,
+			format: "east-greenwich-pdf",
+			url: source.pageUrl,
+			retrievalPolicy: undefined,
+			documentUrls: undefined,
+			documentLinks: undefined,
+			snapshotStorage: "external"
+		};
+	}
+	if (source.id === "wi-town-dane-2026") {
+		return {
+			...source,
+			format: "dane-pdf",
+			url: "https://townofdane.gov/news-notices/",
+			retrievalPolicy: undefined,
+			documentUrls: undefined,
+			documentLinks: undefined,
+			snapshotStorage: "external"
+		};
+	}
+	if (source.id === "ar-pulaski-candidates-2026") {
+		return {
+			...source,
+			format: "pulaski-pdf",
+			countyName: "Pulaski County",
+			url: "https://votepulaskiar.gov/",
+			pageUrl: "https://votepulaskiar.gov/",
+			retrievalPolicy: undefined,
+			documentUrls: undefined,
+			documentLinks: undefined,
+			snapshotStorage: "external"
+		};
+	}
+	if (source.id === "mi-tuscola-candidates-2026") {
+		return {
+			...source,
+			format: "tuscola-pdf",
+			countyName: "Tuscola County",
+			url: source.pageUrl,
+			retrievalPolicy: undefined,
+			documentUrls: undefined,
+			documentLinks: undefined,
+			snapshotStorage: "external"
+		};
+	}
+	if (source.id === "dc-boe-2026") {
+		return {
+			...source,
+			format: "dc-pdf",
+			retrievalPolicy: undefined,
+			documentUrls: undefined,
+			snapshotStorage: "external"
+		};
+	}
+	if (source.id === "oh-franklin-2026") {
+		return {
+			...source,
+			format: "franklin-pdf",
+			countyName: "Franklin County",
+			url: source.pageUrl,
+			retrievalPolicy: undefined,
+			documentUrls: undefined,
+			snapshotStorage: "external",
+			scopeNotice: "District and local coverage is limited to Franklin County."
+		};
+	}
+	if (source.id === "id-cassia-2026") {
+		return {
+			...source,
+			format: "cassia-pdf",
+			countyName: "Cassia County",
+			url: source.pageUrl,
+			retrievalPolicy: undefined,
+			documentUrls: undefined,
+			documentLinks: undefined,
+			snapshotStorage: "external"
+		};
+	}
+	if (source.id === "nv-clark-2026") {
+		return {
+			...source,
+			format: "clark-pdf",
+			url: source.pageUrl,
+			retrievalPolicy: undefined,
+			documentUrls: undefined,
+			documentLinks: undefined,
+			snapshotStorage: "external"
+		};
+	}
+	if (source.id === "ct-sots-2026") {
+		return {
+			...source,
+			format: "connecticut-pdf",
+			retrievalPolicy: undefined,
+			documentUrls: undefined,
+			snapshotStorage: "external",
+			scopeNotice: "Town samples may omit races or district identifiers; personal ballot matching is unverified."
+		};
+	}
+	return {
+		...source,
+		format: source.id === "or-sos-multnomah-2026"
+			? "oregon-pdf"
+			: source.id === "tx-sos-2026"
+				? "texas-certified-pdf"
+				: source.id === "ga-fulton-2026"
+					? "fulton-pdf"
+					: "certified-pdf",
+		retrievalPolicy: undefined,
+		...(source.id === "tx-sos-2026"
+			? {
+					withheldDistrictScopes: ["congressional"] as const
+				}
+			: {}),
+		...(source.id === "or-sos-multnomah-2026"
+			? { scopeNotice: "County-filed contests outside Multnomah County are not included." }
+			: {})
+	};
 }
 
 export function legacyReviewedStateBallotSource(source: StateBallotSource) {
-	const legacy = [...stateBallotSources, ...additionalStateBallotSources].find(item => ["ma-everett-2026", "ri-east-greenwich-2026", "wi-town-dane-2026", "ar-pulaski-candidates-2026", "mi-tuscola-candidates-2026", "dc-boe-2026", "oh-franklin-2026", "id-cassia-2026", "nv-clark-2026", "ct-sots-2026", "ga-fulton-2026", "mo-sos-2026", "nj-doe-2026-federal", "tx-sos-2026", "or-sos-multnomah-2026"].includes(item.id) && item.id === source.id);
-	return legacy && JSON.stringify(source) === JSON.stringify(automaticReviewedSource(legacy)) ? legacy : null;
+	const legacy = [
+		...stateBallotSources,
+		...additionalStateBallotSources
+	].find(item => [
+		"ma-everett-2026",
+		"ri-east-greenwich-2026",
+		"wi-town-dane-2026",
+		"ar-pulaski-candidates-2026",
+		"mi-tuscola-candidates-2026",
+		"dc-boe-2026",
+		"oh-franklin-2026",
+		"id-cassia-2026",
+		"nv-clark-2026",
+		"ct-sots-2026",
+		"ga-fulton-2026",
+		"mo-sos-2026",
+		"nj-doe-2026-federal",
+		"tx-sos-2026",
+		"or-sos-multnomah-2026"
+	].includes(item.id) && item.id === source.id);
+	return legacy && JSON.stringify(source) === JSON.stringify(automaticReviewedSource(legacy))
+		? legacy
+		: null;
 }
 
 export function legacyFultonReviewedSource(source: StateBallotSource) {
-	return source.id === "ga-fulton-2026" ? legacyReviewedStateBallotSource(source) : null;
+	return source.id === "ga-fulton-2026"
+		? legacyReviewedStateBallotSource(source)
+		: null;
 }
 
-export const configuredStateBallotSources: readonly StateBallotSource[] = [...stateBallotSources.map(source => ["ri-east-greenwich-2026", "wi-town-dane-2026", "ar-pulaski-candidates-2026", "dc-boe-2026", "oh-franklin-2026", "id-cassia-2026", "nv-clark-2026", "ct-sots-2026", "ga-fulton-2026", "mo-sos-2026", "nj-doe-2026-federal", "tx-sos-2026", "or-sos-multnomah-2026"].includes(source.id) ? automaticReviewedSource(source) : source), ...additionalStateBallotSources.map(source => ["ma-everett-2026", "mi-tuscola-candidates-2026", "ar-pulaski-candidates-2026"].includes(source.id) ? automaticReviewedSource(source) : source)];
+export const configuredStateBallotSources: readonly StateBallotSource[] = [
+	...stateBallotSources.map(source => [
+		"ri-east-greenwich-2026",
+		"wi-town-dane-2026",
+		"ar-pulaski-candidates-2026",
+		"dc-boe-2026",
+		"oh-franklin-2026",
+		"id-cassia-2026",
+		"nv-clark-2026",
+		"ct-sots-2026",
+		"ga-fulton-2026",
+		"mo-sos-2026",
+		"nj-doe-2026-federal",
+		"tx-sos-2026",
+		"or-sos-multnomah-2026"
+	].includes(source.id)
+		? automaticReviewedSource(source)
+		: source),
+	...additionalStateBallotSources.map(source => ["ma-everett-2026", "mi-tuscola-candidates-2026", "ar-pulaski-candidates-2026"].includes(source.id)
+		? automaticReviewedSource(source)
+		: source)
+];

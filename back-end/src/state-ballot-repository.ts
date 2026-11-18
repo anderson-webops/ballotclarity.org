@@ -113,9 +113,14 @@ interface StateBallotRepositoryOptions {
 export function resolveStateBallotConfiguration(environment: NodeJS.ProcessEnv = process.env, now = Date.now()) {
 	const catalogs = readConfiguredStateBallotCycleCatalogs(environment, now);
 	const cycleSources = catalogs.flatMap(catalog => stateBallotCycleSources(catalog, now));
-	const configuredSources = [...configuredStateBallotSources, ...cycleSources];
+	const configuredSources = [
+		...configuredStateBallotSources,
+		...cycleSources
+	];
 	if (new Set(configuredSources.map(source => source.id)).size !== configuredSources.length) throw new Error("Official source identifiers must be unique.");
-	const ttlMs = environment.STATE_BALLOT_CACHE_TTL_MS === undefined ? 4 * 60 * 60 * 1000 : Number(environment.STATE_BALLOT_CACHE_TTL_MS);
+	const ttlMs = environment.STATE_BALLOT_CACHE_TTL_MS === undefined
+		? 4 * 60 * 60 * 1000
+		: Number(environment.STATE_BALLOT_CACHE_TTL_MS);
 	if (!Number.isSafeInteger(ttlMs) || ttlMs <= 0 || ttlMs > 24 * 60 * 60 * 1000)
 		throw new Error("State source cache lifetime must be between one millisecond and one day.");
 	const requested = environment.STATE_BALLOT_ENABLED_STATES?.split(",").map(value => value.trim().toUpperCase());
@@ -128,7 +133,10 @@ export function resolveStateBallotConfiguration(environment: NodeJS.ProcessEnv =
 		throw new Error("Every enabled election family must be supported and belong to an enabled state.");
 	if (requestedSources?.some(id => !configuredSources.some(source => source.id === id && (!requested || requested.includes(source.stateCode)))))
 		throw new Error("Every enabled source must match a configured source in an enabled state.");
-	const familySourceIds = new Set(enabledFamilies?.flatMap(family => [family.source.id, ...catalogs.filter(catalog => catalog.familyId === family.source.id).flatMap(catalog => stateBallotCycleSources(catalog, now).map(source => source.id))]));
+	const familySourceIds = new Set(enabledFamilies?.flatMap(family => [
+		family.source.id,
+		...catalogs.filter(catalog => catalog.familyId === family.source.id).flatMap(catalog => stateBallotCycleSources(catalog, now).map(source => source.id))
+	]));
 	return {
 		ttlMs,
 		dataDirectory: environment.STATE_BALLOT_DATA_DIR || null,
@@ -164,8 +172,12 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 	};
 	const sources = currentSources();
 	const ttlMs = options.ttlMs ?? configuration.ttlMs;
-	const dataDirectory = options.dataDirectory === undefined ? configuration.dataDirectory : options.dataDirectory;
-	const storage = dataDirectory ? createStateBallotStorage(dataDirectory) : null;
+	const dataDirectory = options.dataDirectory === undefined
+		? configuration.dataDirectory
+		: options.dataDirectory;
+	const storage = dataDirectory
+		? createStateBallotStorage(dataDirectory)
+		: null;
 	const cached = new Map<string, { expiresAt: number; snapshot: StateBallotSnapshot | null }>();
 	const pending = new Map<string, Promise<StateBallotSnapshot | null>>();
 	const observations = new Map<string, { lastAttemptAt: string; lastImportAt: string | null; failure: string | null }>();
@@ -198,8 +210,12 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 		if (!stateBallotSourceIsCurrent(source, now())) {
 			if (!allowArchived || options.refreshReviewedLegacy) return null;
 			try {
-				const retained = storage ? await storage.read(source) : cached.get(source.id)?.snapshot;
-				return retained && indexMatches(source, retained) && Date.parse(retained.retrievedAt) <= now() ? retained : null;
+				const retained = storage
+					? await storage.read(source)
+					: cached.get(source.id)?.snapshot;
+				return retained && indexMatches(source, retained) && Date.parse(retained.retrievedAt) <= now()
+					? retained
+					: null;
 			}
 			catch {
 				options.onUnavailable?.(source.stateCode, "format");
@@ -219,18 +235,36 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 			let body: string | undefined;
 			let capturedAt: string | undefined;
 			try {
-				const bulkPublication = source.format.endsWith("-pdf") || source.format.endsWith("-xlsx") || ["maine-house-html", "douglas-html", "hamilton-html", "fairbanks-pdf", "juneau-html", "los-ranchos-html", "independence-html", "iowa-johnson-html", "washoe-html", "boulder-html"].includes(source.format);
+				const bulkPublication = source.format.endsWith("-pdf") || source.format.endsWith("-xlsx") || [
+					"maine-house-html",
+					"douglas-html",
+					"hamilton-html",
+					"fairbanks-pdf",
+					"juneau-html",
+					"los-ranchos-html",
+					"independence-html",
+					"iowa-johnson-html",
+					"washoe-html",
+					"boulder-html"
+				].includes(source.format);
 				const publicStoredReader = bulkPublication && !options.refreshReviewedLegacy && !options.collectionIndexSha256?.[source.id];
 				if (publicStoredReader) {
 					failureReason = "format";
-					stored = storage ? await storage.read(source) : null;
+					stored = storage
+						? await storage.read(source)
+						: null;
 					if (stored && Date.parse(stored.retrievedAt) > now()) throw new Error("Stored state ballot data has a future capture time.");
 					if (stored) {
 						awaitingRecords.delete(source.id);
 					}
 					else if (storage) {
 						const receipt = await storage.readPending(source, now());
-						if (receipt && pendingExpiry(source, receipt) > now()) awaitingRecords.set(source.id, { expiresAt: pendingExpiry(source, receipt), receipt });
+						if (receipt && pendingExpiry(source, receipt) > now()) {
+							awaitingRecords.set(source.id, {
+								expiresAt: pendingExpiry(source, receipt),
+								receipt
+							});
+						}
 					}
 					return stored;
 				}
@@ -248,7 +282,43 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 					}
 					if (!stored) {
 						const receipt = await storage.readPending(source, now());
-						if (receipt && !(["oklahoma-html", "fulton-municipal-pdf", "everett-pdf", "alabama-pdf", "kanawha-pdf", "boone-xlsx", "orange-pdf", "maine-house-html", "nyc-pdf", "douglas-html", "hamilton-html", "pima-pdf", "goffstown-pdf", "chicago-pdf", "winnebago-pdf", "east-greenwich-pdf", "dane-pdf", "pulaski-pdf", "tuscola-pdf", "dc-pdf", "franklin-pdf", "cassia-pdf", "iowa-county-pdf", "iowa-polk-pdf", "fairbanks-pdf", "juneau-html", "los-ranchos-html", "independence-html", "iowa-johnson-html", "washoe-html", "bucks-pdf", "boulder-html", "clark-pdf"].includes(source.format) && options.collectionIndexSha256?.[source.id]) && rememberPending(source, receipt)) return null;
+						if (receipt && !([
+							"oklahoma-html",
+							"fulton-municipal-pdf",
+							"everett-pdf",
+							"alabama-pdf",
+							"kanawha-pdf",
+							"boone-xlsx",
+							"orange-pdf",
+							"maine-house-html",
+							"nyc-pdf",
+							"douglas-html",
+							"hamilton-html",
+							"pima-pdf",
+							"goffstown-pdf",
+							"chicago-pdf",
+							"winnebago-pdf",
+							"east-greenwich-pdf",
+							"dane-pdf",
+							"pulaski-pdf",
+							"tuscola-pdf",
+							"dc-pdf",
+							"franklin-pdf",
+							"cassia-pdf",
+							"iowa-county-pdf",
+							"iowa-polk-pdf",
+							"fairbanks-pdf",
+							"juneau-html",
+							"los-ranchos-html",
+							"independence-html",
+							"iowa-johnson-html",
+							"washoe-html",
+							"bucks-pdf",
+							"boulder-html",
+							"clark-pdf"
+						].includes(source.format) && options.collectionIndexSha256?.[source.id]) && rememberPending(source, receipt)) {
+							return null;
+						}
 					}
 				}
 				if (source.retrievalPolicy === "manual-snapshot") {
@@ -256,11 +326,93 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 					throw new Error("This source requires a reviewed external snapshot import.");
 				}
 				failureReason = "transport";
-				observations.set(source.id, { lastAttemptAt: new Date(now()).toISOString(), lastImportAt: observations.get(source.id)?.lastImportAt ?? null, failure: null });
+				observations.set(source.id, {
+					lastAttemptAt: new Date(now()).toISOString(),
+					lastImportAt: observations.get(source.id)?.lastImportAt ?? null,
+					failure: null
+				});
 				body = await fetchText(source);
 				capturedAt = new Date(now()).toISOString();
 				failureReason = "format";
-				const documentCapture = source.format === "fulton-municipal-pdf" ? parseFultonMunicipalCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined) : source.format === "fairbanks-pdf" ? parseFairbanksCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined) : source.format === "juneau-html" ? parseJuneauCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records) : source.format === "los-ranchos-html" ? parseLosRanchosCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records) : source.format === "independence-html" ? parseIndependenceCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records) : source.format === "oklahoma-html" ? parseOklahomaCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined) : source.format === "everett-pdf" ? parseEverettCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined) : source.format === "bucks-pdf" ? parseBucksCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined) : source.format === "alabama-pdf" ? parseAlabamaCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined) : source.format === "kanawha-pdf" ? parseKanawhaCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined) : source.format === "boone-xlsx" ? parseBooneCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined) : source.format === "orange-pdf" ? parseOrangeCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined) : source.format === "maine-house-html" ? parseMaineHouseCapture(source, body, now(), stored ?? undefined) : source.format === "nyc-pdf" ? parseNycCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined) : source.format === "douglas-html" ? parseDouglasCandidateCapture(source, body, now(), stored?.records) : source.format === "hamilton-html" ? parseHamiltonCandidateCapture(source, body, now(), stored?.records, stored?.ballotQuestions) : source.format === "pima-pdf" ? parsePimaCandidateCapture(source, body, now(), stored?.records, stored?.documents) : source.format === "goffstown-pdf" ? parseGoffstownCandidateCapture(source, body, now(), stored?.records, stored?.ballotQuestions) : source.format === "chicago-pdf" ? parseChicagoCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined) : source.format === "winnebago-pdf" ? parseWinnebagoCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records, stored?.documents) : source.format === "east-greenwich-pdf" ? parseEastGreenwichCandidateCapture(source, body, now(), stored?.records) : source.format === "dane-pdf" ? parseDaneCandidateCapture(source, body, now(), stored?.records) : source.format === "pulaski-pdf" ? parsePulaskiCandidateCapture(source, body, now(), stored?.records) : source.format === "tuscola-pdf" ? parseTuscolaCandidateCapture(source, body, now(), stored?.records, stored?.ballotQuestions) : source.format === "dc-pdf" ? parseDcCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records) : source.format === "franklin-pdf" ? parseFranklinCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.ballotQuestions) : source.format === "cassia-pdf" ? parseCassiaCandidateCapture(source, body, now(), stored?.ballotQuestions) : source.format === "iowa-county-pdf" ? parseIowaCountyCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined) : source.format === "iowa-polk-pdf" ? parseIowaPolkCandidateCapture(source, body, createStateCandidateRecord, now()) : source.format === "iowa-johnson-html" ? parseIowaJohnsonCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined) : source.format === "boulder-html" ? parseBoulderCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined) : source.format === "washoe-html" ? parseWashoeCandidateCapture(source, body, createStateCandidateRecord, now()) : source.format === "clark-pdf" ? parseClarkCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records) : source.format === "connecticut-pdf" ? parseConnecticutCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records) : source.format === "oregon-pdf" ? parseOregonCandidateCapture(source, body, createStateCandidateRecord, now()) : source.format === "texas-certified-pdf" ? parseTexasCandidateCapture(source, body) : source.format === "vermont-xlsx" ? parseVermontCandidateCapture(source, body) : source.format === "fulton-pdf" ? parseFultonCandidateCapture(source, body, stored?.ballotQuestions) : source.format === "certified-pdf" ? parseCertifiedPdfCapture(source, body) : null;
+				const documentCapture = source.format === "fulton-municipal-pdf"
+					? parseFultonMunicipalCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined)
+					: source.format === "fairbanks-pdf"
+						? parseFairbanksCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined)
+						: source.format === "juneau-html"
+							? parseJuneauCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records)
+							: source.format === "los-ranchos-html"
+								? parseLosRanchosCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records)
+								: source.format === "independence-html"
+									? parseIndependenceCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records)
+									: source.format === "oklahoma-html"
+										? parseOklahomaCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined)
+										: source.format === "everett-pdf"
+											? parseEverettCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined)
+											: source.format === "bucks-pdf"
+												? parseBucksCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined)
+												: source.format === "alabama-pdf"
+													? parseAlabamaCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined)
+													: source.format === "kanawha-pdf"
+														? parseKanawhaCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined)
+														: source.format === "boone-xlsx"
+															? parseBooneCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined)
+															: source.format === "orange-pdf"
+																? parseOrangeCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined)
+																: source.format === "maine-house-html"
+																	? parseMaineHouseCapture(source, body, now(), stored ?? undefined)
+																	: source.format === "nyc-pdf"
+																		? parseNycCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined)
+																		: source.format === "douglas-html"
+																			? parseDouglasCandidateCapture(source, body, now(), stored?.records)
+																			: source.format === "hamilton-html"
+																				? parseHamiltonCandidateCapture(source, body, now(), stored?.records, stored?.ballotQuestions)
+																				: source.format === "pima-pdf"
+																					? parsePimaCandidateCapture(source, body, now(), stored?.records, stored?.documents)
+																					: source.format === "goffstown-pdf"
+																						? parseGoffstownCandidateCapture(source, body, now(), stored?.records, stored?.ballotQuestions)
+																						: source.format === "chicago-pdf"
+																							? parseChicagoCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined)
+																							: source.format === "winnebago-pdf"
+																								? parseWinnebagoCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records, stored?.documents)
+																								: source.format === "east-greenwich-pdf"
+																									? parseEastGreenwichCandidateCapture(source, body, now(), stored?.records)
+																									: source.format === "dane-pdf"
+																										? parseDaneCandidateCapture(source, body, now(), stored?.records)
+																										: source.format === "pulaski-pdf"
+																											? parsePulaskiCandidateCapture(source, body, now(), stored?.records)
+																											: source.format === "tuscola-pdf"
+																												? parseTuscolaCandidateCapture(source, body, now(), stored?.records, stored?.ballotQuestions)
+																												: source.format === "dc-pdf"
+																													? parseDcCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records)
+																													: source.format === "franklin-pdf"
+																														? parseFranklinCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.ballotQuestions)
+																														: source.format === "cassia-pdf"
+																															? parseCassiaCandidateCapture(source, body, now(), stored?.ballotQuestions)
+																															: source.format === "iowa-county-pdf"
+																																? parseIowaCountyCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined)
+																																: source.format === "iowa-polk-pdf"
+																																	? parseIowaPolkCandidateCapture(source, body, createStateCandidateRecord, now())
+																																	: source.format === "iowa-johnson-html"
+																																		? parseIowaJohnsonCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined)
+																																		: source.format === "boulder-html"
+																																			? parseBoulderCandidateCapture(source, body, createStateCandidateRecord, now(), stored ?? undefined)
+																																			: source.format === "washoe-html"
+																																				? parseWashoeCandidateCapture(source, body, createStateCandidateRecord, now())
+																																				: source.format === "clark-pdf"
+																																					? parseClarkCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records)
+																																					: source.format === "connecticut-pdf"
+																																						? parseConnecticutCandidateCapture(source, body, createStateCandidateRecord, now(), stored?.records)
+																																						: source.format === "oregon-pdf"
+																																							? parseOregonCandidateCapture(source, body, createStateCandidateRecord, now())
+																																							: source.format === "texas-certified-pdf"
+																																								? parseTexasCandidateCapture(source, body)
+																																								: source.format === "vermont-xlsx"
+																																									? parseVermontCandidateCapture(source, body)
+																																									: source.format === "fulton-pdf"
+																																										? parseFultonCandidateCapture(source, body, stored?.ballotQuestions)
+																																										: source.format === "certified-pdf"
+																																											? parseCertifiedPdfCapture(source, body)
+																																											: null;
 				const snapshot: StateBallotSnapshot = {
 					source,
 					retrievedAt: capturedAt,
@@ -283,7 +435,44 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 					catch {
 						observations.get(source.id)!.failure = "Snapshot persistence failed.";
 						options.onPersistenceError?.(source.stateCode, source.id);
-						if (["fairbanks-pdf", "juneau-html", "los-ranchos-html", "independence-html", "oklahoma-html", "fulton-municipal-pdf", "everett-pdf", "alabama-pdf", "kanawha-pdf", "boone-xlsx", "orange-pdf", "maine-house-html", "nyc-pdf", "douglas-html", "hamilton-html", "pima-pdf", "goffstown-pdf", "chicago-pdf", "winnebago-pdf", "east-greenwich-pdf", "dane-pdf", "pulaski-pdf", "tuscola-pdf", "dc-pdf", "franklin-pdf", "cassia-pdf", "iowa-county-pdf", "iowa-polk-pdf", "washoe-html", "bucks-pdf", "boulder-html", "clark-pdf", "connecticut-pdf", "fulton-pdf"].includes(source.format)) return stored;
+						if ([
+							"fairbanks-pdf",
+							"juneau-html",
+							"los-ranchos-html",
+							"independence-html",
+							"oklahoma-html",
+							"fulton-municipal-pdf",
+							"everett-pdf",
+							"alabama-pdf",
+							"kanawha-pdf",
+							"boone-xlsx",
+							"orange-pdf",
+							"maine-house-html",
+							"nyc-pdf",
+							"douglas-html",
+							"hamilton-html",
+							"pima-pdf",
+							"goffstown-pdf",
+							"chicago-pdf",
+							"winnebago-pdf",
+							"east-greenwich-pdf",
+							"dane-pdf",
+							"pulaski-pdf",
+							"tuscola-pdf",
+							"dc-pdf",
+							"franklin-pdf",
+							"cassia-pdf",
+							"iowa-county-pdf",
+							"iowa-polk-pdf",
+							"washoe-html",
+							"bucks-pdf",
+							"boulder-html",
+							"clark-pdf",
+							"connecticut-pdf",
+							"fulton-pdf"
+						].includes(source.format)) {
+							return stored;
+						}
 					}
 				}
 				cached.set(source.id, { expiresAt: now() + ttlMs, snapshot });
@@ -292,7 +481,10 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 			}
 			catch (error) {
 				if (error instanceof StateBallotAwaitingRecordsError && error.sourceId === source.id && supportsPendingStateBallotRecords(source) && body !== undefined && capturedAt && !stored && now() < Date.parse(`${source.electionDate}T00:00:00Z`)) {
-					const receipt = { retrievedAt: capturedAt, sourceSha256: createHash("sha256").update(body).digest("hex") };
+					const receipt = {
+						retrievedAt: capturedAt,
+						sourceSha256: createHash("sha256").update(body).digest("hex")
+					};
 					try {
 						if (storage) await storage.writePending(source, receipt, now());
 						if (rememberPending(source, receipt)) return null;
@@ -305,8 +497,26 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 				}
 				awaitingRecords.delete(source.id);
 				const observation = observations.get(source.id);
-				if (observation) observation.failure = error instanceof RemoteSourceAccessChallengeError ? "Publisher access challenge requires review." : error instanceof FultonCollectorCapabilityError ? "PDF text extractor is not configured or unavailable." : failureReason === "format" ? "Source format requires review." : "Source collection failed.";
-				const fallback = reviewedFallback ?? (stored && ["fairbanks-pdf", "iowa-county-pdf", "oklahoma-html", "fulton-municipal-pdf", "everett-pdf", "fulton-pdf", "alabama-pdf"].includes(source.format) && Date.parse(stored.retrievedAt) <= now() && indexMatches(source, stored) ? stored : null);
+				if (observation) {
+					observation.failure = error instanceof RemoteSourceAccessChallengeError
+						? "Publisher access challenge requires review."
+						: error instanceof FultonCollectorCapabilityError
+							? "PDF text extractor is not configured or unavailable."
+							: failureReason === "format"
+								? "Source format requires review."
+								: "Source collection failed.";
+				}
+				const fallback = reviewedFallback ?? (stored && [
+					"fairbanks-pdf",
+					"iowa-county-pdf",
+					"oklahoma-html",
+					"fulton-municipal-pdf",
+					"everett-pdf",
+					"fulton-pdf",
+					"alabama-pdf"
+				].includes(source.format) && Date.parse(stored.retrievedAt) <= now() && indexMatches(source, stored)
+					? stored
+					: null);
 				if (fallback) {
 					cached.set(source.id, { expiresAt: now() + 5 * 60 * 1000, snapshot: fallback });
 					options.onUnavailable?.(source.stateCode, failureReason);
@@ -331,17 +541,38 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 		async inspectSources() {
 			return Promise.all(currentSources().map(async (source): Promise<AdminOperationDataset> => {
 				const observation = observations.get(source.id);
-				const item: AdminOperationDataset = { id: source.id, label: source.label, stateCode: source.stateCode, electionDate: source.electionDate, kind: "candidates", mode: source.retrievalPolicy ? "reviewed" : "automatic", status: "missing", records: null, retrievedAt: null, lastAttemptAt: observation?.lastAttemptAt ?? null, lastImportAt: observation?.lastImportAt ?? null, failure: observation?.failure ?? null };
+				const item: AdminOperationDataset = {
+					id: source.id,
+					label: source.label,
+					stateCode: source.stateCode,
+					electionDate: source.electionDate,
+					kind: "candidates",
+					mode: source.retrievalPolicy ? "reviewed" : "automatic",
+					status: "missing",
+					records: null,
+					retrievedAt: null,
+					lastAttemptAt: observation?.lastAttemptAt ?? null,
+					lastImportAt: observation?.lastImportAt ?? null,
+					failure: observation?.failure ?? null
+				};
 				try {
-					const snapshot = storage ? await storage.read(source) : null;
+					const snapshot = storage
+						? await storage.read(source)
+						: null;
 					if (snapshot) {
 						if (Date.parse(snapshot.retrievedAt) > now()) throw new Error("Future capture");
 						item.records = snapshot.records.length;
 						item.retrievedAt = snapshot.retrievedAt;
-						item.status = Date.parse(`${source.electionDate}T00:00:00Z`) + 2 * 86400000 <= now() ? "archived" : !source.retrievalPolicy && Date.parse(snapshot.retrievedAt) + ttlMs <= now() ? "stale" : "current";
+						item.status = Date.parse(`${source.electionDate}T00:00:00Z`) + 2 * 86400000 <= now()
+							? "archived"
+							: !source.retrievalPolicy && Date.parse(snapshot.retrievedAt) + ttlMs <= now()
+									? "stale"
+									: "current";
 					}
 					else {
-						const receipt = storage ? await storage.readPending(source, now()) : awaitingRecords.get(source.id)?.receipt;
+						const receipt = storage
+							? await storage.readPending(source, now())
+							: awaitingRecords.get(source.id)?.receipt;
 						if (receipt) {
 							item.lastAttemptAt ??= receipt.retrievedAt;
 							if (pendingExpiry(source, receipt) > now()) item.status = "pending";
@@ -356,17 +587,25 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 		},
 		async getStoredSnapshots(stateCode, sourceIds) {
 			const snapshots: StateBallotSnapshot[] = [];
-			for (const source of currentSources().filter(item => item.stateCode === stateCode && (sourceIds ? sourceIds.includes(item.id) : stateBallotSourceIsCurrent(item, now())))) {
+			for (const source of currentSources().filter(item => item.stateCode === stateCode && (sourceIds
+				? sourceIds.includes(item.id)
+				: stateBallotSourceIsCurrent(item, now())))) {
 				if (configurationFailures.has(stateCode)) throw new Error("The state election catalog is unavailable.");
 				const retained = cached.get(source.id);
-				const snapshot = storage ? await storage.read(source) : retained && retained.expiresAt > now() ? retained.snapshot : null;
+				const snapshot = storage
+					? await storage.read(source)
+					: retained && retained.expiresAt > now()
+						? retained.snapshot
+						: null;
 				if (snapshot && indexMatches(source, snapshot) && Date.parse(snapshot.retrievedAt) <= now()) snapshots.push(snapshot);
 			}
 			return snapshots;
 		},
 		async getSnapshot(stateCode, sourceId) {
 			const matching = currentSources().filter(source => source.stateCode === stateCode.toUpperCase() && (sourceId === undefined || source.id === sourceId));
-			const ordered = sourceId === undefined ? orderStateBallotSources(matching, now()) : matching;
+			const ordered = sourceId === undefined
+				? orderStateBallotSources(matching, now())
+				: matching;
 			const currentDate = ordered.find(source => stateBallotSourceIsCurrent(source, now()))?.electionDate;
 			for (const source of ordered.filter(source => sourceId !== undefined || source.electionDate === currentDate)) {
 				const snapshot = await loadSnapshot(source, sourceId !== undefined);
@@ -396,19 +635,70 @@ export function buildStateBallotPreview(snapshot: StateBallotSnapshot, lookup: P
 				id: `${snapshot.source.id}:${createHash("sha256").update(key).digest("hex").slice(0, 16)}`,
 				title: record.office,
 				scope: record.scope,
-				districtName: record.district && !/\bdistrict\b/iu.test(record.office) ? `District ${record.district}` : undefined,
+				districtName: record.district && !/\bdistrict\b/iu.test(record.office)
+					? `District ${record.district}`
+					: undefined,
 				candidates: [],
 				sourceLabels: [snapshot.source.label],
 			};
 			contests.set(key, contest);
 		}
-		contest.candidates.push({ id: record.id, name: record.name, party: record.party, incumbent: record.incumbent || reportedFultonIncumbency(record, snapshot.source) ? true : undefined, ballotStatus: record.status, sourceStatus: record.sourceStatus, ballotDesignation: record.ballotDesignation, candidateUrl: record.candidateUrl });
+		contest.candidates.push({
+			id: record.id,
+			name: record.name,
+			party: record.party,
+			incumbent: record.incumbent || reportedFultonIncumbency(record, snapshot.source)
+				? true
+				: undefined,
+			ballotStatus: record.status,
+			sourceStatus: record.sourceStatus,
+			ballotDesignation: record.ballotDesignation,
+			candidateUrl: record.candidateUrl
+		});
 	}
 	if (!contests.size)
 		return null;
 	const disclaimer = snapshot.source.stateCode === "VA"
 		? "Federal candidates only; state and local contests are not included. This is not an address-specific ballot."
-		: ["oklahoma-html", "fulton-municipal-pdf", "everett-pdf", "alabama-pdf", "kanawha-pdf", "boone-xlsx", "orange-pdf", "maine-house-html", "nyc-pdf", "douglas-html", "hamilton-html", "pima-pdf", "goffstown-pdf", "chicago-pdf", "winnebago-pdf", "east-greenwich-pdf", "dane-pdf", "pulaski-pdf", "tuscola-pdf", "dc-pdf", "franklin-pdf", "cassia-pdf", "washoe-html", "bucks-pdf", "boulder-html", "clark-pdf", "connecticut-pdf", "reviewed-pdf", "reviewed-image", "fulton-pdf", "certified-pdf", "oregon-pdf", "texas-certified-pdf", "vermont-xlsx", "alaska-html", "connecticut-ballots", "oregon-ballots"].includes(snapshot.source.format)
+		: [
+				"oklahoma-html",
+				"fulton-municipal-pdf",
+				"everett-pdf",
+				"alabama-pdf",
+				"kanawha-pdf",
+				"boone-xlsx",
+				"orange-pdf",
+				"maine-house-html",
+				"nyc-pdf",
+				"douglas-html",
+				"hamilton-html",
+				"pima-pdf",
+				"goffstown-pdf",
+				"chicago-pdf",
+				"winnebago-pdf",
+				"east-greenwich-pdf",
+				"dane-pdf",
+				"pulaski-pdf",
+				"tuscola-pdf",
+				"dc-pdf",
+				"franklin-pdf",
+				"cassia-pdf",
+				"washoe-html",
+				"bucks-pdf",
+				"boulder-html",
+				"clark-pdf",
+				"connecticut-pdf",
+				"reviewed-pdf",
+				"reviewed-image",
+				"fulton-pdf",
+				"certified-pdf",
+				"oregon-pdf",
+				"texas-certified-pdf",
+				"vermont-xlsx",
+				"alaska-html",
+				"connecticut-ballots",
+				"oregon-ballots"
+			].includes(snapshot.source.format)
 				? "Dated snapshot; later changes and local contests may be missing."
 				: snapshot.source.retrievalPolicy === "manual-snapshot"
 					? "Dated snapshot; later changes and local contests may be missing. Filing does not establish ballot qualification."
@@ -422,12 +712,18 @@ export function buildStateBallotPreview(snapshot: StateBallotSnapshot, lookup: P
 		sampleBallotUrl: stateRecordDocumentLinks(snapshot.source, snapshot)?.find(link => /sample ballot/iu.test(link.label))?.url,
 		electionDate: snapshot.source.electionDate,
 		generatedAt: snapshot.retrievedAt,
-		disclaimer: `${disclaimer}${snapshot.source.scopeNotice ? ` ${snapshot.source.scopeNotice}` : ""}`,
+		disclaimer: `${disclaimer}${snapshot.source.scopeNotice
+			? ` ${snapshot.source.scopeNotice}`
+			: ""}`,
 		officialOnly: true,
 		status: "official_source_unverified",
-		contests: [...contests.values()],
+		contests: [
+			...contests.values()
+		],
 		contestCount: contests.size,
-		candidateCount: [...contests.values()].reduce((total, contest) => total + contest.candidates.length, 0),
+		candidateCount: [
+			...contests.values()
+		].reduce((total, contest) => total + contest.candidates.length, 0),
 		measureCount: 0,
 	};
 }
@@ -437,7 +733,9 @@ export async function attachStateBallotPreview(lookup: LocationLookupResponse, r
 	if (!repository || lookup.result !== "resolved" || !lookup.location || lookup.selectionOptions?.length)
 		return lookup;
 	const state = lookup.location.state;
-	const stateCode = /^[A-Z]{2}$/u.test(state) ? state : getStateAbbreviationForName(state);
+	const stateCode = /^[A-Z]{2}$/u.test(state)
+		? state
+		: getStateAbbreviationForName(state);
 	if (!stateCode)
 		return lookup;
 	const countyNames = new Set((lookup.districtMatches ?? []).filter(match => match.districtType.toLowerCase() === "county").map(match => match.label.normalize("NFKC").trim().toLowerCase()));
@@ -466,7 +764,14 @@ export async function attachStateBallotPreview(lookup: LocationLookupResponse, r
 		let addedSupplement = false;
 		const targets = new Map(preview.contests.flatMap((contest) => {
 			const record = snapshot.records.find(record => record.office === contest.title && record.scope === contest.scope);
-			return record ? [[stateRecordOfficeKey(record), contest] as const] : [];
+			return record
+				? [
+						[
+							stateRecordOfficeKey(record),
+							contest
+						] as const
+					]
+				: [];
 		}));
 		for (const supplement of applicableStateRecordSupplements(snapshot, supplements.snapshots)) {
 			const additional = buildStateBallotPreview(supplement, {
@@ -476,11 +781,18 @@ export async function attachStateBallotPreview(lookup: LocationLookupResponse, r
 			});
 			for (const contest of additional?.contests ?? []) {
 				const record = supplement.records.find(record => record.office === contest.title && record.scope === contest.scope);
-				const target = record ? targets.get(stateRecordOfficeKey(record)) : undefined;
+				const target = record
+					? targets.get(stateRecordOfficeKey(record))
+					: undefined;
 				if (!target) continue;
 				addedSupplement = true;
 				target.candidates.push(...contest.candidates.map(candidate => ({ ...candidate, sourceId: supplement.source.id })));
-				target.sourceLabels = [...new Set([...(target.sourceLabels ?? []), supplement.source.label])];
+				target.sourceLabels = [
+					...new Set([
+						...(target.sourceLabels ?? []),
+						supplement.source.label
+					])
+				];
 			}
 		}
 		if (addedSupplement && snapshot.source.id.startsWith("ga-fulton-") && snapshot.source.scopeNotice) preview.disclaimer = preview.disclaimer.replace(` ${snapshot.source.scopeNotice}`, "");
@@ -496,7 +808,10 @@ export async function attachStateBallotPreview(lookup: LocationLookupResponse, r
 			}
 		}
 	}
-	lookup.ballotContentPreviews = [...(lookup.ballotContentPreviews ?? []).filter(item => item.providerId !== preview.providerId), preview];
+	lookup.ballotContentPreviews = [
+		...(lookup.ballotContentPreviews ?? []).filter(item => item.providerId !== preview.providerId),
+		preview
+	];
 	if (lookup.availability && !lookup.guideContent?.verifiedContestPackage) {
 		lookup.availability.ballotCandidates = {
 			label: "Ballot candidate data",

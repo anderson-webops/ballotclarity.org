@@ -10,7 +10,18 @@ function date(value: string) {
 }
 export function fultonMunicipalSource(electionDate = "2025-12-02"): StateBallotSource {
 	date(electionDate);
-	return { id: `ga-fulton-municipal-runoff-${electionDate}`, stateCode: "GA", label: "Fulton County municipal runoff", electionDate, url: fultonDiscoveryUrl, pageUrl: fultonDiscoveryUrl, format: "fulton-municipal-pdf", countyName: "Fulton County", snapshotStorage: "external", ballotPreview: false };
+	return {
+		id: `ga-fulton-municipal-runoff-${electionDate}`,
+		stateCode: "GA",
+		label: "Fulton County municipal runoff",
+		electionDate,
+		url: fultonDiscoveryUrl,
+		pageUrl: fultonDiscoveryUrl,
+		format: "fulton-municipal-pdf",
+		countyName: "Fulton County",
+		snapshotStorage: "external",
+		ballotPreview: false
+	};
 }
 export function validateFultonMunicipalSource(source: StateBallotSource) {
 	assert.deepEqual(source, fultonMunicipalSource(source.electionDate), "The municipal runoff source configuration requires review.");
@@ -21,7 +32,12 @@ export function fultonMunicipalDocumentUrl(value: string) {
 	return url.href;
 }
 export function validateFultonMunicipalElection(value: unknown): asserts value is FultonMunicipalElection {
-	assert(exact(value, ["electionId", "electionDate", "pageUrl", "municipalDocument"]) && value.electionId === null && typeof value.electionDate === "string" && value.pageUrl === fultonDiscoveryUrl && exact(value.municipalDocument, ["url", "sha256"]) && typeof value.municipalDocument.url === "string" && /^[a-f\d]{64}$/u.test(String(value.municipalDocument.sha256)));
+	assert(exact(value, [
+		"electionId",
+		"electionDate",
+		"pageUrl",
+		"municipalDocument"
+	]) && value.electionId === null && typeof value.electionDate === "string" && value.pageUrl === fultonDiscoveryUrl && exact(value.municipalDocument, ["url", "sha256"]) && typeof value.municipalDocument.url === "string" && /^[a-f\d]{64}$/u.test(String(value.municipalDocument.sha256)));
 	date(value.electionDate);
 	assert(fultonMunicipalDocumentUrl(value.municipalDocument.url) === value.municipalDocument.url);
 }

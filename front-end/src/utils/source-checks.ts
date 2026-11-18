@@ -14,7 +14,11 @@ export interface ScheduledSourceCheckEntry<T extends ScheduledSourceCheck> {
  */
 export function orderScheduledSourceChecks<T extends ScheduledSourceCheck>(checks: T[], now: Date, limit = 4): ScheduledSourceCheckEntry<T>[] {
 	return checks
-		.map(check => ({ check, isOverdue: new Date(check.nextCheckAt).getTime() < now.getTime(), time: new Date(check.nextCheckAt).getTime() }))
+		.map(check => ({
+			check,
+			isOverdue: new Date(check.nextCheckAt).getTime() < now.getTime(),
+			time: new Date(check.nextCheckAt).getTime()
+		}))
 		.filter(entry => !Number.isNaN(entry.time))
 		.sort((left, right) => Number(right.isOverdue) - Number(left.isOverdue) || left.time - right.time)
 		.slice(0, limit)

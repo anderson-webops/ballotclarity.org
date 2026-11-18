@@ -31,9 +31,23 @@ test("reviewed relative extension disallows remain restrictive for every nested 
 });
 
 test("relative robots review never permits unknown patterns or relative allow rules", () => {
-	for (const rule of ["Disallow: *.zip", "Allow: *.json", "Disallow: file.json", "Disallow: *"]) assert.throws(() => electionDocumentRobotsPolicy(Buffer.from(`User-agent: *\n${rule}\n`), [], ["*.json"]), /robots-format-changed/u);
-	for (const patterns of [["*.json", "*.json"], ["*"], ["/allowed"], ["*.j(s)on"], Array.from({ length: 11 }, (_, index) => `*.${String.fromCharCode(97 + index)}`)]) assert.throws(() => electionDocumentRobotsPolicy(Buffer.from(robots), [], patterns), /robots-relative-rule-review-required/u);
-	assert.throws(() => electionDocumentPublisherHosts({ ...electionDocumentSources[0]!, relativeRobotsDisallows: ["Allow: /"] }), /robots-relative-rule-review-required/u);
+	for (const rule of [
+		"Disallow: *.zip",
+		"Allow: *.json",
+		"Disallow: file.json",
+		"Disallow: *"
+	]) assert.throws(() => electionDocumentRobotsPolicy(Buffer.from(`User-agent: *\n${rule}\n`), [], ["*.json"]), /robots-format-changed/u);
+	for (const patterns of [
+		["*.json", "*.json"],
+		["*"],
+		["/allowed"],
+		["*.j(s)on"],
+		Array.from({ length: 11 }, (_, index) => `*.${String.fromCharCode(97 + index)}`)
+	]) assert.throws(() => electionDocumentRobotsPolicy(Buffer.from(robots), [], patterns), /robots-relative-rule-review-required/u);
+	assert.throws(() => electionDocumentPublisherHosts({
+		...electionDocumentSources[0]!,
+		relativeRobotsDisallows: ["Allow: /"]
+	}), /robots-relative-rule-review-required/u);
 });
 
 test("reviewed extension restrictions retain explicit path specificity and crawl limits", () => {
@@ -60,36 +74,106 @@ async function fixture(context: TestContext, sourceIds = ["nd-measure-documents-
 							? [`https://${source.host}/api/media/file/2026_General_Sample_Ballots_Corrected_2_e50150f2c0.PDF`]
 							: source.stateCode === "MD"
 								? [`https://${source.host}/elections/2026/ballot_questions.html`]
-								: ["WA", "OK", "OR", "GA", "MA", "CA", "KS", "TX", "NV", "FL", "OH", "WY", "WV", "AR"].includes(source.stateCode)
+								: [
+										"WA",
+										"OK",
+										"OR",
+										"GA",
+										"MA",
+										"CA",
+										"KS",
+										"TX",
+										"NV",
+										"FL",
+										"OH",
+										"WY",
+										"WV",
+										"AR"
+									].includes(source.stateCode)
 										? source.documentPatterns.map(pattern => `https://${source.host}${pattern.slice(1, -1).replaceAll("\\.", ".")}`)
 										: source.stateCode === "VA"
-											? [`https://${source.host}/casting-a-ballot/candidate-list/${source.id.includes("candidates") ? "november-3-2026-gen-elect-all-offices" : "november-2026-proposed-constitutional-amendments"}/`]
+											? [`https://${source.host}/casting-a-ballot/candidate-list/${source.id.includes("candidates")
+													? "november-3-2026-gen-elect-all-offices"
+													: "november-2026-proposed-constitutional-amendments"}/`]
 											: [1, 2].map(number => `https://${source.host}/sites/default/files/documents/elections/measures/ballot-language-2026-general-measure${number}.pdf`))]));
-	const documentUrls = [...sourceDocuments.values()].flat();
-	const plan: ElectionDocumentPlan = { schemaVersion: 1, type: "election-document-collection", sourceIds, cacheDirectory: join(directory, "cache"), outputRoot: join(directory, "out"), accessReviews: [] };
+	const documentUrls = [
+		...sourceDocuments.values()
+	].flat();
+	const plan: ElectionDocumentPlan = {
+		schemaVersion: 1,
+		type: "election-document-collection",
+		sourceIds,
+		cacheDirectory: join(directory, "cache"),
+		outputRoot: join(directory, "out"),
+		accessReviews: []
+	};
 	const seed: ElectionDocumentSeed = { schemaVersion: 1, type: "election-document-seed", captures: [] };
 	for (const source of sources) {
 		const localUrls = sourceDocuments.get(source.id)!;
 		const sharedIndex = sources.filter(other => other.indexUrl === source.indexUrl);
 		const sharedAgents = source.robotsLayout?.sharedWildcardAgents?.map(agent => `User-agent: ${agent}\n`).join("") ?? "";
 		const restrictiveGroups = source.robotsLayout?.restrictiveGroups?.map(group => `${group.agents.map(agent => `User-agent: ${agent}\n`).join("")}Disallow: ${group.unrelated ? "/" : "/private/"}\n`).join("\n");
-		for (const policy of source.policies) bodies.set(policy.url, policy.format === "pdf" ? pdf : Buffer.from(policy.format === "robots" ? restrictiveGroups ?? sharedAgents + robots + (source.repeatWildcardGroup ? "\nUser-agent: *\nDisallow: /reviewed-private/\n" : "") + (source.relativeRobotsDisallows ?? []).map(pattern => `Disallow: ${pattern}\n`).join("") + (policy.otherRobotsAgents ?? source.otherRobotsAgents ?? []).map(agent => `\nUser-agent: ${agent}\nDisallow: /\n`).join("") : `<main${policy.regionId ? ` id="${policy.regionId}"` : ""}${policy.regionClass ? ` class="${policy.regionClass}"` : ""}><h1>${policy.id}</h1>Public policy factual text retained for explicit review. Changes need review.</main><footer>State policy</footer>`));
+		for (const policy of source.policies) {
+			bodies.set(policy.url, policy.format === "pdf"
+				? pdf
+				: Buffer.from(policy.format === "robots"
+						? restrictiveGroups ?? sharedAgents + robots + (source.repeatWildcardGroup ? "\nUser-agent: *\nDisallow: /reviewed-private/\n" : "") + (source.relativeRobotsDisallows ?? []).map(pattern => `Disallow: ${pattern}\n`).join("") + (policy.otherRobotsAgents ?? source.otherRobotsAgents ?? []).map(agent => `\nUser-agent: ${agent}\nDisallow: /\n`).join("")
+						: `<main${policy.regionId
+							? ` id="${policy.regionId}"`
+							: ""}${policy.regionClass
+							? ` class="${policy.regionClass}"`
+							: ""}><h1>${policy.id}</h1>Public policy factual text retained for explicit review. Changes need review.</main><footer>State policy</footer>`));
+		}
 		bodies.set(source.indexUrl, Buffer.from(`<main><h1>${sharedIndex.flatMap(other => other.dateMarkers).join(" ")}</h1>${sharedIndex.flatMap(other => sourceDocuments.get(other.id)!).map(url => `<a href="${url}">Document</a>`).join("")}</main><footer>State election office</footer>`));
-		for (const url of localUrls) bodies.set(url, source.documentFormat === "html" ? Buffer.from(`<main>${source.indexIsDocument ? source.dateMarkers.join(" ") : ""}${source.documentDateMarkers!.join(" ")}${url === source.indexUrl && !source.indexIsDocument ? `<a href="${url}">Question listing</a>` : ""}</main><footer>Reviewed publisher notice</footer>`) : pdf);
-		const fingerprints = Object.fromEntries(source.policies.map(policy => [policy.id, electionDocumentPolicyFingerprint(bodies.get(policy.url)!, policy.format, policy.url, policy.regionId, policy.regionClass)]));
+		for (const url of localUrls) {
+			bodies.set(url, source.documentFormat === "html"
+				? Buffer.from(`<main>${source.indexIsDocument
+						? source.dateMarkers.join(" ")
+						: ""}${source.documentDateMarkers!.join(" ")}${url === source.indexUrl && !source.indexIsDocument
+						? `<a href="${url}">Question listing</a>`
+						: ""}</main><footer>Reviewed publisher notice</footer>`)
+				: pdf);
+		}
+		const fingerprints = Object.fromEntries(source.policies.map(policy => [
+			policy.id,
+			electionDocumentPolicyFingerprint(bodies.get(policy.url)!, policy.format, policy.url, policy.regionId, policy.regionClass)
+		]));
 		if (source.indexIsDocument && source.documentFormat === undefined) fingerprints.indexPdf = hash(bodies.get(source.indexUrl)!);
 		else fingerprints.indexLinks = electionDocumentPolicyFingerprint(bodies.get(source.indexUrl)!, "links", source.indexUrl);
 		if (source.documentFormat === "html") fingerprints.documentLinks = electionDocumentPolicyFingerprint(bodies.get(localUrls[0]!)!, "links", localUrls[0]!);
-		plan.accessReviews.push({ sourceId: source.id, reviewedAt: new Date(epoch).toISOString(), configurationSha256: electionDocumentConfigurationSha256(source), policyFingerprints: fingerprints });
-		const observedUrls = new Set([source.indexUrl, ...source.policies.map(policy => policy.url), ...localUrls]);
+		plan.accessReviews.push({
+			sourceId: source.id,
+			reviewedAt: new Date(epoch).toISOString(),
+			configurationSha256: electionDocumentConfigurationSha256(source),
+			policyFingerprints: fingerprints
+		});
+		const observedUrls = new Set([
+			source.indexUrl,
+			...source.policies.map(policy => policy.url),
+			...localUrls
+		]);
 		for (const [url, body] of bodies) {
 			if (!observedUrls.has(url)) continue;
 			const path = join(directory, `capture-${hash(url)}`);
 			await writeFile(path, body);
-			seed.captures.push({ sourceId: source.id, url, path, sha256: hash(body), capturedAt: new Date(epoch).toISOString(), etag: "\"first\"" });
+			seed.captures.push({
+				sourceId: source.id,
+				url,
+				path,
+				sha256: hash(body),
+				capturedAt: new Date(epoch).toISOString(),
+				etag: "\"first\""
+			});
 		}
 	}
-	return { directory, plan, seed, sources, bodies, documentUrls };
+	return {
+		directory,
+		plan,
+		seed,
+		sources,
+		bodies,
+		documentUrls
+	};
 }
 
 test("West Virginia collects only its reviewed SOS amendment notice", async (context) => {
@@ -100,7 +184,10 @@ test("West Virginia collects only its reviewed SOS amendment notice", async (con
 	assert.deepEqual([source.minimumDocuments, source.maximumDocuments], [1, 1]);
 	assert.ok(!input.seed.captures.some(capture => /apps\.sos\.wv\.gov|candidates\.wvsos\.gov/u.test(capture.url)));
 	assert.equal((await seedElectionDocuments(input.plan, input.seed, epoch)).seeded, 12);
-	const result = await collectElectionDocuments(input.plan, { now: () => epoch + 1000, fetchDocument: async () => assert.fail("Retained notice validation requires no publisher request.") });
+	const result = await collectElectionDocuments(input.plan, {
+		now: () => epoch + 1000,
+		fetchDocument: async () => assert.fail("Retained notice validation requires no publisher request.")
+	});
 	assert.equal(result.complete, true);
 	assert.equal(result.publisherRequests, 0);
 	assert.equal(result.observations[0]!.documents!.length, 1);
@@ -112,7 +199,11 @@ test("West Virginia notice discovery retains year, exact path and policy identit
 	const input = await fixture(context, ["wv-amendment-notice-2026"]);
 	const source = input.sources[0]!;
 	const index = input.bodies.get(source.indexUrl)!.toString();
-	for (const mutation of [index.replaceAll("2026", "2028"), index.replace("constitution-will", "constitution-will?mode=all"), index.replace("constitution-will", "constitution-will-other")])
+	for (const mutation of [
+		index.replaceAll("2026", "2028"),
+		index.replace("constitution-will", "constitution-will?mode=all"),
+		index.replace("constitution-will", "constitution-will-other")
+	])
 		assert.throws(() => discoverElectionDocuments(source, Buffer.from(mutation)));
 	const changed = structuredClone(source);
 	changed.policies.find(policy => policy.id === "policy-links")!.url += "/Pages/default.aspx";
@@ -125,7 +216,10 @@ test("Pulaski notice collection is independent of denied Arkansas publishers", a
 	assert.deepEqual(electionDocumentPublisherHosts(source), ["votepulaskiar.gov"]);
 	assert.deepEqual([source.minimumDocuments, source.maximumDocuments], [1, 1]);
 	assert.equal((await seedElectionDocuments(input.plan, input.seed, epoch)).seeded, 3);
-	const result = await collectElectionDocuments(input.plan, { now: () => epoch + 1000, fetchDocument: async () => assert.fail("Retained county evidence needs no publisher request.") });
+	const result = await collectElectionDocuments(input.plan, {
+		now: () => epoch + 1000,
+		fetchDocument: async () => assert.fail("Retained county evidence needs no publisher request.")
+	});
 	assert.equal(result.complete, true);
 	assert.equal(result.publisherRequests, 0);
 	assert.equal(result.observations[0]!.documents!.length, 1);
@@ -139,26 +233,45 @@ test("different publisher hosts retain their own exact robots group reviews", as
 	assert.doesNotMatch(input.bodies.get("https://elections.sbcounty.gov/robots.txt")!.toString(), /SemrushBot/u);
 	assert.match(input.bodies.get("https://main.sbcounty.gov/robots.txt")!.toString(), /SemrushBot-SA/u);
 	assert.deepEqual(await seedElectionDocuments(input.plan, input.seed, epoch), { seeded: 5, publisherRequests: 0, imported: false });
-	const result = await collectElectionDocuments(input.plan, { now: () => epoch + 1000, fetchDocument: async () => assert.fail("Retained host-specific policies require no requests.") });
+	const result = await collectElectionDocuments(input.plan, {
+		now: () => epoch + 1000,
+		fetchDocument: async () => assert.fail("Retained host-specific policies require no requests.")
+	});
 	assert.equal(result.complete, true);
 	assert.equal(result.publisherRequests, 0);
 	assert.equal(result.observations[0]!.documents!.length, 1);
-	assert.throws(() => electionDocumentPublisherHosts({ ...source, policies: source.policies.map(policy => policy.format === "links" ? { ...policy, otherRobotsAgents: [] } : policy) }), /robots-group-review-required/u);
-	assert.notEqual(electionDocumentConfigurationSha256(source), electionDocumentConfigurationSha256({ ...source, policies: source.policies.map(policy => ({ ...policy, otherRobotsAgents: undefined })) }));
+	assert.throws(() => electionDocumentPublisherHosts({
+		...source,
+		policies: source.policies.map(policy => policy.format === "links"
+			? { ...policy, otherRobotsAgents: [] }
+			: policy)
+	}), /robots-group-review-required/u);
+	assert.notEqual(electionDocumentConfigurationSha256(source), electionDocumentConfigurationSha256({
+		...source,
+		policies: source.policies.map(policy => ({ ...policy, otherRobotsAgents: undefined }))
+	}));
 });
 
 test("host-specific robots reviews reject missing groups, extra groups and denied inventory paths", async (context) => {
 	const source = electionDocumentSources.find(source => source.stateCode === "CA")!;
 	for (const kind of ["missing", "extra", "denied"] as const) {
 		const input = await fixture(context, [source.id]);
-		const url = kind === "missing" ? "https://main.sbcounty.gov/robots.txt" : "https://elections.sbcounty.gov/robots.txt";
+		const url = kind === "missing"
+			? "https://main.sbcounty.gov/robots.txt"
+			: "https://elections.sbcounty.gov/robots.txt";
 		const capture = input.seed.captures.find(capture => capture.url === url)!;
-		const body = Buffer.from(kind === "missing" ? robots : input.bodies.get(url)!.toString() + (kind === "extra" ? "\nUser-agent: SemrushBot\nDisallow: /\n" : "\nDisallow: /elections/\n"));
+		const body = Buffer.from(kind === "missing"
+			? robots
+			: input.bodies.get(url)!.toString() + (kind === "extra"
+				? "\nUser-agent: SemrushBot\nDisallow: /\n"
+				: "\nDisallow: /elections/\n"));
 		await writeFile(capture.path, body);
 		capture.sha256 = hash(body);
 		const policy = source.policies.find(policy => policy.url === url)!;
 		input.plan.accessReviews[0]!.policyFingerprints[policy.id] = electionDocumentPolicyFingerprint(body, "robots", url);
-		await assert.rejects(seedElectionDocuments(input.plan, input.seed, epoch), kind === "denied" ? /outside its permitted observed source links/u : /robots-group-review-required/u);
+		await assert.rejects(seedElectionDocuments(input.plan, input.seed, epoch), kind === "denied"
+			? /outside its permitted observed source links/u
+			: /robots-group-review-required/u);
 		assert.deepEqual(await readdir(join(input.plan.cacheDirectory, "captures")), []);
 	}
 });
@@ -166,8 +279,15 @@ test("host-specific robots reviews reject missing groups, extra groups and denie
 test("PDF policy fingerprints retain exact bytes and reject non-PDF bodies", () => {
 	const address = "https://example.org/policies/use.pdf";
 	assert.equal(electionDocumentPolicyFingerprint(pdf, "pdf", address), hash(pdf));
-	assert.notEqual(electionDocumentPolicyFingerprint(Buffer.concat([pdf, Buffer.from("changed")]), "pdf", address), hash(pdf));
-	for (const body of [Buffer.alloc(0), Buffer.from("<html>Denied</html>"), Buffer.alloc(12 * 1024 * 1024 + 1)])
+	assert.notEqual(electionDocumentPolicyFingerprint(Buffer.concat([
+		pdf,
+		Buffer.from("changed")
+	]), "pdf", address), hash(pdf));
+	for (const body of [
+		Buffer.alloc(0),
+		Buffer.from("<html>Denied</html>"),
+		Buffer.alloc(12 * 1024 * 1024 + 1)
+	])
 		assert.throws(() => electionDocumentPolicyFingerprint(body, "pdf", address), /policy-pdf-invalid/u);
 });
 
@@ -181,7 +301,10 @@ test("Tuscola collection binds both current November documents and exact PDF pol
 	assert.throws(() => discoverElectionDocuments(source, Buffer.from(input.bodies.get(source.indexUrl)!.toString().replace(input.documentUrls[0]!, "https://www.tuscolacounty.org/elections/2026/11/unreviewed.pdf"))), /document-count-changed/u);
 	const seeded = await seedElectionDocuments(input.plan, input.seed, epoch);
 	assert.equal(seeded.publisherRequests, 0);
-	const collected = await collectElectionDocuments(input.plan, { now: () => epoch + 1000, fetchDocument: async () => assert.fail("Fresh retained documents require no network.") });
+	const collected = await collectElectionDocuments(input.plan, {
+		now: () => epoch + 1000,
+		fetchDocument: async () => assert.fail("Fresh retained documents require no network.")
+	});
 	assert.equal(collected.complete, true);
 	assert.equal(collected.publisherRequests, 0);
 });
@@ -197,14 +320,32 @@ test("changed PDF policies hold the publisher before election documents are requ
 		sleep: async (milliseconds) => { clock += milliseconds; },
 		fetchDocument: async (url) => {
 			requests.push(url);
-			return url === policy.url ? { status: 200, body: Buffer.concat([pdf, Buffer.from("changed")]), contentType: "application/pdf", etag: undefined } : { status: 304, body: Buffer.alloc(0), contentType: "", etag: undefined };
+			return url === policy.url
+				? {
+						status: 200,
+						body: Buffer.concat([
+							pdf,
+							Buffer.from("changed")
+						]),
+						contentType: "application/pdf",
+						etag: undefined
+					}
+				: {
+						status: 304,
+						body: Buffer.alloc(0),
+						contentType: "",
+						etag: undefined
+					};
 		},
 	});
 	assert.equal(result.complete, false);
 	assert.equal(result.observations[0]!.reason, "publisher-policy-changed");
 	assert.ok(!requests.some(url => input.documentUrls.includes(url)));
 	assert.deepEqual(await readFile(join(input.plan.cacheDirectory, "bodies", hash(pdf))), pdf);
-	const held = await collectElectionDocuments(input.plan, { now: () => clock, fetchDocument: async () => assert.fail("A publisher hold must prevent transport.") });
+	const held = await collectElectionDocuments(input.plan, {
+		now: () => clock,
+		fetchDocument: async () => assert.fail("A publisher hold must prevent transport.")
+	});
 	assert.equal(held.publisherRequests, 0);
 });
 
@@ -214,13 +355,46 @@ test("Kansas collection binds its exact November amendment publication and polic
 	const index = Buffer.from(`<h1>November 3, 2026 General Election</h1><p>Vote Yes or No</p><a href="${url}">Download</a><a href="${url}">Repeated link</a>`);
 	assert.deepEqual(discoverElectionDocuments(source, index), [url]);
 	assert.deepEqual(electionDocumentPublisherHosts(source), ["www.sos.ks.gov"]);
-	assert.deepEqual(source.policies.find(policy => policy.id === "open-records"), { id: "open-records", url: "https://www.sos.ks.gov/general-services/kora-policy-statement.html", format: "region", regionClass: "page-content" });
+	assert.deepEqual(source.policies.find(policy => policy.id === "open-records"), {
+		id: "open-records",
+		url: "https://www.sos.ks.gov/general-services/kora-policy-statement.html",
+		format: "region",
+		regionClass: "page-content"
+	});
 	assert.throws(() => discoverElectionDocuments(source, Buffer.from(index.toString().replace("November 3, 2026", "August 4, 2026"))), /election-changed/u);
 	assert.throws(() => discoverElectionDocuments(source, Buffer.from(index.toString().replaceAll(url, "https://www.sos.ks.gov/elections/26elec/2026-Primary-Election-Constitutional-Amendment-Judicial-Election.pdf"))), /count-changed/u);
 });
 
 test("reviewed document discovery is election-bound, same-host, bounded and additive", () => {
-	assert.deepEqual(electionDocumentSources.map(source => source.stateCode), ["ND", "MO", "NM", "UT", "MD", "VA", "VA", "WA", "OK", "CT", "OR", "GA", "MA", "CA", "KS", "MI", "TX", "NV", "FL", "OH", "NY", "AK", "DC", "WY", "WV", "AR", ...Array.from({ length: 25 }).fill("GA")]);
+	assert.deepEqual(electionDocumentSources.map(source => source.stateCode), [
+		"ND",
+		"MO",
+		"NM",
+		"UT",
+		"MD",
+		"VA",
+		"VA",
+		"WA",
+		"OK",
+		"CT",
+		"OR",
+		"GA",
+		"MA",
+		"CA",
+		"KS",
+		"MI",
+		"TX",
+		"NV",
+		"FL",
+		"OH",
+		"NY",
+		"AK",
+		"DC",
+		"WY",
+		"WV",
+		"AR",
+		...Array.from({ length: 25 }).fill("GA")
+	]);
 	const source = electionDocumentSources[0]!;
 	const url = `https://${source.host}/sites/default/files/documents/elections/measures/analysis-2026-general-measure3.pdf`;
 	assert.deepEqual(discoverElectionDocuments(source, Buffer.from(`<main>2026 General Election <a href="${url}#page=1">New publication</a><a href="${url}">Repeated link</a><a href="https://elsewhere.invalid/file.pdf">Not allowed</a></main>`)), [url]);
@@ -245,13 +419,28 @@ test("Franklin unavailable robots stops automatic collection before homepage or 
 	const sourceId = "oh-franklin-charter-documents-2026";
 	const input = await fixture(context, [sourceId]);
 	const requests: string[] = [];
-	const result = await collectElectionDocuments(input.plan, { now: () => epoch, fetchDocument: async (url) => {
-		requests.push(url);
-		return { status: 404, body: Buffer.alloc(0), contentType: "text/html", etag: undefined };
-	} });
+	const result = await collectElectionDocuments(input.plan, {
+		now: () => epoch,
+		fetchDocument: async (url) => {
+			requests.push(url);
+			return {
+				status: 404,
+				body: Buffer.alloc(0),
+				contentType: "text/html",
+				etag: undefined
+			};
+		}
+	});
 	assert.deepEqual(requests, ["https://www.vote.franklincountyohio.gov/robots.txt"]);
 	assert.equal(result.complete, false);
-	assert.deepEqual(result.observations, [{ sourceId, complete: false, reason: "document-or-policy-unavailable", status: 404 }]);
+	assert.deepEqual(result.observations, [
+		{
+			sourceId,
+			complete: false,
+			reason: "document-or-policy-unavailable",
+			status: 404
+		}
+	]);
 	assert.equal(result.imported, false);
 	assert.equal(result.published, false);
 });
@@ -262,26 +451,60 @@ test("reviewed English asset URLs retain exact D.C. editions and reject unreview
 	const index = (urls: string[]) => Buffer.from(`<main>${source.dateMarkers.join(" ")}${urls.map(url => `<a href="${url}">Sample</a>`).join("")}</main>`);
 	assert.equal(addresses.length, 12);
 	assert.deepEqual(discoverElectionDocuments(source, index(addresses)), addresses.toSorted());
-	for (const change of ["?language=fr", "?language=%65n", "?language=en&language=en", "?language=en&download=all", ""]) {
-		assert.throws(() => discoverElectionDocuments(source, index([addresses[0]!.replace("?language=en", change), ...addresses.slice(1)])), /link-changed/u);
-		assert.throws(() => electionDocumentPublisherHosts({ ...source, reviewedDocumentUrls: [addresses[0]!.replace("?language=en", change)] }), /query-review-required/u);
+	for (const change of [
+		"?language=fr",
+		"?language=%65n",
+		"?language=en&language=en",
+		"?language=en&download=all",
+		""
+	]) {
+		assert.throws(() => discoverElectionDocuments(source, index([
+			addresses[0]!.replace("?language=en", change),
+			...addresses.slice(1)
+		])), /link-changed/u);
+		assert.throws(() => electionDocumentPublisherHosts({
+			...source,
+			reviewedDocumentUrls: [
+				addresses[0]!.replace("?language=en", change)
+			]
+		}), /query-review-required/u);
 	}
 	assert.throws(() => discoverElectionDocuments(source, index(addresses.slice(1))), /count-changed/u);
 	assert.throws(() => discoverElectionDocuments(source, Buffer.from(index(addresses).toString().replace("2026", "2028"))), /election-changed/u);
-	assert.throws(() => electionDocumentPublisherHosts({ ...source, reviewedDocumentUrls: [addresses[0]!.replace(".pdf?", ".html?")] }), /query-review-required/u);
+	assert.throws(() => electionDocumentPublisherHosts({
+		...source,
+		reviewedDocumentUrls: [
+			addresses[0]!.replace(".pdf?", ".html?")
+		]
+	}), /query-review-required/u);
 });
 
 test("D.C. unavailable robots stops unattended collection before index or ballot requests", async (context) => {
 	const sourceId = "dc-general-measure-documents-2026";
 	const input = await fixture(context, [sourceId]);
 	const requests: string[] = [];
-	const result = await collectElectionDocuments(input.plan, { now: () => epoch, fetchDocument: async (url) => {
-		requests.push(url);
-		return { status: 404, body: Buffer.alloc(0), contentType: "text/html", etag: undefined };
-	} });
+	const result = await collectElectionDocuments(input.plan, {
+		now: () => epoch,
+		fetchDocument: async (url) => {
+			requests.push(url);
+			return {
+				status: 404,
+				body: Buffer.alloc(0),
+				contentType: "text/html",
+				etag: undefined
+			};
+		}
+	});
 	assert.deepEqual(requests, ["https://dcboe.org/robots.txt"]);
 	assert.equal(result.complete, false);
-	assert.deepEqual(result.observations, [{ sourceId, complete: false, reason: "document-or-policy-unavailable", status: 404 }]);
+	assert.deepEqual(result.observations, [
+		{
+			sourceId,
+			complete: false,
+			reason: "document-or-policy-unavailable",
+			status: 404
+		}
+	]);
 	assert.equal(result.imported, false);
 	assert.equal(result.published, false);
 });
@@ -292,7 +515,19 @@ test("reviewed revision URLs retain the complete public identity and reject ever
 	const addresses = source.reviewedDocumentUrls!;
 	assert.deepEqual(discoverElectionDocuments(source, body(addresses.map(address => `${address}#page=1`))), [...addresses].sort());
 	const first = new URL(addresses[0]!);
-	for (const replacement of [first.origin + first.pathname, addresses[0]!.replace("rev=", "version="), `${addresses[0]!}&token=public`, addresses[0]!.replace(/hash=[a-f\d]+/iu, `hash=${"0".repeat(32)}`), addresses[0]!.replace("?rev=", "?REV="), addresses[0]!.replace("&hash=", "&hash=unexpected&extra=")]) assert.throws(() => discoverElectionDocuments(source, body([replacement, ...addresses.slice(1)])), /document-link-changed/u);
+	for (const replacement of [
+		first.origin + first.pathname,
+		addresses[0]!.replace("rev=", "version="),
+		`${addresses[0]!}&token=public`,
+		addresses[0]!.replace(/hash=[a-f\d]+/iu, `hash=${"0".repeat(32)}`),
+		addresses[0]!.replace("?rev=", "?REV="),
+		addresses[0]!.replace("&hash=", "&hash=unexpected&extra=")
+	]) {
+		assert.throws(() => discoverElectionDocuments(source, body([
+			replacement,
+			...addresses.slice(1)
+		])), /document-link-changed/u);
+	}
 	assert.throws(() => discoverElectionDocuments({ ...source, reviewedDocumentUrls: undefined }, body(addresses)), /document-link-changed/u);
 });
 
@@ -313,7 +548,12 @@ test("Boston discovery pins the current independently published English question
 	const body = (address: string, markers = source.dateMarkers.join(" ")) => Buffer.from(`<main>${markers}<a href="${address}">English</a><a href="${url.replace("English", "Spanish")}">Spanish</a><a href="https://www.sec.state.ma.us/guide.pdf">State portal</a></main>`);
 	assert.deepEqual(discoverElectionDocuments(source, body(`${url}#page=6`)), [url]);
 	assert.deepEqual(electionDocumentPublisherHosts(source), ["www.boston.gov"]);
-	assert.deepEqual(source.policies.find(policy => policy.id === "terms-privacy"), { id: "terms-privacy", url: "https://www.boston.gov/government/cabinets/innovation-and-technology/terms-use-and-privacy-policy-city-boston-digital", format: "region", regionId: "content" });
+	assert.deepEqual(source.policies.find(policy => policy.id === "terms-privacy"), {
+		id: "terms-privacy",
+		url: "https://www.boston.gov/government/cabinets/innovation-and-technology/terms-use-and-privacy-policy-city-boston-digital",
+		format: "region",
+		regionId: "content"
+	});
 	assert.throws(() => discoverElectionDocuments(source, body(url, "November 2028 State Election")), /index-election-changed/u);
 	assert.throws(() => discoverElectionDocuments(source, body(`${url}?download=1`)), /document-link-changed/u);
 	assert.throws(() => discoverElectionDocuments(source, body(url.replace("2026-11-03", "2026-11-04"))), /document-count-changed/u);
@@ -335,8 +575,28 @@ test("San Bernardino inventory discovery never follows the held upload or state-
 test("revision-query review rejects credentials, routing, encoded values and malformed identity lists", () => {
 	const source = electionDocumentSources.find(item => item.stateCode === "CT")!;
 	const first = source.reviewedDocumentUrls![0]!;
-	for (const replacement of [first.replace("https://", "http://"), first.replace("portal.ct.gov", "elsewhere.invalid"), first.replace("https://", "https://name@"), first.replace("portal.ct.gov", "portal.ct.gov:444"), `${first}#page=1`, `${first}&rev=${"0".repeat(32)}`, first.replace("rev=", "rev=%61"), first.replace(/hash=[a-f\d]+/iu, "hash=123"), first.replace("?rev=", "?token="), first.replace("?rev=", "?%72ev=")]) assert.throws(() => electionDocumentPublisherHosts({ ...source, reviewedDocumentUrls: [replacement] }), /document-query-review-required/u);
-	for (const addresses of [[], [first, first], Array.from<string>({ length: 22 }).fill(first)]) assert.throws(() => electionDocumentPublisherHosts({ ...source, reviewedDocumentUrls: addresses }), /document-query-review-required/u);
+	for (const replacement of [
+		first.replace("https://", "http://"),
+		first.replace("portal.ct.gov", "elsewhere.invalid"),
+		first.replace("https://", "https://name@"),
+		first.replace("portal.ct.gov", "portal.ct.gov:444"),
+		`${first}#page=1`,
+		`${first}&rev=${"0".repeat(32)}`,
+		first.replace("rev=", "rev=%61"),
+		first.replace(/hash=[a-f\d]+/iu, "hash=123"),
+		first.replace("?rev=", "?token="),
+		first.replace("?rev=", "?%72ev=")
+	]) {
+		assert.throws(() => electionDocumentPublisherHosts({
+			...source,
+			reviewedDocumentUrls: [replacement]
+		}), /document-query-review-required/u);
+	}
+	for (const addresses of [
+		[],
+		[first, first],
+		Array.from<string>({ length: 22 }).fill(first)
+	]) assert.throws(() => electionDocumentPublisherHosts({ ...source, reviewedDocumentUrls: addresses }), /document-query-review-required/u);
 });
 
 test("a reviewed second wildcard group combines restrictions without changing default refusal", () => {
@@ -351,18 +611,37 @@ test("a reviewed second wildcard group combines restrictions without changing de
 
 test("wildcard-group review never permits additional groups, unrelated patterns or crawler identity changes", () => {
 	const body = "User-agent: *\nDisallow: /first/\nUser-agent: *\nDisallow: /second/\n";
-	for (const value of [robots, `${body}User-agent: *\nAllow: /\n`, `${body}User-agent: OtherBot\nDisallow: /\n`, "User-agent: *\nUser-agent: *\nDisallow: /\n"]) assert.throws(() => electionDocumentRobotsPolicy(Buffer.from(value), [], [], true), /robots-group-review-required/u);
-	for (const agent of ["*source*", "*bot*", "*GPTBot*", "GPTBot", "BallotClarity", "ClaudeBot"]) assert.throws(() => electionDocumentRobotsPolicy(Buffer.from(`${body}User-agent: ${agent}\nDisallow: /\n`), [agent], [], true), /robots-group-review-required/u);
+	for (const value of [
+		robots,
+		`${body}User-agent: *\nAllow: /\n`,
+		`${body}User-agent: OtherBot\nDisallow: /\n`,
+		"User-agent: *\nUser-agent: *\nDisallow: /\n"
+	]) assert.throws(() => electionDocumentRobotsPolicy(Buffer.from(value), [], [], true), /robots-group-review-required/u);
+	for (const agent of [
+		"*source*",
+		"*bot*",
+		"*GPTBot*",
+		"GPTBot",
+		"BallotClarity",
+		"ClaudeBot"
+	]) assert.throws(() => electionDocumentRobotsPolicy(Buffer.from(`${body}User-agent: ${agent}\nDisallow: /\n`), [agent], [], true), /robots-group-review-required/u);
 	assert.throws(() => electionDocumentRobotsPolicy(Buffer.from(body), [], [], false as unknown as true), /robots-group-review-required/u);
 });
 
 test("encoded filenames require an exact reviewed path without changing the public address", () => {
-	const source = { ...electionDocumentSources[0]!, documentPatterns: ["^/published/.*\\.pdf$"], maximumDocuments: 3 };
+	const source = {
+		...electionDocumentSources[0]!,
+		documentPatterns: ["^/published/.*\\.pdf$"],
+		maximumDocuments: 3
+	};
 	const paths = ["/published/first%20title.pdf", "/published/second%26title.pdf"];
 	const body = Buffer.from(`<main>2026 General Election ${paths.map(path => `<a href="${path}">Publication</a>`).join("")}</main>`);
 	assert.throws(() => discoverElectionDocuments(source, body), /document-link-changed/u);
 	assert.deepEqual(discoverElectionDocuments({ ...source, encodedDocumentPaths: paths }, body), paths.map(path => `https://${source.host}${path}`));
-	assert.throws(() => discoverElectionDocuments({ ...source, encodedDocumentPaths: paths.slice(0, 1) }, body), /document-link-changed/u);
+	assert.throws(() => discoverElectionDocuments({
+		...source,
+		encodedDocumentPaths: paths.slice(0, 1)
+	}, body), /document-link-changed/u);
 });
 
 test("Woodward collection is restricted to the three current county-published samples", () => {
@@ -377,8 +656,29 @@ test("Woodward collection is restricted to the three current county-published sa
 
 test("encoded filename review cannot permit encoded routing, traversal or double decoding", () => {
 	const source = electionDocumentSources.find(item => item.stateCode === "WA")!;
-	for (const path of ["/published/a%2Fb.pdf", "/published/a%5Cb.pdf", "/published/a%00b.pdf", "/published/a%2520b.pdf", "/published/%2e%2e/a.pdf", "/published/a%3Fb.pdf", "/published/a%23b.pdf", "/published/a%20b.pdf?x=1", "/published/a%20b.pdf#page=1", "/published/../a%20b.pdf", "//elsewhere.invalid/a%20b.pdf", "/published/a title.pdf"]) assert.throws(() => electionDocumentPublisherHosts({ ...source, encodedDocumentPaths: [path] }), /document-path-review-required/u);
-	assert.throws(() => electionDocumentPublisherHosts({ ...source, encodedDocumentPaths: [source.encodedDocumentPaths![0]!, source.encodedDocumentPaths![0]!] }), /document-path-review-required/u);
+	for (const path of [
+		"/published/a%2Fb.pdf",
+		"/published/a%5Cb.pdf",
+		"/published/a%00b.pdf",
+		"/published/a%2520b.pdf",
+		"/published/%2e%2e/a.pdf",
+		"/published/a%3Fb.pdf",
+		"/published/a%23b.pdf",
+		"/published/a%20b.pdf?x=1",
+		"/published/a%20b.pdf#page=1",
+		"/published/../a%20b.pdf",
+		"//elsewhere.invalid/a%20b.pdf",
+		"/published/a title.pdf"
+	]) {
+		assert.throws(() => electionDocumentPublisherHosts({
+			...source,
+			encodedDocumentPaths: [path]
+		}), /document-path-review-required/u);
+	}
+	assert.throws(() => electionDocumentPublisherHosts({
+		...source,
+		encodedDocumentPaths: [source.encodedDocumentPaths![0]!, source.encodedDocumentPaths![0]!]
+	}), /document-path-review-required/u);
 });
 
 test("a required document floor rejects missing government sections instead of claiming a complete capture", () => {
@@ -387,7 +687,10 @@ test("a required document floor rejects missing government sections instead of c
 	const body = (values: string[]) => Buffer.from(`<main>${source.dateMarkers.join(" ")} ${values.map(path => `<a href="${path}">Publication</a>`).join("")}</main>`);
 	assert.equal(discoverElectionDocuments(source, body(paths)).length, 14);
 	assert.throws(() => discoverElectionDocuments(source, body(paths.slice(1))), /document-count-changed/u);
-	assert.throws(() => discoverElectionDocuments(source, body([...paths.slice(1), paths[1]!])), /document-count-changed/u);
+	assert.throws(() => discoverElectionDocuments(source, body([
+		...paths.slice(1),
+		paths[1]!
+	])), /document-count-changed/u);
 });
 
 test("document bounds are explicitly reviewed and cannot be empty, fractional or unbounded", () => {
@@ -401,14 +704,29 @@ test("policy fingerprints ignore scripts but bind policy text, links and footer 
 	const body = Buffer.from("<main>Reviewed policy text with meaningful access and privacy conditions for this source.</main><footer>State notice</footer>");
 	assert.equal(electionDocumentPolicyFingerprint(body, "main", address), electionDocumentPolicyFingerprint(Buffer.from(`${body}<script>random token</script>`), "main", address));
 	assert.notEqual(electionDocumentPolicyFingerprint(body, "main", address), electionDocumentPolicyFingerprint(Buffer.from(body.toString().replace("Reviewed", "Changed")), "main", address));
-	for (const extra of ["<a href='/terms'>Terms</a>", "<a href='http://legacy.example/policies'>Statements &amp; Policies</a>", "<footer>New use restriction</footer>", "<section class='footer'>New use restriction</section>", "<div role='contentinfo'>New use restriction</div>"])
+	for (const extra of [
+		"<a href='/terms'>Terms</a>",
+		"<a href='http://legacy.example/policies'>Statements &amp; Policies</a>",
+		"<footer>New use restriction</footer>",
+		"<section class='footer'>New use restriction</section>",
+		"<div role='contentinfo'>New use restriction</div>"
+	])
 		assert.notEqual(electionDocumentPolicyFingerprint(body, "links", address), electionDocumentPolicyFingerprint(Buffer.from(`${body}${extra}`), "links", address));
 });
 
 test("each explicit publisher host requires its own exact robots policy", () => {
 	const source = electionDocumentSources.find(source => source.stateCode === "UT")!;
 	assert.deepEqual(electionDocumentPublisherHosts(source), ["vote.utahcounty.gov", "www.utahcounty.gov"]);
-	for (const mutation of ["missing", "duplicate", "wrong-path", "credentials", "http", "port", "query", "fragment"]) {
+	for (const mutation of [
+		"missing",
+		"duplicate",
+		"wrong-path",
+		"credentials",
+		"http",
+		"port",
+		"query",
+		"fragment"
+	]) {
 		const changed = structuredClone(source);
 		const policy = changed.policies.find(policy => policy.id === "county-robots")!;
 		if (mutation === "missing") changed.policies = changed.policies.filter(item => item !== policy);
@@ -427,17 +745,26 @@ test("multi-host collection checks both robots policies and preserves independen
 	const input = await fixture(context, ["ut-county-measure-documents-2026"]);
 	const requests: { url: string; startedAt: number; completedAt: number }[] = [];
 	let clock = epoch;
-	const result = await collectElectionDocuments(input.plan, { now: () => clock, sleep: async (milliseconds) => {
-		clock += milliseconds;
-	}, fetchDocument: async (url, options) => {
-		const startedAt = clock;
-		assert.deepEqual(options.allowedHosts, [new URL(url).hostname]);
-		const isPdf = /\.pdf$/iu.test(new URL(url).pathname);
-		assert.equal(options.maxBytes, (isPdf ? 12 : 2) * 1024 * 1024);
-		clock += 500;
-		requests.push({ url, startedAt, completedAt: clock });
-		return { status: 200, body: input.bodies.get(url)!, contentType: isPdf ? "application/pdf" : "text/html", etag: undefined };
-	} });
+	const result = await collectElectionDocuments(input.plan, {
+		now: () => clock,
+		sleep: async (milliseconds) => {
+			clock += milliseconds;
+		},
+		fetchDocument: async (url, options) => {
+			const startedAt = clock;
+			assert.deepEqual(options.allowedHosts, [new URL(url).hostname]);
+			const isPdf = /\.pdf$/iu.test(new URL(url).pathname);
+			assert.equal(options.maxBytes, (isPdf ? 12 : 2) * 1024 * 1024);
+			clock += 500;
+			requests.push({ url, startedAt, completedAt: clock });
+			return {
+				status: 200,
+				body: input.bodies.get(url)!,
+				contentType: isPdf ? "application/pdf" : "text/html",
+				etag: undefined
+			};
+		}
+	});
 	assert.equal(result.complete, true);
 	assert.equal(requests.length, 7);
 	assert.deepEqual(requests.slice(0, 2).map(request => request.url), input.sources[0]!.policies.filter(policy => policy.format === "robots").map(policy => policy.url));
@@ -446,9 +773,12 @@ test("multi-host collection checks both robots policies and preserves independen
 		for (let index = 1; index < publisherRequests.length; index++) assert.ok(publisherRequests[index]!.startedAt - publisherRequests[index - 1]!.completedAt >= 11_000);
 	}
 	assert.equal(result.observations[0]!.documents![0]!.url, input.documentUrls[0]);
-	const replay = await collectElectionDocuments(input.plan, { now: () => clock, fetchDocument: async () => {
-		throw new Error("Daily reuse must not fetch.");
-	} });
+	const replay = await collectElectionDocuments(input.plan, {
+		now: () => clock,
+		fetchDocument: async () => {
+			throw new Error("Daily reuse must not fetch.");
+		}
+	});
 	assert.equal(replay.complete, true);
 	assert.equal(replay.publisherRequests, 0);
 });
@@ -457,27 +787,47 @@ test("external policy-host denials stop before content and remain held on either
 	const input = await fixture(context, ["ut-county-measure-documents-2026"]);
 	const requests: string[] = [];
 	let clock = epoch;
-	const result = await collectElectionDocuments(input.plan, { now: () => clock, sleep: async (milliseconds) => {
-		clock += milliseconds;
-	}, fetchDocument: async (url) => {
-		requests.push(url);
-		return new URL(url).hostname === "www.utahcounty.gov"
-			? { status: 403, body: Buffer.from("Denied"), contentType: "text/html", etag: undefined }
-			: { status: 200, body: input.bodies.get(url)!, contentType: "text/plain", etag: undefined };
-	} });
+	const result = await collectElectionDocuments(input.plan, {
+		now: () => clock,
+		sleep: async (milliseconds) => {
+			clock += milliseconds;
+		},
+		fetchDocument: async (url) => {
+			requests.push(url);
+			return new URL(url).hostname === "www.utahcounty.gov"
+				? {
+						status: 403,
+						body: Buffer.from("Denied"),
+						contentType: "text/html",
+						etag: undefined
+					}
+				: {
+						status: 200,
+						body: input.bodies.get(url)!,
+						contentType: "text/plain",
+						etag: undefined
+					};
+		}
+	});
 	assert.equal(result.complete, false);
 	assert.equal(result.observations[0]!.reason, "publisher-denial-or-redirect");
 	assert.equal(requests.length, 2);
 	for (const host of electionDocumentPublisherHosts(input.sources[0]!)) assert.equal(JSON.parse(await readFile(join(input.plan.cacheDirectory, "hosts", host, "hold.json"), "utf8")).reason, "publisher-denial-or-redirect");
-	const replay = await collectElectionDocuments(input.plan, { now: () => clock + day, fetchDocument: async () => {
-		throw new Error("No hold bypass.");
-	} });
+	const replay = await collectElectionDocuments(input.plan, {
+		now: () => clock + day,
+		fetchDocument: async () => {
+			throw new Error("No hold bypass.");
+		}
+	});
 	assert.equal(replay.publisherRequests, 0);
 	assert.equal(replay.observations[0]!.reason, "publisher-on-hold");
 });
 
 test("multi-host seeds cannot substitute another host's robots permissions", async (context) => {
-	for (const [host, blockedPath] of [["www.utahcounty.gov", "/terms-of-use"], ["vote.utahcounty.gov", "/api/media/"]]) {
+	for (const [host, blockedPath] of [
+		["www.utahcounty.gov", "/terms-of-use"],
+		["vote.utahcounty.gov", "/api/media/"]
+	]) {
 		const input = await fixture(context, ["ut-county-measure-documents-2026"]);
 		const policy = input.sources[0]!.policies.find(policy => policy.format === "robots" && new URL(policy.url).hostname === host)!;
 		const capture = input.seed.captures.find(capture => capture.url === policy.url)!;
@@ -493,9 +843,18 @@ test("multi-host seeds cannot substitute another host's robots permissions", asy
 test("uppercase PDF extensions retain content-type and binary checks", async (context) => {
 	const input = await fixture(context, ["ut-county-measure-documents-2026"]);
 	let clock = epoch;
-	const result = await collectElectionDocuments(input.plan, { now: () => clock, sleep: async (milliseconds) => {
-		clock += milliseconds;
-	}, fetchDocument: async url => ({ status: 200, body: input.bodies.get(url)!, contentType: "text/html", etag: undefined }) });
+	const result = await collectElectionDocuments(input.plan, {
+		now: () => clock,
+		sleep: async (milliseconds) => {
+			clock += milliseconds;
+		},
+		fetchDocument: async url => ({
+			status: 200,
+			body: input.bodies.get(url)!,
+			contentType: "text/html",
+			etag: undefined
+		})
+	});
 	assert.equal(result.complete, false);
 	assert.equal(result.observations[0]!.reason, "document-format-changed");
 });
@@ -503,46 +862,86 @@ test("uppercase PDF extensions retain content-type and binary checks", async (co
 test("explicit HTML sources collect dated content without weakening PDF checks", async (context) => {
 	const input = await fixture(context, ["md-question-documents-2026"]);
 	let clock = epoch;
-	const result = await collectElectionDocuments(input.plan, { now: () => clock, sleep: async (duration) => {
-		clock += duration;
-	}, fetchDocument: async (url, options) => {
-		assert.equal(options.maxBytes, 2 * 1024 * 1024);
-		return { status: 200, body: input.bodies.get(url)!, contentType: "text/html", etag: undefined };
-	} });
+	const result = await collectElectionDocuments(input.plan, {
+		now: () => clock,
+		sleep: async (duration) => {
+			clock += duration;
+		},
+		fetchDocument: async (url, options) => {
+			assert.equal(options.maxBytes, 2 * 1024 * 1024);
+			return {
+				status: 200,
+				body: input.bodies.get(url)!,
+				contentType: "text/html",
+				etag: undefined
+			};
+		}
+	});
 	assert.equal(result.complete, true);
 	assert.equal(result.observations[0]!.documents!.length, 1);
 	assert.equal(result.capturedContentReviewed, false);
 	assert.equal(result.imported, false);
-	const replay = await collectElectionDocuments(input.plan, { now: () => clock, fetchDocument: async () => {
-		throw new Error("No fresh-cache fetch.");
-	} });
+	const replay = await collectElectionDocuments(input.plan, {
+		now: () => clock,
+		fetchDocument: async () => {
+			throw new Error("No fresh-cache fetch.");
+		}
+	});
 	assert.equal(replay.complete, true);
 	assert.equal(replay.publisherRequests, 0);
 });
 
 test("HTML content requires its own reviewed policy links, election and bounded structure", async (context) => {
-	for (const mutation of ["policy-links", "date", "size", "type", "utf8"]) {
+	for (const mutation of [
+		"policy-links",
+		"date",
+		"size",
+		"type",
+		"utf8"
+	]) {
 		const input = await fixture(context, ["md-question-documents-2026"]);
 		const url = input.documentUrls[0]!;
 		const original = input.bodies.get(url)!;
 		let clock = epoch;
-		const result = await collectElectionDocuments(input.plan, { now: () => clock, sleep: async (duration) => {
-			clock += duration;
-		}, fetchDocument: async (address) => {
-			let body = input.bodies.get(address)!;
-			if (address === url) {
-				if (mutation === "policy-links") body = Buffer.from(`${original}<a href='/new-terms'>Terms</a>`);
-				if (mutation === "date") body = Buffer.from(original.toString().replaceAll("2026", "2028"));
-				if (mutation === "size") body = Buffer.alloc(2 * 1024 * 1024 + 1);
-				if (mutation === "utf8") body = Buffer.from([255, 254]);
+		const result = await collectElectionDocuments(input.plan, {
+			now: () => clock,
+			sleep: async (duration) => {
+				clock += duration;
+			},
+			fetchDocument: async (address) => {
+				let body = input.bodies.get(address)!;
+				if (address === url) {
+					if (mutation === "policy-links") body = Buffer.from(`${original}<a href='/new-terms'>Terms</a>`);
+					if (mutation === "date") body = Buffer.from(original.toString().replaceAll("2026", "2028"));
+					if (mutation === "size") body = Buffer.alloc(2 * 1024 * 1024 + 1);
+					if (mutation === "utf8") body = Buffer.from([255, 254]);
+				}
+				return {
+					status: 200,
+					body,
+					contentType: address === url && mutation === "type"
+						? "application/pdf"
+						: "text/html",
+					etag: undefined
+				};
 			}
-			return { status: 200, body, contentType: address === url && mutation === "type" ? "application/pdf" : "text/html", etag: undefined };
-		} });
+		});
 		assert.equal(result.complete, false, mutation);
-		assert.equal(result.observations[0]!.reason, mutation === "policy-links" ? "publisher-policy-links-changed" : mutation === "date" ? "document-election-changed" : mutation === "size" ? "html-size-limit" : mutation === "type" ? "document-format-changed" : "cache-or-format-invalid");
-		const held = await collectElectionDocuments(input.plan, { now: () => clock, fetchDocument: async () => {
-			throw new Error("No hold bypass.");
-		} });
+		assert.equal(result.observations[0]!.reason, mutation === "policy-links"
+			? "publisher-policy-links-changed"
+			: mutation === "date"
+				? "document-election-changed"
+				: mutation === "size"
+					? "html-size-limit"
+					: mutation === "type"
+						? "document-format-changed"
+						: "cache-or-format-invalid");
+		const held = await collectElectionDocuments(input.plan, {
+			now: () => clock,
+			fetchDocument: async () => {
+				throw new Error("No hold bypass.");
+			}
+		});
 		assert.equal(held.publisherRequests, 0);
 		assert.equal(held.observations[0]!.reason, "publisher-on-hold");
 	}
@@ -551,7 +950,9 @@ test("HTML content requires its own reviewed policy links, election and bounded 
 test("HTML review fingerprints and markers cannot be omitted or silently added to PDF sources", async (context) => {
 	const input = await fixture(context, ["md-question-documents-2026"]);
 	delete input.plan.accessReviews[0]!.policyFingerprints.documentLinks;
-	await assert.rejects(() => collectElectionDocuments(input.plan, { now: () => epoch }), /matching current access review/u);
+	await assert.rejects(() => collectElectionDocuments(input.plan, {
+		now: () => epoch
+	}), /matching current access review/u);
 	const htmlSource = structuredClone(input.sources[0]!);
 	htmlSource.documentDateMarkers = [];
 	assert.throws(() => electionDocumentPublisherHosts(htmlSource), /election markers/u);
@@ -569,7 +970,12 @@ test("reviewed dotted policy IDs use one exact region and preserve class and mal
 	assert.throws(() => electionDocumentPolicyFingerprint(body, "region", address, "hpolicy_2026-privacy"), /policy-main-unavailable/u);
 	assert.throws(() => electionDocumentPolicyFingerprint(Buffer.concat([body, body]), "region", address, region), /policy-main-unavailable/u);
 	assert.throws(() => electionDocumentPolicyFingerprint(body, "main", address), /policy-main-unavailable/u);
-	for (const invalid of ["#h.policy", "h.policy space", "h.policy/other", "h.policy[0]"])
+	for (const invalid of [
+		"#h.policy",
+		"h.policy space",
+		"h.policy/other",
+		"h.policy[0]"
+	])
 		assert.throws(() => electionDocumentPolicyFingerprint(body, "region", address, invalid), /policy-region-unavailable/u);
 	assert.throws(() => electionDocumentPolicyFingerprint(body, "region", address, undefined, "h.policy"), /policy-region-unavailable/u);
 });
@@ -601,7 +1007,13 @@ test("reviewed policy regions do not silently replace main-only review", () => {
 
 test("Missouri discovery includes only its five reviewed November certificate families", () => {
 	const source = electionDocumentSources.find(source => source.stateCode === "MO")!;
-	const names = ["SECONDREVISEDHCSHJR73", "2026-106", "SSSCSSJR95", "CCSHCSSSSJR87", "2026-R004"];
+	const names = [
+		"SECONDREVISEDHCSHJR73",
+		"2026-106",
+		"SSSCSSJR95",
+		"CCSHCSSSSJR87",
+		"2026-R004"
+	];
 	const urls = names.map(name => `https://${source.host}/CMSImages/Elections/Petitions/${name}WebCert.pdf`);
 	const body = Buffer.from(`<main>${source.dateMarkers[0]}${[...urls, `https://${source.host}/CMSImages/Elections/Petitions/HCSHJR23and3WebCert.pdf`, "https://unreviewed.example/proposal.pdf"].map(url => `<a href="${url}">Certificate</a>`).join("")}</main>`);
 	assert.deepEqual(discoverElectionDocuments(source, body), urls.sort());
@@ -647,9 +1059,19 @@ test("reviewed unrelated robots groups may precede the mandatory wildcard group"
 });
 
 test("encoded document paths remain held even when a pattern matches", () => {
-	const source = { ...electionDocumentSources.find(source => source.stateCode === "NM")!, documentPatterns: ["^/reviewed/.*\\.pdf$"] };
+	const source = {
+		...electionDocumentSources.find(source => source.stateCode === "NM")!,
+		documentPatterns: ["^/reviewed/.*\\.pdf$"]
+	};
 	const htmlFor = (path: string) => Buffer.from(`<main>${source.dateMarkers[0]}<a href='https://${source.host}/reviewed/${path}.pdf'>Document</a></main>`);
-	for (const encoded of ["%20", "%2520", "%2F", "%2e", "%00", "%09"])
+	for (const encoded of [
+		"%20",
+		"%2520",
+		"%2F",
+		"%2e",
+		"%00",
+		"%09"
+	])
 		assert.throws(() => discoverElectionDocuments(source, htmlFor(`Ballot${encoded}Measures`)), /link-changed/u);
 });
 
@@ -699,9 +1121,12 @@ test("Travis collection pins the corrected ballot, election identity and copyrig
 	assert.throws(() => discoverElectionDocuments(source, index(url, "November 4, 2025")), /index-election-changed/u);
 	const input = await fixture(context, [source.id]);
 	await seedElectionDocuments(input.plan, input.seed, epoch);
-	const result = await collectElectionDocuments(input.plan, { now: () => epoch + 1000, fetchDocument: async () => {
-		throw new Error("No publisher request during retained-data reuse.");
-	} });
+	const result = await collectElectionDocuments(input.plan, {
+		now: () => epoch + 1000,
+		fetchDocument: async () => {
+			throw new Error("No publisher request during retained-data reuse.");
+		}
+	});
 	assert.equal(result.complete, true);
 	assert.equal(result.publisherRequests, 0);
 	assert.equal(result.observations[0]!.documents![0]!.url, url);
@@ -723,9 +1148,12 @@ test("Clark County questions pin the independent publisher, document and electio
 	assert.throws(() => discoverElectionDocuments(source, index(url.replace("www.clarkcountynv.gov", "www.nvsos.gov"))), /document-count/u);
 	const input = await fixture(context, [source.id]);
 	await seedElectionDocuments(input.plan, input.seed, epoch);
-	const result = await collectElectionDocuments(input.plan, { now: () => epoch + 1000, fetchDocument: async () => {
-		throw new Error("No publisher request during retained-data verification.");
-	} });
+	const result = await collectElectionDocuments(input.plan, {
+		now: () => epoch + 1000,
+		fetchDocument: async () => {
+			throw new Error("No publisher request during retained-data verification.");
+		}
+	});
 	assert.equal(result.complete, true);
 	assert.equal(result.publisherRequests, 0);
 	assert.equal(result.observations[0]!.documents![0]!.url, url);
@@ -756,9 +1184,12 @@ test("Brevard pins its independent HTML questions and state/local election marke
 	assert.throws(() => discoverElectionDocuments(source, index(`${source.indexUrl}?export=all`)), /document-link-changed/u);
 	const input = await fixture(context, [source.id]);
 	await seedElectionDocuments(input.plan, input.seed, epoch);
-	const result = await collectElectionDocuments(input.plan, { now: () => epoch + 1000, fetchDocument: async () => {
-		throw new Error("No network during exact retained HTML reuse.");
-	} });
+	const result = await collectElectionDocuments(input.plan, {
+		now: () => epoch + 1000,
+		fetchDocument: async () => {
+			throw new Error("No network during exact retained HTML reuse.");
+		}
+	});
 	assert.equal(result.complete, true);
 	assert.equal(result.publisherRequests, 0);
 	assert.equal(result.observations[0]!.documents![0]!.url, source.indexUrl);
@@ -790,9 +1221,12 @@ test("NYC Votes collection pins five city proposals, their policies and their el
 	assert.throws(() => discoverElectionDocuments(source, index(urls.map(url => `${url}?export=all`))), /document-link-changed/u);
 	const input = await fixture(context, [source.id]);
 	await seedElectionDocuments(input.plan, input.seed, epoch);
-	const result = await collectElectionDocuments(input.plan, { now: () => epoch + 1000, fetchDocument: async () => {
-		throw new Error("Retained city-guide validation makes no publisher requests.");
-	} });
+	const result = await collectElectionDocuments(input.plan, {
+		now: () => epoch + 1000,
+		fetchDocument: async () => {
+			throw new Error("Retained city-guide validation makes no publisher requests.");
+		}
+	});
 	assert.equal(result.complete, true);
 	assert.equal(result.publisherRequests, 0);
 	assert.deepEqual(result.observations[0]!.documents!.map(document => document.url), urls);
@@ -822,9 +1256,12 @@ test("Alaska pamphlet discovery explicitly reviews native select options without
 	assert.deepEqual(electionDocumentPublisherHosts(source), [source.host]);
 	const input = await fixture(context, [source.id]);
 	await seedElectionDocuments(input.plan, input.seed, epoch);
-	const result = await collectElectionDocuments(input.plan, { now: () => epoch + 1000, fetchDocument: async () => {
-		throw new Error("No publisher requests during retained pamphlet validation.");
-	} });
+	const result = await collectElectionDocuments(input.plan, {
+		now: () => epoch + 1000,
+		fetchDocument: async () => {
+			throw new Error("No publisher requests during retained pamphlet validation.");
+		}
+	});
 	assert.equal(result.complete, true);
 	assert.equal(result.publisherRequests, 0);
 	assert.equal(result.observations[0]!.documents![0]!.url, url);
@@ -845,9 +1282,12 @@ test("retained binary seeds and daily cache reuse never fetch, import or relabel
 	for (let offset = 0; offset < electionDocumentSources.length; offset += 25) {
 		const input = await fixture(context, electionDocumentSources.slice(offset, offset + 25).map(source => source.id));
 		assert.equal((await seedElectionDocuments(input.plan, input.seed, epoch + 1000)).publisherRequests, 0);
-		const result = await collectElectionDocuments(input.plan, { now: () => epoch + 1000, fetchDocument: async () => {
-			throw new Error("No network allowed.");
-		} });
+		const result = await collectElectionDocuments(input.plan, {
+			now: () => epoch + 1000,
+			fetchDocument: async () => {
+				throw new Error("No network allowed.");
+			}
+		});
 		assert.equal(result.complete, true);
 		assert.equal(result.publisherRequests, 0);
 		assert.equal(result.imported, false);
@@ -876,7 +1316,10 @@ test("reviewed single HTML documents collect without synthetic discovery links",
 	const input = await fixture(context, [source.id]);
 	assert.equal(input.seed.captures.length, 3);
 	await seedElectionDocuments(input.plan, input.seed, epoch);
-	const result = await collectElectionDocuments(input.plan, { now: () => epoch, fetchDocument: async () => assert.fail("Cached single documents must not contact publishers.") });
+	const result = await collectElectionDocuments(input.plan, {
+		now: () => epoch,
+		fetchDocument: async () => assert.fail("Cached single documents must not contact publishers.")
+	});
 	assert.equal(result.complete, true);
 	assert.equal(result.publisherRequests, 0);
 	assert.deepEqual(result.observations[0]!.documents!.map(document => document.url), [source.indexUrl]);
@@ -900,15 +1343,38 @@ test("single document collection retains separate content markers and link polic
 test("single document mode requires exact reviewed HTTPS HTML identity and singleton bounds", () => {
 	const source = electionDocumentSources.find(source => source.id === "ga-fulton-ivory-official-documents-2026")!;
 	for (const value of [false, 1, "true", null]) assert.throws(() => electionDocumentPublisherHosts({ ...source, indexIsDocument: value as true }), /direct-document-review-required/u);
-	for (const change of [{ documentFormat: undefined }, { minimumDocuments: undefined }, { maximumDocuments: 2 }, { selectDocumentOptions: true as const }, { encodedDocumentPaths: [] }, { reviewedDocumentUrls: [] }, { documentPatterns: ["^/another-page$"] }]) assert.throws(() => electionDocumentPublisherHosts({ ...source, ...change }), /direct-document-review-required/u);
-	for (const address of [`${source.indexUrl}?download=1`, `${source.indexUrl}#content`, source.indexUrl.replace("https:", "http:"), source.indexUrl.replace(source.host, "unreviewed.invalid")]) assert.throws(() => electionDocumentPublisherHosts({ ...source, indexUrl: address }), /direct-document-review-required/u);
+	for (const change of [
+		{ documentFormat: undefined },
+		{ minimumDocuments: undefined },
+		{ maximumDocuments: 2 },
+		{ selectDocumentOptions: true as const },
+		{ encodedDocumentPaths: [] },
+		{ reviewedDocumentUrls: [] },
+		{
+			documentPatterns: ["^/another-page$"]
+		}
+	]) {
+		assert.throws(() => electionDocumentPublisherHosts({
+			...source,
+			...change
+		}), /direct-document-review-required/u);
+	}
+	for (const address of [
+		`${source.indexUrl}?download=1`,
+		`${source.indexUrl}#content`,
+		source.indexUrl.replace("https:", "http:"),
+		source.indexUrl.replace(source.host, "unreviewed.invalid")
+	]) assert.throws(() => electionDocumentPublisherHosts({ ...source, indexUrl: address }), /direct-document-review-required/u);
 	assert.notEqual(electionDocumentConfigurationSha256(source), electionDocumentConfigurationSha256({ ...source, indexIsDocument: undefined }));
 });
 
 test("reviewed city groups retain cached government context without publisher requests", async (context) => {
 	const input = await fixture(context, ["ga-fulton-willis-government-documents-2026"]);
 	await seedElectionDocuments(input.plan, input.seed, epoch);
-	const result = await collectElectionDocuments(input.plan, { now: () => epoch, fetchDocument: async () => assert.fail("Cached city references must not request publishers.") });
+	const result = await collectElectionDocuments(input.plan, {
+		now: () => epoch,
+		fetchDocument: async () => assert.fail("Cached city references must not request publishers.")
+	});
 	assert.equal(result.complete, true);
 	assert.equal(result.publisherRequests, 0);
 	assert.equal(result.imported, false);
@@ -931,13 +1397,22 @@ test("conditional revalidation preserves bytes and capture dates, with per-host 
 	await seedElectionDocuments(input.plan, input.seed, epoch);
 	let clock = epoch + day;
 	const requestTimes: number[] = [];
-	const result = await collectElectionDocuments(input.plan, { now: () => clock, sleep: async (duration) => {
-		clock += duration;
-	}, fetchDocument: async (_url, options) => {
-		assert.equal(options.etag, "\"first\"");
-		requestTimes.push(clock);
-		return { status: 304, body: Buffer.alloc(0), contentType: "", etag: "\"first\"" };
-	} });
+	const result = await collectElectionDocuments(input.plan, {
+		now: () => clock,
+		sleep: async (duration) => {
+			clock += duration;
+		},
+		fetchDocument: async (_url, options) => {
+			assert.equal(options.etag, "\"first\"");
+			requestTimes.push(clock);
+			return {
+				status: 304,
+				body: Buffer.alloc(0),
+				contentType: "",
+				etag: "\"first\""
+			};
+		}
+	});
 	assert.equal(result.complete, true);
 	assert.equal(requestTimes.length, input.bodies.size);
 	assert.ok(requestTimes.slice(1).every((time, index) => time - requestTimes[index]! >= 11_000));
@@ -958,7 +1433,12 @@ test("publisher spacing starts after request completion, including DNS and body 
 			clock += networkStarts.length ? 0 : 500;
 			networkStarts.push(clock);
 			clock += 20;
-			return { status: 304, body: Buffer.alloc(0), contentType: "", etag: "\"first\"" };
+			return {
+				status: 304,
+				body: Buffer.alloc(0),
+				contentType: "",
+				etag: "\"first\""
+			};
 		},
 	});
 	assert.equal(result.complete, true);
@@ -977,11 +1457,18 @@ test("fresh seeds and early timer wakeups preserve the full publisher delay", as
 		now: () => clock,
 		sleep: async (duration) => {
 			sleeps.push(duration);
-			clock += duration - (sleeps.length === 1 ? 1 : 0);
+			clock += duration - (sleeps.length === 1
+				? 1
+				: 0);
 		},
 		fetchDocument: async () => {
 			requestedAt = clock;
-			return { status: 200, body: pdf, contentType: "application/pdf", etag: undefined };
+			return {
+				status: 200,
+				body: pdf,
+				contentType: "application/pdf",
+				etag: undefined
+			};
 		},
 	});
 	assert.equal(result.complete, true);
@@ -996,36 +1483,89 @@ test("newly linked permitted documents are collected but remain unreviewed sourc
 	let clock = epoch + day;
 	const extra = `https://${input.sources[0]!.host}/sites/default/files/documents/elections/measures/analysis-2026-general-measure3.pdf`;
 	const nextIndex = Buffer.from(input.bodies.get(input.sources[0]!.indexUrl)!.toString().replace("</main>", `<a href="${extra}">New file</a></main>`));
-	const result = await collectElectionDocuments(input.plan, { now: () => clock, sleep: async (duration) => {
-		clock += duration;
-	}, fetchDocument: async url => ({ status: 200, body: url === extra ? pdf : url === input.sources[0]!.indexUrl ? nextIndex : input.bodies.get(url)!, contentType: url.endsWith(".pdf") ? "application/pdf" : "text/html", etag: "\"next\"" }) });
+	const result = await collectElectionDocuments(input.plan, {
+		now: () => clock,
+		sleep: async (duration) => {
+			clock += duration;
+		},
+		fetchDocument: async url => ({
+			status: 200,
+			body: url === extra
+				? pdf
+				: url === input.sources[0]!.indexUrl
+					? nextIndex
+					: input.bodies.get(url)!,
+			contentType: url.endsWith(".pdf")
+				? "application/pdf"
+				: "text/html",
+			etag: "\"next\""
+		})
+	});
 	assert.equal(result.complete, true);
 	assert.equal(result.observations[0]!.documents!.length, 3);
 	assert.equal(result.capturedContentReviewed, false);
 	assert.equal(result.imported, false);
-	assert.equal((await readdir(join(input.plan.cacheDirectory, "bodies"))).length, new Set([...input.bodies.values()].map(hash)).size + 1);
+	assert.equal((await readdir(join(input.plan.cacheDirectory, "bodies"))).length, new Set([
+		...input.bodies.values()
+	].map(hash)).size + 1);
 });
 
 test("publisher denials, redirects, invalid PDFs and changed policies persist holds without overwriting last-good bytes", async (context) => {
-	for (const condition of ["403", "429", "302", "policy", "mime", "size", "tls"] as const) {
+	for (const condition of [
+		"403",
+		"429",
+		"302",
+		"policy",
+		"mime",
+		"size",
+		"tls"
+	] as const) {
 		const input = await fixture(context);
 		await seedElectionDocuments(input.plan, input.seed, epoch);
 		const before = await readFile(join(input.plan.cacheDirectory, "bodies", hash(pdf)));
 		let clock = epoch + day;
-		const result = await collectElectionDocuments(input.plan, { now: () => clock, sleep: async (duration) => {
-			clock += duration;
-		}, fetchDocument: async (url) => {
-			if (["403", "429", "302"].includes(condition)) return { status: Number(condition), body: Buffer.alloc(0), contentType: "", etag: undefined };
-			if (condition === "size") throw new RemoteSourceDocumentPolicyError("Oversized body.");
-			if (condition === "tls") throw Object.assign(new Error("TLS denied."), { code: "CERT_HAS_EXPIRED" });
-			if (condition === "policy") return { status: 200, body: Buffer.from("User-agent: *\nDisallow: /\n"), contentType: "text/plain", etag: undefined };
-			return { status: url.endsWith(".pdf") ? 200 : 304, body: pdf, contentType: "text/html", etag: "\"first\"" };
-		} });
+		const result = await collectElectionDocuments(input.plan, {
+			now: () => clock,
+			sleep: async (duration) => {
+				clock += duration;
+			},
+			fetchDocument: async (url) => {
+				if (["403", "429", "302"].includes(condition)) {
+					return {
+						status: Number(condition),
+						body: Buffer.alloc(0),
+						contentType: "",
+						etag: undefined
+					};
+				}
+				if (condition === "size") throw new RemoteSourceDocumentPolicyError("Oversized body.");
+				if (condition === "tls") throw Object.assign(new Error("TLS denied."), { code: "CERT_HAS_EXPIRED" });
+				if (condition === "policy") {
+					return {
+						status: 200,
+						body: Buffer.from("User-agent: *\nDisallow: /\n"),
+						contentType: "text/plain",
+						etag: undefined
+					};
+				}
+				return {
+					status: url.endsWith(".pdf")
+						? 200
+						: 304,
+					body: pdf,
+					contentType: "text/html",
+					etag: "\"first\""
+				};
+			}
+		});
 		assert.equal(result.complete, false, condition);
 		assert.deepEqual(await readFile(join(input.plan.cacheDirectory, "bodies", hash(pdf))), before);
-		const held = await collectElectionDocuments(input.plan, { now: () => clock, fetchDocument: async () => {
-			assert.fail("A publisher hold must not request again.");
-		} });
+		const held = await collectElectionDocuments(input.plan, {
+			now: () => clock,
+			fetchDocument: async () => {
+				assert.fail("A publisher hold must not request again.");
+			}
+		});
 		assert.equal(held.publisherRequests, 0);
 		assert.equal(held.observations[0]!.reason, "publisher-on-hold");
 	}
@@ -1036,12 +1576,23 @@ test("temporary failures cool down, and missing publications do not become revie
 		const input = await fixture(context);
 		await seedElectionDocuments(input.plan, input.seed, epoch);
 		const clock = epoch + day;
-		const failed = await collectElectionDocuments(input.plan, { now: () => clock, fetchDocument: async () => ({ status, body: Buffer.alloc(0), contentType: "", etag: undefined }) });
+		const failed = await collectElectionDocuments(input.plan, {
+			now: () => clock,
+			fetchDocument: async () => ({
+				status,
+				body: Buffer.alloc(0),
+				contentType: "",
+				etag: undefined
+			})
+		});
 		assert.equal(failed.complete, false);
 		assert.equal(failed.publisherRequests, 1);
-		const retry = await collectElectionDocuments(input.plan, { now: () => clock + 1000, fetchDocument: async () => {
-			assert.fail("Cooldown must prevent network access.");
-		} });
+		const retry = await collectElectionDocuments(input.plan, {
+			now: () => clock + 1000,
+			fetchDocument: async () => {
+				assert.fail("Cooldown must prevent network access.");
+			}
+		});
 		assert.equal(retry.publisherRequests, 0);
 		assert.equal(retry.observations[0]!.reason, "cooldown");
 	}
@@ -1050,16 +1601,49 @@ test("temporary failures cool down, and missing publications do not become revie
 test("plan identity, review age, election expiry and in-checkout output remain enforced", async (context) => {
 	const input = await fixture(context);
 	for (const change of [
-		{ sourceIds: ["unknown-source"] },
-		{ sourceIds: [input.plan.sourceIds[0]!, input.plan.sourceIds[0]!] },
-		{ cacheDirectory: fileURLToPath(new URL("../data/not-an-external-cache", import.meta.url)) },
-		{ cacheDirectory: fileURLToPath(new URL("../../..hidden-cache", import.meta.url)) },
+		{
+			sourceIds: ["unknown-source"]
+		},
+		{
+			sourceIds: [input.plan.sourceIds[0]!, input.plan.sourceIds[0]!]
+		},
+		{
+			cacheDirectory: fileURLToPath(new URL("../data/not-an-external-cache", import.meta.url))
+		},
+		{
+			cacheDirectory: fileURLToPath(new URL("../../..hidden-cache", import.meta.url))
+		},
 		{ outputRoot: input.plan.cacheDirectory },
-		{ accessReviews: [{ ...input.plan.accessReviews[0]!, reviewedAt: new Date(epoch + 1000).toISOString() }] },
-		{ accessReviews: [{ ...input.plan.accessReviews[0]!, configurationSha256: "0".repeat(64) }] },
-	]) await assert.rejects(collectElectionDocuments({ ...input.plan, ...change }, { now: () => epoch }));
-	await assert.rejects(collectElectionDocuments(input.plan, { now: () => epoch + 31 * day }));
-	await assert.rejects(collectElectionDocuments(input.plan, { now: () => Date.parse("2026-11-05T00:00:00Z") }));
+		{
+			accessReviews: [
+				{
+					...input.plan.accessReviews[0]!,
+					reviewedAt: new Date(epoch + 1000).toISOString()
+				}
+			]
+		},
+		{
+			accessReviews: [
+				{
+					...input.plan.accessReviews[0]!,
+					configurationSha256: "0".repeat(64)
+				}
+			]
+		},
+	]) {
+		await assert.rejects(collectElectionDocuments({
+			...input.plan,
+			...change
+		}, {
+			now: () => epoch
+		}));
+	}
+	await assert.rejects(collectElectionDocuments(input.plan, {
+		now: () => epoch + 31 * day
+	}));
+	await assert.rejects(collectElectionDocuments(input.plan, {
+		now: () => Date.parse("2026-11-05T00:00:00Z")
+	}));
 });
 
 test("seeds reject unobserved files, hash drift and linked inputs before writing captures", async (context) => {
@@ -1083,11 +1667,15 @@ test("linked cache directories and another collector's lock are never bypassed",
 	const input = await fixture(context);
 	await mkdir(input.plan.cacheDirectory);
 	await symlink(input.directory, join(input.plan.cacheDirectory, "bodies"));
-	await assert.rejects(collectElectionDocuments(input.plan, { now: () => epoch }), /linked/u);
+	await assert.rejects(collectElectionDocuments(input.plan, {
+		now: () => epoch
+	}), /linked/u);
 	await rm(join(input.plan.cacheDirectory, "bodies"));
 	await mkdir(join(input.plan.cacheDirectory, "bodies"));
 	await writeFile(join(input.plan.cacheDirectory, ".collection.lock"), JSON.stringify({ owner: "another-owner" }));
-	await assert.rejects(collectElectionDocuments(input.plan, { now: () => epoch }), /EEXIST/u);
+	await assert.rejects(collectElectionDocuments(input.plan, {
+		now: () => epoch
+	}), /EEXIST/u);
 	assert.deepEqual(JSON.parse(await readFile(join(input.plan.cacheDirectory, ".collection.lock"), "utf8")), { owner: "another-owner" });
 });
 
@@ -1100,7 +1688,17 @@ test("the source CLI seeds and reuses binary data without network or active impo
 	await writeFile(seedFile, JSON.stringify(input.seed));
 	await writeFile(guard, `import https from 'node:https'; import {syncBuiltinESMExports} from 'node:module'; https.request=()=>{throw new Error('Network denied in test.');};syncBuiltinESMExports();Date.now=()=>${epoch + 1000};`);
 	const script = fileURLToPath(new URL("../src/manage-election-documents.ts", import.meta.url));
-	const command = (...args: string[]) => spawnSync(process.execPath, ["--import", guard, "--import", import.meta.resolve("tsx"), script, ...args], { env: { PATH: process.env.PATH, HOME: process.env.HOME }, encoding: "utf8" });
+	const command = (...args: string[]) => spawnSync(process.execPath, [
+		"--import",
+		guard,
+		"--import",
+		import.meta.resolve("tsx"),
+		script,
+		...args
+	], {
+		env: { PATH: process.env.PATH, HOME: process.env.HOME },
+		encoding: "utf8"
+	});
 	assert.equal(command("catalog").status, 0);
 	const seeded = command("seed", planFile, seedFile);
 	assert.equal(seeded.status, 0, seeded.stderr);

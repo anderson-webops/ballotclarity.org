@@ -11,7 +11,9 @@ export function useMeasure(measureSlug: MaybeRefOrGetter<string | undefined>, el
 			if (!slug.value)
 				return null;
 
-			return api<Measure>(`/measures/${slug.value}`, { query: { election: election.value } });
+			return api<Measure>(`/measures/${slug.value}`, {
+				query: { election: election.value }
+			});
 		},
 		{
 			default: () => null,

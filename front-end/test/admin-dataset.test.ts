@@ -3,7 +3,20 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { adminDatasetCount, adminDatasetStatus } from "../src/utils/admin-dataset";
 
-const dataset: AdminOperationDataset = { id: "ga-fulton-election-calendar", label: "Fulton election calendar", stateCode: "GA", electionDate: "", kind: "calendars", mode: "automatic", status: "review", records: 25, retrievedAt: "2026-11-13T18:36:14.792Z", lastAttemptAt: null, lastImportAt: null, failure: null };
+const dataset: AdminOperationDataset = {
+	id: "ga-fulton-election-calendar",
+	label: "Fulton election calendar",
+	stateCode: "GA",
+	electionDate: "",
+	kind: "calendars",
+	mode: "automatic",
+	status: "review",
+	records: 25,
+	retrievedAt: "2026-11-13T18:36:14.792Z",
+	lastAttemptAt: null,
+	lastImportAt: null,
+	failure: null
+};
 
 test("calendar summaries describe events and review rather than approved imports", () => {
 	assert.equal(adminDatasetCount(dataset), "25 events");
@@ -24,7 +37,12 @@ test("candidate and reference summaries retain their record and import semantics
 });
 
 test("measure summaries distinguish source questions and native preparation from imported records", () => {
-	const item: AdminOperationDataset = { ...dataset, kind: "measures", records: 8, preparationState: "prepared" };
+	const item: AdminOperationDataset = {
+		...dataset,
+		kind: "measures",
+		records: 8,
+		preparationState: "prepared"
+	};
 	assert.equal(adminDatasetCount(item), "8 questions");
 	assert.equal(adminDatasetCount({ ...item, records: null }), "Not collected");
 	assert.equal(adminDatasetStatus({ ...item, status: "pending", preparationState: "running" }), "Preparing");

@@ -89,7 +89,9 @@ function buildRepresentativeSummary(
 		party: match.party ?? "Unknown",
 		profileImages: match.profileImages,
 		provenance: {
-			label: match.sourceSystem ? `${match.sourceSystem} representative match` : "Lookup results representative match",
+			label: match.sourceSystem
+				? `${match.sourceSystem} representative match`
+				: "Lookup results representative match",
 			note: "Matched from current area results.",
 			status: "crosswalked"
 		},
@@ -199,7 +201,10 @@ export function mergeNationwideDirectoryResponses(
 	const apiDistricts = api.districts?.districts ?? api.representatives?.districts ?? [];
 	const apiRepresentatives = api.representatives?.representatives ?? [];
 
-	for (const district of [...stored.districts.districts, ...apiDistricts]) {
+	for (const district of [
+		...stored.districts.districts,
+		...apiDistricts
+	]) {
 		const matchKeys = [district.slug, district.title].map(districtCode => buildDistrictMatchKeys({
 			districtCode,
 			districtType: district.office,

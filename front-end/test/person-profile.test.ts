@@ -21,7 +21,14 @@ test("person profile helpers detect funding and influence module availability", 
 		},
 		influence: null,
 		lobbyingContext: [],
-		publicStatements: [{ id: "statement-1", sources: [], summary: "Statement", title: "Statement" }]
+		publicStatements: [
+			{
+				id: "statement-1",
+				sources: [],
+				summary: "Statement",
+				title: "Statement"
+			}
+		]
 	} as const;
 
 	assert.equal(hasPersonFunding(person as never), true);

@@ -52,7 +52,14 @@ export interface ElectionReferenceSelection {
 export function parseElectionReferenceSelection(query: Record<string, unknown>): ElectionReferenceSelection {
 	if (query.source !== undefined && (typeof query.source !== "string" || !/^[a-z0-9][a-z0-9-]{0,100}$/u.test(query.source))) throw new Error("The selected information source is invalid.");
 	if (query.electionDate !== undefined && (typeof query.electionDate !== "string" || !/^20\d{2}-\d{2}-\d{2}$/u.test(query.electionDate) || !Number.isFinite(Date.parse(query.electionDate)) || new Date(query.electionDate).toISOString().slice(0, 10) !== query.electionDate)) throw new Error("The selected information election is invalid.");
-	return { ...(query.source === undefined ? {} : { sourceId: query.source as string }), ...(query.electionDate === undefined ? {} : { electionDate: query.electionDate as string }) };
+	return {
+		...(query.source === undefined
+			? {}
+			: { sourceId: query.source as string }),
+		...(query.electionDate === undefined
+			? {}
+			: { electionDate: query.electionDate as string })
+	};
 }
 
 const maximumBytes = 12 * 1024 * 1024;
@@ -62,14 +69,32 @@ const validText = (value: unknown, maximum: number): value is string => typeof v
 const exactKeys = (value: Record<string, unknown>, allowed: readonly string[]) => Object.keys(value).every(key => allowed.includes(key));
 
 export function electionReferenceDocumentDigest(documents: ElectionReferenceSnapshot["documents"]) {
-	return digest(JSON.stringify(documents.map(({ url, sha256, member }) => ({ url, sha256, ...(member ? { member } : {}) }))));
+	return digest(JSON.stringify(documents.map(({ url, sha256, member }) => ({
+		url,
+		sha256,
+		...(member
+			? { member }
+			: {})
+	}))));
 }
 
 export function parseElectionReferenceSnapshot(source: ElectionReferenceSource, body: string, now = Date.now()): ElectionReferenceSnapshot {
 	if (Buffer.byteLength(body) > maximumBytes) throw new Error("Election reference data exceeds its size limit.");
 	const data = JSON.parse(body) as ElectionReferenceSnapshot;
-	if (!data || Array.isArray(data) || typeof data !== "object" || !exactKeys(data as unknown as Record<string, unknown>, ["schemaVersion", "type", "stateCode", "sourceId", "electionDate", "retrievedAt", "sourceSha256", "recordCount", "documents", "records"]) || data.schemaVersion !== 1 || data.type !== "election-references" || data.stateCode !== source.stateCode || data.sourceId !== source.id || data.electionDate !== source.electionDate)
+	if (!data || Array.isArray(data) || typeof data !== "object" || !exactKeys(data as unknown as Record<string, unknown>, [
+		"schemaVersion",
+		"type",
+		"stateCode",
+		"sourceId",
+		"electionDate",
+		"retrievedAt",
+		"sourceSha256",
+		"recordCount",
+		"documents",
+		"records"
+	]) || data.schemaVersion !== 1 || data.type !== "election-references" || data.stateCode !== source.stateCode || data.sourceId !== source.id || data.electionDate !== source.electionDate) {
 		throw new Error("Election references do not match their configured collection.");
+	}
 	if (!Array.isArray(data.documents) || data.documents.length < source.documents.length || !data.documents.length || !Array.isArray(data.records) || !data.records.length || data.records.length > 25_000 || data.documents.length > source.documents.length + data.records.length || data.recordCount !== data.records.length)
 		throw new Error("Election references have an invalid document set or record count.");
 	for (const [index, document] of data.documents.entries()) {
@@ -77,8 +102,22 @@ export function parseElectionReferenceSnapshot(source: ElectionReferenceSource, 
 		if (configured?.isCampaignWebsite !== undefined && (configured.isCampaignWebsite !== true || configured.kind !== "candidate-statement")) throw new Error("Campaign website attribution requires a reviewed candidate-provided source.");
 		if (configured?.pageUrl !== undefined && (normalizePublicHref(configured.pageUrl) !== configured.pageUrl || !configured.pageUrl.startsWith("https://")))
 			throw new Error("Election reference public page links are invalid.");
-		if (!document || typeof document !== "object" || Array.isArray(document) || !exactKeys(document, configured ? ["url", "sha256", "capturedAt", "includedRecordCount"] : ["url", "sha256", "capturedAt", "includedRecordCount", "member"]) || typeof document.url !== "string" || normalizePublicHref(document.url) !== document.url || !document.url.startsWith("https://") || !validHash(document.sha256) || typeof document.capturedAt !== "string" || !Number.isFinite(Date.parse(document.capturedAt)) || Date.parse(document.capturedAt) > now || !Number.isSafeInteger(document.includedRecordCount) || document.includedRecordCount < 0 || (configured?.publishedDate && Date.parse(document.capturedAt) < Date.parse(configured.publishedDate)))
+		if (!document || typeof document !== "object" || Array.isArray(document) || !exactKeys(document, configured
+			? [
+					"url",
+					"sha256",
+					"capturedAt",
+					"includedRecordCount"
+				]
+			: [
+					"url",
+					"sha256",
+					"capturedAt",
+					"includedRecordCount",
+					"member"
+				]) || typeof document.url !== "string" || normalizePublicHref(document.url) !== document.url || !document.url.startsWith("https://") || !validHash(document.sha256) || typeof document.capturedAt !== "string" || !Number.isFinite(Date.parse(document.capturedAt)) || Date.parse(document.capturedAt) > now || !Number.isSafeInteger(document.includedRecordCount) || document.includedRecordCount < 0 || (configured?.publishedDate && Date.parse(document.capturedAt) < Date.parse(configured.publishedDate))) {
 			throw new Error("Election reference document provenance is invalid.");
+		}
 		if (configured) {
 			if (document.url !== configured.url) throw new Error("Election reference document provenance is invalid.");
 		}
@@ -91,8 +130,24 @@ export function parseElectionReferenceSnapshot(source: ElectionReferenceSource, 
 		throw new Error("Election reference capture provenance does not match its documents.");
 	const contributions = new Uint32Array(data.documents.length);
 	for (const record of data.records) {
-		if (!record || typeof record !== "object" || Array.isArray(record) || !exactKeys(record as unknown as Record<string, unknown>, ["id", "name", "office", "scope", "jurisdiction", "officialCandidate", "facts", "sourceDocumentIndex"]) || typeof record.id !== "string" || !/^[a-f0-9]{24}$/u.test(record.id) || !validText(record.name, 250) || !validText(record.office, 300) || !["statewide", "congressional", "state-senate", "state-house", "local"].includes(record.scope) || (record.jurisdiction !== undefined && !validText(record.jurisdiction, 300)) || !Array.isArray(record.facts) || (!record.facts.length && source.allowIdentityOnly !== true) || record.facts.length > 6 || !record.facts.every(fact => validText(fact, 600)) || !Number.isSafeInteger(record.sourceDocumentIndex) || record.sourceDocumentIndex < 0 || record.sourceDocumentIndex >= data.documents.length)
+		if (!record || typeof record !== "object" || Array.isArray(record) || !exactKeys(record as unknown as Record<string, unknown>, [
+			"id",
+			"name",
+			"office",
+			"scope",
+			"jurisdiction",
+			"officialCandidate",
+			"facts",
+			"sourceDocumentIndex"
+		]) || typeof record.id !== "string" || !/^[a-f0-9]{24}$/u.test(record.id) || !validText(record.name, 250) || !validText(record.office, 300) || ![
+			"statewide",
+			"congressional",
+			"state-senate",
+			"state-house",
+			"local"
+		].includes(record.scope) || (record.jurisdiction !== undefined && !validText(record.jurisdiction, 300)) || !Array.isArray(record.facts) || (!record.facts.length && source.allowIdentityOnly !== true) || record.facts.length > 6 || !record.facts.every(fact => validText(fact, 600)) || !Number.isSafeInteger(record.sourceDocumentIndex) || record.sourceDocumentIndex < 0 || record.sourceDocumentIndex >= data.documents.length) {
 			throw new Error("Election reference fields are invalid.");
+		}
 		if (record.officialCandidate !== undefined && (!record.officialCandidate || typeof record.officialCandidate !== "object" || Array.isArray(record.officialCandidate) || Object.keys(record.officialCandidate).sort().join(",") !== "recordId,sourceId" || typeof record.officialCandidate.sourceId !== "string" || !/^[a-z0-9][a-z0-9-]{0,100}$/u.test(record.officialCandidate.sourceId) || typeof record.officialCandidate.recordId !== "string" || !/^[a-f\d]{24}$/u.test(record.officialCandidate.recordId) || record.scope !== "local" || (source.documents[record.sourceDocumentIndex]?.kind !== "candidate-statement" && !(source.allowOfficialCandidateBindings === true && ["public-dataset", "official-biography"].includes(source.documents[record.sourceDocumentIndex]?.kind ?? "")))))
 			throw new Error("Election reference official candidate binding is invalid.");
 		if (source.allowOfficialCandidateBindings === true && source.documents[record.sourceDocumentIndex]?.kind === "official-biography" && source.documents[record.sourceDocumentIndex]?.candidateName !== record.name) throw new Error("Official biography candidate binding does not match its configured name.");
@@ -140,7 +195,10 @@ export function createElectionReferenceStorage(directory: string) {
 		async write(source: ElectionReferenceSource, snapshot: ElectionReferenceSnapshot) {
 			const snapshotBody = JSON.stringify(snapshot);
 			parseElectionReferenceSnapshot(source, snapshotBody);
-			const body = JSON.stringify({ sourceConfigurationSha256: digest(JSON.stringify(source)), snapshot: snapshotBody });
+			const body = JSON.stringify({
+				sourceConfigurationSha256: digest(JSON.stringify(source)),
+				snapshot: snapshotBody
+			});
 			if (Buffer.byteLength(body) > maximumBytes) throw new Error("Stored election references exceed their size limit.");
 			const target = await location(source, true);
 			const temporary = `${target}.${randomUUID()}.tmp`;
@@ -173,8 +231,12 @@ export function selectElectionReferenceSources(sources: readonly ElectionReferen
 }
 
 export function createElectionReferenceRepository(options: { dataDirectory?: string | null; now?: () => number; sources?: readonly ElectionReferenceSource[]; catalogPath?: string | null } = {}): ElectionReferenceRepository {
-	const directory = options.dataDirectory === undefined ? process.env.STATE_BALLOT_DATA_DIR || null : options.dataDirectory;
-	const storage = directory ? createElectionReferenceStorage(directory) : null;
+	const directory = options.dataDirectory === undefined
+		? process.env.STATE_BALLOT_DATA_DIR || null
+		: options.dataDirectory;
+	const storage = directory
+		? createElectionReferenceStorage(directory)
+		: null;
 	const now = options.now ?? Date.now;
 	const getSources = async (stateCode?: string) => options.sources ?? configuredElectionReferenceSources(options.catalogPath, stateCode);
 	async function getSnapshots(stateCode: string, selection: ElectionReferenceSelection = {}) {
@@ -201,7 +263,9 @@ export function createElectionReferenceRepository(options: { dataDirectory?: str
 		async getElections(stateCode) {
 			if (!storage) return [];
 			const sources = (await getSources(stateCode)).filter(source => source.stateCode === stateCode.toUpperCase());
-			const dates = [...new Set(sources.map(source => source.electionDate))].sort().reverse();
+			const dates = [
+				...new Set(sources.map(source => source.electionDate))
+			].sort().reverse();
 			const available: string[] = [];
 			let failed = false;
 			for (const date of dates) {
@@ -221,13 +285,30 @@ export function createElectionReferenceRepository(options: { dataDirectory?: str
 		async inspectSources() {
 			const sources = await getSources();
 			return Promise.all(sources.map(async (source): Promise<AdminOperationDataset> => {
-				const item: AdminOperationDataset = { id: source.id, label: source.documents[0]?.title ?? source.id, stateCode: source.stateCode, electionDate: source.electionDate, kind: "references", mode: "reviewed", status: "missing", records: null, retrievedAt: null, lastAttemptAt: null, lastImportAt: null, failure: null };
+				const item: AdminOperationDataset = {
+					id: source.id,
+					label: source.documents[0]?.title ?? source.id,
+					stateCode: source.stateCode,
+					electionDate: source.electionDate,
+					kind: "references",
+					mode: "reviewed",
+					status: "missing",
+					records: null,
+					retrievedAt: null,
+					lastAttemptAt: null,
+					lastImportAt: null,
+					failure: null
+				};
 				try {
-					const snapshot = storage ? await storage.read(source, now()) : null;
+					const snapshot = storage
+						? await storage.read(source, now())
+						: null;
 					if (snapshot) {
 						item.records = snapshot.records.length;
 						item.retrievedAt = snapshot.retrievedAt;
-						item.status = Date.parse(`${source.electionDate}T00:00:00Z`) + 2 * 86400000 <= now() ? "archived" : "current";
+						item.status = Date.parse(`${source.electionDate}T00:00:00Z`) + 2 * 86400000 <= now()
+							? "archived"
+							: "current";
 					}
 				}
 				catch {
@@ -244,7 +325,9 @@ export function createElectionReferenceRepository(options: { dataDirectory?: str
 }
 
 export function buildElectionReferencePage(source: ElectionReferenceSource, snapshot: ElectionReferenceSnapshot, filters: { search: string; scope: string; offset: number; limit: number }) {
-	return buildElectionReferencePages([{ source, snapshot }], filters);
+	return buildElectionReferencePages([
+		{ source, snapshot }
+	], filters);
 }
 
 export function buildElectionReferencePages(collections: readonly { source: ElectionReferenceSource; snapshot: ElectionReferenceSnapshot }[], filters: { search: string; scope: string; offset: number; limit: number }) {
@@ -254,12 +337,59 @@ export function buildElectionReferencePages(collections: readonly { source: Elec
 		parseElectionReferenceSnapshot(source, JSON.stringify(snapshot));
 		return snapshot.records.map(record => ({ source, snapshot, record }));
 	});
-	const matching = entries.filter(({ record, source }) => (filters.scope === "all" || record.scope === filters.scope) && (!filters.search || [record.name, record.office, record.jurisdiction, ...record.facts, source.documents[record.sourceDocumentIndex]?.title].join(" ").toLowerCase().includes(filters.search)));
-	const offset = filters.offset >= matching.length ? Math.max(0, Math.floor((matching.length - 1) / filters.limit) * filters.limit) : filters.offset;
+	const matching = entries.filter(({ record, source }) => (filters.scope === "all" || record.scope === filters.scope) && (!filters.search || [
+		record.name,
+		record.office,
+		record.jurisdiction,
+		...record.facts,
+		source.documents[record.sourceDocumentIndex]?.title
+	].join(" ").toLowerCase().includes(filters.search)));
+	const offset = filters.offset >= matching.length
+		? Math.max(0, Math.floor((matching.length - 1) / filters.limit) * filters.limit)
+		: filters.offset;
 	const records: PublicElectionReference[] = matching.slice(offset, offset + filters.limit).map(({ source, snapshot, record }) => {
 		const captured = snapshot.documents[record.sourceDocumentIndex]!;
-		const document: ElectionReferenceSource["documents"][number] = captured.member ? { ...openStatesProfileLinks(captured.member), title: `${record.name} | Open States`, publisher: "Open States", kind: "public-dataset" } : source.documents[record.sourceDocumentIndex]!;
-		return { id: record.id, name: record.name, office: record.office, scope: record.scope, ...(record.jurisdiction ? { jurisdiction: record.jurisdiction } : {}), facts: record.facts, source: { title: document.title, publisher: document.publisher, kind: document.kind, url: document.url, ...(document.pageUrl ? { pageUrl: document.pageUrl } : {}), ...(document.publishedDate ? { publishedDate: document.publishedDate } : {}), ...(document.isCampaignWebsite ? { isCampaignWebsite: document.isCampaignWebsite } : {}), collectionId: source.id, capturedAt: snapshot.documents[record.sourceDocumentIndex]!.capturedAt } };
+		const document: ElectionReferenceSource["documents"][number] = captured.member
+			? {
+					...openStatesProfileLinks(captured.member),
+					title: `${record.name} | Open States`,
+					publisher: "Open States",
+					kind: "public-dataset"
+				}
+			: source.documents[record.sourceDocumentIndex]!;
+		return {
+			id: record.id,
+			name: record.name,
+			office: record.office,
+			scope: record.scope,
+			...(record.jurisdiction
+				? { jurisdiction: record.jurisdiction }
+				: {}),
+			facts: record.facts,
+			source: {
+				title: document.title,
+				publisher: document.publisher,
+				kind: document.kind,
+				url: document.url,
+				...(document.pageUrl
+					? { pageUrl: document.pageUrl }
+					: {}),
+				...(document.publishedDate
+					? { publishedDate: document.publishedDate }
+					: {}),
+				...(document.isCampaignWebsite
+					? { isCampaignWebsite: document.isCampaignWebsite }
+					: {}),
+				collectionId: source.id,
+				capturedAt: snapshot.documents[record.sourceDocumentIndex]!.capturedAt
+			}
+		};
 	});
-	return { total: entries.length, matched: matching.length, offset, limit: filters.limit, records };
+	return {
+		total: entries.length,
+		matched: matching.length,
+		offset,
+		limit: filters.limit,
+		records
+	};
 }

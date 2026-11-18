@@ -9,7 +9,9 @@ export function dcDocument(body: string) {
 	return `<html><doc>${body}</doc></html>`;
 }
 export function dcFixture(year = 2026) {
-	const day = year === 2026 ? "3" : "7";
+	const day = year === 2026
+		? "3"
+		: "7";
 	const heading = `District of Columbia Board of Elections - November ${day}, ${year} General Election`;
 	const general = dcDocument(dcPage([
 		dcWord(274, 53, heading, 750),

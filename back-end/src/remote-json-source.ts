@@ -89,14 +89,18 @@ export function isPublicRemoteAddress(address: string) {
 	if (family === 6 && normalized.startsWith("::ffff:"))
 		return false;
 
-	return !blockedAddresses.check(normalized, family === 4 ? "ipv4" : "ipv6");
+	return !blockedAddresses.check(normalized, family === 4
+		? "ipv4"
+		: "ipv6");
 }
 
 export function parseRemoteJsonUrl(value: string | URL) {
 	let url: URL;
 
 	try {
-		url = value instanceof URL ? new URL(value) : new URL(value);
+		url = value instanceof URL
+			? new URL(value)
+			: new URL(value);
 	}
 	catch {
 		throw new Error("Remote coverage source must be a valid absolute HTTPS URL.");
@@ -128,7 +132,9 @@ async function resolvePublicAddresses(
 	const hostname = normalizeHostname(url.hostname);
 	const directFamily = isIP(hostname);
 	const addresses = directFamily
-		? [{ address: hostname, family: directFamily }]
+		? [
+				{ address: hostname, family: directFamily }
+			]
 		: await resolveAddresses(hostname);
 
 	if (!addresses.length)
@@ -161,8 +167,15 @@ function requestPinnedRemoteJson({
 				"Accept": document ? "application/pdf, text/html, text/plain" : "application/json, application/*+json, text/csv, text/plain, text/html, application/octet-stream",
 				"Host": url.host,
 				"User-Agent": "Ballot-Clarity-Coverage-Importer/1.0",
-				...(etag ? { "If-None-Match": etag } : {}),
-				...(postBody ? { "Content-Type": "application/x-www-form-urlencoded", "Content-Length": Buffer.byteLength(postBody) } : {}),
+				...(etag
+					? { "If-None-Match": etag }
+					: {}),
+				...(postBody
+					? {
+							"Content-Type": "application/x-www-form-urlencoded",
+							"Content-Length": Buffer.byteLength(postBody)
+						}
+					: {}),
 			},
 			hostname: address,
 			method: postBody ? "POST" : "GET",
@@ -222,7 +235,9 @@ async function withTimeout<T>(operation: Promise<T>, timeoutMs: number, onTimeou
 }
 
 function isJsonContentType(value: string | string[] | undefined) {
-	const normalized = Array.isArray(value) ? value[0] : value;
+	const normalized = Array.isArray(value)
+		? value[0]
+		: value;
 	const mediaType = normalized?.split(";", 1)[0]?.trim().toLowerCase() ?? "";
 	return mediaType === "application/json" || mediaType.endsWith("+json");
 }
@@ -234,7 +249,9 @@ export class RemoteSourceAccessChallengeError extends Error {
 }
 
 function assertNotAccessChallenge(body: Buffer, contentType: string | string[] | undefined) {
-	const mediaType = (Array.isArray(contentType) ? contentType[0] : contentType)?.split(";", 1)[0]?.trim().toLowerCase();
+	const mediaType = (Array.isArray(contentType)
+		? contentType[0]
+		: contentType)?.split(";", 1)[0]?.trim().toLowerCase();
 	if (!["text/html", "application/xhtml+xml"].includes(mediaType ?? "") || body.length > 32000) return;
 	const html = body.toString("utf8");
 	if (!/^\s*(?:<!doctype[^>]{0,160}>\s*)?<html(?:\s|>)/iu.test(html) || html.match(/<body\b/giu)?.length !== 1) return;
@@ -338,7 +355,9 @@ export async function fetchRemoteJsonText(
 			const addresses = await withTimeout(resolvePublicAddresses(currentUrl, resolveAddresses), timeoutMs);
 			const response = await withTimeout(transport({
 				address: addresses[0]!.address,
-				...(postBody ? { postBody } : {}),
+				...(postBody
+					? { postBody }
+					: {}),
 				timeoutMs,
 				url: currentUrl,
 			}), timeoutMs);
@@ -383,10 +402,35 @@ export async function fetchRemoteSourceDocument(source: string, options: Pick<Fe
 		throw new Error("Provide an allowed bounded public document request.");
 	return coordinatePublisher(url, async () => {
 		const addresses = await withTimeout(resolvePublicAddresses(url, options.resolveAddresses ?? (hostname => lookup(hostname, { all: true, verbatim: true }))), timeoutMs);
-		const response = await withTimeout((options.transport ?? requestPinnedRemoteJson)({ address: addresses[0]!.address, document: true, timeoutMs, url, ...(options.etag ? { etag: options.etag } : {}) }), timeoutMs);
+		const response = await withTimeout((options.transport ?? requestPinnedRemoteJson)({
+			address: addresses[0]!.address,
+			document: true,
+			timeoutMs,
+			url,
+			...(options.etag
+				? { etag: options.etag }
+				: {})
+		}), timeoutMs);
 		try {
-			const body = response.statusCode === 200 ? await readBoundedJsonBody(response, maxBytes, timeoutMs, false, true) as Buffer : Buffer.alloc(0);
-			return { status: response.statusCode, body, contentType: typeof response.headers["content-type"] === "string" ? response.headers["content-type"].split(";")[0]!.trim().toLowerCase() : "", etag: typeof response.headers.etag === "string" && /^(?:W\/)?"[\x21\x23-\x7E]{0,500}"$/u.test(response.headers.etag) ? response.headers.etag : undefined, ...(typeof response.headers.location === "string" && /^[\x21-\x7E]{1,2048}$/u.test(response.headers.location) ? { location: response.headers.location } : {}), ...(typeof response.headers["content-security-policy"] === "string" && /^[\x20-\x7E]{1,4096}$/u.test(response.headers["content-security-policy"]) ? { contentSecurityPolicy: response.headers["content-security-policy"] } : {}) };
+			const body = response.statusCode === 200
+				? await readBoundedJsonBody(response, maxBytes, timeoutMs, false, true) as Buffer
+				: Buffer.alloc(0);
+			return {
+				status: response.statusCode,
+				body,
+				contentType: typeof response.headers["content-type"] === "string"
+					? response.headers["content-type"].split(";")[0]!.trim().toLowerCase()
+					: "",
+				etag: typeof response.headers.etag === "string" && /^(?:W\/)?"[\x21\x23-\x7E]{0,500}"$/u.test(response.headers.etag)
+					? response.headers.etag
+					: undefined,
+				...(typeof response.headers.location === "string" && /^[\x21-\x7E]{1,2048}$/u.test(response.headers.location)
+					? { location: response.headers.location }
+					: {}),
+				...(typeof response.headers["content-security-policy"] === "string" && /^[\x20-\x7E]{1,4096}$/u.test(response.headers["content-security-policy"])
+					? { contentSecurityPolicy: response.headers["content-security-policy"] }
+					: {})
+			};
 		}
 		catch (error) {
 			if (error instanceof Error && /byte limit|compressed content encoding/u.test(error.message)) throw new RemoteSourceDocumentPolicyError("The public document exceeds its reviewed body or encoding bounds.");

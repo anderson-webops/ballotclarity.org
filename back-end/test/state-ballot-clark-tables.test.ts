@@ -14,7 +14,10 @@ test("Clark County independently reconciles all 508 printed candidate rows and n
 	const result = reconcile();
 	assert.equal(result.claims.length, 254);
 	assert.equal(result.supportingClaims.length, 254);
-	assert.deepEqual(result.tablePages, [Array.from({ length: 10 }, (_, index) => index + 1), Array.from({ length: 9 }, (_, index) => index + 3)]);
+	assert.deepEqual(result.tablePages, [
+		Array.from({ length: 10 }, (_, index) => index + 1),
+		Array.from({ length: 9 }, (_, index) => index + 3)
+	]);
 	const previous = JSON.parse(readFileSync(new URL("./fixtures/nevada-clark-reviewed-names.json", import.meta.url), "utf8")) as { names: string[] };
 	assert.deepEqual(result.claims.map(claim => fold(claim.name)).sort(), previous.names.map(fold).sort());
 	assert.ok(result.claims.some(claim => claim.name === "Drew Johnson"));
@@ -114,9 +117,17 @@ test("PDF tables reconcile filled Excel borders and stroked newsletter rules wit
 
 test("PDF tables ignore unreviewed or invisible filled rules and retain geometry failure bounds", () => {
 	const input = geometry[0]!;
-	assert.equal(readStateBallotPdfTables(input.wordCorpus, [input.svg.replaceAll("fill=\"rgb(0%, 0%, 0%)\"", "fill=\"red\"")])[0]!.cells.length, 0);
-	assert.equal(readStateBallotPdfTables(input.wordCorpus, [input.svg.replaceAll("fill-opacity=\"1\"", "fill-opacity=\"0\"")])[0]!.cells.length, 0);
+	assert.equal(readStateBallotPdfTables(input.wordCorpus, [
+		input.svg.replaceAll("fill=\"rgb(0%, 0%, 0%)\"", "fill=\"red\"")
+	])[0]!.cells.length, 0);
+	assert.equal(readStateBallotPdfTables(input.wordCorpus, [
+		input.svg.replaceAll("fill-opacity=\"1\"", "fill-opacity=\"0\"")
+	])[0]!.cells.length, 0);
 	assert.throws(() => readStateBallotPdfTables(input.wordCorpus, []), /incomplete/u);
-	assert.throws(() => readStateBallotPdfTables(input.wordCorpus, [input.svg.replace("<svg viewBox=\"0 0 612 792\">", "<svg viewBox=\"0 0 612 792\" transform=\"translate(1)\">")]), /transform/u);
-	assert.throws(() => readStateBallotPdfTables(input.wordCorpus, [input.svg.replace("viewBox=\"0 0 612 792\"", "viewBox=\"0 0 613 792\"")]), /match/u);
+	assert.throws(() => readStateBallotPdfTables(input.wordCorpus, [
+		input.svg.replace("<svg viewBox=\"0 0 612 792\">", "<svg viewBox=\"0 0 612 792\" transform=\"translate(1)\">")
+	]), /transform/u);
+	assert.throws(() => readStateBallotPdfTables(input.wordCorpus, [
+		input.svg.replace("viewBox=\"0 0 612 792\"", "viewBox=\"0 0 613 792\"")
+	]), /match/u);
 });

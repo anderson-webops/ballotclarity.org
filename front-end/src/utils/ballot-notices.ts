@@ -17,8 +17,10 @@ export function hasBallotInformation(context: Pick<NationwideLookupResultContext
 }
 
 export function ballotSourceNotes(previews: BallotContentPreview[]) {
-	return [...new Set(previews.filter(preview => !preview.id.startsWith("ga-fulton-")).map(preview => preview.disclaimer
-		.replace(/^Dated snapshot; later changes and local contests may be missing\.\s*/u, "")
-		.replace(/^State records; local contests may be missing\.\s*/u, "")
-		.trim()).filter(Boolean))];
+	return [
+		...new Set(previews.filter(preview => !preview.id.startsWith("ga-fulton-")).map(preview => preview.disclaimer
+			.replace(/^Dated snapshot; later changes and local contests may be missing\.\s*/u, "")
+			.replace(/^State records; local contests may be missing\.\s*/u, "")
+			.trim()).filter(Boolean))
+	];
 }

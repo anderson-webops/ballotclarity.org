@@ -21,15 +21,46 @@ const source = electionReferenceSources.find(item => item.stateCode === "ME")!;
 const newsSource = electionReferenceSources.find(item => item.stateCode === "LA")!;
 
 function fixture(collection: ElectionReferenceSource = source) {
-	const records = collection.documents.map((document, index) => ({ id: hash(`${collection.id}/${index}`).slice(0, 24), name: document.candidateName ?? `Example ${index}`, office: "School Board", scope: "local" as const, jurisdiction: collection.washingtonLocality ? `${collection.washingtonLocality.countyDisplay} County` : "Example town", facts: [`Reported academic advising experience ${index}.`], sourceDocumentIndex: index }));
-	const documents = collection.documents.map(document => ({ url: document.url, sha256: hash(document.url), capturedAt: retrievedAt, includedRecordCount: 1 }));
-	return { schemaVersion: 1, type: "election-references", stateCode: collection.stateCode, sourceId: collection.id, electionDate: collection.electionDate, retrievedAt, sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), recordCount: records.length, documents, records };
+	const records = collection.documents.map((document, index) => ({
+		id: hash(`${collection.id}/${index}`).slice(0, 24),
+		name: document.candidateName ?? `Example ${index}`,
+		office: "School Board",
+		scope: "local" as const,
+		jurisdiction: collection.washingtonLocality
+			? `${collection.washingtonLocality.countyDisplay} County`
+			: "Example town",
+		facts: [`Reported academic advising experience ${index}.`],
+		sourceDocumentIndex: index
+	}));
+	const documents = collection.documents.map(document => ({
+		url: document.url,
+		sha256: hash(document.url),
+		capturedAt: retrievedAt,
+		includedRecordCount: 1
+	}));
+	return {
+		schemaVersion: 1,
+		type: "election-references",
+		stateCode: collection.stateCode,
+		sourceId: collection.id,
+		electionDate: collection.electionDate,
+		retrievedAt,
+		sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+		recordCount: records.length,
+		documents,
+		records
+	};
 }
 
 test("references preserve candidate, reporting and official biography authorship without ballot statuses", () => {
 	for (const collection of electionReferenceSources) {
 		const snapshot = parseElectionReferenceSnapshot(collection, JSON.stringify(fixture(collection)));
-		const page = buildElectionReferencePage(collection, snapshot, { search: "", scope: "all", offset: 0, limit: 50 });
+		const page = buildElectionReferencePage(collection, snapshot, {
+			search: "",
+			scope: "all",
+			offset: 0,
+			limit: 50
+		});
 		assert.equal(page.records[0]!.source.kind, collection.documents[0]!.kind);
 		assert.equal(page.records[0]!.source.publisher, collection.documents[0]!.publisher);
 		assert.equal(page.records[0]!.source.url, collection.documents[0]!.url);
@@ -55,7 +86,12 @@ test("Idaho state biographies retain official attribution without invented publi
 		"https://sto.idaho.gov/About/Julie-A-Ellsworth-State-Treasurer",
 	]);
 	assert.ok(collection.documents.every(document => document.kind === "official-biography" && document.publishedDate === undefined));
-	const page = buildElectionReferencePage(collection, parseElectionReferenceSnapshot(collection, JSON.stringify(fixture(collection))), { search: "", scope: "all", offset: 0, limit: 50 });
+	const page = buildElectionReferencePage(collection, parseElectionReferenceSnapshot(collection, JSON.stringify(fixture(collection))), {
+		search: "",
+		scope: "all",
+		offset: 0,
+		limit: 50
+	});
 	assert.equal(page.records.length, 6);
 	assert.ok(page.records.every(record => record.source.collectionId === collection.id && record.source.kind === "official-biography" && !("status" in record)));
 });
@@ -66,7 +102,11 @@ test("missing Idaho state biographies do not suppress a retained independent col
 	const directory = await mkdtemp(join(tmpdir(), "idaho-reference-absence-"));
 	try {
 		await createElectionReferenceStorage(directory).write(independent, parseElectionReferenceSnapshot(independent, JSON.stringify(fixture(independent))));
-		const snapshots = await createElectionReferenceRepository({ dataDirectory: directory, sources: [independent, collection], now: () => Date.parse(retrievedAt) }).getSnapshots!("ID");
+		const snapshots = await createElectionReferenceRepository({
+			dataDirectory: directory,
+			sources: [independent, collection],
+			now: () => Date.parse(retrievedAt)
+		}).getSnapshots!("ID");
 		assert.deepEqual(snapshots.map(snapshot => snapshot.sourceId), [independent.id]);
 	}
 	finally {
@@ -79,10 +119,25 @@ test("Webster Parish statements retain candidate authorship and publication date
 	assert.equal(collection.stateCode, "LA");
 	assert.equal(collection.electionDate, "2026-11-03");
 	assert.equal(collection.documents.length, 9);
-	assert.deepEqual(collection.documents.map(document => document.publishedDate), ["2026-08-19", "2026-08-31", "2026-08-17", "2026-08-17", "2026-08-17", "2026-08-17", "2026-08-17", "2026-08-18", "2026-08-18"]);
+	assert.deepEqual(collection.documents.map(document => document.publishedDate), [
+		"2026-08-19",
+		"2026-08-31",
+		"2026-08-17",
+		"2026-08-17",
+		"2026-08-17",
+		"2026-08-17",
+		"2026-08-17",
+		"2026-08-18",
+		"2026-08-18"
+	]);
 	assert.ok(collection.documents.every(document => document.kind === "candidate-statement" && document.publisher === "Webster Parish Journal" && new URL(document.url).hostname === "websterparishjournal.com"));
 	const snapshot = parseElectionReferenceSnapshot(collection, JSON.stringify(fixture(collection)));
-	const page = buildElectionReferencePage(collection, snapshot, { search: "", scope: "local", offset: 6, limit: 3 });
+	const page = buildElectionReferencePage(collection, snapshot, {
+		search: "",
+		scope: "local",
+		offset: 6,
+		limit: 3
+	});
 	assert.equal(page.total, 9);
 	assert.equal(page.matched, 9);
 	assert.equal(page.records.length, 3);
@@ -99,7 +154,12 @@ test("identity-only references require a reviewed collection opt-in and preserve
 	const data = fixture(collection);
 	data.records[0]!.facts = [];
 	const snapshot = parseElectionReferenceSnapshot(collection, JSON.stringify(data));
-	const page = buildElectionReferencePage(collection, snapshot, { search: "example 0", scope: "local", offset: 0, limit: 50 });
+	const page = buildElectionReferencePage(collection, snapshot, {
+		search: "example 0",
+		scope: "local",
+		offset: 0,
+		limit: 50
+	});
 	assert.equal(page.matched, 1);
 	assert.deepEqual(page.records[0]!.facts, []);
 	assert.equal(page.records[0]!.source.kind, "candidate-statement");
@@ -112,12 +172,32 @@ test("identity-only references require a reviewed collection opt-in and preserve
 test("identity-only opt-in does not allow missing, malformed or unbounded factual fields", () => {
 	const collection = electionReferenceSources.find(item => item.id === "la-webster-additional-references-2026")!;
 	const data = fixture(collection);
-	for (const facts of [undefined, null, "", [""], [" "], ["line\nbreak"], ["x".repeat(601)], Array.from({ length: 7 }).fill("Example")]) {
-		const changed = { ...data, records: data.records.map(record => ({ ...record, facts })) };
+	for (const facts of [
+		undefined,
+		null,
+		"",
+		[""],
+		[" "],
+		["line\nbreak"],
+		[
+			"x".repeat(601)
+		],
+		Array.from({ length: 7 }).fill("Example")
+	]) {
+		const changed = {
+			...data,
+			records: data.records.map(record => ({ ...record, facts }))
+		};
 		assert.throws(() => parseElectionReferenceSnapshot(collection, JSON.stringify(changed)), /fields/u);
 	}
-	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...fixture(), allowIdentityOnly: true })), /configured collection/u);
-	assert.throws(() => parseElectionReferenceSnapshot(collection, JSON.stringify({ ...data, records: data.records.map(record => ({ ...record, allowIdentityOnly: true })) })), /fields/u);
+	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({
+		...fixture(),
+		allowIdentityOnly: true
+	})), /configured collection/u);
+	assert.throws(() => parseElectionReferenceSnapshot(collection, JSON.stringify({
+		...data,
+		records: data.records.map(record => ({ ...record, allowIdentityOnly: true }))
+	})), /fields/u);
 });
 
 test("DC background keeps independent council and attorney-general attribution without invented publication dates", () => {
@@ -127,7 +207,12 @@ test("DC background keeps independent council and attorney-general attribution w
 	assert.equal(collection.documents.length, 8);
 	assert.ok(collection.documents.every(document => document.kind === "official-biography" && document.publishedDate === undefined));
 	const snapshot = parseElectionReferenceSnapshot(collection, JSON.stringify(fixture(collection)));
-	const page = buildElectionReferencePage(collection, snapshot, { search: "", scope: "local", offset: 6, limit: 2 });
+	const page = buildElectionReferencePage(collection, snapshot, {
+		search: "",
+		scope: "local",
+		offset: 6,
+		limit: 2
+	});
 	assert.equal(page.matched, 8);
 	assert.equal(page.records[0]!.source.publisher, "District of Columbia Office of the Attorney General");
 	assert.equal(page.records[1]!.source.publisher, "Council of the District of Columbia");
@@ -143,7 +228,9 @@ test("judicial references pin independent public publications without using excl
 		assert.equal(collection.documents[0]!.publishedDate, undefined);
 		assert.equal(collection.documents[0]!.pageUrl, undefined);
 		const snapshot = parseElectionReferenceSnapshot(collection, JSON.stringify(fixture(collection)));
-		const otherCollection = collection === candidateSource ? biographySource : candidateSource;
+		const otherCollection = collection === candidateSource
+			? biographySource
+			: candidateSource;
 		assert.throws(() => parseElectionReferenceSnapshot(otherCollection, JSON.stringify(snapshot)), /configured collection/u);
 	}
 	assert.equal(candidateSource.stateCode, "NC");
@@ -175,7 +262,12 @@ test("Alaska and Oregon references pin candidate-authored PDFs without inferring
 		assert.equal(collection.electionDate, "2026-11-03");
 		assert.ok(collection.documents.every(document => document.kind === "candidate-statement" && document.publishedDate === undefined));
 		const snapshot = parseElectionReferenceSnapshot(collection, JSON.stringify(fixture(collection)));
-		assert.equal(buildElectionReferencePage(collection, snapshot, { search: "", scope: "all", offset: 0, limit: 50 }).total, collection.documents.length);
+		assert.equal(buildElectionReferencePage(collection, snapshot, {
+			search: "",
+			scope: "all",
+			offset: 0,
+			limit: 50
+		}).total, collection.documents.length);
 	}
 });
 
@@ -190,7 +282,12 @@ test("Utah references pin the public general-election pamphlet without address-b
 	assert.equal(collection.documents[0]!.publishedDate, undefined);
 	const data = fixture(collection);
 	const snapshot = parseElectionReferenceSnapshot(collection, JSON.stringify(data));
-	const page = buildElectionReferencePage(collection, snapshot, { search: "", scope: "all", offset: 0, limit: 50 });
+	const page = buildElectionReferencePage(collection, snapshot, {
+		search: "",
+		scope: "all",
+		offset: 0,
+		limit: 50
+	});
 	assert.equal(page.total, 1);
 	assert.equal(page.records[0]!.source.publisher, "Utah Office of the Lieutenant Governor");
 	assert.equal("status" in page.records[0]!, false);
@@ -201,14 +298,25 @@ test("Arizona and Nevada profiles preserve mixed authorship and actual public bi
 	const nevada = electionReferenceSources.find(item => item.id === "nv-executive-biographies-2026")!;
 	assert.equal(arizona.stateCode, "AZ");
 	assert.equal(nevada.stateCode, "NV");
-	assert.deepEqual(arizona.documents.map(document => document.kind), ["official-biography", "official-biography", "candidate-statement", "candidate-statement", "candidate-statement"]);
+	assert.deepEqual(arizona.documents.map(document => document.kind), [
+		"official-biography",
+		"official-biography",
+		"candidate-statement",
+		"candidate-statement",
+		"candidate-statement"
+	]);
 	assert.ok(nevada.documents.every(document => document.kind === "official-biography"));
 	assert.equal(nevada.documents[1]!.url, "https://www.gov.nv.gov/about/governor-joe-lombardo/");
 	for (const collection of [arizona, nevada]) {
 		assert.equal(collection.electionDate, "2026-11-03");
 		assert.ok(collection.documents.every(document => document.publishedDate === undefined && !/int\.|prod\.|daniellefornevada|storageccec/u.test(document.url)));
 		const snapshot = parseElectionReferenceSnapshot(collection, JSON.stringify(fixture(collection)));
-		const page = buildElectionReferencePage(collection, snapshot, { search: "", scope: "all", offset: 0, limit: 50 });
+		const page = buildElectionReferencePage(collection, snapshot, {
+			search: "",
+			scope: "all",
+			offset: 0,
+			limit: 50
+		});
 		assert.deepEqual(page.records.map(record => record.source.kind), collection.documents.map(document => document.kind));
 		assert.ok(page.records.every(record => !("status" in record) && !("party" in record)));
 	}
@@ -216,21 +324,60 @@ test("Arizona and Nevada profiles preserve mixed authorship and actual public bi
 
 test("references reject different elections, states, collections and unreviewed fields", () => {
 	const data = fixture();
-	for (const invalid of [{ ...data, electionDate: "2028-11-07" }, { ...data, stateCode: "LA" }, { ...data, sourceId: newsSource.id }, { ...data, type: "official-candidates" }, { ...data, address: "Excluded" }]) assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify(invalid)), /configured collection/u);
-	for (const field of ["status", "party", "candidateUrl", "email", "photos", "candidateId"]) assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...data, records: data.records.map(record => ({ ...record, [field]: "Excluded" })) })), /fields/u);
+	for (const invalid of [
+		{ ...data, electionDate: "2028-11-07" },
+		{ ...data, stateCode: "LA" },
+		{ ...data, sourceId: newsSource.id },
+		{ ...data, type: "official-candidates" },
+		{ ...data, address: "Excluded" }
+	]) assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify(invalid)), /configured collection/u);
+	for (const field of [
+		"status",
+		"party",
+		"candidateUrl",
+		"email",
+		"photos",
+		"candidateId"
+	]) {
+		assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({
+			...data,
+			records: data.records.map(record => ({ ...record, [field]: "Excluded" }))
+		})), /fields/u);
+	}
 });
 
 test("public reference pages are independently pinned, safe and separate from captured data URLs", () => {
-	const collection = { ...source, documents: source.documents.map(document => ({ ...document, pageUrl: "https://example.test/public-guide" })) };
+	const collection = {
+		...source,
+		documents: source.documents.map(document => ({ ...document, pageUrl: "https://example.test/public-guide" }))
+	};
 	const snapshot = parseElectionReferenceSnapshot(collection, JSON.stringify(fixture(collection)));
-	const page = buildElectionReferencePage(collection, snapshot, { search: "", scope: "all", offset: 0, limit: 50 });
+	const page = buildElectionReferencePage(collection, snapshot, {
+		search: "",
+		scope: "all",
+		offset: 0,
+		limit: 50
+	});
 	assert.equal(page.records[0]!.source.pageUrl, "https://example.test/public-guide");
 	assert.equal(page.records[0]!.source.url, source.documents[0]!.url);
-	for (const pageUrl of ["javascript:alert(1)", "//example.test/guide", "http://example.test/guide", "https://user:password@example.test/guide", "https://127.0.0.1/guide", "https://example.test/guide\n"]) {
-		const invalid = { ...collection, documents: collection.documents.map(document => ({ ...document, pageUrl })) };
+	for (const pageUrl of [
+		"javascript:alert(1)",
+		"//example.test/guide",
+		"http://example.test/guide",
+		"https://user:password@example.test/guide",
+		"https://127.0.0.1/guide",
+		"https://example.test/guide\n"
+	]) {
+		const invalid = {
+			...collection,
+			documents: collection.documents.map(document => ({ ...document, pageUrl }))
+		};
 		assert.throws(() => parseElectionReferenceSnapshot(invalid, JSON.stringify(fixture(invalid))), /public page links/u);
 	}
-	assert.throws(() => parseElectionReferenceSnapshot(collection, JSON.stringify({ ...snapshot, documents: snapshot.documents.map(document => ({ ...document, pageUrl: "https://unreviewed.example.test/" })) })), /provenance/u);
+	assert.throws(() => parseElectionReferenceSnapshot(collection, JSON.stringify({
+		...snapshot,
+		documents: snapshot.documents.map(document => ({ ...document, pageUrl: "https://unreviewed.example.test/" }))
+	})), /provenance/u);
 });
 
 test("Washington references pin the ten observed public congressional race requests without voter or preview parameters", () => {
@@ -244,7 +391,9 @@ test("Washington references pin the ten observed public congressional race reque
 		assert.equal(url.searchParams.get("e"), "899");
 		assert.equal(url.searchParams.get("b"), "0");
 		assert.equal(url.searchParams.get("c"), "");
-		assert.deepEqual([...url.searchParams.keys()], ["e", "r", "b", "la", "c"]);
+		assert.deepEqual([
+			...url.searchParams.keys()
+		], ["e", "r", "b", "la", "c"]);
 		assert.equal(new URL(document.pageUrl!).hash, `#/candidates/${url.searchParams.get("r")}`);
 		assert.equal(document.title, `Congressional District ${index + 1} candidate statements`);
 		assert.equal(document.kind, "candidate-statement");
@@ -254,33 +403,106 @@ test("Washington references pin the ten observed public congressional race reque
 
 test("references require all document fingerprints, original dates and exact per-document contributions", () => {
 	const data = fixture();
-	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...data, documents: data.documents.slice(1) })), /document set/u);
-	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...data, sourceSha256: "f".repeat(64) })), /capture provenance/u);
+	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({
+		...data,
+		documents: data.documents.slice(1)
+	})), /document set/u);
+	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({
+		...data,
+		sourceSha256: "f".repeat(64)
+	})), /capture provenance/u);
 	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...data, retrievedAt: "2026-10-21T00:00:00Z" })), /capture provenance/u);
-	for (const update of [{ capturedAt: "2099-01-01T00:00:00Z" }, { url: "https://unreviewed.example.test/file.pdf" }, { sha256: "not-a-hash" }, { includedRecordCount: -1 }]) assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...data, documents: [{ ...data.documents[0], ...update }, ...data.documents.slice(1)] })), /provenance/u);
-	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...data, documents: data.documents.map(document => ({ ...document, includedRecordCount: 0 })) })), /contributions/u);
+	for (const update of [
+		{ capturedAt: "2099-01-01T00:00:00Z" },
+		{ url: "https://unreviewed.example.test/file.pdf" },
+		{ sha256: "not-a-hash" },
+		{ includedRecordCount: -1 }
+	]) {
+		assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({
+			...data,
+			documents: [
+				{
+					...data.documents[0],
+					...update
+				},
+				...data.documents.slice(1)
+			]
+		})), /provenance/u);
+	}
+	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({
+		...data,
+		documents: data.documents.map(document => ({ ...document, includedRecordCount: 0 }))
+	})), /contributions/u);
 });
 
 test("reference records remain positive, unique, bounded plain text with valid document identities", () => {
 	const data = fixture();
 	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...data, records: [], recordCount: 0 })), /record count/u);
 	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...data, recordCount: 100 })), /record count/u);
-	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...data, records: data.records.map(record => ({ ...record, id: data.records[0]!.id })) })), /identities/u);
-	for (const update of [{ name: "" }, { name: "Name\nline" }, { facts: [] }, { facts: ["x".repeat(601)] }, { sourceDocumentIndex: -1 }, { sourceDocumentIndex: 999 }, { scope: "ward" }]) assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({ ...data, records: data.records.map(record => ({ ...record, ...update })) })), /fields/u);
+	assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({
+		...data,
+		records: data.records.map(record => ({ ...record, id: data.records[0]!.id }))
+	})), /identities/u);
+	for (const update of [
+		{ name: "" },
+		{ name: "Name\nline" },
+		{ facts: [] },
+		{
+			facts: [
+				"x".repeat(601)
+			]
+		},
+		{ sourceDocumentIndex: -1 },
+		{ sourceDocumentIndex: 999 },
+		{ scope: "ward" }
+	]) {
+		assert.throws(() => parseElectionReferenceSnapshot(source, JSON.stringify({
+			...data,
+			records: data.records.map(record => ({
+				...record,
+				...update
+			}))
+		})), /fields/u);
+	}
 	assert.throws(() => parseElectionReferenceSnapshot(source, " ".repeat(12 * 1024 * 1024 + 1)), /size limit/u);
 });
 
 test("reference search and pagination are independent of official record counts and expose no private fields", () => {
 	const snapshot = parseElectionReferenceSnapshot(source, JSON.stringify(fixture()));
-	const first = buildElectionReferencePage(source, snapshot, { search: "", scope: "all", offset: 0, limit: 2 });
+	const first = buildElectionReferencePage(source, snapshot, {
+		search: "",
+		scope: "all",
+		offset: 0,
+		limit: 2
+	});
 	assert.equal(first.total, 3);
 	assert.equal(first.records.length, 2);
-	const last = buildElectionReferencePage(source, snapshot, { search: "", scope: "all", offset: 200, limit: 2 });
+	const last = buildElectionReferencePage(source, snapshot, {
+		search: "",
+		scope: "all",
+		offset: 200,
+		limit: 2
+	});
 	assert.equal(last.offset, 2);
 	assert.equal(last.records[0]!.name, "Example 2");
-	assert.equal(buildElectionReferencePage(source, snapshot, { search: "academic", scope: "local", offset: 0, limit: 50 }).matched, 3);
-	assert.equal(buildElectionReferencePage(source, snapshot, { search: "", scope: "statewide", offset: 0, limit: 50 }).matched, 0);
-	assert.equal(buildElectionReferencePage(source, snapshot, { search: "no-match", scope: "all", offset: 200, limit: 50 }).offset, 0);
+	assert.equal(buildElectionReferencePage(source, snapshot, {
+		search: "academic",
+		scope: "local",
+		offset: 0,
+		limit: 50
+	}).matched, 3);
+	assert.equal(buildElectionReferencePage(source, snapshot, {
+		search: "",
+		scope: "statewide",
+		offset: 0,
+		limit: 50
+	}).matched, 0);
+	assert.equal(buildElectionReferencePage(source, snapshot, {
+		search: "no-match",
+		scope: "all",
+		offset: 200,
+		limit: 50
+	}).offset, 0);
 });
 
 test("external reference storage survives restart and rejects invalid updates without changing the cache", async (context) => {
@@ -293,9 +515,15 @@ test("external reference storage survives restart and rejects invalid updates wi
 	assert.deepEqual(await createElectionReferenceStorage(directory).read(source), snapshot);
 	const file = join(directory, `references-${source.id}.json`);
 	const before = await readFile(file, "utf8");
-	await assert.rejects(storage.write(source, { ...snapshot, sourceSha256: "f".repeat(64) }), /provenance/u);
+	await assert.rejects(storage.write(source, {
+		...snapshot,
+		sourceSha256: "f".repeat(64)
+	}), /provenance/u);
 	assert.equal(await readFile(file, "utf8"), before);
-	await assert.rejects(storage.read({ ...source, documents: source.documents.map(document => ({ ...document, title: "Changed review" })) }), /configured collection/u);
+	await assert.rejects(storage.read({
+		...source,
+		documents: source.documents.map(document => ({ ...document, title: "Changed review" }))
+	}), /configured collection/u);
 });
 
 test("reference storage reuses external-directory, symlink and regular-file safety gates", async (context) => {
@@ -322,12 +550,18 @@ test("reference repositories never fetch, carry records into another state or sh
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	const snapshot = parseElectionReferenceSnapshot(source, JSON.stringify(fixture()));
 	await createElectionReferenceStorage(directory).write(source, snapshot);
-	const repository = createElectionReferenceRepository({ dataDirectory: directory, now: () => Date.parse("2026-10-21T00:00:00Z") });
+	const repository = createElectionReferenceRepository({
+		dataDirectory: directory,
+		now: () => Date.parse("2026-10-21T00:00:00Z")
+	});
 	assert.deepEqual(await repository.getSnapshot("ME"), snapshot);
 	assert.equal(await repository.getSnapshot("LA"), null);
 	assert.equal(await repository.getSnapshot("NY"), null);
 	assert.equal(await createElectionReferenceRepository({ dataDirectory: null }).getSnapshot("ME"), null);
-	assert.equal(await createElectionReferenceRepository({ dataDirectory: directory, now: () => Date.parse("2026-11-05T00:00:00Z") }).getSnapshot("ME"), null);
+	assert.equal(await createElectionReferenceRepository({
+		dataDirectory: directory,
+		now: () => Date.parse("2026-11-05T00:00:00Z")
+	}).getSnapshot("ME"), null);
 });
 
 test("reference management imports and exports reviewed data but refuses automatic refresh", async (context) => {
@@ -338,15 +572,41 @@ test("reference management imports and exports reviewed data but refuses automat
 	await writeFile(file, JSON.stringify(data));
 	const script = fileURLToPath(new URL("../src/manage-election-references.ts", import.meta.url));
 	const environment = { ...process.env, STATE_BALLOT_DATA_DIR: directory };
-	const imported = execFileSync(process.execPath, ["--import", "tsx", script, "import", file], { env: environment, encoding: "utf8" });
+	const imported = execFileSync(process.execPath, [
+		"--import",
+		"tsx",
+		script,
+		"import",
+		file
+	], { env: environment, encoding: "utf8" });
 	assert.equal(JSON.parse(imported).references, 3);
-	const exported = execFileSync(process.execPath, ["--import", "tsx", script, "export", "ME", "--source", source.id], { env: environment, encoding: "utf8" });
+	const exported = execFileSync(process.execPath, [
+		"--import",
+		"tsx",
+		script,
+		"export",
+		"ME",
+		"--source",
+		source.id
+	], { env: environment, encoding: "utf8" });
 	assert.deepEqual(JSON.parse(exported), data);
 	const cache = join(directory, `references-${source.id}.json`);
 	const before = await readFile(cache, "utf8");
-	assert.notEqual(spawnSync(process.execPath, ["--import", "tsx", script, "refresh", "ME"], { env: environment }).status, 0);
+	assert.notEqual(spawnSync(process.execPath, [
+		"--import",
+		"tsx",
+		script,
+		"refresh",
+		"ME"
+	], { env: environment }).status, 0);
 	await writeFile(file, JSON.stringify({ ...data, electionDate: "2028-11-07" }));
-	assert.notEqual(spawnSync(process.execPath, ["--import", "tsx", script, "import", file], { env: environment }).status, 0);
+	assert.notEqual(spawnSync(process.execPath, [
+		"--import",
+		"tsx",
+		script,
+		"import",
+		file
+	], { env: environment }).status, 0);
 	assert.equal(await readFile(cache, "utf8"), before);
 });
 
@@ -355,7 +615,9 @@ test("public reference routes remain available independently of official candida
 	const snapshot = parseElectionReferenceSnapshot(newsSource, JSON.stringify(fixture(newsSource)));
 	registerElectionReferenceRoutes(app, {
 		async getSnapshot(code) {
-			return code === "LA" ? snapshot : null;
+			return code === "LA"
+				? snapshot
+				: null;
 		},
 	}, undefined, undefined, () => Date.parse(retrievedAt));
 	const server = app.listen(0, "127.0.0.1");
@@ -370,7 +632,14 @@ test("public reference routes remain available independently of official candida
 	assert.equal(body.records[0].source.kind, "news-report");
 	assert.equal("status" in body.records[0], false);
 	assert.equal((await (await fetch(`${origin}/api/election-references/RI`)).json()).available, false);
-	for (const query of ["?scope=ward", "?limit=101", "?offset=-1", "?status=qualified", "?q=one&q=two", "?q=%0Aprivate"]) assert.equal((await fetch(`${origin}/api/election-references/LA${query}`)).status, 400);
+	for (const query of [
+		"?scope=ward",
+		"?limit=101",
+		"?offset=-1",
+		"?status=qualified",
+		"?q=one&q=two",
+		"?q=%0Aprivate"
+	]) assert.equal((await fetch(`${origin}/api/election-references/LA${query}`)).status, 400);
 	assert.equal((await fetch(`${origin}/api/election-references/XX`)).status, 400);
 });
 

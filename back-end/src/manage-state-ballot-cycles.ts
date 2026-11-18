@@ -16,8 +16,16 @@ async function syncCycles() {
 			throw new Error(`Enable the supported ${family.source.stateCode} source family for election-cycle synchronization.`);
 	}
 	const enabledFamilies = process.env.STATE_BALLOT_ENABLED_FAMILIES?.split(",").map(value => value.trim());
-	const results = await syncStateBallotCycleFamilies(locations.map(location => ({ ...location, dataDirectory, enabledSourceIds: enabledFamilies?.includes(location.familyId) ? undefined : process.env.STATE_BALLOT_ENABLED_SOURCES?.split(",").map(value => value.trim()) })), stateBallotPriorityFamilies());
-	console.log(JSON.stringify(results.length === 1 && results[0]?.status === "completed" ? results[0] : { families: results }));
+	const results = await syncStateBallotCycleFamilies(locations.map(location => ({
+		...location,
+		dataDirectory,
+		enabledSourceIds: enabledFamilies?.includes(location.familyId)
+			? undefined
+			: process.env.STATE_BALLOT_ENABLED_SOURCES?.split(",").map(value => value.trim())
+	})), stateBallotPriorityFamilies());
+	console.log(JSON.stringify(results.length === 1 && results[0]?.status === "completed"
+		? results[0]
+		: { families: results }));
 	if (results.some(result => result.status === "failed" || result.results.some(item => item.status === "unavailable" || item.status === "persistence-failed"))) process.exitCode = 1;
 }
 
@@ -29,6 +37,8 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-	console.error(error instanceof Error ? error.message : "Election-cycle synchronization failed.");
+	console.error(error instanceof Error
+		? error.message
+		: "Election-cycle synchronization failed.");
 	process.exitCode = 1;
 });

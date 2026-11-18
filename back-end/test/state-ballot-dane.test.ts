@@ -25,7 +25,14 @@ test("Dane separates column words when native PDF lines cross from instructions 
 });
 test("Dane rejects wrong school styles, missing pages, altered dates and unsupported candidates or offices", () => {
 	assert.throws(() => readDaneCandidateSample(source, daneSample("Waunakee"), "Lodi"));
-	for (const body of [daneSample("Lodi").replaceAll(">2026<", ">2028<"), daneSample("Lodi").replace("(Wisconsin", "(Unreviewed"), daneSample("Lodi").replace("Attorney", "Unsupported"), daneSample("Lodi").replace("width=\"612\"", "width=\"500\""), daneSample("Lodi").replace("</html>", ""), daneSample("Lodi").replace("xMax=\"", "xMax=\"9999")]) {
+	for (const body of [
+		daneSample("Lodi").replaceAll(">2026<", ">2028<"),
+		daneSample("Lodi").replace("(Wisconsin", "(Unreviewed"),
+		daneSample("Lodi").replace("Attorney", "Unsupported"),
+		daneSample("Lodi").replace("width=\"612\"", "width=\"500\""),
+		daneSample("Lodi").replace("</html>", ""),
+		daneSample("Lodi").replace("xMax=\"", "xMax=\"9999")
+	]) {
 		assert.notEqual(body, daneSample("Lodi"));
 		assert.throws(() => readDaneCandidateSample(source, body, "Lodi"));
 	}
@@ -47,7 +54,10 @@ test("Dane future examples are printed-date compatibility fixtures rather than i
 test("Dane new candidate regions on the reverse side or referendum column require review", () => {
 	const unexpected = "<line xMin=\"420\" xMax=\"500\" yMin=\"550\" yMax=\"559\"><word xMin=\"420\" xMax=\"480\" yMin=\"550\" yMax=\"559\">(Unreviewed)</word></line>";
 	const body = daneSample("Lodi");
-	for (const changed of [body.replace("</page>", `${unexpected}</page>`), body.replace("</page></doc>", `${unexpected}</page></doc>`)]) {
+	for (const changed of [
+		body.replace("</page>", `${unexpected}</page>`),
+		body.replace("</page></doc>", `${unexpected}</page></doc>`)
+	]) {
 		assert.notEqual(changed, body);
 		assert.throws(() => readDaneCandidateSample(source, changed, "Lodi"), /secondary candidate regions/u);
 	}

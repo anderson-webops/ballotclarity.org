@@ -350,9 +350,13 @@ export function replaceCoverageSnapshotPair(
 			newMetadataSha256: sha256File(paths.newMetadata),
 			newSnapshotSha256: sha256File(paths.newSnapshot),
 			previousMetadataPresent,
-			previousMetadataSha256: previousMetadataPresent ? sha256File(paths.previousMetadata) : undefined,
+			previousMetadataSha256: previousMetadataPresent
+				? sha256File(paths.previousMetadata)
+				: undefined,
 			previousSnapshotPresent,
-			previousSnapshotSha256: previousSnapshotPresent ? sha256File(paths.previousSnapshot) : undefined,
+			previousSnapshotSha256: previousSnapshotPresent
+				? sha256File(paths.previousSnapshot)
+				: undefined,
 			targetPath: resolvedTargetPath,
 			transactionDirectory,
 			version: 1,

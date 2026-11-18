@@ -31,7 +31,10 @@ export function alabamaCells(
 				.sort((first, second) => first.start - second.start);
 			return [
 				axis as "h" | "v",
-				{ entries, maximumSpan: entries.reduce((maximum, item) => Math.max(maximum, item.end - item.start), 0) }
+				{
+					entries,
+					maximumSpan: entries.reduce((maximum, item) => Math.max(maximum, item.end - item.start), 0)
+				}
 			];
 		})
 	);
@@ -81,7 +84,10 @@ export function alabamaCells(
 		const edge = merged.find((edge) => {
 			if (edge.axis !== stroke.axis || Math.min(edge.band[1], band[1]) <= Math.max(edge.band[0], band[0]))
 				return false;
-			const joined = [Math.max(edge.band[0], band[0]), Math.min(edge.band[1], band[1])];
+			const joined = [
+				Math.max(edge.band[0], band[0]),
+				Math.min(edge.band[1], band[1])
+			];
 			return (
 				(edge.start <= stroke.end + 0.001 && edge.end >= stroke.start - 0.001)
 				|| bridge(stroke.axis, Math.min(edge.end, stroke.end), Math.max(edge.start, stroke.start), joined)
@@ -90,7 +96,10 @@ export function alabamaCells(
 		if (edge) {
 			edge.start = Math.min(edge.start, stroke.start);
 			edge.end = Math.max(edge.end, stroke.end);
-			edge.band = [Math.max(edge.band[0], band[0]), Math.min(edge.band[1], band[1])];
+			edge.band = [
+				Math.max(edge.band[0], band[0]),
+				Math.min(edge.band[1], band[1])
+			];
 			edge.position = (edge.band[0] + edge.band[1]) / 2;
 		}
 		else {
@@ -127,7 +136,12 @@ export function alabamaCells(
 						&& top.end >= right.band[0] - 0.001
 					) {
 						cells.push({
-							bounds: [left.position, bottom.position, right.position, top.position],
+							bounds: [
+								left.position,
+								bottom.position,
+								right.position,
+								top.position
+							],
 							borders: {
 								left: [...left.band],
 								bottom: [...bottom.band],
@@ -144,7 +158,10 @@ export function alabamaCells(
 		}
 	}
 	const unique = [
-		...new Map(cells.map(cell => [cell.bounds.map(value => value.toFixed(2)).join("/"), cell])).values()
+		...new Map(cells.map(cell => [
+			cell.bounds.map(value => value.toFixed(2)).join("/"),
+			cell
+		])).values()
 	];
 	const selected = includeNested
 		? unique
@@ -174,7 +191,12 @@ export function alabamaCells(
 					);
 				})
 				.sort((first, second) => second.baseline - first.baseline || first.bounds[0] - second.bounds[0]);
-			return { bounds, borders, spans, text: spans.map(span => span.text).join("\n") };
+			return {
+				bounds,
+				borders,
+				spans,
+				text: spans.map(span => span.text).join("\n")
+			};
 		})
 		.sort((first, second) => first.bounds[0] - second.bounds[0] || second.bounds[3] - first.bounds[3]);
 }

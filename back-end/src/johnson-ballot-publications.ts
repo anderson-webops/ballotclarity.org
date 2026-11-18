@@ -9,7 +9,23 @@ import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, p
 import { containsControlCharacters } from "./text-validation.js";
 
 export const johnsonBallotMapUrl = "https://gis.johnsoncountyiowa.gov/pollingplaces/";
-export const johnsonBallotFields = ["OBJECTID", "NAME", "COMBINED_REG_PRECINCT_NAME", "COMB_REG_PREC_ABBREV", "PRECINCT_SPLIT", "BallotStyle", "SchoolDistrict", "CityTwp", "HOUSE_DISTRICT", "SENATE_DISTRICT", "BOS_Districts", "KIRKWOOD_DIR_DISTRICT", "SampleBallotURL", "SampleBallotURL2", "SampleBallotURL3"] as const;
+export const johnsonBallotFields = [
+	"OBJECTID",
+	"NAME",
+	"COMBINED_REG_PRECINCT_NAME",
+	"COMB_REG_PREC_ABBREV",
+	"PRECINCT_SPLIT",
+	"BallotStyle",
+	"SchoolDistrict",
+	"CityTwp",
+	"HOUSE_DISTRICT",
+	"SENATE_DISTRICT",
+	"BOS_Districts",
+	"KIRKWOOD_DIR_DISTRICT",
+	"SampleBallotURL",
+	"SampleBallotURL2",
+	"SampleBallotURL3"
+] as const;
 export interface JohnsonBallotResource { url: string; status: number; body: string; sha256: string; retrievedAt: string }
 export interface JohnsonBallotEvidence { schemaVersion: 1; resources: JohnsonBallotResource[]; documents: JohnsonSampleText[] }
 type Attributes = Record<typeof johnsonBallotFields[number], string | number | null>;
@@ -65,11 +81,27 @@ export function johnsonPrecinctTable(body: string, url: string) {
 export function validateJohnsonTable(body: string) {
 	const table = JSON.parse(body);
 	requireValue(table.name === "Election Precinct" && table.description === "" && table.copyrightText === "" && typeof table.capabilities === "string" && table.capabilities.split(",").includes("Query") && Array.isArray(table.fields), "precinct-table publication and terms");
-	for (const field of johnsonBallotFields) requireValue(table.fields.filter((item: { name?: string; type?: string }) => item.name === field && (field === "OBJECTID" ? item.type === "esriFieldTypeOID" : ["esriFieldTypeString", "esriFieldTypeSmallInteger", "esriFieldTypeInteger"].includes(item.type ?? ""))).length === 1, "reviewed aggregate fields");
+	for (const field of johnsonBallotFields) {
+		requireValue(table.fields.filter((item: { name?: string; type?: string }) => item.name === field && (field === "OBJECTID"
+			? item.type === "esriFieldTypeOID"
+			: ["esriFieldTypeString", "esriFieldTypeSmallInteger", "esriFieldTypeInteger"].includes(item.type ?? ""))).length === 1, "reviewed aggregate fields");
+	}
 }
 export function johnsonQueryUrl(table: string, ids: boolean) {
 	layerUrl(table);
-	const query = new URLSearchParams({ f: "pjson", where: "1=1", ...(ids ? { returnIdsOnly: "true" } : { outFields: johnsonBallotFields.join(","), returnGeometry: "false", orderByFields: "OBJECTID", resultOffset: "0", resultRecordCount: "500" }) });
+	const query = new URLSearchParams({
+		f: "pjson",
+		where: "1=1",
+		...(ids
+			? { returnIdsOnly: "true" }
+			: {
+					outFields: johnsonBallotFields.join(","),
+					returnGeometry: "false",
+					orderByFields: "OBJECTID",
+					resultOffset: "0",
+					resultRecordCount: "500"
+				})
+	});
 	return `${table}/query?${query}`;
 }
 export function johnsonSampleInventory(source: StateBallotSource, idsBody: string, recordsBody: string) {
@@ -93,7 +125,9 @@ export function johnsonSampleInventory(source: StateBallotSource, idsBody: strin
 		johnsonSampleStyle(url, source.electionDate);
 		return [url];
 	}));
-	const urls = [...new Set<string>(offered)].sort((first, second) => first.localeCompare(second, "en-US", { numeric: true }));
+	const urls = [
+		...new Set<string>(offered)
+	].sort((first, second) => first.localeCompare(second, "en-US", { numeric: true }));
 	requireValue(urls.length <= 500 && new Set(urls.map(url => johnsonSampleStyle(url, source.electionDate))).size === urls.length, "unique complete printed-style destinations");
 	return { attributes: attributes as Attributes[], urls };
 }

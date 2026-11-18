@@ -33,7 +33,10 @@ export function reconcileStateMeasureQuestions(native: StateBallotSnapshot, cove
 				seenMeasures.add(measure.slug);
 				const candidates = questions.filter(question => clean(question.officialText) === clean(measure.ballotSummary));
 				if (candidates.length !== 1) {
-					findings.push({ code: candidates.length ? "ambiguous-question-wording" : "unmatched-measure-wording", measureSlug: measure.slug });
+					findings.push({
+						code: candidates.length ? "ambiguous-question-wording" : "unmatched-measure-wording",
+						measureSlug: measure.slug
+					});
 					continue;
 				}
 				const question = candidates[0]!;
@@ -51,12 +54,52 @@ export function reconcileStateMeasureQuestions(native: StateBallotSnapshot, cove
 						findings.push({ code: "root-measure-copy-mismatch", measureSlug: measure.slug, questionId: question.id });
 				}
 				const publishedArea = publishedBallotQuestionArea(native.source, question);
-				matches.push({ questionId: question.id, questionTitle: question.title, measureSlug: measure.slug, electionSlug: election.slug, jurisdictionSlug: jurisdiction.slug, jurisdictionType: jurisdiction.jurisdictionType, jurisdictionName: jurisdiction.name, ...(jurisdiction.countyAreaScope ? { countyAreaScope: structuredClone(jurisdiction.countyAreaScope) } : {}), ...(publishedArea ? { publishedArea } : {}), officialText: question.officialText, normalizedTextSha256: hash(clean(question.officialText)), choices: question.choices, pages: question.pages, sourceUrl, documentSha256: document?.sha256 ?? null, originalCapturedAt: document?.retrievedAt ?? null, voterApplicabilityVerified: false });
+				matches.push({
+					questionId: question.id,
+					questionTitle: question.title,
+					measureSlug: measure.slug,
+					electionSlug: election.slug,
+					jurisdictionSlug: jurisdiction.slug,
+					jurisdictionType: jurisdiction.jurisdictionType,
+					jurisdictionName: jurisdiction.name,
+					...(jurisdiction.countyAreaScope
+						? {
+								countyAreaScope: structuredClone(jurisdiction.countyAreaScope)
+							}
+						: {}),
+					...(publishedArea
+						? { publishedArea }
+						: {}),
+					officialText: question.officialText,
+					normalizedTextSha256: hash(clean(question.officialText)),
+					choices: question.choices,
+					pages: question.pages,
+					sourceUrl,
+					documentSha256: document?.sha256 ?? null,
+					originalCapturedAt: document?.retrievedAt ?? null,
+					voterApplicabilityVerified: false
+				});
 			}
 		}
 	}
 	for (const question of questions) {
 		if (!matchedQuestions.has(question.id)) findings.push({ code: "unmatched-native-question", questionId: question.id });
 	}
-	return { schemaVersion: 1, type: "state-measure-question-reconciliation", stateCode: native.source.stateCode, sourceId: native.source.id, electionDate: native.source.electionDate, nativeQuestionCount: questions.length, selectedMeasureCount: seenMeasures.size, matchedQuestionCount: matchedQuestions.size, wordingReconciled: findings.length === 0, matches, findings, scopeVerificationComplete: false, publicationApproved: false, automaticImportApproved: false, voterApplicabilityVerified: false };
+	return {
+		schemaVersion: 1,
+		type: "state-measure-question-reconciliation",
+		stateCode: native.source.stateCode,
+		sourceId: native.source.id,
+		electionDate: native.source.electionDate,
+		nativeQuestionCount: questions.length,
+		selectedMeasureCount: seenMeasures.size,
+		matchedQuestionCount: matchedQuestions.size,
+		wordingReconciled: findings.length === 0,
+		matches,
+		findings,
+		scopeVerificationComplete: false,
+		publicationApproved: false,
+		automaticImportApproved: false,
+		voterApplicabilityVerified: false
+	};
 }

@@ -16,7 +16,14 @@ test("participation has three distinct, reachable routes and rejects unknown act
 			assert.ok(section.links.length <= 3);
 		}
 	}
-	for (const input of [undefined, ["run"], "constructor", "__proto__", "other", "<script>"])
+	for (const input of [
+		undefined,
+		["run"],
+		"constructor",
+		"__proto__",
+		"other",
+		"<script>"
+	])
 		assert.equal(findParticipationGuide(input), undefined);
 });
 
@@ -72,6 +79,9 @@ test("participation uses detail destinations without dropdowns, party selection,
 	const sitemap = readFileSync(new URL("../server/routes/sitemap.xml.ts", import.meta.url), "utf8");
 	assert.match(home, /to="\/get-involved"/u);
 	assert.match(footer, /label: "Get involved", to: "\/get-involved"/u);
-	for (const slug of ["", ...participationGuides.map(guide => `/${guide.slug}`)])
+	for (const slug of [
+		"",
+		...participationGuides.map(guide => `/${guide.slug}`)
+	])
 		assert.ok(sitemap.includes(`"/get-involved${slug}"`));
 });

@@ -18,9 +18,16 @@ export function readHamiltonSnapshotMetadata(source: StateBallotSource, data: Re
 		if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).sort().join(",") !== "audience,choices,explicitlyAdvisory,id,officialText,pages,title,voterApplicabilityVerified")
 			throw new Error("The stored Hamilton County question fields require review.");
 		const question = value as StateBallotQuestion;
-		for (const [field, maximum] of [["audience", 300], ["title", 350], ["officialText", 5000]] as const) {
-			if (typeof question[field] !== "string" || !question[field].trim() || question[field].length > maximum || containsControlCharacters(field === "officialText" ? question[field].replace(/\n\n/gu, "") : question[field]))
+		for (const [field, maximum] of [
+			["audience", 300],
+			["title", 350],
+			["officialText", 5000]
+		] as const) {
+			if (typeof question[field] !== "string" || !question[field].trim() || question[field].length > maximum || containsControlCharacters(field === "officialText"
+				? question[field].replace(/\n\n/gu, "")
+				: question[field])) {
 				throw new Error("The stored Hamilton County wording requires review.");
+			}
 		}
 		if (question.audience !== "Tennessee" && !/^(?:City|Town) of [\p{L} .'-]+$/u.test(question.audience))
 			throw new Error("The stored Hamilton County question jurisdiction requires review.");

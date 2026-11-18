@@ -48,29 +48,61 @@ test("parish municipal heading conflicts retain source text in an explicit held 
 });
 
 test("parish questions hold conflicting dates, parishes and incomplete page inventories", () => {
-	for (const native of [raw.replace("December 14", "November 5"), raw.replace("WEST CARROLL", "CADDO"), `${raw}${header}\f`]) assert.throws(() => read(native));
-	for (const visible of [xml.replace("number=\"1\"", "number=\"2\""), xml.replace("producer=\"poppler\"", "producer=\"other\""), xml.replace("</page>", `</page><page number="2">${block}</page>`), "a".repeat(4 * 1024 * 1024 + 1)]) assert.throws(() => read(raw, visible));
+	for (const native of [
+		raw.replace("December 14", "November 5"),
+		raw.replace("WEST CARROLL", "CADDO"),
+		`${raw}${header}\f`
+	]) assert.throws(() => read(native));
+	for (const visible of [
+		xml.replace("number=\"1\"", "number=\"2\""),
+		xml.replace("producer=\"poppler\"", "producer=\"other\""),
+		xml.replace("</page>", `</page><page number="2">${block}</page>`),
+		"a".repeat(4 * 1024 * 1024 + 1)
+	]) assert.throws(() => read(raw, visible));
 	assert.throws(() => readParishQuestionReferences(raw.repeat(21), `<pdf2xml producer="poppler">${Array.from({ length: 21 }, (unused, index) => `<page number="${index + 1}">${fonts}${block}</page>`).join("")}</pdf2xml>`, "West Carroll", "2030-12-14"));
 });
 
 test("parish questions bind the printed election-day date rather than a matching date elsewhere", () => {
-	for (const visible of [xml.replace("December 14, 2030", "November 5, 2030"), xml.replace("top=\"401\"", "top=\"701\""), xml.replace(electionDay, electionDay + electionDay), xml.replace(electionDay, "")]) assert.throws(() => read(raw, visible), /election-day date/u);
+	for (const visible of [
+		xml.replace("December 14, 2030", "November 5, 2030"),
+		xml.replace("top=\"401\"", "top=\"701\""),
+		xml.replace(electionDay, electionDay + electionDay),
+		xml.replace(electionDay, "")
+	]) assert.throws(() => read(raw, visible), /election-day date/u);
 	assert.equal(readParishQuestionReferences(raw.replaceAll("2030", "2034"), xml.replaceAll("2030", "2034"), "West Carroll", "2034-12-14").length, 1);
 });
 
 test("parish questions reject style drift, unknown fonts and duplicate font identities", () => {
-	for (const visible of [xml.replace("#4a95d7", "#ff0000"), xml.replace("size=\"15\"", "size=\"16\""), xml.replace("font=\"2\"", "font=\"9\""), xml.replace("</page>", "<fontspec id=\"1\" family=\"Other\" size=\"18\" color=\"#4a95d7\"/></page>"), xml.replace(text, `${text}\uFFFD`)]) assert.throws(() => read(raw, visible));
+	for (const visible of [
+		xml.replace("#4a95d7", "#ff0000"),
+		xml.replace("size=\"15\"", "size=\"16\""),
+		xml.replace("font=\"2\"", "font=\"9\""),
+		xml.replace("</page>", "<fontspec id=\"1\" family=\"Other\" size=\"18\" color=\"#4a95d7\"/></page>"),
+		xml.replace(text, `${text}\uFFFD`)
+	]) assert.throws(() => read(raw, visible));
 	assert.ok(Buffer.byteLength(xml) < 4 * 1024 * 1024);
 });
 
 test("parish question cross-check rejects omissions, additions and partial wording", () => {
-	for (const visible of [xml.replace(block, ""), xml.replace("$75", "$70"), xml.replace(title, "Different Proposition"), xml.replace("ten years?", "ten years"), xml.replace("Shall ", "Whether "), xml.replace(block, block + block)]) assert.throws(() => read(raw, visible));
+	for (const visible of [
+		xml.replace(block, ""),
+		xml.replace("$75", "$70"),
+		xml.replace(title, "Different Proposition"),
+		xml.replace("ten years?", "ten years"),
+		xml.replace("Shall ", "Whether "),
+		xml.replace(block, block + block)
+	]) assert.throws(() => read(raw, visible));
 	assert.throws(() => read(raw.replace("$75", "$70")));
 	assert.throws(() => read(`${raw.trim()}\n${title}\n${text}\n■Yes ■No`));
 });
 
 test("parish question choices preserve binary order and reject missing or additional labels", () => {
-	for (const visible of [xml.replace(">Yes<", ">No<").replace(">No</text></page>", ">Yes</text></page>"), xml.replace(">No<", ">Maybe<"), xml.replace("<text font=\"4\">No</text>", ""), xml.replace("</page>", "<text font=\"4\">Yes</text></page>")]) assert.throws(() => read(raw, visible));
+	for (const visible of [
+		xml.replace(">Yes<", ">No<").replace(">No</text></page>", ">Yes</text></page>"),
+		xml.replace(">No<", ">Maybe<"),
+		xml.replace("<text font=\"4\">No</text>", ""),
+		xml.replace("</page>", "<text font=\"4\">Yes</text></page>")
+	]) assert.throws(() => read(raw, visible));
 });
 
 test("candidate-only guides return an empty question inventory without generating placeholders", () => {

@@ -77,20 +77,26 @@ function buildNationwideSources(
 
 	if (districtMatch) {
 		sources.push(toProviderSource({
-			authority: districtMatch.sourceSystem.toLowerCase().includes("census") ? "official-government" : "open-data",
+			authority: districtMatch.sourceSystem.toLowerCase().includes("census")
+				? "official-government"
+				: "open-data",
 			date: updatedAt,
 			id: `district:${district.slug}:match`,
 			note: "District match attached from current area results.",
 			publisher: districtMatch.sourceSystem,
 			sourceSystem: districtMatch.sourceSystem,
 			title: `${district.title} district match`,
-			url: districtMatch.sourceSystem.toLowerCase().includes("census") ? censusGeocoderDocsUrl : openStatesUrl
+			url: districtMatch.sourceSystem.toLowerCase().includes("census")
+				? censusGeocoderDocsUrl
+				: openStatesUrl
 		}));
 	}
 
 	for (const representative of representativeMatches) {
 		sources.push(toProviderSource({
-			authority: representative.sourceSystem.toLowerCase().includes("open states") ? "nonprofit-provider" : "open-data",
+			authority: representative.sourceSystem.toLowerCase().includes("open states")
+				? "nonprofit-provider"
+				: "open-data",
 			date: updatedAt,
 			id: `representative:${representative.id}`,
 			note: "Representative record linked to this district from current area results.",
@@ -135,7 +141,11 @@ export function buildGuideDistrictPageRecord(data: DistrictRecordResponse): Dist
 		mode: "guide",
 		officialResources: [],
 		representativeAvailabilityNote: data.representatives.length
-			? `${data.representatives.length} current officeholder${data.representatives.length === 1 ? "" : "s"} ${data.representatives.length === 1 ? "is" : "are"} attached to this published district page.`
+			? `${data.representatives.length} current officeholder${data.representatives.length === 1
+				? ""
+				: "s"} ${data.representatives.length === 1
+				? "is"
+				: "are"} attached to this published district page.`
 			: "This published district page does not currently have an incumbent officeholder card attached."
 	};
 }

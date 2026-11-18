@@ -31,7 +31,12 @@ test("the additive Washington collection pins observed races without changing pr
 		const url = new URL(document.url);
 		assert.equal(url.origin, "https://voter.votewa.gov");
 		assert.equal(url.pathname, "/elections/candidate.ashx");
-		assert.deepEqual([...url.searchParams].filter(([key]) => key !== "r"), [["e", "899"], ["b", "0"], ["la", "en"], ["c", ""]]);
+		assert.deepEqual([...url.searchParams].filter(([key]) => key !== "r"), [
+			["e", "899"],
+			["b", "0"],
+			["la", "en"],
+			["c", ""]
+		]);
 		assert.equal(document.kind, "candidate-statement");
 		assert.equal(document.publishedDate, undefined);
 		return url.searchParams.get("r");
@@ -44,32 +49,136 @@ test("the additive Washington collection pins observed races without changing pr
 });
 
 function fixture() {
-	const candidates: StateBallotSnapshot = { source: candidateSource, retrievedAt: capturedAt, sha256: hash("candidate roster"), records: source.documents.map((document, index) => ({ id: hash(`candidate-${index}`).slice(0, 24), sourceCandidateId: `${new URL(document.url).searchParams.get("r")}/${100 + index}`, name: `Example Candidate ${index}`, office: `State Representative Pos. ${index + 1}`, scope: "state-house", district: "1", sourceDistrictLabel: "Legislative District 1", status: "filed" })) };
+	const candidates: StateBallotSnapshot = {
+		source: candidateSource,
+		retrievedAt: capturedAt,
+		sha256: hash("candidate roster"),
+		records: source.documents.map((document, index) => ({
+			id: hash(`candidate-${index}`).slice(0, 24),
+			sourceCandidateId: `${new URL(document.url).searchParams.get("r")}/${100 + index}`,
+			name: `Example Candidate ${index}`,
+			office: `State Representative Pos. ${index + 1}`,
+			scope: "state-house",
+			district: "1",
+			sourceDistrictLabel: "Legislative District 1",
+			status: "filed"
+		}))
+	};
 	const documents = source.documents.map((document, index) => {
 		const url = new URL(document.url);
-		const body = JSON.stringify([{ statement: { BallotID: 100 + index, ElectionID: url.searchParams.get("e"), RaceID: url.searchParams.get("r"), BallotName: candidates.records[index]!.name, RaceName: candidates.records[index]!.office, RaceJurisdictionName: "LEGISLATIVE DISTRICT 1", CountyCode: "", Statement: statementHtml, Photo: "excluded-image-bytes", Email: "excluded-contact@example.invalid", IsApprovedForPost: false } }]);
-		return { url: document.url, body, sha256: hash(body), capturedAt };
+		const body = JSON.stringify([
+			{
+				statement: {
+					BallotID: 100 + index,
+					ElectionID: url.searchParams.get("e"),
+					RaceID: url.searchParams.get("r"),
+					BallotName: candidates.records[index]!.name,
+					RaceName: candidates.records[index]!.office,
+					RaceJurisdictionName: "LEGISLATIVE DISTRICT 1",
+					CountyCode: "",
+					Statement: statementHtml,
+					Photo: "excluded-image-bytes",
+					Email: "excluded-contact@example.invalid",
+					IsApprovedForPost: false
+				}
+			}
+		]);
+		return {
+			url: document.url,
+			body,
+			sha256: hash(body),
+			capturedAt
+		};
 	});
-	const facts: ReviewedWashingtonFact[] = candidates.records.map(candidate => ({ sourceCandidateId: candidate.sourceCandidateId!, statementSha256: hash(statementHtml), field: "Education", evidence: "Studied history at Example College.", text: "Studied history at Example College; no degree is specified." }));
-	return { source, candidates, previous: [] as ElectionReferenceSnapshot[], documents, facts };
+	const facts: ReviewedWashingtonFact[] = candidates.records.map(candidate => ({
+		sourceCandidateId: candidate.sourceCandidateId!,
+		statementSha256: hash(statementHtml),
+		field: "Education",
+		evidence: "Studied history at Example College.",
+		text: "Studied history at Example College; no degree is specified."
+	}));
+	return {
+		source,
+		candidates,
+		previous: [] as ElectionReferenceSnapshot[],
+		documents,
+		facts
+	};
 }
 
 function localFixture() {
 	const source = electionReferenceSources.find(item => item.id === "wa-stevens-statements-2026")!;
-	const candidates: StateBallotSnapshot = { source: candidateSource, retrievedAt: capturedAt, sha256: hash("local candidate roster"), records: source.documents.map((document, index) => ({ id: hash(`local-candidate-${index}`).slice(0, 24), sourceCandidateId: `${new URL(document.url).searchParams.get("r")}/${100 + index}`, name: `Local Candidate ${index}`, office: ["Assessor", "Auditor", "Clerk", "Commissioner #2"][index]!, scope: "local", district: "", jurisdiction: "County", sourceDistrictLabel: "County", status: "filed" })) };
+	const candidates: StateBallotSnapshot = {
+		source: candidateSource,
+		retrievedAt: capturedAt,
+		sha256: hash("local candidate roster"),
+		records: source.documents.map((document, index) => ({
+			id: hash(`local-candidate-${index}`).slice(0, 24),
+			sourceCandidateId: `${new URL(document.url).searchParams.get("r")}/${100 + index}`,
+			name: `Local Candidate ${index}`,
+			office: [
+				"Assessor",
+				"Auditor",
+				"Clerk",
+				"Commissioner #2"
+			][index]!,
+			scope: "local",
+			district: "",
+			jurisdiction: "County",
+			sourceDistrictLabel: "County",
+			status: "filed"
+		}))
+	};
 	const documents = source.documents.map((document, index) => {
 		const url = new URL(document.url);
-		const body = JSON.stringify([{ statement: { BallotID: 100 + index, ElectionID: url.searchParams.get("e"), RaceID: url.searchParams.get("r"), BallotName: candidates.records[index]!.name, RaceName: candidates.records[index]!.office, RaceJurisdictionName: "Countywide", RaceJurisdictionTypeID: "CTY", CountyCode: "", CountyDisplay: "Stevens", Statement: statementHtml } }]);
-		return { url: document.url, body, sha256: hash(body), capturedAt };
+		const body = JSON.stringify([
+			{
+				statement: {
+					BallotID: 100 + index,
+					ElectionID: url.searchParams.get("e"),
+					RaceID: url.searchParams.get("r"),
+					BallotName: candidates.records[index]!.name,
+					RaceName: candidates.records[index]!.office,
+					RaceJurisdictionName: "Countywide",
+					RaceJurisdictionTypeID: "CTY",
+					CountyCode: "",
+					CountyDisplay: "Stevens",
+					Statement: statementHtml
+				}
+			}
+		]);
+		return {
+			url: document.url,
+			body,
+			sha256: hash(body),
+			capturedAt
+		};
 	});
-	const facts: ReviewedWashingtonFact[] = candidates.records.map(candidate => ({ sourceCandidateId: candidate.sourceCandidateId!, statementSha256: hash(statementHtml), field: "Education", evidence: "Studied history at Example College.", text: "Lists study at Example College." }));
-	return { source, candidates, previous: [] as ElectionReferenceSnapshot[], documents, facts };
+	const facts: ReviewedWashingtonFact[] = candidates.records.map(candidate => ({
+		sourceCandidateId: candidate.sourceCandidateId!,
+		statementSha256: hash(statementHtml),
+		field: "Education",
+		evidence: "Studied history at Example College.",
+		text: "Lists study at Example College."
+	}));
+	return {
+		source,
+		candidates,
+		previous: [] as ElectionReferenceSnapshot[],
+		documents,
+		facts
+	};
 }
 
 test("Stevens statements pin four observed races to an optional, explicit county context", () => {
 	const { source } = localFixture();
 	assert.equal(source.optional, true);
-	assert.deepEqual(source.washingtonLocality, { countyDisplay: "Stevens", rosterJurisdiction: "County", statementJurisdiction: "Countywide", statementJurisdictionType: "CTY" });
+	assert.deepEqual(source.washingtonLocality, {
+		countyDisplay: "Stevens",
+		rosterJurisdiction: "County",
+		statementJurisdiction: "Countywide",
+		statementJurisdictionType: "CTY"
+	});
 	assert.deepEqual(source.documents.map(document => new URL(document.url).searchParams.get("r")), ["186880", "186881", "186882", "186883"]);
 	assert.ok(source.documents.every(document => document.kind === "candidate-statement" && document.title.startsWith("Stevens County · ") && document.pageUrl?.startsWith("https://voter.votewa.gov/genericvoterguide.aspx?e=899&c=#/candidates/")));
 	assert.equal(electionReferenceSources.find(reference => reference.id === source.id), source);
@@ -89,10 +198,22 @@ test("local profiles preserve exact official IDs and both published labels witho
 		assert.equal(record.scope, "local");
 		assert.equal(record.jurisdiction, "Stevens County");
 		assert.equal(record.office, original.office);
-		assert.deepEqual(result.identities[index], { sourceCandidateId: original.sourceCandidateId, officialRecordId: original.id, statementSha256: hash(statementHtml), reviewedFacts: 1, countyDisplay: "Stevens", officialJurisdiction: "County", publishedRaceJurisdictionName: "Countywide", publishedRaceJurisdictionTypeId: "CTY" });
+		assert.deepEqual(result.identities[index], {
+			sourceCandidateId: original.sourceCandidateId,
+			officialRecordId: original.id,
+			statementSha256: hash(statementHtml),
+			reviewedFacts: 1,
+			countyDisplay: "Stevens",
+			officialJurisdiction: "County",
+			publishedRaceJurisdictionName: "Countywide",
+			publishedRaceJurisdictionTypeId: "CTY"
+		});
 		assert.ok(!("district" in record) && !("countyFips" in record));
 	}
-	assert.throws(() => prepareWashingtonStatements({ ...input, previous: [result.snapshot] }), /already present/u);
+	assert.throws(() => prepareWashingtonStatements({
+		...input,
+		previous: [result.snapshot]
+	}), /already present/u);
 });
 
 test("local county binding rejects namesakes, missing county fields and conflicting jurisdiction labels", () => {
@@ -127,8 +248,18 @@ test("local preparation never treats County and Countywide as a global equivalen
 		(input: ReturnType<typeof localFixture>) => { input.source = { ...input.source, washingtonLocality: undefined }; },
 		(input: ReturnType<typeof localFixture>) => { input.candidates.records[0]!.sourceDistrictLabel = "Countywide"; },
 		(input: ReturnType<typeof localFixture>) => { input.candidates.records[0]!.scope = "statewide"; },
-		(input: ReturnType<typeof localFixture>) => { input.source = { ...input.source, washingtonLocality: { ...input.source.washingtonLocality!, countyDisplay: "" } }; },
-		(input: ReturnType<typeof localFixture>) => { input.source = { ...input.source, washingtonLocality: { ...input.source.washingtonLocality!, countyDisplay: " Stevens" } }; },
+		(input: ReturnType<typeof localFixture>) => {
+			input.source = {
+				...input.source,
+				washingtonLocality: { ...input.source.washingtonLocality!, countyDisplay: "" }
+			};
+		},
+		(input: ReturnType<typeof localFixture>) => {
+			input.source = {
+				...input.source,
+				washingtonLocality: { ...input.source.washingtonLocality!, countyDisplay: " Stevens" }
+			};
+		},
 	]) {
 		const input = localFixture();
 		update(input);
@@ -153,7 +284,9 @@ test("local profiles still require reviewed facts and exact official person and 
 	held.facts.shift();
 	const result = prepareWashingtonStatements(held);
 	assert.equal(result.snapshot.recordCount, 3);
-	assert.deepEqual(result.holds, [{ sourceCandidateId: held.candidates.records[0]!.sourceCandidateId, reason: "No factual paraphrases were explicitly reviewed." }]);
+	assert.deepEqual(result.holds, [
+		{ sourceCandidateId: held.candidates.records[0]!.sourceCandidateId, reason: "No factual paraphrases were explicitly reviewed." }
+	]);
 	assert.equal(result.snapshot.documents[0]!.includedRecordCount, 0);
 	for (const update of [
 		(input: ReturnType<typeof localFixture>) => { input.candidates.records[0]!.name = "Namesake from another county"; },
@@ -169,7 +302,12 @@ test("local profiles still require reviewed facts and exact official person and 
 
 test("local snapshot import rejects another county or nonlocal scope", () => {
 	const input = localFixture();
-	for (const jurisdiction of ["County", "Countywide", "Wahkiakum County", undefined]) {
+	for (const jurisdiction of [
+		"County",
+		"Countywide",
+		"Wahkiakum County",
+		undefined
+	]) {
 		const { snapshot } = prepareWashingtonStatements(input);
 		snapshot.records[0]!.jurisdiction = jurisdiction;
 		assert.throws(() => parseElectionReferenceSnapshot(input.source, JSON.stringify(snapshot)), /county context/u);
@@ -217,7 +355,12 @@ test("Washington preparation holds unreviewed candidates rather than inventing f
 
 test("statewide court profiles retain their office without repeating it as a jurisdiction", () => {
 	const input = fixture();
-	input.candidates.records[0] = { ...input.candidates.records[0]!, scope: "statewide", office: "Supreme Court - Justice Position #01", sourceDistrictLabel: "Supreme Court" };
+	input.candidates.records[0] = {
+		...input.candidates.records[0]!,
+		scope: "statewide",
+		office: "Supreme Court - Justice Position #01",
+		sourceDistrictLabel: "Supreme Court"
+	};
 	const entries = JSON.parse(input.documents[0]!.body);
 	entries[0].statement.RaceName = "Justice Position #01";
 	entries[0].statement.RaceJurisdictionName = "Supreme Court";
@@ -227,7 +370,10 @@ test("statewide court profiles retain their office without repeating it as a jur
 	assert.equal(result.snapshot.records[0]!.office, "Supreme Court - Justice Position #01");
 	assert.equal(result.snapshot.records[0]!.jurisdiction, undefined);
 	assert.equal(result.snapshot.records[1]!.jurisdiction, "Legislative District 1");
-	assert.throws(() => prepareWashingtonStatements({ ...input, previous: [result.snapshot] }), /already present/u);
+	assert.throws(() => prepareWashingtonStatements({
+		...input,
+		previous: [result.snapshot]
+	}), /already present/u);
 });
 
 test("Washington factual review rejects drift, unmatched evidence, duplicate facts and unknown fields", () => {
@@ -249,7 +395,12 @@ test("Washington preparation rejects altered public identities, private modes an
 	const oversized = fixture();
 	oversized.source = electionReferenceSources.find(item => item.id === "wa-state-statements-2026")!;
 	const largeBody = " ".repeat(2 * 1024 * 1024);
-	oversized.documents = oversized.source.documents.map(document => ({ url: document.url, body: largeBody, sha256: hash("not used"), capturedAt }));
+	oversized.documents = oversized.source.documents.map(document => ({
+		url: document.url,
+		body: largeBody,
+		sha256: hash("not used"),
+		capturedAt
+	}));
 	assert.throws(() => prepareWashingtonStatements(oversized), /combined size limit/u);
 	for (const change of [
 		(statement: Record<string, unknown>) => { statement.BallotName = "A different person"; },
@@ -271,17 +422,28 @@ test("Washington preparation rejects altered public identities, private modes an
 		(input: ReturnType<typeof fixture>) => { input.documents[0]!.capturedAt = "2100-01-01"; },
 		(input: ReturnType<typeof fixture>) => { input.documents.reverse(); },
 		(input: ReturnType<typeof fixture>) => { input.source = { ...source, electionDate: "2028-11-07" }; },
-		(input: ReturnType<typeof fixture>) => { input.candidates.records.push({ ...input.candidates.records[0]!, id: hash("duplicate").slice(0, 24) }); },
+		(input: ReturnType<typeof fixture>) => {
+			input.candidates.records.push({
+				...input.candidates.records[0]!,
+				id: hash("duplicate").slice(0, 24)
+			});
+		},
 		(input: ReturnType<typeof fixture>) => { input.candidates.source = { ...candidateSource, url: "https://voter.votewa.gov/CandidateList.aspx?e=900" }; },
 		(input: ReturnType<typeof fixture>) => {
-			input.source = { ...source, documents: source.documents.map(document => ({ ...document, url: `${document.url}&m=p` })) };
+			input.source = {
+				...source,
+				documents: source.documents.map(document => ({ ...document, url: `${document.url}&m=p` }))
+			};
 			input.documents.forEach((document, index) => {
 				document.url = input.source.documents[index]!.url;
 			});
 		},
 		(input: ReturnType<typeof fixture>) => {
 			const entries = JSON.parse(input.documents[0]!.body);
-			input.documents[0]!.body = JSON.stringify([...entries, ...entries]);
+			input.documents[0]!.body = JSON.stringify([
+				...entries,
+				...entries
+			]);
 			input.documents[0]!.sha256 = hash(input.documents[0]!.body);
 		},
 	]) {
@@ -291,7 +453,10 @@ test("Washington preparation rejects altered public identities, private modes an
 	}
 });
 
-for (const [label, buildFixture] of [["district", fixture], ["county", localFixture]] as const) {
+for (const [label, buildFixture] of [
+	["district", fixture],
+	["county", localFixture]
+] as const) {
 	test(`the local Washington ${label} plan prepares external snapshots without publisher requests or importing data`, async () => {
 		const directory = await mkdtemp(join(tmpdir(), "washington-statement-plan-"));
 		const input = buildFixture();
@@ -305,8 +470,35 @@ for (const [label, buildFixture] of [["district", fixture], ["county", localFixt
 			await writeFile(candidateFile, serializeStoredStateSnapshot(input.candidates));
 			const referenceFiles: string[] = [];
 			for (const configured of electionReferenceSources.slice(0, electionReferenceSources.indexOf(source)).filter(item => item.stateCode === "WA" && item.electionDate === source.electionDate)) {
-				const documents = configured.documents.map((document, index) => ({ url: document.url, capturedAt, sha256: hash(document.url), includedRecordCount: index === 0 ? 1 : 0 }));
-				const snapshot: ElectionReferenceSnapshot = { schemaVersion: 1, type: "election-references", stateCode: "WA", sourceId: configured.id, electionDate: configured.electionDate, retrievedAt: capturedAt, sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), recordCount: 1, documents, records: [{ id: hash(configured.id).slice(0, 24), name: "Preceding Example", office: "Other office", scope: "congressional", facts: ["Preceding factual background."], sourceDocumentIndex: 0 }] };
+				const documents = configured.documents.map((document, index) => ({
+					url: document.url,
+					capturedAt,
+					sha256: hash(document.url),
+					includedRecordCount: index === 0
+						? 1
+						: 0
+				}));
+				const snapshot: ElectionReferenceSnapshot = {
+					schemaVersion: 1,
+					type: "election-references",
+					stateCode: "WA",
+					sourceId: configured.id,
+					electionDate: configured.electionDate,
+					retrievedAt: capturedAt,
+					sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+					recordCount: 1,
+					documents,
+					records: [
+						{
+							id: hash(configured.id).slice(0, 24),
+							name: "Preceding Example",
+							office: "Other office",
+							scope: "congressional",
+							facts: ["Preceding factual background."],
+							sourceDocumentIndex: 0
+						}
+					]
+				};
 				const file = join(directory, `${configured.id}.json`);
 				await writeFile(file, JSON.stringify(snapshot));
 				referenceFiles.push(file);
@@ -315,33 +507,77 @@ for (const [label, buildFixture] of [["district", fixture], ["county", localFixt
 			for (const [index, document] of input.documents.entries()) {
 				const path = join(directory, `document-${index}.json`);
 				await writeFile(path, document.body);
-				documents.push({ path, url: document.url, sha256: document.sha256, capturedAt: document.capturedAt });
+				documents.push({
+					path,
+					url: document.url,
+					sha256: document.sha256,
+					capturedAt: document.capturedAt
+				});
 			}
 			const reviewedFactsFile = join(directory, "review.json");
-			const review = { schemaVersion: 1, type: "washington-statement-review", sourceId: source.id, reviewed: true, facts: input.facts };
+			const review = {
+				schemaVersion: 1,
+				type: "washington-statement-review",
+				sourceId: source.id,
+				reviewed: true,
+				facts: input.facts
+			};
 			await writeFile(reviewedFactsFile, JSON.stringify(review));
 			const outputDirectory = join(directory, "output");
-			const plan = { schemaVersion: 1, type: "washington-statement-preparation", sourceId: source.id, candidateFile, referenceFiles, documents, reviewedFactsFile, outputDirectory };
+			const plan = {
+				schemaVersion: 1,
+				type: "washington-statement-preparation",
+				sourceId: source.id,
+				candidateFile,
+				referenceFiles,
+				documents,
+				reviewedFactsFile,
+				outputDirectory
+			};
 			const path = join(directory, "plan.json");
 			await writeFile(path, JSON.stringify(plan));
 			const result = await prepareWashingtonStatementFiles(path);
-			assert.deepEqual({ profiles: result.profiles, facts: result.facts, imported: result.imported, publisherRequests: result.publisherRequests }, { profiles: input.facts.length, facts: input.facts.length, imported: false, publisherRequests: 0 });
+			assert.deepEqual({
+				profiles: result.profiles,
+				facts: result.facts,
+				imported: result.imported,
+				publisherRequests: result.publisherRequests
+			}, {
+				profiles: input.facts.length,
+				facts: input.facts.length,
+				imported: false,
+				publisherRequests: 0
+			});
 			const output = await readFile(join(outputDirectory, `election-references-${source.id}.json`), "utf8");
 			assert.equal(parseElectionReferenceSnapshot(source, output).recordCount, input.facts.length);
 			assert.doesNotMatch(output, /excluded-image|excluded-contact|Vote for/u);
 			assert.equal((await readdir(directory)).some(file => file.startsWith("references-")), false);
 			await assert.rejects(prepareWashingtonStatementFiles(path), /EEXIST/u);
-			await writeFile(path, JSON.stringify({ ...plan, referenceFiles: [], outputDirectory: join(directory, "missing-prior") }));
+			await writeFile(path, JSON.stringify({
+				...plan,
+				referenceFiles: [],
+				outputDirectory: join(directory, "missing-prior")
+			}));
 			await assert.rejects(prepareWashingtonStatementFiles(path), /preceding Washington/u);
-			await writeFile(path, JSON.stringify({ ...plan, outputDirectory: join(directory, "unreviewed") }));
+			await writeFile(path, JSON.stringify({
+				...plan,
+				outputDirectory: join(directory, "unreviewed")
+			}));
 			await writeFile(reviewedFactsFile, JSON.stringify({ ...review, reviewed: false }));
 			await assert.rejects(prepareWashingtonStatementFiles(path), /explicitly reviewed/u);
 			await writeFile(reviewedFactsFile, JSON.stringify(review));
 			const linked = join(directory, "linked.json");
 			await symlink(candidateFile, linked);
-			await writeFile(path, JSON.stringify({ ...plan, candidateFile: linked, outputDirectory: join(directory, "linked-output") }));
+			await writeFile(path, JSON.stringify({
+				...plan,
+				candidateFile: linked,
+				outputDirectory: join(directory, "linked-output")
+			}));
 			await assert.rejects(prepareWashingtonStatementFiles(path), /ELOOP/u);
-			await writeFile(path, JSON.stringify({ ...plan, outputDirectory: fileURLToPath(new URL("../data/state-ballots/preparation", import.meta.url)) }));
+			await writeFile(path, JSON.stringify({
+				...plan,
+				outputDirectory: fileURLToPath(new URL("../data/state-ballots/preparation", import.meta.url))
+			}));
 			await assert.rejects(prepareWashingtonStatementFiles(path), /outside/u);
 		}
 		finally {

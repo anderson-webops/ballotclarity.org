@@ -27,8 +27,11 @@ export function buildPublishedGuideDestination(response: Omit<LookupResolution, 
 	if (!hasPublishedGuideResult(response) || !response.electionSlug)
 		return null;
 
-	if (hasVerifiedGuideResult(response))
-		return response.location ? `/ballot/${response.electionSlug}?location=${response.location.slug}` : `/ballot/${response.electionSlug}`;
+	if (hasVerifiedGuideResult(response)) {
+		return response.location
+			? `/ballot/${response.electionSlug}?location=${response.location.slug}`
+			: `/ballot/${response.electionSlug}`;
+	}
 
 	return `/elections/${response.electionSlug}`;
 }
@@ -58,10 +61,14 @@ export function buildLookupActionDestination(action: LocationLookupAction, respo
 		return null;
 
 	const matchesSelectedGuide = action.electionSlug === response.electionSlug && action.location.slug === response.location?.slug;
-	const guideContent = action.guideContent !== undefined ? action.guideContent : matchesSelectedGuide ? response.guideContent : null;
+	const guideContent = action.guideContent !== undefined
+		? action.guideContent
+		: matchesSelectedGuide ? response.guideContent : null;
 	return buildPublishedGuideDestination({
 		electionSlug: action.electionSlug,
-		guideAvailability: action.guideContent !== undefined ? guideContent?.publishedGuideShell ? "published" : "not-published" : matchesSelectedGuide ? response.guideAvailability : "not-published",
+		guideAvailability: action.guideContent !== undefined
+			? guideContent?.publishedGuideShell ? "published" : "not-published"
+			: matchesSelectedGuide ? response.guideAvailability : "not-published",
 		guideContent,
 		location: action.location
 	});

@@ -29,7 +29,13 @@ const electionClock = useElectionClock();
 const { data: sourceDirectory } = await useStateRecordStates();
 const sourceDates = computed(() => sourceDirectory.value?.states?.find(state => state.stateCode === props.lookup.location?.state || state.stateName === props.lookup.location?.state)?.sources?.map(source => source.electionDate) ?? []);
 const electionView = computed(() => buildElectionView(props.lookup, new Date(electionClock.value), sourceDates.value));
-const displayedLookup = computed(() => ({ ...props.lookup, ballotContentPreviews: electionView.value.previews, guideContent: electionHasPassed(props.lookup.election?.date, new Date(electionClock.value)) ? null : props.lookup.guideContent }));
+const displayedLookup = computed(() => ({
+	...props.lookup,
+	ballotContentPreviews: electionView.value.previews,
+	guideContent: electionHasPassed(props.lookup.election?.date, new Date(electionClock.value))
+		? null
+		: props.lookup.guideContent
+}));
 const NuxtLinkComponent = resolveComponent("NuxtLink");
 
 const lookupResolution = computed(() => ({
@@ -44,10 +50,16 @@ const lookupPresentation = computed(() => buildLookupPresentation(lookupResoluti
 const visibleLookupActions = computed(() => filterLookupActionsForPresentation(props.lookup.actions, lookupResolution.value));
 const guideLinks = computed(() => visibleLookupActions.value.flatMap((action) => {
 	const href = buildLookupActionDestination(action, lookupResolution.value);
-	return href ? [{ action, href }] : [];
+	return href
+		? [
+				{ action, href }
+			]
+		: [];
 }));
 const officialLookupActions = computed(() => visibleLookupActions.value.filter(action => action.kind === "official-verification"));
-const selectedGuideHref = computed(() => props.lookup.result === "resolved" && !props.lookup.selectionOptions.length ? buildPublishedGuideDestination(lookupResolution.value) : null);
+const selectedGuideHref = computed(() => props.lookup.result === "resolved" && !props.lookup.selectionOptions.length
+	? buildPublishedGuideDestination(lookupResolution.value)
+	: null);
 const representativeCards = computed(() => electionView.value.betweenElections && civicLookupNeedsRefresh(props.lookup, new Date(electionClock.value))
 	? []
 	: buildRepresentativeCards(props.lookup.representativeMatches).map((card, index) => {
@@ -61,10 +73,15 @@ const representativeCards = computed(() => electionView.value.betweenElections &
 				officeTitle: presentation.officeDisplayLabel
 			};
 		}));
-const districtLinks = computed(() => Object.fromEntries(props.lookup.districtMatches.map(match => [match.id, buildDistrictHref(match)])));
+const districtLinks = computed(() => Object.fromEntries(props.lookup.districtMatches.map(match => [
+	match.id,
+	buildDistrictHref(match)
+])));
 const selectionOptions = computed(() => props.lookup.selectionOptions ?? []);
 const hasSelectionOptions = computed(() => selectionOptions.value.length > 0);
-const electionLogistics = computed(() => electionHasPassed(props.lookup.electionLogistics?.electionDay, new Date(electionClock.value)) ? null : props.lookup.electionLogistics);
+const electionLogistics = computed(() => electionHasPassed(props.lookup.electionLogistics?.electionDay, new Date(electionClock.value))
+	? null
+	: props.lookup.electionLogistics);
 const ballotContentPreviews = computed(() => electionView.value.previews);
 const hasBallotContentPreviews = computed(() => ballotContentPreviews.value.length > 0);
 const primaryAvailabilityIds = new Set(["official-logistics", "representatives", "local-guide"]);
@@ -102,7 +119,9 @@ const availabilityItems = computed(() => {
 		},
 		{
 			actionLabel: "See your officials",
-			href: props.lookup.representativeMatches.length ? buildLookupAwareTarget("/representatives") : undefined,
+			href: props.lookup.representativeMatches.length
+				? buildLookupAwareTarget("/representatives")
+				: undefined,
 			id: "representatives",
 			item: props.lookup.availability.representatives,
 			title: "Who represents you",
@@ -116,7 +135,9 @@ const availabilityItems = computed(() => {
 		},
 		{
 			actionLabel: "See funding records",
-			href: props.lookup.representativeMatches.length ? buildLookupAwareTarget("/representatives") : undefined,
+			href: props.lookup.representativeMatches.length
+				? buildLookupAwareTarget("/representatives")
+				: undefined,
 			id: "finance-influence",
 			item: props.lookup.availability.financeInfluence,
 			title: "Money and influence",
@@ -148,7 +169,11 @@ const visibleAvailabilityItems = computed(() => availabilityItems.value.filter((
 }));
 
 function availabilityTone(status: LookupAvailabilityStatus) {
-	return status === "available" ? "accent" : status === "partial" || status === "limited" ? "warning" : "neutral";
+	return status === "available"
+		? "accent"
+		: status === "partial" || status === "limited"
+			? "warning"
+			: "neutral";
 }
 
 function selectLookupOption(option: LocationLookupSelectionOption) {
@@ -160,7 +185,9 @@ function buildLookupAwareTarget(path: string) {
 }
 
 function buildElectionOverviewHref() {
-	return props.lookup.electionSlug ? `/elections/${props.lookup.electionSlug}` : undefined;
+	return props.lookup.electionSlug
+		? `/elections/${props.lookup.electionSlug}`
+		: undefined;
 }
 
 function buildOfficialLogisticsHref() {

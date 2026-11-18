@@ -22,32 +22,43 @@ async function discoveryFixture(date = source.electionDate, publications = true,
 	const calls: { url: string; postBody?: string }[] = [];
 	const sleeps: number[] = [];
 	const year = date.slice(0, 4);
-	const now = () => date === source.electionDate ? douglasFixtureClock : Date.parse(`${year}-10-01T12:00:00.000Z`);
-	const body = await fetchDouglasCandidateDiscovery({ now, sleep: async (value) => {
-		sleeps.push(value);
-	}, requestText: async (url, options) => {
-		assert(options);
-		assert.deepEqual(options.allowedHosts, ["www.votedouglascounty-ne.gov"]);
-		assert.equal(options.maxRedirects, 0);
-		calls.push({ url: String(url), ...(options.postBody ? { postBody: options.postBody } : {}) });
-		if (String(url).endsWith("/robots.txt")) return douglasPolicyFixture.robots!;
-		if (url === `${douglasOrigin}/`) return douglasPolicyFixture.footer!;
-		if (url === douglasPrivacyUrl) return douglasPolicyFixture.privacy! + douglasPolicyFixture.footer!;
-		if (url === douglasCalendarUrl) return douglasCalendarFixture(date, calendar);
-		if (url === douglasDiscoveryUrl) {
-			if (options.postBody) {
-				const submitted = new URLSearchParams(options.postBody);
-				assert.equal(submitted.get("__VIEWSTATE"), "synthetic-state");
-				assert.equal(submitted.get("__EVENTVALIDATION"), "synthetic-validation");
-				assert.equal(submitted.get("ctl00$ContentPlaceHolder1$ddlElections"), `${year}G`);
-				assert.equal(submitted.size, 6);
-				assert(!submitted.has("__EVENTTARGET"));
+	const now = () => date === source.electionDate
+		? douglasFixtureClock
+		: Date.parse(`${year}-10-01T12:00:00.000Z`);
+	const body = await fetchDouglasCandidateDiscovery({
+		now,
+		sleep: async (value) => {
+			sleeps.push(value);
+		},
+		requestText: async (url, options) => {
+			assert(options);
+			assert.deepEqual(options.allowedHosts, ["www.votedouglascounty-ne.gov"]);
+			assert.equal(options.maxRedirects, 0);
+			calls.push({
+				url: String(url),
+				...(options.postBody
+					? { postBody: options.postBody }
+					: {})
+			});
+			if (String(url).endsWith("/robots.txt")) return douglasPolicyFixture.robots!;
+			if (url === `${douglasOrigin}/`) return douglasPolicyFixture.footer!;
+			if (url === douglasPrivacyUrl) return douglasPolicyFixture.privacy! + douglasPolicyFixture.footer!;
+			if (url === douglasCalendarUrl) return douglasCalendarFixture(date, calendar);
+			if (url === douglasDiscoveryUrl) {
+				if (options.postBody) {
+					const submitted = new URLSearchParams(options.postBody);
+					assert.equal(submitted.get("__VIEWSTATE"), "synthetic-state");
+					assert.equal(submitted.get("__EVENTVALIDATION"), "synthetic-validation");
+					assert.equal(submitted.get("ctl00$ContentPlaceHolder1$ddlElections"), `${year}G`);
+					assert.equal(submitted.size, 6);
+					assert(!submitted.has("__EVENTTARGET"));
+				}
+				return douglasFormFixture(year, Boolean(options.postBody), publications);
 			}
-			return douglasFormFixture(year, Boolean(options.postBody), publications);
+			assert.equal(new URL(url).pathname, "/candidates.aspx");
+			return douglasProfileFixture(new URL(url).searchParams.get("cid")!, year);
 		}
-		assert.equal(new URL(url).pathname, "/candidates.aspx");
-		return douglasProfileFixture(new URL(url).searchParams.get("cid")!, year);
-	} });
+	});
 	assert(sleeps.every(value => value === 1000));
 	assert.equal(sleeps.length, calls.length - 1);
 	return { body, calls, now };
@@ -57,7 +68,12 @@ async function parsedFixture(date = source.electionDate) {
 	const configured = douglasSource(date);
 	const capture = await fetchDouglasCandidateCapture(configured, { discovery: fixture.body, now: fixture.now });
 	const parsed = parseDouglasCandidateCapture(configured, capture, fixture.now());
-	return { ...fixture, capture, parsed, snapshot: { source: configured, ...parsed } };
+	return {
+		...fixture,
+		capture,
+		parsed,
+		snapshot: { source: configured, ...parsed }
+	};
 }
 
 test("Douglas uses only actual general controls and unchanged public form fields", async () => {
@@ -101,9 +117,15 @@ test("personal affiliation is not converted to a party nomination in a nonpartis
 test("filing-only sources never become a ballot or an ordinary judicial race", async () => {
 	const { snapshot } = await parsedFixture();
 	assert.equal(buildStateBallotPreview(snapshot, { districtMatches: [] }), null);
-	assert.equal(buildStateBallotPreview({ ...snapshot, source: { ...source, ballotPreview: undefined } }, { districtMatches: [] }), null);
+	assert.equal(buildStateBallotPreview({
+		...snapshot,
+		source: { ...source, ballotPreview: undefined }
+	}, { districtMatches: [] }), null);
 	const future = await parsedFixture("2032-11-02");
-	assert.equal(buildStateBallotPreview({ ...future.snapshot, source: { ...future.snapshot.source, ballotPreview: undefined } }, { districtMatches: [] }), null);
+	assert.equal(buildStateBallotPreview({
+		...future.snapshot,
+		source: { ...future.snapshot.source, ballotPreview: undefined }
+	}, { districtMatches: [] }), null);
 	assert(snapshot.records.some(record => record.office === "Douglas County Court - District 4"));
 	validateDouglasSource(source);
 	assert.throws(() => validateDouglasSource({ ...source, ballotPreview: undefined }), /review/u);
@@ -155,34 +177,55 @@ test("profile name, office, election, filing date and visible affiliation remain
 		douglasProfileFixture("101").replace("<div><span id=\"ContentPlaceHolder1_gvCandidateInfo_lblParty_0\"", "<div style=\"display:none\"><span id=\"ContentPlaceHolder1_gvCandidateInfo_lblParty_0\""),
 		douglasProfileFixture("101").replace("id=\"ContentPlaceHolder1_gvCandidateInfo_lblParty_0\"", "id=\"unknownParty\"")
 	]) assert.throws(() => readDouglasProfile(changed, filing, "2026"), /review/u);
-	for (const value of [`${filing.profileUrl!}&preview=1`, filing.profileUrl!.replace("https:", "http:"), filing.profileUrl!.replace("www.votedouglascounty-ne.gov", "other.example"), filing.profileUrl!.replace("cid=101", "cid=%31101"), filing.profileUrl!.replace("%20General", "+General")]) assert.throws(() => validateDouglasProfileUrl(value, "2026"), /review/u);
+	for (const value of [
+		`${filing.profileUrl!}&preview=1`,
+		filing.profileUrl!.replace("https:", "http:"),
+		filing.profileUrl!.replace("www.votedouglascounty-ne.gov", "other.example"),
+		filing.profileUrl!.replace("cid=101", "cid=%31101"),
+		filing.profileUrl!.replace("%20General", "+General")
+	]) assert.throws(() => validateDouglasProfileUrl(value, "2026"), /review/u);
 });
 test("policy changes, missing profile pages and future clocks hold rather than clear accepted rows", async () => {
 	const fixture = await parsedFixture();
-	for (const mutate of [(value: Record<string, any>) => value.privacy.body += "<a href=\"/terms\">New terms</a>", (value: Record<string, any>) => value.home.body += "<a href=\"/terms\">New terms</a>", (value: Record<string, any>) => value.collections[0].profiles.pop(), (value: Record<string, any>) => value.collections[0].selected.retrievedAt = "2032-01-01T00:00:00.000Z"]) {
+	for (const mutate of [
+		(value: Record<string, any>) => value.privacy.body += "<a href=\"/terms\">New terms</a>",
+		(value: Record<string, any>) => value.home.body += "<a href=\"/terms\">New terms</a>",
+		(value: Record<string, any>) => value.collections[0].profiles.pop(),
+		(value: Record<string, any>) => value.collections[0].selected.retrievedAt = "2032-01-01T00:00:00.000Z"
+	]) {
 		const value = JSON.parse(fixture.body);
 		mutate(value);
 		for (const key of ["privacy", "home"]) value[key].sha256 = hash(value[key].body);
 		assert.throws(() => readDouglasCandidateDiscovery(JSON.stringify(value), fixture.now()), /review/u);
 	}
-	assert.throws(() => parseDouglasCandidateCapture(source, fixture.capture, fixture.now(), [...fixture.parsed.records, { ...fixture.parsed.records[0]!, id: "f".repeat(24) }]), /review/u);
+	assert.throws(() => parseDouglasCandidateCapture(source, fixture.capture, fixture.now(), [
+		...fixture.parsed.records,
+		{
+			...fixture.parsed.records[0]!,
+			id: "f".repeat(24)
+		}
+	]), /review/u);
 	assert.equal(douglasPolicyFingerprint(douglasPolicyFixture.footer!, "links"), douglasLinksSha256);
 	assert.equal(douglasPolicyFingerprint(douglasPolicyFixture.privacy! + douglasPolicyFixture.footer!, "privacy"), douglasPrivacySha256);
 });
 test("changed robots and unavailable public requests stop collection immediately", async () => {
 	for (const status of [403, 429, 503]) {
 		let calls = 0;
-		await assert.rejects(fetchDouglasCandidateDiscovery({ requestText: async () => {
-			calls++;
-			throw new Error(`HTTP ${status}`);
-		} }), new RegExp(String(status), "u"));
+		await assert.rejects(fetchDouglasCandidateDiscovery({
+			requestText: async () => {
+				calls++;
+				throw new Error(`HTTP ${status}`);
+			}
+		}), new RegExp(String(status), "u"));
 		assert.equal(calls, 1);
 	}
 	let calls = 0;
-	await assert.rejects(fetchDouglasCandidateDiscovery({ requestText: async () => {
-		calls++;
-		return "User-agent: *\nDisallow: /\n";
-	} }), /review/u);
+	await assert.rejects(fetchDouglasCandidateDiscovery({
+		requestText: async () => {
+			calls++;
+			return "User-agent: *\nDisallow: /\n";
+		}
+	}), /review/u);
 	assert.equal(calls, 1);
 	assert.throws(() => readDouglasCandidateDiscovery(" ".repeat(20 * 1024 * 1024 + 1)), /review/u);
 	assert.throws(() => readDouglasForm("<div>".repeat(70)), /review/u);
@@ -195,13 +238,28 @@ test("stored filings survive restarts with exact profile provenance and no publi
 		assert.deepEqual(parseBundledStateSnapshot(source, body, "automatic").records, fixture.parsed.records);
 		await createStateBallotStorage(directory).write(fixture.snapshot);
 		let requests = 0;
-		const repository = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: fixture.now, ttlMs: 1, fetchText: async () => {
-			requests++;
-			throw new Error("offline");
-		} });
+		const repository = createStateBallotRepository({
+			sources: [source],
+			dataDirectory: directory,
+			now: fixture.now,
+			ttlMs: 1,
+			fetchText: async () => {
+				requests++;
+				throw new Error("offline");
+			}
+		});
 		assert.deepEqual((await repository.getSnapshot("NE", source.id))!.records, fixture.parsed.records);
 		assert.equal(requests, 0);
-		for (const mutate of [(value: Record<string, any>) => value.records[0].status = "qualified", (value: Record<string, any>) => value.records[0].scope = "local", (value: Record<string, any>) => value.records[0].sourceCandidateId = "999", (value: Record<string, any>) => value.records[0].candidateUrl = "https://other.example/", (value: Record<string, any>) => value.records[6].party = "Republican", (value: Record<string, any>) => value.documents.pop(), (value: Record<string, any>) => value.collectionIndexSha256 = "b".repeat(64), (value: Record<string, any>) => value.sourceAsOfDate = source.electionDate]) {
+		for (const mutate of [
+			(value: Record<string, any>) => value.records[0].status = "qualified",
+			(value: Record<string, any>) => value.records[0].scope = "local",
+			(value: Record<string, any>) => value.records[0].sourceCandidateId = "999",
+			(value: Record<string, any>) => value.records[0].candidateUrl = "https://other.example/",
+			(value: Record<string, any>) => value.records[6].party = "Republican",
+			(value: Record<string, any>) => value.documents.pop(),
+			(value: Record<string, any>) => value.collectionIndexSha256 = "b".repeat(64),
+			(value: Record<string, any>) => value.sourceAsOfDate = source.electionDate
+		]) {
 			const value = JSON.parse(body);
 			mutate(value);
 			assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify(value), "automatic"), /review|metadata/u);
@@ -215,18 +273,30 @@ test("managed imports are idempotent and disappearing accepted publications reta
 	const directory = await mkdtemp(join(tmpdir(), "ballot-douglas-sync-"));
 	try {
 		const fixture = await discoveryFixture();
-		const options = { familyId: source.id, catalogPath: join(directory, "cycles.json"), dataDirectory: join(directory, "data"), now: fixture.now, fetchDiscovery: async () => fixture.body };
+		const options = {
+			familyId: source.id,
+			catalogPath: join(directory, "cycles.json"),
+			dataDirectory: join(directory, "data"),
+			now: fixture.now,
+			fetchDiscovery: async () => fixture.body
+		};
 		const first = await syncStateBallotCycles(options);
 		assert.equal(first.results[0]!.imported, true);
 		assert.equal(first.results[0]!.records, 7);
 		const prior = await readFile(join(directory, "data", `${source.id}.json`), "utf8");
 		const catalog = await readFile(options.catalogPath, "utf8");
-		const repeated = await syncStateBallotCycles({ ...options, fetchCandidates: async () => {
-			throw new Error("Unexpected collection");
-		} });
+		const repeated = await syncStateBallotCycles({
+			...options,
+			fetchCandidates: async () => {
+				throw new Error("Unexpected collection");
+			}
+		});
 		assert.equal(repeated.results[0]!.imported, false);
 		const missing = await discoveryFixture(source.electionDate, true, false);
-		await assert.rejects(syncStateBallotCycles({ ...options, fetchDiscovery: async () => missing.body }), /disappeared|review/u);
+		await assert.rejects(syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => missing.body
+		}), /disappeared|review/u);
 		assert.equal(await readFile(join(directory, "data", `${source.id}.json`), "utf8"), prior);
 		assert.equal(await readFile(options.catalogPath, "utf8"), catalog);
 	}
@@ -239,8 +309,38 @@ test("the county family is independent of the held statewide publisher and valid
 	assert.equal(configuredStateBallotSources.length, 88);
 	assert.equal(configuredStateBallotSources.find(item => item.id === "ne-sos-2026")!.retrievalPolicy, "manual-snapshot");
 	assert.equal(getStateBallotCycleFamily(source.id).prefix, "ne-douglas-general");
-	for (const change of [{ countyName: "Other County" }, { stateCode: "IA" }, { snapshotStorage: undefined }, { retrievalPolicy: "manual-snapshot" }]) assert.throws(() => validateDouglasSource({ ...source, ...change } as StateBallotSource), /review/u);
-	validateDouglasElection({ electionId: null, electionDate: source.electionDate, pageUrl: source.pageUrl, douglasDocuments: [{ url: douglasDiscoveryUrl, sha256: "a".repeat(64) }] });
-	assert.throws(() => validateDouglasElection({ electionId: null, electionDate: source.electionDate, pageUrl: source.pageUrl, douglasDocuments: [{ url: "https://other.example/", sha256: "a".repeat(64) }] }), /review/u);
+	for (const change of [
+		{ countyName: "Other County" },
+		{ stateCode: "IA" },
+		{ snapshotStorage: undefined },
+		{ retrievalPolicy: "manual-snapshot" }
+	]) {
+		assert.throws(() => validateDouglasSource({
+			...source,
+			...change
+		} as StateBallotSource), /review/u);
+	}
+	validateDouglasElection({
+		electionId: null,
+		electionDate: source.electionDate,
+		pageUrl: source.pageUrl,
+		douglasDocuments: [
+			{
+				url: douglasDiscoveryUrl,
+				sha256: "a".repeat(64)
+			}
+		]
+	});
+	assert.throws(() => validateDouglasElection({
+		electionId: null,
+		electionDate: source.electionDate,
+		pageUrl: source.pageUrl,
+		douglasDocuments: [
+			{
+				url: "https://other.example/",
+				sha256: "a".repeat(64)
+			}
+		]
+	}), /review/u);
 	assert.equal(Buffer.byteLength(douglasPolicyFixture.robots!), 407);
 });

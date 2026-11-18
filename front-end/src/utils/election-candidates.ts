@@ -31,17 +31,38 @@ export function electionOfficeLabel(title: string) {
 }
 
 export function groupElectionCandidates(records: PublicStateCandidateRecord[]) {
-	const levels = [{ id: "federal", label: "Federal" }, { id: "state", label: "State" }, { id: "local", label: "Local" }];
+	const levels = [
+		{ id: "federal", label: "Federal" },
+		{ id: "state", label: "State" },
+		{ id: "local", label: "Local" }
+	];
 	return levels.map((level) => {
 		const offices = new Map<string, { id: string; title: string; candidates: PublicStateCandidateRecord[] }>();
 		for (const record of records) {
-			const recordLevel = record.scope === "congressional" || /^(?:United States|U\.S\.|President|Congress)/iu.test(record.office) ? "federal" : record.scope === "local" ? "local" : "state";
+			const recordLevel = record.scope === "congressional" || /^(?:United States|U\.S\.|President|Congress)/iu.test(record.office)
+				? "federal"
+				: record.scope === "local"
+					? "local"
+					: "state";
 			if (recordLevel !== level.id) continue;
-			const id = JSON.stringify([record.office, record.district, record.scope === "local" ? record.jurisdiction : undefined]);
-			const office = offices.get(id) ?? { id, title: record.office + (record.district && !record.office.toLowerCase().includes(record.district.toLowerCase()) ? `, District ${record.district}` : ""), candidates: [] };
+			const id = JSON.stringify([
+				record.office,
+				record.district,
+				record.scope === "local"
+					? record.jurisdiction
+					: undefined
+			]);
+			const office = offices.get(id) ?? { id, title: record.office + (record.district && !record.office.toLowerCase().includes(record.district.toLowerCase())
+				? `, District ${record.district}`
+				: ""), candidates: [] };
 			office.candidates.push(record);
 			offices.set(id, office);
 		}
-		return { ...level, offices: [...offices.values()].map(office => ({ ...office, anchorId: `candidate-office-${office.candidates[0]!.id}` })) };
+		return {
+			...level,
+			offices: [
+				...offices.values()
+			].map(office => ({ ...office, anchorId: `candidate-office-${office.candidates[0]!.id}` }))
+		};
 	}).filter(level => level.offices.length);
 }

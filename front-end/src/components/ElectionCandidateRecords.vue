@@ -15,14 +15,42 @@ watch(() => props.source.sourceId, () => {
 });
 const { data, error, pending, refresh } = await useAsyncData<StateRecordsResponse | null>(
 	() => `election-candidates:${props.source.stateCode}:${props.source.sourceId}:${Boolean(props.source.includeSupplements)}:${offset.value}`,
-	() => loadElectionCandidatePages(pageOffset => api<StateRecordsResponse>(`/state-records/${props.source.stateCode}`, { query: { source: props.source.sourceId, includeSupplements: props.source.includeSupplements ? "true" : undefined, status: "active", limit: 100, offset: pageOffset } }), Boolean(props.source.includeSupplements), offset.value),
-	{ default: () => null, lazy: true }
+	() => loadElectionCandidatePages(pageOffset => api<StateRecordsResponse>(`/state-records/${props.source.stateCode}`, {
+		query: {
+			source: props.source.sourceId,
+			includeSupplements: props.source.includeSupplements ? "true" : undefined,
+			status: "active",
+			limit: 100,
+			offset: pageOffset
+		}
+	}), Boolean(props.source.includeSupplements), offset.value),
+	{
+		default: () => null,
+		lazy: true
+	}
 );
 const groups = computed(() => groupElectionCandidates(data.value?.records ?? []));
-const sourceQuery = computed(() => ({ state: props.source.stateCode, source: props.source.sourceId, ...(props.source.includeSupplements ? { includeSupplements: "true" } : {}) }));
+const sourceQuery = computed(() => ({
+	state: props.source.stateCode,
+	source: props.source.sourceId,
+	...(props.source.includeSupplements
+		? { includeSupplements: "true" }
+		: {})
+}));
 const sampleBallot = computed(() => recordPublications(data.value?.source).find(isSampleBallotDocument));
 const sections = computed(() => data.value?.available && !pending.value && !error.value && groups.value.length
-	? [{ href: "#candidates-heading", label: "Candidates" }, ...groups.value.map(group => ({ href: `#candidate-level-${group.id}`, label: group.label, children: group.offices.map(office => ({ href: `#${office.anchorId}`, label: electionOfficeLabel(office.title), title: office.title })) }))]
+	? [
+			{ href: "#candidates-heading", label: "Candidates" },
+			...groups.value.map(group => ({
+				href: `#candidate-level-${group.id}`,
+				label: group.label,
+				children: group.offices.map(office => ({
+					href: `#${office.anchorId}`,
+					label: electionOfficeLabel(office.title),
+					title: office.title
+				}))
+			}))
+		]
 	: []);
 const mounted = useMounted();
 watch([mounted, sections], ([ready, items]) => {

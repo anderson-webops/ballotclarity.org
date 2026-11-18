@@ -21,7 +21,9 @@ export function safePostgresErrorCode(error: unknown) {
 		? error.code
 		: undefined;
 
-	return typeof code === "string" && sqlStatePattern.test(code) ? code : "UNKNOWN";
+	return typeof code === "string" && sqlStatePattern.test(code)
+		? code
+		: "UNKNOWN";
 }
 
 export function attachPostgresPoolErrorHandler(pool: Pool, component: "address-cache" | "admin") {
@@ -38,7 +40,9 @@ export function resolveBoundedPositiveInteger(
 	fallback: number,
 	maximum: number,
 ) {
-	const parsed = typeof value === "number" ? value : Number(value);
+	const parsed = typeof value === "number"
+		? value
+		: Number(value);
 
 	return Number.isSafeInteger(parsed) && parsed > 0 && parsed <= maximum
 		? parsed

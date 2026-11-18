@@ -127,18 +127,20 @@ export const participationGuides: ParticipationGuide[] = [
 		groups: [
 			{
 				title: "Anywhere in the U.S.",
-				sections: [{
-					id: "public-meetings",
-					title: "Public meetings",
-					summary: "City councils, county commissions, and school boards discuss and decide local issues.",
-					steps: [
-						"Find the body responsible for your issue and open its current meeting notice and agenda.",
-						"Check the venue or online access, accessibility arrangements, and public-comment registration deadline.",
-						"To speak, follow that body’s registration and time limits. Identify the agenda item and the action you want considered.",
-						"Follow the decision through the minutes, recording, and next agenda."
-					],
-					links: [resources.localGovernment]
-				}]
+				sections: [
+					{
+						id: "public-meetings",
+						title: "Public meetings",
+						summary: "City councils, county commissions, and school boards discuss and decide local issues.",
+						steps: [
+							"Find the body responsible for your issue and open its current meeting notice and agenda.",
+							"Check the venue or online access, accessibility arrangements, and public-comment registration deadline.",
+							"To speak, follow that body’s registration and time limits. Identify the agenda item and the action you want considered.",
+							"Follow the decision through the minutes, recording, and next agenda."
+						],
+						links: [resources.localGovernment]
+					}
+				]
 			},
 			{
 				title: "Fulton County, Georgia",
@@ -182,16 +184,18 @@ export const participationGuides: ParticipationGuide[] = [
 		groups: [
 			{
 				title: "Anywhere in the U.S.",
-				sections: [{
-					id: "election-worker",
-					title: "Election worker",
-					summary: "Help the election office prepare polling places, check in voters, and issue ballots.",
-					steps: [
-						"Use the recruitment lookup for local eligibility, training, hours, and pay, then apply to the election office.",
-						"Complete the required training and assigned shifts. Follow the office’s procedures for assisting voters and handling election materials."
-					],
-					links: [resources.pollWorkers]
-				}]
+				sections: [
+					{
+						id: "election-worker",
+						title: "Election worker",
+						summary: "Help the election office prepare polling places, check in voters, and issue ballots.",
+						steps: [
+							"Use the recruitment lookup for local eligibility, training, hours, and pay, then apply to the election office.",
+							"Complete the required training and assigned shifts. Follow the office’s procedures for assisting voters and handling election materials."
+						],
+						links: [resources.pollWorkers]
+					}
+				]
 			},
 			{
 				title: "Fulton County, Georgia",
@@ -279,17 +283,19 @@ export const participationGuides: ParticipationGuide[] = [
 			},
 			{
 				title: "Georgia",
-				sections: [{
-					id: "georgia-qualifying",
-					title: "Qualifying and disclosure",
-					summary: "The Secretary of State links office qualifications, filing locations, fees, petitions, and candidate forms.",
-					steps: [
-						"Confirm the requirements and next qualifying period for your specific office with the listed authority.",
-						"Use the linked State Ethics Commission guidance for applicable declarations, contribution reports, and financial disclosures.",
-						"Plan for continuing reports and recordkeeping during the campaign and any required reporting after it ends. Obtain legal advice for questions about your eligibility or obligations."
-					],
-					links: [resources.georgiaCandidates]
-				}]
+				sections: [
+					{
+						id: "georgia-qualifying",
+						title: "Qualifying and disclosure",
+						summary: "The Secretary of State links office qualifications, filing locations, fees, petitions, and candidate forms.",
+						steps: [
+							"Confirm the requirements and next qualifying period for your specific office with the listed authority.",
+							"Use the linked State Ethics Commission guidance for applicable declarations, contribution reports, and financial disclosures.",
+							"Plan for continuing reports and recordkeeping during the campaign and any required reporting after it ends. Obtain legal advice for questions about your eligibility or obligations."
+						],
+						links: [resources.georgiaCandidates]
+					}
+				]
 			}
 		]
 	}

@@ -28,6 +28,8 @@ try {
 	console.log(`Wrote seed coverage metadata to ${metadataPath}.`);
 }
 catch (error) {
-	console.error(error instanceof Error ? error.message : "Unable to write local seed coverage snapshot.");
+	console.error(error instanceof Error
+		? error.message
+		: "Unable to write local seed coverage snapshot.");
 	process.exit(1);
 }

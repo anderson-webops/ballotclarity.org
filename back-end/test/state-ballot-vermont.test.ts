@@ -20,17 +20,86 @@ const hash = (value: string) => createHash("sha256").update(value).digest("hex")
 function payload() {
 	const retrievedAt = "2026-10-22T00:00:00.000Z";
 	const definitions = [
-		["Congress Example", "REPRESENTATIVE TO CONGRESS", "statewide", "", "INDEPENDENT"],
-		["Governor Example", "GOVERNOR", "statewide", "", "DEM/PROG"],
-		["Lieutenant Example", "LIEUTENANT GOVERNOR", "statewide", "", "REPUBLICAN"],
-		["House Example", "STATE REPRESENTATIVE - CHITTENDEN-8", "state-house", "CHITTENDEN-8", "DEMOCRATIC"],
-		["Senate Example", "STATE SENATOR", "state-senate", "", "REPUBLICAN"],
-		["Judge Example", "ASSISTANT JUDGE", "local", "", "DEM/REP"],
-		["Peace Example", "JUSTICE OF THE PEACE", "local", "", "DEMOCRATIC"],
+		[
+			"Congress Example",
+			"REPRESENTATIVE TO CONGRESS",
+			"statewide",
+			"",
+			"INDEPENDENT"
+		],
+		[
+			"Governor Example",
+			"GOVERNOR",
+			"statewide",
+			"",
+			"DEM/PROG"
+		],
+		[
+			"Lieutenant Example",
+			"LIEUTENANT GOVERNOR",
+			"statewide",
+			"",
+			"REPUBLICAN"
+		],
+		[
+			"House Example",
+			"STATE REPRESENTATIVE - CHITTENDEN-8",
+			"state-house",
+			"CHITTENDEN-8",
+			"DEMOCRATIC"
+		],
+		[
+			"Senate Example",
+			"STATE SENATOR",
+			"state-senate",
+			"",
+			"REPUBLICAN"
+		],
+		[
+			"Judge Example",
+			"ASSISTANT JUDGE",
+			"local",
+			"",
+			"DEM/REP"
+		],
+		[
+			"Peace Example",
+			"JUSTICE OF THE PEACE",
+			"local",
+			"",
+			"DEMOCRATIC"
+		],
 	];
-	const records = definitions.map(([name, office, scope, district, party]) => ({ id: hash(`${name}/${office}`).slice(0, 24), name, office, scope, district, party, status: "listed" }));
-	const documents = source.documentUrls!.map((url, index) => ({ url, sha256: hash(String(index)), retrievedAt, includedRecordCount: index === 0 ? 3 : 1 }));
-	return { schemaVersion: 1, stateCode: "VT", sourceId: source.id, electionDate: source.electionDate, sourceUrl: source.pageUrl, retrievalPolicy: "manual-snapshot", retrievedAt, sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), recordCount: records.length, records, documents };
+	const records = definitions.map(([name, office, scope, district, party]) => ({
+		id: hash(`${name}/${office}`).slice(0, 24),
+		name,
+		office,
+		scope,
+		district,
+		party,
+		status: "listed"
+	}));
+	const documents = source.documentUrls!.map((url, index) => ({
+		url,
+		sha256: hash(String(index)),
+		retrievedAt,
+		includedRecordCount: index === 0
+			? 3
+			: 1
+	}));
+	return {
+		schemaVersion: 1,
+		stateCode: "VT",
+		sourceId: source.id,
+		electionDate: source.electionDate,
+		sourceUrl: source.pageUrl,
+		retrievalPolicy: "manual-snapshot",
+		retrievedAt,
+		sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+		recordCount: records.length,
+		records,
+		documents
+	};
 }
 
 test("Vermont requires an external reviewed five-ballot import without network or bundled fallback", async () => {
@@ -42,7 +111,12 @@ test("Vermont requires an external reviewed five-ballot import without network o
 		requests += 1;
 		throw new Error("No publisher request is permitted.");
 	};
-	assert.equal(await createStateBallotRepository({ sources: [source], dataDirectory: null, now: () => now, fetchText }).getSnapshot("VT"), null);
+	assert.equal(await createStateBallotRepository({
+		sources: [source],
+		dataDirectory: null,
+		now: () => now,
+		fetchText
+	}).getSnapshot("VT"), null);
 	await assert.rejects(fetchStateBallotSourceText(source, fetchText), /manually supplied/u);
 	assert.equal(requests, 0);
 });
@@ -52,7 +126,11 @@ test("Vermont retains at-large Congress, separate governor offices and literal c
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	const original = parseBundledStateSnapshot(source, JSON.stringify(payload()));
 	await createStateBallotStorage(directory).write(original);
-	const loaded = await createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => now }).getSnapshot("VT");
+	const loaded = await createStateBallotRepository({
+		sources: [source],
+		dataDirectory: directory,
+		now: () => now
+	}).getSnapshot("VT");
 	assert.deepEqual(loaded, original);
 	const preview = buildStateBallotPreview(loaded!, { districtMatches: [] })!;
 	assert.equal(preview.candidateCount, 3);
@@ -65,7 +143,17 @@ test("Vermont retains at-large Congress, separate governor offices and literal c
 
 test("Vermont named House districts never match bare numbers or inferred Senate and local districts", () => {
 	const snapshot = parseBundledStateSnapshot(source, JSON.stringify(payload()));
-	const previewFor = (districtType: string, districtCode: string) => buildStateBallotPreview(snapshot, { districtMatches: [{ id: `${districtType}:${districtCode}`, districtType, districtCode, label: districtCode, sourceSystem: "Synthetic geography fixture" }] })!;
+	const previewFor = (districtType: string, districtCode: string) => buildStateBallotPreview(snapshot, {
+		districtMatches: [
+			{
+				id: `${districtType}:${districtCode}`,
+				districtType,
+				districtCode,
+				label: districtCode,
+				sourceSystem: "Synthetic geography fixture"
+			}
+		]
+	})!;
 	assert.equal(previewFor("state-house", "8").candidateCount, 3);
 	assert.equal(previewFor("state-house", "CHITTENDEN-8").candidateCount, 4);
 	assert.equal(previewFor("state-house", "CHITTENDEN-9").candidateCount, 3);
@@ -77,10 +165,22 @@ test("Vermont named House districts never match bare numbers or inferred Senate 
 
 test("Vermont rejects missing or reordered ballot evidence, mismatched contributions and private fields", () => {
 	const original = payload();
-	assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify({ ...original, documents: original.documents.slice(1) })), /document set/u);
-	assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify({ ...original, documents: [...original.documents].reverse() })), /provenance/u);
-	assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify({ ...original, documents: original.documents.map(document => ({ ...document, includedRecordCount: 1 })) })), /provenance/u);
-	assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify({ ...original, records: original.records.map(record => ({ ...record, residentialAddress: "excluded" })) })), /layout/u);
+	assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify({
+		...original,
+		documents: original.documents.slice(1)
+	})), /document set/u);
+	assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify({
+		...original,
+		documents: [...original.documents].reverse()
+	})), /provenance/u);
+	assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify({
+		...original,
+		documents: original.documents.map(document => ({ ...document, includedRecordCount: 1 }))
+	})), /provenance/u);
+	assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify({
+		...original,
+		records: original.records.map(record => ({ ...record, residentialAddress: "excluded" }))
+	})), /layout/u);
 });
 
 test("Vermont management import preserves reviewed source dates and refuses automatic refresh", async (context) => {
@@ -92,9 +192,26 @@ test("Vermont management import preserves reviewed source dates and refuses auto
 	for (const document of data.documents) document.retrievedAt = data.retrievedAt;
 	await writeFile(file, JSON.stringify(data));
 	const script = fileURLToPath(new URL("../src/manage-state-ballot-data.ts", import.meta.url));
-	const env = { ...process.env, STATE_BALLOT_DATA_DIR: directory, STATE_BALLOT_ENABLED_STATES: "VT", STATE_BALLOT_ENABLED_SOURCES: source.id };
-	const output = execFileSync(process.execPath, ["--import", "tsx", script, "import", file], { env, encoding: "utf8" });
+	const env = {
+		...process.env,
+		STATE_BALLOT_DATA_DIR: directory,
+		STATE_BALLOT_ENABLED_STATES: "VT",
+		STATE_BALLOT_ENABLED_SOURCES: source.id
+	};
+	const output = execFileSync(process.execPath, [
+		"--import",
+		"tsx",
+		script,
+		"import",
+		file
+	], { env, encoding: "utf8" });
 	assert.equal(JSON.parse(output).records, 7);
 	assert.equal((await createStateBallotStorage(directory).read(source))?.retrievedAt, data.retrievedAt);
-	assert.throws(() => execFileSync(process.execPath, ["--import", "tsx", script, "refresh", "VT"], { env, encoding: "utf8", stdio: "pipe" }), /manual|reviewed/iu);
+	assert.throws(() => execFileSync(process.execPath, [
+		"--import",
+		"tsx",
+		script,
+		"refresh",
+		"VT"
+	], { env, encoding: "utf8", stdio: "pipe" }), /manual|reviewed/iu);
 });

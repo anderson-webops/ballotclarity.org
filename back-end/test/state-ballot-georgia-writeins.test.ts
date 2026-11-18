@@ -24,7 +24,12 @@ test("Georgia certificates preserve exact names, printed dates and office-specif
 	const parsed = parseGeorgiaWriteInCertificate(certificate);
 	assert.equal(parsed.electionDate, "2026-11-03");
 	assert.equal(parsed.publishedOn, "2026-09-15");
-	assert.deepEqual(parsed.candidates.map(candidate => [candidate.name, candidate.scope, candidate.district]), [["Alex Example", "statewide", ""], ["Jordan Sample, II", "statewide", ""], ["Casey Example-Green", "congressional", "10"], ["Taylor Sample", "state-house", "39"]]);
+	assert.deepEqual(parsed.candidates.map(candidate => [candidate.name, candidate.scope, candidate.district]), [
+		["Alex Example", "statewide", ""],
+		["Jordan Sample, II", "statewide", ""],
+		["Casey Example-Green", "congressional", "10"],
+		["Taylor Sample", "state-house", "39"]
+	]);
 	const { body } = prepareGeorgiaWriteInSnapshot(source, certificate, "a".repeat(64), "2026-11-01T12:00:00.000Z");
 	const snapshot = JSON.parse(body);
 	assert.equal(snapshot.recordCount, 4);
@@ -42,7 +47,24 @@ test("a later certificate discovers dates and candidates without hardcoded curre
 });
 
 test("partial, ambiguous, repeated, unsupported and malformed Georgia certificates fail closed", () => {
-	for (const invalid of [certificate.replace("FINAL LIST", "DRAFT LIST"), certificate.replace("Alex Example", ""), certificate.replace("Alex Example", "Alex Example\nAlex Example"), certificate.replace("U.S. Senate", "Attorney General"), certificate.replace("District 10", "District 0"), certificate.replace("November 3", "February 30"), certificate.replace("Page 1 of 1", "Page 1 of 2"), certificate.replace("State Representative, District 39", "U.S. Senate"), certificate.replace("Taylor Sample", "Taylor Sample\nUnknown District"), `${certificate}\nAnother page\f`, certificate.slice(0, certificate.indexOf("Pursuant to O.C.G.A."))]) assert.throws(() => parseGeorgiaWriteInCertificate(invalid));
-	for (const changed of [{ ...source, stateCode: "FL" }, { ...source, electionDate: "2028-11-07" }, { ...source, recordRole: undefined }, { ...source, retrievalPolicy: undefined }]) assert.throws(() => prepareGeorgiaWriteInSnapshot(changed, certificate, "a".repeat(64), "2026-11-01T12:00:00.000Z"));
+	for (const invalid of [
+		certificate.replace("FINAL LIST", "DRAFT LIST"),
+		certificate.replace("Alex Example", ""),
+		certificate.replace("Alex Example", "Alex Example\nAlex Example"),
+		certificate.replace("U.S. Senate", "Attorney General"),
+		certificate.replace("District 10", "District 0"),
+		certificate.replace("November 3", "February 30"),
+		certificate.replace("Page 1 of 1", "Page 1 of 2"),
+		certificate.replace("State Representative, District 39", "U.S. Senate"),
+		certificate.replace("Taylor Sample", "Taylor Sample\nUnknown District"),
+		`${certificate}\nAnother page\f`,
+		certificate.slice(0, certificate.indexOf("Pursuant to O.C.G.A."))
+	]) assert.throws(() => parseGeorgiaWriteInCertificate(invalid));
+	for (const changed of [
+		{ ...source, stateCode: "FL" },
+		{ ...source, electionDate: "2028-11-07" },
+		{ ...source, recordRole: undefined },
+		{ ...source, retrievalPolicy: undefined }
+	]) assert.throws(() => prepareGeorgiaWriteInSnapshot(changed, certificate, "a".repeat(64), "2026-11-01T12:00:00.000Z"));
 	assert.throws(() => prepareGeorgiaWriteInSnapshot(source, certificate, "a".repeat(64), "2026-09-01T00:00:00.000Z"));
 });

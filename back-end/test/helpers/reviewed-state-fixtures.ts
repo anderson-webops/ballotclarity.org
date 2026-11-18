@@ -40,7 +40,12 @@ const readInput = (name: string) => readFileSync(new URL(`../fixtures/${name}`, 
 
 function configuredSource(value: string | StateBallotSource) {
 	if (typeof value !== "string") return value;
-	const descriptor = catalog.descriptors.find(item => [item.stateCode, item.sourceId, item.file, item.file.replace(/-2026\.json$/u, "")].includes(value));
+	const descriptor = catalog.descriptors.find(item => [
+		item.stateCode,
+		item.sourceId,
+		item.file,
+		item.file.replace(/-2026\.json$/u, "")
+	].includes(value));
 	const source = stateBallotSources.find(source => source.id === descriptor?.sourceId || source.stateCode === value);
 	assert.ok(source, `No controlled regression source for ${value}.`);
 	return source;
@@ -79,7 +84,14 @@ export function readReviewedStateFixture(value: string | StateBallotSource) {
 export function loadReviewedStateFixture(value: string | StateBallotSource): StateBallotSnapshot {
 	const source = configuredSource(value);
 	const automatic = catalog.automaticFixtures[source.stateCode];
-	if (automatic) return { source, records: parseStateCandidateRecords(source, readInput(automatic.file)), retrievedAt: automatic.retrievedAt, sha256: automatic.sha256 };
+	if (automatic) {
+		return {
+			source,
+			records: parseStateCandidateRecords(source, readInput(automatic.file)),
+			retrievedAt: automatic.retrievedAt,
+			sha256: automatic.sha256
+		};
+	}
 	return parseBundledStateSnapshot(source, readReviewedStateFixture(source));
 }
 
@@ -89,7 +101,11 @@ export async function createReviewedFixtureRepository(context: TestContext, opti
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	const storage = createStateBallotStorage(directory);
 	for (const descriptor of catalog.descriptors) await storage.write(loadReviewedStateFixture(descriptor.stateCode));
-	return createStateBallotRepository({ now: () => Date.parse("2026-10-30T12:00:00Z"), ...options, dataDirectory: directory });
+	return createStateBallotRepository({
+		now: () => Date.parse("2026-10-30T12:00:00Z"),
+		...options,
+		dataDirectory: directory
+	});
 }
 
 export function readReviewedTransferFixture(name: string) {
@@ -106,10 +122,21 @@ export function readReviewedTransferFixture(name: string) {
 		assert.ok(code === "CT" || code === "OR");
 		const source = configuredSource(code);
 		const input = readInput(catalog.descriptors.find(item => item.sourceId === source.id)!.strategy.file!);
-		const result = code === "CT" ? reconcileConnecticutBallots(input) : reconcileOregonBallots(input);
+		const result = code === "CT"
+			? reconcileConnecticutBallots(input)
+			: reconcileOregonBallots(input);
 		const snapshot = loadReviewedStateFixture(code);
 		const associations = new Map(result.records.flatMap((record, index) => record.claimIndexes.map(claim => [claim, snapshot.records[index]!.id] as const)));
-		text = `${[JSON.stringify(descriptor.header), ...result.claims.map((claim, index) => JSON.stringify({ type: code === "CT" ? "ballot-line" : "ballot-candidate-claim", candidateId: associations.get(index), ...JSON.parse(JSON.stringify(claim)) }))].join("\n")}\n`;
+		text = `${[
+			JSON.stringify(descriptor.header),
+			...result.claims.map((claim, index) => JSON.stringify({
+				type: code === "CT"
+					? "ballot-line"
+					: "ballot-candidate-claim",
+				candidateId: associations.get(index),
+				...JSON.parse(JSON.stringify(claim))
+			}))
+		].join("\n")}\n`;
 	}
 	assert.equal(digest(text), descriptor.fixtureSha256, `Reviewed fixture transfer changed: ${name}`);
 	transfers.set(name, text);

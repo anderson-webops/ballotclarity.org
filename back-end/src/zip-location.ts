@@ -81,7 +81,9 @@ function toNumber(value: string | undefined) {
 		return undefined;
 
 	const parsed = Number.parseFloat(value);
-	return Number.isFinite(parsed) ? parsed : undefined;
+	return Number.isFinite(parsed)
+		? parsed
+		: undefined;
 }
 
 function normalizeKey(value: string | number | undefined) {
@@ -187,7 +189,12 @@ export function createZipLocationService({
 	vintage = process.env.CENSUS_GEOCODER_VINTAGE?.trim() || defaultVintage
 }: ZipLocationServiceOptions = {}): ZipLocationService {
 	const resolvedTimeoutMs = resolveFetchTimeoutMs(timeoutMs);
-	const resolveDistrictContext = createCensusDistrictContext({ benchmark, fetchImpl, now, timeoutMs: resolvedTimeoutMs });
+	const resolveDistrictContext = createCensusDistrictContext({
+		benchmark,
+		fetchImpl,
+		now,
+		timeoutMs: resolvedTimeoutMs
+	});
 
 	return {
 		async lookupZip(zipCode: string) {

@@ -33,7 +33,9 @@ export function readMaineHouseCandidates(body: string) {
 	if (Buffer.byteLength(body) > 2 * 1024 * 1024 || body.includes("\uFFFD")) return reject("body bounds");
 	const dom = parseStateHtml(body);
 	const parents = new Map<StateHtmlNode, StateHtmlNode>();
-	const pending = [{ node: dom, depth: 0 }];
+	const pending = [
+		{ node: dom, depth: 0 }
+	];
 	let visited = 0;
 	while (pending.length) {
 		const { node, depth } = pending.pop()!;
@@ -45,7 +47,14 @@ export function readMaineHouseCandidates(body: string) {
 	}
 	function visible(node: StateHtmlNode) {
 		for (let ancestor: StateHtmlNode | undefined = node; ancestor; ancestor = parents.get(ancestor)) {
-			if (ancestor.attrs?.some(item => item.name === "hidden") || attribute(ancestor, "aria-hidden") === "true" || /display\s*:\s*none|visibility\s*:\s*hidden|opacity\s*:\s*0(?:\D|$)|font-size\s*:\s*0(?:\D|$)|color\s*:\s*transparent/iu.test(attribute(ancestor, "style")) || ["d-none", "invisible", "visually-hidden", "sr-only"].some(value => hasClass(ancestor!, value))) return reject("hidden content");
+			if (ancestor.attrs?.some(item => item.name === "hidden") || attribute(ancestor, "aria-hidden") === "true" || /display\s*:\s*none|visibility\s*:\s*hidden|opacity\s*:\s*0(?:\D|$)|font-size\s*:\s*0(?:\D|$)|color\s*:\s*transparent/iu.test(attribute(ancestor, "style")) || [
+				"d-none",
+				"invisible",
+				"visually-hidden",
+				"sr-only"
+			].some(value => hasClass(ancestor!, value))) {
+				return reject("hidden content");
+			}
 		}
 	}
 	const heading = one(descendants(dom, node => node.nodeName === "h3" && text(node) === "Candidate List"), "title");
@@ -56,7 +65,9 @@ export function readMaineHouseCandidates(body: string) {
 	const number = /^(1\d{2}|2\d{2})(?:st|nd|rd|th) Legislature$/u.exec(legislature);
 	if (!number) return reject("legislature identity");
 	const ordinal = Number(number[1]);
-	const suffix = ordinal % 100 >= 11 && ordinal % 100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[ordinal % 10] ?? "th";
+	const suffix = ordinal % 100 >= 11 && ordinal % 100 <= 13
+		? "th"
+		: ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[ordinal % 10] ?? "th";
 	if (legislature !== `${ordinal}${suffix} Legislature`) return reject("legislature ordinal");
 	const notice = one(descendants(card, node => hasClass(node, "alert-info")), "status notice");
 	visible(notice);
@@ -90,7 +101,23 @@ export function readMaineHouseCandidates(body: string) {
 		const candidateIds: string[] = [];
 		for (const item of items) {
 			visible(item);
-			if (item.attrs?.some(value => /^on/iu.test(value.name)) || descendants(item, node => ["script", "style", "iframe", "object", "embed", "template", "svg", "canvas", "img", "input", "select", "textarea", "button"].includes(node.nodeName) || node.attrs?.some(value => /^on/iu.test(value.name)) === true).length) return reject("active candidate content");
+			if (item.attrs?.some(value => /^on/iu.test(value.name)) || descendants(item, node => [
+				"script",
+				"style",
+				"iframe",
+				"object",
+				"embed",
+				"template",
+				"svg",
+				"canvas",
+				"img",
+				"input",
+				"select",
+				"textarea",
+				"button"
+			].includes(node.nodeName) || node.attrs?.some(value => /^on/iu.test(value.name)) === true).length) {
+				return reject("active candidate content");
+			}
 			const title = one(descendants(item, node => node.nodeName === "h6"), "candidate name heading");
 			const nameNode = one(descendants(title, node => node.nodeName === "strong"), "candidate name");
 			const codeNode = one(descendants(title, node => node.nodeName === "span"), "candidate party code");
@@ -99,22 +126,67 @@ export function readMaineHouseCandidates(body: string) {
 			const name = safeText(text(nameNode), 250);
 			const partyCode = text(codeNode);
 			const party = safeText(text(partyNode), 100);
-			const partyLabels: Record<string, string> = { D: "Democrat", R: "Republican", U: "Unenrolled", I: "Independent", N: "No Labels" };
+			const partyLabels: Record<string, string> = {
+				D: "Democrat",
+				R: "Republican",
+				U: "Unenrolled",
+				I: "Independent",
+				N: "No Labels"
+			};
 			if (partyLabels[partyCode] !== party) return reject("party code or label");
 			const municipalityNodes = descendants(item, node => node.nodeName === "p");
 			if (municipalityNodes.length > 1) return reject("residence field");
-			const residenceMunicipality = municipalityNodes.length ? safeText(text(municipalityNodes[0]!), 200) : undefined;
+			const residenceMunicipality = municipalityNodes.length
+				? safeText(text(municipalityNodes[0]!), 200)
+				: undefined;
 			if (municipalityNodes.length) visible(municipalityNodes[0]!);
 			const stars = descendants(title, node => node.nodeName === "i");
 			if (stars.length > 1 || stars.some(node => attribute(node, "title") !== "Incumbent" || !hasClass(node, "fa-star"))) return reject("incumbency marker");
 			const incumbent = stars.length === 1;
-			if (text(item) !== [name, partyCode, residenceMunicipality, party].filter(Boolean).join(" ")) return reject("unassigned candidate text");
-			const id = createHash("sha256").update(JSON.stringify(["maine-house-clerk", Number(number[1]), districtNumber, name, party])).digest("hex").slice(0, 24);
-			records.push({ id, name, district: districtNumber, party, partyCode, ...(residenceMunicipality ? { residenceMunicipality } : {}), incumbent });
+			if (text(item) !== [
+				name,
+				partyCode,
+				residenceMunicipality,
+				party
+			].filter(Boolean).join(" ")) {
+				return reject("unassigned candidate text");
+			}
+			const id = createHash("sha256").update(JSON.stringify([
+				"maine-house-clerk",
+				Number(number[1]),
+				districtNumber,
+				name,
+				party
+			])).digest("hex").slice(0, 24);
+			records.push({
+				id,
+				name,
+				district: districtNumber,
+				party,
+				partyCode,
+				...(residenceMunicipality
+					? { residenceMunicipality }
+					: {}),
+				incumbent
+			});
 			candidateIds.push(id);
 		}
-		claims.push({ district: districtNumber, candidateIds, reportedCandidates: Number(expected[1]) });
+		claims.push({
+			district: districtNumber,
+			candidateIds,
+			reportedCandidates: Number(expected[1])
+		});
 	}
 	if (records.length !== counts.get("Total Candidates") || records.filter(record => record.incumbent).length !== counts.get("Incumbents") || new Set(records.map(record => record.id)).size !== records.length) return reject("complete candidate or incumbency inventory");
-	return { legislature: Number(number[1]), legislatureLabel: legislature, sourceStatus: "Unofficial" as const, electionDateVerified: false as const, records, districts: claims, reportedCandidates: counts.get("Total Candidates")!, reportedDistricts: districtCount, reportedIncumbents: counts.get("Incumbents")! };
+	return {
+		legislature: Number(number[1]),
+		legislatureLabel: legislature,
+		sourceStatus: "Unofficial" as const,
+		electionDateVerified: false as const,
+		records,
+		districts: claims,
+		reportedCandidates: counts.get("Total Candidates")!,
+		reportedDistricts: districtCount,
+		reportedIncumbents: counts.get("Incumbents")!
+	};
 }

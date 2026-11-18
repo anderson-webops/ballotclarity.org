@@ -8,7 +8,12 @@ export function validateDouglasStoredSnapshot(source: StateBallotSource, data: R
 	if (!Array.isArray(data.documents) || !data.documents.length || data.documents.length > 401 || !Array.isArray(data.records) || !data.records.length || data.records.length > 500) throw new Error("The stored Douglas County filing inventory requires review.");
 	const documents = data.documents;
 	const publications = documents.map(item => ({ url: item?.url, sha256: item?.sha256 }));
-	validateDouglasElection({ electionId: null, electionDate: source.electionDate, pageUrl: douglasDiscoveryUrl, douglasDocuments: publications });
+	validateDouglasElection({
+		electionId: null,
+		electionDate: source.electionDate,
+		pageUrl: douglasDiscoveryUrl,
+		douglasDocuments: publications
+	});
 	if (data.collectionIndexSha256 !== douglasDocumentDigest(publications)) throw new Error("The stored Douglas County publication fingerprint requires review.");
 	const ordinary: string[] = [];
 	let writeIns = 0;
@@ -30,7 +35,15 @@ export function validateDouglasStoredSnapshot(source: StateBallotSource, data: R
 			officeId = identity.officeId;
 			ordinary.push(row.candidateUrl);
 		}
-		const filing: DouglasFiling = { name: row.name, office: { id: officeId, title: row.office, category: "Partisan" }, filedDate: status[2]!, ...(isWriteIn ? {} : { candidateId: row.sourceCandidateId as string, profileUrl: row.candidateUrl }), writeIn: isWriteIn };
+		const filing: DouglasFiling = {
+			name: row.name,
+			office: { id: officeId, title: row.office, category: "Partisan" },
+			filedDate: status[2]!,
+			...(isWriteIn
+				? {}
+				: { candidateId: row.sourceCandidateId as string, profileUrl: row.candidateUrl }),
+			writeIn: isWriteIn
+		};
 		const expected = douglasRecord(source, filing, row.party as string | undefined);
 		if (Object.keys(row).sort().join(",") !== Object.keys(expected).filter(key => expected[key as keyof typeof expected] !== undefined).sort().join(",") || Object.entries(expected).some(([key, value]) => value !== undefined && row[key] !== value)) throw new Error("The stored Douglas County filing geography or identity requires review.");
 	}

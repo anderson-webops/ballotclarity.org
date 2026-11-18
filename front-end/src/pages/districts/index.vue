@@ -14,7 +14,9 @@ const activeNationwideLookupResult = computed(() => isHydrated.value ? nationwid
 const directoryApiQuery = computed(() => buildCivicDirectoryApiQuery(
 	buildLookupContextFromNationwideResult(activeNationwideLookupResult.value),
 	route.query,
-	isHydrated.value && hasGuideShellContext.value ? selectedLocation.value?.slug : undefined
+	isHydrated.value && hasGuideShellContext.value
+		? selectedLocation.value?.slug
+		: undefined
 ));
 const activeLookupQuery = computed(() => directoryApiQuery.value?.lookup
 	? { lookup: directoryApiQuery.value.lookup, selection: directoryApiQuery.value.selection }
@@ -51,10 +53,32 @@ if (import.meta.client) {
 		void refreshGuideRepresentativesData();
 	}, { immediate: true });
 }
-const emptyNationwideDistrictsResponse: DistrictsResponse = { districts: [], mode: "nationwide", note: "", updatedAt: "" };
-const emptyNationwideRepresentativesResponse: RepresentativesResponse = { districts: [], mode: "nationwide", note: "", representatives: [], updatedAt: "" };
-const emptyGuideDistrictsResponse: DistrictsResponse = { districts: [], mode: "guide", note: "", updatedAt: "" };
-const emptyGuideRepresentativesResponse: RepresentativesResponse = { districts: [], mode: "guide", note: "", representatives: [], updatedAt: "" };
+const emptyNationwideDistrictsResponse: DistrictsResponse = {
+	districts: [],
+	mode: "nationwide",
+	note: "",
+	updatedAt: ""
+};
+const emptyNationwideRepresentativesResponse: RepresentativesResponse = {
+	districts: [],
+	mode: "nationwide",
+	note: "",
+	representatives: [],
+	updatedAt: ""
+};
+const emptyGuideDistrictsResponse: DistrictsResponse = {
+	districts: [],
+	mode: "guide",
+	note: "",
+	updatedAt: ""
+};
+const emptyGuideRepresentativesResponse: RepresentativesResponse = {
+	districts: [],
+	mode: "guide",
+	note: "",
+	representatives: [],
+	updatedAt: ""
+};
 const apiUsesNationwide = computed(() => guideDistrictData.value?.mode === "nationwide" || guideRepresentativesData.value?.mode === "nationwide");
 const showGuideDirectory = computed(() => hasGuideShellContext.value);
 const storeUsesNationwide = computed(() => lookupContextMatchesDirectoryRoute(activeNationwideLookupResult.value, route.query));
@@ -78,13 +102,21 @@ const directoryData = computed(() => {
 	}
 
 	return {
-		districts: showGuideDirectory.value ? guideDistrictData.value ?? emptyGuideDistrictsResponse : emptyNationwideDistrictsResponse,
-		representatives: showGuideDirectory.value ? guideRepresentativesData.value ?? emptyGuideRepresentativesResponse : emptyNationwideRepresentativesResponse
+		districts: showGuideDirectory.value
+			? guideDistrictData.value ?? emptyGuideDistrictsResponse
+			: emptyNationwideDistrictsResponse,
+		representatives: showGuideDirectory.value
+			? guideRepresentativesData.value ?? emptyGuideRepresentativesResponse
+			: emptyNationwideRepresentativesResponse
 	};
 });
-const directoriesPending = computed(() => directoryUsesNationwide.value ? false : showGuideDirectory.value ? guideDistrictPending.value : false);
+const directoriesPending = computed(() => directoryUsesNationwide.value
+	? false
+	: showGuideDirectory.value ? guideDistrictPending.value : false);
 const directoriesError = computed(() => showGuideDirectory.value || directoryUsesNationwide.value
-	? directoryUsesNationwide.value && directoryData.value ? null : guideDistrictError.value
+	? directoryUsesNationwide.value && directoryData.value
+		? null
+		: guideDistrictError.value
 	: null);
 const districts = computed(() => directoryData.value?.districts.districts ?? []);
 const districtGroups = computed(() => groupDistrictSummaries(districts.value));
@@ -129,11 +161,19 @@ const lookupPrompt = computed(() => activeLookupSummary.value.mode === "none"
 			title: "Refresh results for this page"
 		}
 );
-const directorySummary = computed(() => `${districts.value.length} district page${districts.value.length === 1 ? "" : "s"} and ${representatives.value.length} linked official${representatives.value.length === 1 ? "" : "s"} are available for this area.`);
+const directorySummary = computed(() => `${districts.value.length} district page${districts.value.length === 1
+	? ""
+	: "s"} and ${representatives.value.length} linked official${representatives.value.length === 1
+	? ""
+	: "s"} are available for this area.`);
 
 function buildLookupAwareTarget(path: string) {
-	if (route.query.area && directoryApiQuery.value?.area)
-		return { path, query: { area: directoryApiQuery.value.area } };
+	if (route.query.area && directoryApiQuery.value?.area) {
+		return {
+			path,
+			query: { area: directoryApiQuery.value.area }
+		};
+	}
 	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
 }
 </script>

@@ -9,11 +9,15 @@ const formatDateTime = (value: string) => formatCivicDateTime(value, props.timeZ
 
 function compactNote(item: KeyDateTimelineEntry) {
 	const note = item.note?.trim() ?? "";
-	return /^Fulton County lists [A-Za-z]+ \d{1,2}, \d{4} as the last day of early voting\.$/u.test(note) ? "" : note;
+	return /^Fulton County lists [A-Za-z]+ \d{1,2}, \d{4} as the last day of early voting\.$/u.test(note)
+		? ""
+		: note;
 }
 
 function compactDate(item: KeyDateTimelineEntry) {
-	return props.electionDate && item.label === "Election Day polls close" ? props.electionDate : item.date;
+	return props.electionDate && item.label === "Election Day polls close"
+		? props.electionDate
+		: item.date;
 }
 </script>
 

@@ -4,10 +4,18 @@ import { candidateReferenceFacts } from "~/utils/candidate-reference-facts";
 import { hasPersonFunding, hasPersonInfluence } from "~/utils/person-profile";
 import { substantiveBiography } from "~/utils/representative-presentation";
 
-const props = withDefaults(defineProps<{ person?: PersonProfile | null; references?: PublicElectionReference[] }>(), { person: null, references: () => [] });
+const props = withDefaults(defineProps<{ person?: PersonProfile | null; references?: PublicElectionReference[] }>(), {
+	person: null,
+	references: () => []
+});
 const biography = computed(() => substantiveBiography(props.person));
 const references = computed(() => candidateReferenceFacts(props.references, biography.value.map(block => block.summary)));
-const sourceLabels = { "candidate-statement": "Candidate-provided", "news-report": "News report", "official-biography": "Official biography", "public-dataset": "Public dataset" };
+const sourceLabels = {
+	"candidate-statement": "Candidate-provided",
+	"news-report": "News report",
+	"official-biography": "Official biography",
+	"public-dataset": "Public dataset"
+};
 const { formatDate } = useFormatters();
 </script>
 

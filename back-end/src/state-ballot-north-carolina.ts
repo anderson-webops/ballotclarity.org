@@ -8,7 +8,12 @@ const headers = "election_dt|county_name|contest_name|name_on_ballot|first_name|
 const clean = (value: string) => value.normalize("NFKC").replace(/\s+/gu, " ").trim();
 const text = (node: Parameters<typeof stateHtmlText>[0]) => clean(stateHtmlText(node));
 type RequestText = (url: string, options: { allowedHosts: string[]; maxBytes: number; maxRedirects: number; timeoutMs: number }) => Promise<string>;
-const options = { allowedHosts: ["www.ncsbe.gov", "s3.amazonaws.com"], maxBytes: 12 * 1024 * 1024, maxRedirects: 0, timeoutMs: 12000 };
+const options = {
+	allowedHosts: ["www.ncsbe.gov", "s3.amazonaws.com"],
+	maxBytes: 12 * 1024 * 1024,
+	maxRedirects: 0,
+	timeoutMs: 12000
+};
 const exact = (value: unknown, keys: string[]): value is Record<string, unknown> => Boolean(value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).sort().join(",") === keys.sort().join(","));
 const csvUrl = (year: string) => `https://s3.amazonaws.com/dl.ncsbe.gov/Elections/${year}/Candidate%20Filing/Candidate_Listing_${year}.csv`;
 
@@ -18,7 +23,11 @@ export function northCarolinaCandidateCsvUrl(electionDate: string) {
 }
 
 export function validateNorthCarolinaSource(source: StateBallotSource) {
-	if (source.stateCode !== "NC" || source.format !== "csv" || source.retrievalPolicy || source.postBody || source.documentUrls?.length || source.documentLinks?.length || source.delimiter || source.pageUrl !== northCarolinaDiscoveryUrl || source.url !== northCarolinaCandidateCsvUrl(source.electionDate) || source.id !== (source.electionDate === "2026-11-03" ? "nc-sbe-2026" : `nc-general-${source.electionDate}`)) throw new Error("The North Carolina source does not retain its approved identity.");
+	if (source.stateCode !== "NC" || source.format !== "csv" || source.retrievalPolicy || source.postBody || source.documentUrls?.length || source.documentLinks?.length || source.delimiter || source.pageUrl !== northCarolinaDiscoveryUrl || source.url !== northCarolinaCandidateCsvUrl(source.electionDate) || source.id !== (source.electionDate === "2026-11-03"
+		? "nc-sbe-2026"
+		: `nc-general-${source.electionDate}`)) {
+		throw new Error("The North Carolina source does not retain its approved identity.");
+	}
 }
 
 export function readNorthCarolinaCandidateIndex(body: string) {
@@ -34,7 +43,9 @@ export function readNorthCarolinaCandidateIndex(body: string) {
 		if (rows.length > 100 || !rows[0] || descendants(rows[0], node => node.nodeName === "th").map(text).join("|") !== "Election Year|Candidate List Spreadsheets|Candidate Lists by Contest|Candidate Detail Lists") throw new Error("The North Carolina candidate-year columns have changed.");
 		for (const row of rows.slice(1)) {
 			const cells = (row.childNodes ?? []).filter(node => node.nodeName === "td");
-			const year = cells[0] ? text(cells[0]) : "";
+			const year = cells[0]
+				? text(cells[0])
+				: "";
 			if (!/^20\d{2}$/u.test(year)) throw new Error("The North Carolina candidate year is ambiguous.");
 			if (year < "2026" || Number(year) % 2) continue;
 			if (cells.length !== 4) throw new Error("The North Carolina candidate-year row has changed.");
@@ -58,7 +69,9 @@ function electionDateFromCsv(year: string, body: string) {
 	for (const row of table) {
 		if (row.length !== headers.length || !row[2]?.trim() || !row[3]?.trim() || !["TRUE", "FALSE"].includes(row[21]!)) throw new Error("The North Carolina candidate row is incomplete or changed.");
 		const date = /^(\d{2})\/(\d{2})\/(20\d{2})$/u.exec(row[0]!);
-		const iso = date ? `${date[3]}-${date[1]}-${date[2]}` : "";
+		const iso = date
+			? `${date[3]}-${date[1]}-${date[2]}`
+			: "";
 		if (!date || date[3] !== year || !Number.isFinite(Date.parse(iso)) || new Date(iso).toISOString().slice(0, 10) !== iso) throw new Error("The North Carolina row election date is invalid or belongs to another year.");
 		if (date[1] !== "11" || !/^0[2-8]$/u.test(date[2]!)) continue;
 		if (new Date(iso).getUTCDay() !== 2 || row[21] !== "FALSE") throw new Error("The North Carolina November election context is inconsistent.");
@@ -71,12 +84,22 @@ function electionDateFromCsv(year: string, body: string) {
 export function readNorthCarolinaElectionDiscovery(body: string) {
 	if (Buffer.byteLength(body) > 24 * 1024 * 1024) throw new Error("The North Carolina discovery capture exceeds its bounds.");
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "index", "exports"]) || value.schemaVersion !== 1 || value.type !== "north-carolina-election-discovery" || typeof value.index !== "string" || !Array.isArray(value.exports)) throw new Error("The North Carolina discovery capture is invalid.");
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"index",
+		"exports"
+	]) || value.schemaVersion !== 1 || value.type !== "north-carolina-election-discovery" || typeof value.index !== "string" || !Array.isArray(value.exports)) {
+		throw new Error("The North Carolina discovery capture is invalid.");
+	}
 	const offered = readNorthCarolinaCandidateIndex(value.index);
 	if (value.exports.length !== offered.length) throw new Error("The North Carolina discovery export set is incomplete.");
 	return value.exports.map((entry, index) => {
 		if (!exact(entry, ["year", "url", "records"]) || entry.year !== offered[index]!.year || entry.url !== offered[index]!.url || typeof entry.records !== "string") throw new Error("The North Carolina discovery export is not its published control.");
-		return { electionId: null, electionDate: electionDateFromCsv(entry.year as string, entry.records) };
+		return {
+			electionId: null,
+			electionDate: electionDateFromCsv(entry.year as string, entry.records)
+		};
 	});
 }
 
@@ -87,7 +110,12 @@ export async function fetchNorthCarolinaCycleDiscovery(request: RequestText) {
 		exports.push({ ...entry, records: await request(entry.url, options) });
 		if (Buffer.byteLength(JSON.stringify({ index, exports })) > 24 * 1024 * 1024) throw new Error("The combined North Carolina capture exceeds its bounds.");
 	}
-	return JSON.stringify({ schemaVersion: 1, type: "north-carolina-election-discovery", index, exports });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "north-carolina-election-discovery",
+		index,
+		exports
+	});
 }
 
 export function northCarolinaCandidateCapture(source: StateBallotSource, discovery: string) {
@@ -95,14 +123,30 @@ export function northCarolinaCandidateCapture(source: StateBallotSource, discove
 	if (!readNorthCarolinaElectionDiscovery(discovery).some(entry => entry.electionDate === source.electionDate)) throw new Error("The North Carolina source election is not offered.");
 	const value = JSON.parse(discovery);
 	const entry = value.exports.find((entry: { url: string }) => entry.url === source.url);
-	return JSON.stringify({ schemaVersion: 1, type: "north-carolina-candidate-export", index: value.index, year: entry.year, url: entry.url, records: entry.records });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "north-carolina-candidate-export",
+		index: value.index,
+		year: entry.year,
+		url: entry.url,
+		records: entry.records
+	});
 }
 
 export function readNorthCarolinaCandidateCapture(source: StateBallotSource, body: string) {
 	validateNorthCarolinaSource(source);
 	if (Buffer.byteLength(body) > options.maxBytes) throw new Error("The North Carolina candidate capture exceeds its bounds.");
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "index", "year", "url", "records"]) || value.schemaVersion !== 1 || value.type !== "north-carolina-candidate-export" || typeof value.index !== "string" || typeof value.records !== "string" || value.year !== source.electionDate.slice(0, 4) || value.url !== source.url || !readNorthCarolinaCandidateIndex(value.index).some(entry => entry.url === value.url) || electionDateFromCsv(value.year as string, value.records) !== source.electionDate) throw new Error("The North Carolina candidate capture does not identify its published general election.");
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"index",
+		"year",
+		"url",
+		"records"
+	]) || value.schemaVersion !== 1 || value.type !== "north-carolina-candidate-export" || typeof value.index !== "string" || typeof value.records !== "string" || value.year !== source.electionDate.slice(0, 4) || value.url !== source.url || !readNorthCarolinaCandidateIndex(value.index).some(entry => entry.url === value.url) || electionDateFromCsv(value.year as string, value.records) !== source.electionDate) {
+		throw new Error("The North Carolina candidate capture does not identify its published general election.");
+	}
 	return value.records;
 }
 
@@ -111,7 +155,14 @@ export async function fetchNorthCarolinaCandidateCapture(source: StateBallotSour
 	const index = await request(northCarolinaDiscoveryUrl, { ...options, maxBytes: 2 * 1024 * 1024 });
 	if (!readNorthCarolinaCandidateIndex(index).some(entry => entry.url === source.url)) throw new Error("The North Carolina candidate source is not published.");
 	const records = await request(source.url, options);
-	const body = JSON.stringify({ schemaVersion: 1, type: "north-carolina-candidate-export", index, year: source.electionDate.slice(0, 4), url: source.url, records });
+	const body = JSON.stringify({
+		schemaVersion: 1,
+		type: "north-carolina-candidate-export",
+		index,
+		year: source.electionDate.slice(0, 4),
+		url: source.url,
+		records
+	});
 	readNorthCarolinaCandidateCapture(source, body);
 	return body;
 }

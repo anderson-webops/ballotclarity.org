@@ -24,12 +24,35 @@ export async function searchRetainedRecords(options: {
 			const visible: { snapshot: StateBallotSnapshot; record: StateCandidateRecord }[] = [];
 			try {
 				for (const snapshot of await options.candidates?.getStoredSnapshots?.(stateCode) ?? []) {
-					const page = buildStateRecordPage(snapshot, { search: query, scope: "all", status: "active", limit: 100, offset: 0 });
-					const records = options.portraits ? await options.portraits(stateCode, page.records) : page.records;
+					const page = buildStateRecordPage(snapshot, {
+						search: query,
+						scope: "all",
+						status: "active",
+						limit: 100,
+						offset: 0
+					});
+					const records = options.portraits
+						? await options.portraits(stateCode, page.records)
+						: page.records;
 					for (const record of records) {
 						if (items.length >= 100) break;
 						const parameters = new URLSearchParams({ source: snapshot.source.id, name: record.name });
-						items.push({ id: `${snapshot.source.id}:${record.id}`, type: "candidate", title: record.name, href: `/record/${stateCode}/${record.id}?${parameters}`, meta: [record.office, stateName, record.incumbent ? "Incumbent" : ""].filter(Boolean).join(" · "), party: record.party, personProfileSlug: record.personProfileSlug, summary: "", updatedAt: snapshot.retrievedAt, profileImages: record.profileImages });
+						items.push({
+							id: `${snapshot.source.id}:${record.id}`,
+							type: "candidate",
+							title: record.name,
+							href: `/record/${stateCode}/${record.id}?${parameters}`,
+							meta: [
+								record.office,
+								stateName,
+								record.incumbent ? "Incumbent" : ""
+							].filter(Boolean).join(" · "),
+							party: record.party,
+							personProfileSlug: record.personProfileSlug,
+							summary: "",
+							updatedAt: snapshot.retrievedAt,
+							profileImages: record.profileImages
+						});
 						const original = snapshot.records.find(candidate => candidate.id === record.id);
 						if (original) visible.push({ snapshot, record: original });
 					}
@@ -37,7 +60,11 @@ export async function searchRetainedRecords(options: {
 			}
 			catch { incomplete = true; }
 			try {
-				const snapshots = options.references?.getSnapshots ? await options.references.getSnapshots(stateCode) : options.references ? [await options.references.getSnapshot(stateCode)].filter(snapshot => snapshot !== null) : [];
+				const snapshots = options.references?.getSnapshots
+					? await options.references.getSnapshots(stateCode)
+					: options.references
+						? [await options.references.getSnapshot(stateCode)].filter(snapshot => snapshot !== null)
+						: [];
 				const sources = await options.references?.getSources?.(stateCode);
 				const linked = new Set(visible.flatMap(({ snapshot, record }) => matchingCandidateReferences(snapshot, record, snapshots, sources).map(reference => `${reference.source.collectionId}:${reference.id}`)));
 				for (const snapshot of snapshots) {
@@ -45,25 +72,68 @@ export async function searchRetainedRecords(options: {
 						if (items.length >= 100) break;
 						if (linked.has(`${snapshot.sourceId}:${record.id}`)) continue;
 						const sourceTitle = sources?.find(source => source.id === snapshot.sourceId)?.documents[record.sourceDocumentIndex]?.title;
-						if (![record.name, record.office, ...record.facts, sourceTitle].join(" ").normalize("NFKC").toLowerCase().includes(query)) continue;
+						if (![
+							record.name,
+							record.office,
+							...record.facts,
+							sourceTitle
+						].join(" ").normalize("NFKC").toLowerCase().includes(query)) {
+							continue;
+						}
 						const parameters = new URLSearchParams({ kind: "reference", source: snapshot.sourceId, name: record.name });
-						items.push({ id: `${snapshot.sourceId}:${record.id}`, type: "candidate", title: record.name, href: `/record/${stateCode}/${record.id}?${parameters}`, meta: [record.office, stateName].join(" · "), summary: record.facts[0] ?? "", updatedAt: snapshot.retrievedAt });
+						items.push({
+							id: `${snapshot.sourceId}:${record.id}`,
+							type: "candidate",
+							title: record.name,
+							href: `/record/${stateCode}/${record.id}?${parameters}`,
+							meta: [record.office, stateName].join(" · "),
+							summary: record.facts[0] ?? "",
+							updatedAt: snapshot.retrievedAt
+						});
 					}
 				}
 			}
 			catch { incomplete = true; }
 		}));
 	}
-	return { items: items.sort((left, right) => left.title.localeCompare(right.title) || left.id.localeCompare(right.id)), incomplete };
+	return {
+		items: items.sort((left, right) => left.title.localeCompare(right.title) || left.id.localeCompare(right.id)),
+		incomplete
+	};
 }
 
 export function mergeSearchGroups(groups: SearchResultGroup[], additions: SearchResultGroup[]) {
-	const linkedPeople = new Set([...groups, ...additions].flatMap(group => group.items.flatMap(item => item.type === "candidate" && item.personProfileSlug ? [item.personProfileSlug] : [])));
-	const merged = new Map(groups.map(group => [group.type, { ...group, items: [...group.items] }]));
+	const linkedPeople = new Set([
+		...groups,
+		...additions
+	].flatMap(group => group.items.flatMap(item => item.type === "candidate" && item.personProfileSlug
+		? [item.personProfileSlug]
+		: [])));
+	const merged = new Map(groups.map(group => [
+		group.type,
+		{
+			...group,
+			items: [...group.items]
+		}
+	]));
 	for (const group of additions) {
 		const existing = merged.get(group.type);
-		if (!existing) merged.set(group.type, group);
-		else existing.items = [...new Map([...existing.items, ...group.items].map(item => [item.href, item])).values()].slice(0, 100);
+		if (!existing) {
+			merged.set(group.type, group);
+		}
+		else {
+			existing.items = [
+				...new Map([
+					...existing.items,
+					...group.items
+				].map(item => [item.href, item])).values()
+			].slice(0, 100);
+		}
 	}
-	return [...merged.values()].map(group => ({ ...group, items: group.items.filter(item => item.type !== "representative" || !linkedPeople.has(item.id)) })).filter(group => group.items.length);
+	return [
+		...merged.values()
+	].map(group => ({
+		...group,
+		items: group.items.filter(item => item.type !== "representative" || !linkedPeople.has(item.id))
+	})).filter(group => group.items.length);
 }

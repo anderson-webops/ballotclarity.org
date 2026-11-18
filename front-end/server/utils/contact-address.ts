@@ -43,7 +43,9 @@ const defaultContactAddressCodes = [
 
 function getPositiveIntegerEnv(name: string, fallback: number) {
 	const value = Number(process.env[name]);
-	return Number.isSafeInteger(value) && value > 0 ? value : fallback;
+	return Number.isSafeInteger(value) && value > 0
+		? value
+		: fallback;
 }
 
 const contactAddressRateLimiter = createBoundedRequestThrottle({
@@ -163,7 +165,9 @@ function getNodeRequestURL(event: H3Event) {
 		|| "localhost";
 	const forwardedProto = getFirstHeaderValue(getNodeRequestHeader(event, "x-forwarded-proto"));
 	const socket = event.node.req.socket;
-	const protocol = forwardedProto || ("encrypted" in socket && socket.encrypted ? "https" : "http");
+	const protocol = forwardedProto || ("encrypted" in socket && socket.encrypted
+		? "https"
+		: "http");
 	const rawUrl = event.node?.req.url || "/";
 
 	try {
@@ -243,7 +247,9 @@ function setNodeCookie(event: H3Event, name: string, value: string, options: Coo
 	const cookies = Array.isArray(existing)
 		? existing.map(String)
 		: existing
-			? [String(existing)]
+			? [
+					String(existing)
+				]
 			: [];
 
 	response.setHeader("Set-Cookie", [...cookies, serialized]);

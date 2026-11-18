@@ -37,7 +37,12 @@ function page(entries: PrintedLine[]) {
 	}).join("")}</page>`;
 }
 function header(date: string): PrintedLine[] {
-	return [[90, 67, "CASSIA COUNTY"], [266, 67, "STATE OF IDAHO"], [430, 67, `NOVEMBER ${Number(date.slice(-2))}, ${date.slice(0, 4)}`], [254, 95, "SAMPLE BALLOT"]];
+	return [
+		[90, 67, "CASSIA COUNTY"],
+		[266, 67, "STATE OF IDAHO"],
+		[430, 67, `NOVEMBER ${Number(date.slice(-2))}, ${date.slice(0, 4)}`],
+		[254, 95, "SAMPLE BALLOT"]
+	];
 }
 function candidateDocument(date = source.electionDate) {
 	return `<doc>${page([
@@ -104,24 +109,85 @@ function candidateDocument(date = source.electionDate) {
 	])}${questionPage()}</doc>`;
 }
 function questionPage(fire = false, date = source.electionDate) {
-	const entries: PrintedLine[] = [[45, 45, "BALLOT MEASURES"], [45, 105, "House Joint Resolution 4"], [45, 120, "Question: Example official question."], [45, 145, "Yes"], [45, 160, "No"], [45, 210, "House Joint Resolution 6"], [45, 230, "Question: Another official question."], [45, 250, "Yes"], [45, 265, "No"], [230, 55, "PROPOSITION 1"], [230, 80, "Question: Example proposition."], [230, 100, "Yes"], [230, 115, "No"], [410, 55, "IDAHO ADVISORY QUESTION"], [410, 90, "Which option should be selected?"], [410, 110, "choose only one answer"], ...["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta"].map((option, index): PrintedLine => [410, 140 + index * 20, `Option ${option}`]), [410, 950, "Typ:01 Seq:0001 Spl:01"]];
+	const entries: PrintedLine[] = [
+		[45, 45, "BALLOT MEASURES"],
+		[45, 105, "House Joint Resolution 4"],
+		[45, 120, "Question: Example official question."],
+		[45, 145, "Yes"],
+		[45, 160, "No"],
+		[45, 210, "House Joint Resolution 6"],
+		[45, 230, "Question: Another official question."],
+		[45, 250, "Yes"],
+		[45, 265, "No"],
+		[230, 55, "PROPOSITION 1"],
+		[230, 80, "Question: Example proposition."],
+		[230, 100, "Yes"],
+		[230, 115, "No"],
+		[410, 55, "IDAHO ADVISORY QUESTION"],
+		[410, 90, "Which option should be selected?"],
+		[410, 110, "choose only one answer"],
+		...[
+			"Alpha",
+			"Beta",
+			"Gamma",
+			"Delta",
+			"Epsilon",
+			"Zeta"
+		].map((option, index): PrintedLine => [410, 140 + index * 20, `Option ${option}`]),
+		[410, 950, "Typ:01 Seq:0001 Spl:01"]
+	];
 	if (fire) entries.push([410, 300, "EXAMPLE RURAL FIRE"], [410, 312, "PROTECTION DISTRICT"], [410, 350, "TEMPORARY OVERRIDE LEVY"], [410, 390, `to be voted on November ${Number(date.slice(-2))}, ${date.slice(0, 4)}.`], [410, 450, "IN FAVOR OF authorizing the"], [410, 461, "temporary override levy"], [410, 500, "AGAINST authorizing the"], [410, 511, "temporary override levy"], [45, 950, "118 Example 66"]);
 	return page(entries);
 }
 function schoolDocument(date = source.electionDate) {
-	return `<doc>${page([...header(date), [45, 150, "EXAMPLE JOINT SCHOOL DISTRICT NO. 381"], [45, 180, "SUPPLEMENTAL LEVY ELECTION"], [45, 235, `November ${Number(date.slice(-2))}, ${date.slice(0, 4)}`], [45, 280, "The Board of Trustees of Example Joint School District seeks authorization."], [45, 320, "QUESTION: Shall the Board of Trustees levy a supplemental levy?"], [45, 480, "IN FAVOR OF AUTHORIZING A SUPPLEMENTAL LEVY EXAMPLE"], [45, 510, "AGAINST AUTHORIZING A SUPPLEMENTAL LEVY EXAMPLE"]])}</doc>`;
+	return `<doc>${page([
+		...header(date),
+		[45, 150, "EXAMPLE JOINT SCHOOL DISTRICT NO. 381"],
+		[45, 180, "SUPPLEMENTAL LEVY ELECTION"],
+		[45, 235, `November ${Number(date.slice(-2))}, ${date.slice(0, 4)}`],
+		[45, 280, "The Board of Trustees of Example Joint School District seeks authorization."],
+		[45, 320, "QUESTION: Shall the Board of Trustees levy a supplemental levy?"],
+		[45, 480, "IN FAVOR OF AUTHORIZING A SUPPLEMENTAL LEVY EXAMPLE"],
+		[45, 510, "AGAINST AUTHORIZING A SUPPLEMENTAL LEVY EXAMPLE"]
+	])}</doc>`;
 }
 function documentUrls(date = source.electionDate) {
 	return legacy.documentUrls!.map(url => url.replace("/2026/", `/${date.slice(0, 4)}/`));
 }
 function discovery(date = source.electionDate, pending = false, urls = documentUrls(date)) {
 	const labels = ["Cassia County General Election Sample Ballot.pdf", "Example School Sample Ballot.pdf", "Example Fire Sample Ballot.pdf"];
-	const body = `<main><div class="fr-view"><h2>November ${Number(date.slice(-2))}, ${date.slice(0, 4)} General Election Sample Ballots</h2>${pending ? "<p>Sample ballots will be posted.</p>" : `<ul>${urls.map((url, index) => `<li><a href="${url}">${labels[index]}</a></li>`).join("")}</ul>`}<p><a href="https://elections.sos.idaho.gov/ElectionLink/ElectionLink/VoterSearch.aspx">Check voter record</a></p></div></main>${footer}`;
-	return { schemaVersion: 1, type: "cassia-discovery", policies: cassiaPolicyReceipts, index: { url: cassiaDiscoveryUrl, body, sha256: hash(body), retrievedAt: instant } };
+	const body = `<main><div class="fr-view"><h2>November ${Number(date.slice(-2))}, ${date.slice(0, 4)} General Election Sample Ballots</h2>${pending
+		? "<p>Sample ballots will be posted.</p>"
+		: `<ul>${urls.map((url, index) => `<li><a href="${url}">${labels[index]}</a></li>`).join("")}</ul>`}<p><a href="https://elections.sos.idaho.gov/ElectionLink/ElectionLink/VoterSearch.aspx">Check voter record</a></p></div></main>${footer}`;
+	return {
+		schemaVersion: 1,
+		type: "cassia-discovery",
+		policies: cassiaPolicyReceipts,
+		index: {
+			url: cassiaDiscoveryUrl,
+			body,
+			sha256: hash(body),
+			retrievedAt: instant
+		}
+	};
 }
 function capture(date = source.electionDate) {
-	const bodies = [candidateDocument(date), schoolDocument(date), `<doc>${questionPage(true, date)}</doc>`];
-	return { schemaVersion: 1, type: "cassia-candidate-capture", discovery: discovery(date), documents: documentUrls(date).map((url, index) => ({ url, text: bodies[index]!, sha256: hash(bodies[index]!), retrievedAt: instant })) };
+	const bodies = [
+		candidateDocument(date),
+		schoolDocument(date),
+		`<doc>${questionPage(true, date)}</doc>`
+	];
+	return {
+		schemaVersion: 1,
+		type: "cassia-candidate-capture",
+		discovery: discovery(date),
+		documents: documentUrls(date).map((url, index) => ({
+			url,
+			text: bodies[index]!,
+			sha256: hash(bodies[index]!),
+			retrievedAt: instant
+		}))
+	};
 }
 function selected(date = source.electionDate): StateBallotSource {
 	if (date === source.electionDate) return source;
@@ -154,7 +220,14 @@ test("Cassia retains every supporting document and repeated question without tur
 	assert.deepEqual(result.questions.filter(item => item.title === "Idaho advisory question").map(item => item.choices.length), [6, 6]);
 	assert.equal(result.ballotQuestions.length, 6);
 	assert.equal(result.ballotQuestions.find(item => item.explicitlyAdvisory)!.choices.length, 6);
-	assert.deepEqual(result.ballotQuestions.map(item => item.sourceUrl), [documentUrls()[0], documentUrls()[0], documentUrls()[0], documentUrls()[0], documentUrls()[1], documentUrls()[2]]);
+	assert.deepEqual(result.ballotQuestions.map(item => item.sourceUrl), [
+		documentUrls()[0],
+		documentUrls()[0],
+		documentUrls()[0],
+		documentUrls()[0],
+		documentUrls()[1],
+		documentUrls()[2]
+	]);
 	assert.ok(result.ballotQuestions.every(item => item.voterApplicabilityVerified === false));
 	assert.deepEqual(parseBundledStateSnapshot(source, serializeStoredStateSnapshot({ source, ...result }), "automatic").records, JSON.parse(JSON.stringify(result.records)));
 });
@@ -182,7 +255,16 @@ test("Cassia stored questions retain complete text, precise sources and actual c
 test("Cassia repeated wording, changed choices and disappeared accepted questions require review", () => {
 	const result = parsed();
 	assert.deepEqual(buildCassiaBallotQuestions(source, result.questions, result.documents, result.ballotQuestions), result.ballotQuestions);
-	for (const questions of [result.questions.filter(item => item.scope === "statewide"), result.questions.map(item => ({ ...item, officialText: `${item.officialText} Changed` })), result.questions.map(item => ({ ...item, choices: item.title === "Idaho advisory question" ? [...item.choices].reverse() : item.choices }))])
+	for (const questions of [
+		result.questions.filter(item => item.scope === "statewide"),
+		result.questions.map(item => ({ ...item, officialText: `${item.officialText} Changed` })),
+		result.questions.map(item => ({
+			...item,
+			choices: item.title === "Idaho advisory question"
+				? [...item.choices].reverse()
+				: item.choices
+		}))
+	])
 		assert.throws(() => buildCassiaBallotQuestions(source, questions, result.documents, result.ballotQuestions), /accepted question changed or disappeared/u);
 	const repeated = structuredClone(result.questions);
 	repeated[5]!.officialText += " Changed";
@@ -234,11 +316,31 @@ test("Cassia future elections use offered links and preserve typed district isol
 	assert.equal(parsed(date).ballotQuestions.length, 6);
 	assert.notEqual(parsed(date).ballotQuestions[0]!.id, parsed().ballotQuestions[0]!.id);
 	assert.ok(parsed(date).ballotQuestions.every(item => item.sourceUrl!.includes("/2030/")));
-	const preview = buildStateBallotPreview({ source: future, ...parsed(date) }, { districtMatches: [{ id: "county-16031", label: "Cassia County", districtType: "county", districtCode: "5", sourceSystem: "test" }] })!;
+	const preview = buildStateBallotPreview({
+		source: future,
+		...parsed(date)
+	}, {
+		districtMatches: [
+			{
+				id: "county-16031",
+				label: "Cassia County",
+				districtType: "county",
+				districtCode: "5",
+				sourceSystem: "test"
+			}
+		]
+	})!;
 	assert.equal(preview.contests.some(item => item.title.includes("Magistrate")), false);
 });
 test("Cassia malformed geometry, unknown offices, wrong dates, altered retention and contradictory repeated questions fail closed", () => {
-	for (const altered of [candidateDocument().replace("width=\"612\"", "width=\"800\""), candidateDocument().replace("Secretary", "Unrecognized"), candidateDocument().replace("NOVEMBER", "DECEMBER"), candidateDocument().replace("retained", "elected"), candidateDocument().replace("xMin=\"79.2\"", "xMin=\"150\""), candidateDocument().replace("(REP)", "(REPUBLICAN)")]) assert.throws(() => readCassiaCandidateDocuments(source, [altered]), /requires? review|validated office|contains no candidate rows/u);
+	for (const altered of [
+		candidateDocument().replace("width=\"612\"", "width=\"800\""),
+		candidateDocument().replace("Secretary", "Unrecognized"),
+		candidateDocument().replace("NOVEMBER", "DECEMBER"),
+		candidateDocument().replace("retained", "elected"),
+		candidateDocument().replace("xMin=\"79.2\"", "xMin=\"150\""),
+		candidateDocument().replace("(REP)", "(REPUBLICAN)")
+	]) assert.throws(() => readCassiaCandidateDocuments(source, [altered]), /requires? review|validated office|contains no candidate rows/u);
 	const value = capture();
 	value.documents[2]!.text = value.documents[2]!.text.replace("Another", "Conflicting");
 	assert.throws(() => parseCassiaCandidateCapture(source, JSON.stringify(value), now), /disagrees/u);
@@ -267,10 +369,19 @@ test("Cassia captures and stored snapshots reject clock, source, document and co
 test("Cassia denied or changed robots stop discovery before any index or PDF request", async () => {
 	for (const status of [200, 403, 404]) {
 		let requests = 0;
-		await assert.rejects(fetchCassiaCycleDiscovery({ requestDocument: async () => {
-			requests++;
-			return { status, body: Buffer.from("User-agent: *\nDisallow: /"), contentType: "text/plain", etag: undefined };
-		}, requestText: async () => { throw new Error("Unexpected page request"); }, sleep: async () => {} }), /policy requires review/u);
+		await assert.rejects(fetchCassiaCycleDiscovery({
+			requestDocument: async () => {
+				requests++;
+				return {
+					status,
+					body: Buffer.from("User-agent: *\nDisallow: /"),
+					contentType: "text/plain",
+					etag: undefined
+				};
+			},
+			requestText: async () => { throw new Error("Unexpected page request"); },
+			sleep: async () => {}
+		}), /policy requires review/u);
 		assert.equal(requests, 1);
 	}
 });
@@ -278,13 +389,24 @@ test("Cassia bounded acquisition fetches each offered PDF once and never follows
 	const value = capture();
 	const requested: string[] = [];
 	let extracted = 0;
-	const body = await fetchCassiaCandidateCapture(source, { discovery: JSON.stringify(value.discovery), now: () => now, sleep: async (milliseconds) => {
-		assert.equal(milliseconds, 11000);
-	}, requestDocument: async (url, options) => {
-		requested.push(url);
-		assert.deepEqual(options.allowedHosts, ["www.cassia.gov"]);
-		return { status: 200, body: Buffer.from("%PDF-synthetic"), contentType: "application/pdf", etag: undefined };
-	}, extractor: async () => value.documents[extracted++]!.text });
+	const body = await fetchCassiaCandidateCapture(source, {
+		discovery: JSON.stringify(value.discovery),
+		now: () => now,
+		sleep: async (milliseconds) => {
+			assert.equal(milliseconds, 11000);
+		},
+		requestDocument: async (url, options) => {
+			requested.push(url);
+			assert.deepEqual(options.allowedHosts, ["www.cassia.gov"]);
+			return {
+				status: 200,
+				body: Buffer.from("%PDF-synthetic"),
+				contentType: "application/pdf",
+				etag: undefined
+			};
+		},
+		extractor: async () => value.documents[extracted++]!.text
+	});
 	assert.deepEqual(requested, documentUrls());
 	assert.equal(parseCassiaCandidateCapture(source, body, now).records.length, 12);
 });
@@ -294,27 +416,50 @@ test("Cassia future pending imports become durable, stay cached and preserve the
 	const future = selected(date);
 	let requests = 0;
 	try {
-		const options = { familyId: source.id, catalogPath: join(directory, "cycles.json"), dataDirectory: directory, now: () => now };
-		const pending = await fetchCassiaCandidateCapture(future, { discovery: JSON.stringify(discovery(date, true)), now: () => now });
+		const options = {
+			familyId: source.id,
+			catalogPath: join(directory, "cycles.json"),
+			dataDirectory: directory,
+			now: () => now
+		};
+		const pending = await fetchCassiaCandidateCapture(future, {
+			discovery: JSON.stringify(discovery(date, true)),
+			now: () => now
+		});
 		assert.throws(() => parseCassiaCandidateCapture(future, pending, now), StateBallotAwaitingRecordsError);
-		const first = await syncStateBallotCycles({ ...options, fetchDiscovery: async () => JSON.stringify(discovery(date, true)), fetchCandidates: async () => pending });
+		const first = await syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => JSON.stringify(discovery(date, true)),
+			fetchCandidates: async () => pending
+		});
 		assert.equal(first.results[0]!.status, "awaiting-records");
-		const available = await syncStateBallotCycles({ ...options, fetchDiscovery: async () => JSON.stringify(discovery(date)), fetchCandidates: async () => {
-			requests++;
-			return JSON.stringify(capture(date));
-		} });
+		const available = await syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => JSON.stringify(discovery(date)),
+			fetchCandidates: async () => {
+				requests++;
+				return JSON.stringify(capture(date));
+			}
+		});
 		assert.equal(available.results[0]!.status, "available");
 		assert.equal(available.results[0]!.records, 12);
 		assert.equal(available.results[0]!.imported, true);
-		const cached = await syncStateBallotCycles({ ...options, fetchDiscovery: async () => JSON.stringify(discovery(date)), fetchCandidates: async () => {
-			throw new Error("Unexpected converter/network request");
-		} });
+		const cached = await syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => JSON.stringify(discovery(date)),
+			fetchCandidates: async () => {
+				throw new Error("Unexpected converter/network request");
+			}
+		});
 		assert.equal(cached.results[0]!.retrievedAt, instant);
 		assert.equal(cached.results[0]!.imported, false);
 		assert.equal(requests, 1);
 		const stored = await createStateBallotStorage(directory).read(future);
 		assert.deepEqual(stored!.records, JSON.parse(JSON.stringify(parsed(date).records)));
-		await assert.rejects(syncStateBallotCycles({ ...options, fetchDiscovery: async () => JSON.stringify(discovery(date, true)) }), /disappeared/u);
+		await assert.rejects(syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => JSON.stringify(discovery(date, true))
+		}), /disappeared/u);
 	}
 	finally { await rm(directory, { recursive: true }); }
 });
@@ -329,11 +474,23 @@ test("Cassia keeps reviewed legacy reads offline and preserves a recoverable ori
 		await storage.write({ source: legacy, ...facts });
 		const originalFiles = await readdir(directory);
 		const original = await readFile(join(directory, originalFiles[0]!));
-		const reader = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => now, fetchText: async () => {
-			throw new Error("Legacy read must not collect");
-		} });
+		const reader = createStateBallotRepository({
+			sources: [source],
+			dataDirectory: directory,
+			now: () => now,
+			fetchText: async () => {
+				throw new Error("Legacy read must not collect");
+			}
+		});
 		assert.equal((await reader.getSnapshot("ID"))!.source.retrievalPolicy, "manual-snapshot");
-		const options = { familyId: source.id, catalogPath: join(directory, "cycles.json"), dataDirectory: directory, now: () => now, fetchDiscovery: async () => JSON.stringify(discovery()), fetchCandidates: async () => JSON.stringify(capture()) };
+		const options = {
+			familyId: source.id,
+			catalogPath: join(directory, "cycles.json"),
+			dataDirectory: directory,
+			now: () => now,
+			fetchDiscovery: async () => JSON.stringify(discovery()),
+			fetchCandidates: async () => JSON.stringify(capture())
+		};
 		const blockedBackup = join(directory, `${originalFiles[0]}.legacy-${hash(original.toString("utf8"))}`);
 		await mkdir(blockedBackup);
 		const failed = await syncStateBallotCycles(options);
@@ -352,18 +509,31 @@ test("Cassia keeps reviewed legacy reads offline and preserves a recoverable ori
 test("Cassia changed offered links invalidate imports without editing the source configuration", async () => {
 	const directory = await mkdtemp(join(tmpdir(), "ballot-cassia-links-"));
 	try {
-		const options = { familyId: source.id, catalogPath: join(directory, "cycles.json"), dataDirectory: directory, now: () => now };
-		await syncStateBallotCycles({ ...options, fetchDiscovery: async () => JSON.stringify(discovery()), fetchCandidates: async () => JSON.stringify(capture()) });
+		const options = {
+			familyId: source.id,
+			catalogPath: join(directory, "cycles.json"),
+			dataDirectory: directory,
+			now: () => now
+		};
+		await syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => JSON.stringify(discovery()),
+			fetchCandidates: async () => JSON.stringify(capture())
+		});
 		const urls = documentUrls();
 		urls[0] = urls[0]!.replace("Sample%20Ballot.pdf", "Revised%20Sample%20Ballot.pdf");
 		const changed = capture();
 		changed.discovery = discovery(source.electionDate, false, urls);
 		changed.documents[0]!.url = urls[0]!;
 		let requests = 0;
-		const result = await syncStateBallotCycles({ ...options, fetchDiscovery: async () => JSON.stringify(changed.discovery), fetchCandidates: async () => {
-			requests++;
-			return JSON.stringify(changed);
-		} });
+		const result = await syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => JSON.stringify(changed.discovery),
+			fetchCandidates: async () => {
+				requests++;
+				return JSON.stringify(changed);
+			}
+		});
 		assert.equal(requests, 1);
 		assert.equal(result.results[0]!.status, "available");
 		assert.equal(result.results[0]!.imported, true);
@@ -374,14 +544,28 @@ test("Cassia changed offered links invalidate imports without editing the source
 test("Cassia refreshes changed PDF contents at the same URL after expiry instead of freezing the first import", async () => {
 	const directory = await mkdtemp(join(tmpdir(), "ballot-cassia-refresh-"));
 	try {
-		const options = { familyId: source.id, catalogPath: join(directory, "cycles.json"), dataDirectory: directory };
-		await syncStateBallotCycles({ ...options, now: () => now, fetchDiscovery: async () => JSON.stringify(discovery()), fetchCandidates: async () => JSON.stringify(capture()) });
+		const options = {
+			familyId: source.id,
+			catalogPath: join(directory, "cycles.json"),
+			dataDirectory: directory
+		};
+		await syncStateBallotCycles({
+			...options,
+			now: () => now,
+			fetchDiscovery: async () => JSON.stringify(discovery()),
+			fetchCandidates: async () => JSON.stringify(capture())
+		});
 		const later = now + 2 * 86400000;
 		const changed = capture();
 		changed.documents[0]!.text = changed.documents[0]!.text.replace(">Federal</word>", ">Revised</word>");
 		changed.documents[0]!.sha256 = hash(changed.documents[0]!.text);
 		for (const document of changed.documents) document.retrievedAt = new Date(later).toISOString();
-		const result = await syncStateBallotCycles({ ...options, now: () => later, fetchDiscovery: async () => JSON.stringify(discovery()), fetchCandidates: async () => JSON.stringify(changed) });
+		const result = await syncStateBallotCycles({
+			...options,
+			now: () => later,
+			fetchDiscovery: async () => JSON.stringify(discovery()),
+			fetchCandidates: async () => JSON.stringify(changed)
+		});
 		assert.equal(result.results[0]!.status, "available");
 		assert.equal(result.results[0]!.imported, true);
 		assert.equal(result.results[0]!.retrievedAt, new Date(later).toISOString());
@@ -392,14 +576,25 @@ test("Cassia refreshes changed PDF contents at the same URL after expiry instead
 test("Cassia rejects changed or disappeared accepted question text while retaining exact restartable snapshots", async () => {
 	const directory = await mkdtemp(join(tmpdir(), "ballot-cassia-question-retention-"));
 	try {
-		const options = { familyId: source.id, catalogPath: join(directory, "cycles.json"), dataDirectory: directory, now: () => now, fetchDiscovery: async () => JSON.stringify(discovery()), fetchCandidates: async () => JSON.stringify(capture()) };
+		const options = {
+			familyId: source.id,
+			catalogPath: join(directory, "cycles.json"),
+			dataDirectory: directory,
+			now: () => now,
+			fetchDiscovery: async () => JSON.stringify(discovery()),
+			fetchCandidates: async () => JSON.stringify(capture())
+		};
 		await syncStateBallotCycles(options);
 		const storage = createStateBallotStorage(directory);
 		const before = serializeStoredStateSnapshot((await storage.read(source))!);
 		const changed = capture();
 		changed.documents[1]!.text = changed.documents[1]!.text.replace(">supplemental</word>", ">different</word>");
 		changed.documents[1]!.sha256 = hash(changed.documents[1]!.text);
-		const result = await syncStateBallotCycles({ ...options, now: () => now + 2 * 86400000, fetchCandidates: async () => JSON.stringify(changed) });
+		const result = await syncStateBallotCycles({
+			...options,
+			now: () => now + 2 * 86400000,
+			fetchCandidates: async () => JSON.stringify(changed)
+		});
 		assert.equal(result.results[0]!.status, "unavailable");
 		assert.equal(serializeStoredStateSnapshot((await createStateBallotStorage(directory).read(source))!), before);
 	}

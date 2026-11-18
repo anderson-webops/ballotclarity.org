@@ -17,7 +17,9 @@ export function resolveProviderResponseMaxBytes(
 	value: number | string | null | undefined = process.env.PROVIDER_RESPONSE_MAX_BYTES,
 	fallback = defaultProviderResponseMaxBytes,
 ) {
-	const parsed = typeof value === "number" ? value : Number(value);
+	const parsed = typeof value === "number"
+		? value
+		: Number(value);
 	const normalized = Math.floor(parsed);
 
 	return Number.isSafeInteger(normalized) && normalized > 0
@@ -32,7 +34,9 @@ function declaredResponseLength(response: Response) {
 		return null;
 
 	const parsed = Number(contentLength);
-	return Number.isSafeInteger(parsed) ? parsed : null;
+	return Number.isSafeInteger(parsed)
+		? parsed
+		: null;
 }
 
 export async function readProviderResponseText(

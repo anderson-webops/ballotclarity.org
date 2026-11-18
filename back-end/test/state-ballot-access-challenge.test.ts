@@ -15,9 +15,18 @@ test("access challenges preserve reviewed records and clocks, report access rath
 	const directory = await realpath(await mkdtemp(join(tmpdir(), "ballot-access-challenge-")));
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	const source = configuredStateBallotSources.find(source => source.id === "ri-east-greenwich-2026")!;
-	const capture = JSON.stringify({ schemaVersion: 1, type: "east-greenwich-candidate-capture", discovery: eastGreenwichDiscoveryFixture(), electionDate: source.electionDate });
+	const capture = JSON.stringify({
+		schemaVersion: 1,
+		type: "east-greenwich-candidate-capture",
+		discovery: eastGreenwichDiscoveryFixture(),
+		electionDate: source.electionDate
+	});
 	const parsed = parseEastGreenwichCandidateCapture(source, capture, eastGreenwichFixtureTime);
-	const reviewed = { ...parsed, source: legacyReviewedStateBallotSource(source)!, collectionIndexSha256: undefined };
+	const reviewed = {
+		...parsed,
+		source: legacyReviewedStateBallotSource(source)!,
+		collectionIndexSha256: undefined
+	};
 	const storage = createStateBallotStorage(directory);
 	await storage.write(reviewed);
 	const accepted = await storage.read(source);
@@ -27,11 +36,27 @@ test("access challenges preserve reviewed records and clocks, report access rath
 	let clock = eastGreenwichFixtureTime;
 	let blocked = true;
 	let requests = 0;
-	const repository = createStateBallotRepository({ sources: [source], dataDirectory: directory, refreshReviewedLegacy: true, now: () => clock, fetchText: async () => {
-		requests++;
-		if (!blocked) return capture;
-		return fetchRemoteSourceText("https://example.com/elections", { allowedHosts: ["example.com"], resolveAddresses: async () => [{ address: "93.184.216.34", family: 4 }], transport: async () => ({ statusCode: 200, headers: { "content-type": "text/html" }, body: Readable.from(["<html><body><iframe id='main-iframe' src='/_Incapsula_Resource?synthetic'>Request unsuccessful. Incapsula incident ID: synthetic</iframe></body></html>"]) }) });
-	} });
+	const repository = createStateBallotRepository({
+		sources: [source],
+		dataDirectory: directory,
+		refreshReviewedLegacy: true,
+		now: () => clock,
+		fetchText: async () => {
+			requests++;
+			if (!blocked) return capture;
+			return fetchRemoteSourceText("https://example.com/elections", {
+				allowedHosts: ["example.com"],
+				resolveAddresses: async () => [
+					{ address: "93.184.216.34", family: 4 }
+				],
+				transport: async () => ({
+					statusCode: 200,
+					headers: { "content-type": "text/html" },
+					body: Readable.from(["<html><body><iframe id='main-iframe' src='/_Incapsula_Resource?synthetic'>Request unsuccessful. Incapsula incident ID: synthetic</iframe></body></html>"])
+				})
+			});
+		}
+	});
 	const fallback = await repository.getSnapshot("RI");
 	assert.deepEqual(fallback, accepted);
 	assert.deepEqual(await readFile(file), before);

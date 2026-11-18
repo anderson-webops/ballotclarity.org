@@ -43,7 +43,19 @@ export async function readMauiCharterCollectionRun(directory: string, now = Date
 		if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
 		throw error;
 	}
-	if (!exact(value, ["schemaVersion", "type", "status", "startedAt", "finishedAt", "lastSuccessAt", "publisherRequests", "reason", "latest"]) || value.schemaVersion !== 1 || value.type !== "maui-charter-collection-run" || !["running", "succeeded", "failed"].includes(String(value.status)) || !instant(value.startedAt, now) || (value.finishedAt !== null && (!instant(value.finishedAt, now) || value.finishedAt < value.startedAt)) || (value.lastSuccessAt !== null && (!instant(value.lastSuccessAt, now) || value.lastSuccessAt > (value.finishedAt ?? value.startedAt))) || (value.status === "running") !== (value.finishedAt === null) || !Number.isSafeInteger(value.publisherRequests) || Number(value.publisherRequests) < 0 || Number(value.publisherRequests) > 12 || ![null, "collection-failed", "persistence-failed"].includes(value.reason as null) || (value.status === "failed") !== (value.reason !== null) || (value.latest !== null && !captureReference(value.latest)) || (value.status === "succeeded" && (value.latest === null || value.lastSuccessAt !== value.finishedAt))) throw new Error("Maui collection evidence requires review.");
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"status",
+		"startedAt",
+		"finishedAt",
+		"lastSuccessAt",
+		"publisherRequests",
+		"reason",
+		"latest"
+	]) || value.schemaVersion !== 1 || value.type !== "maui-charter-collection-run" || !["running", "succeeded", "failed"].includes(String(value.status)) || !instant(value.startedAt, now) || (value.finishedAt !== null && (!instant(value.finishedAt, now) || value.finishedAt < value.startedAt)) || (value.lastSuccessAt !== null && (!instant(value.lastSuccessAt, now) || value.lastSuccessAt > (value.finishedAt ?? value.startedAt))) || (value.status === "running") !== (value.finishedAt === null) || !Number.isSafeInteger(value.publisherRequests) || Number(value.publisherRequests) < 0 || Number(value.publisherRequests) > 12 || ![null, "collection-failed", "persistence-failed"].includes(value.reason as null) || (value.status === "failed") !== (value.reason !== null) || (value.latest !== null && !captureReference(value.latest)) || (value.status === "succeeded" && (value.latest === null || value.lastSuccessAt !== value.finishedAt))) {
+		throw new Error("Maui collection evidence requires review.");
+	}
 	return value as unknown as MauiCharterCollectionRun;
 }
 
@@ -111,7 +123,11 @@ export async function readLatestMauiCharterCapture(directory: string, now = Date
 
 async function checkArchive(directory: string, nextBytes: number, kind: "capture" | "review") {
 	const entries = (await readdir(directory)).filter(name => /^maui-(?:charter|review)-/u.test(name));
-	if (entries.filter(name => name.startsWith("maui-charter-")).length + (kind === "capture" ? 1 : 0) > maximumArchiveFiles || entries.length + 1 > maximumArchiveFiles * 2) throw new Error("Maui collection storage needs a retention review.");
+	if (entries.filter(name => name.startsWith("maui-charter-")).length + (kind === "capture"
+		? 1
+		: 0) > maximumArchiveFiles || entries.length + 1 > maximumArchiveFiles * 2) {
+		throw new Error("Maui collection storage needs a retention review.");
+	}
 	let bytes = 0;
 	for (const name of entries) {
 		const metadata = await lstat(join(directory, name));
@@ -122,7 +138,9 @@ async function checkArchive(directory: string, nextBytes: number, kind: "capture
 }
 
 function questionChanges(inventory: ReturnType<typeof readMauiCharterCapture>, previous: ReturnType<typeof readMauiCharterCapture> | null) {
-	const earlier = previous?.electionDate === inventory.electionDate ? previous.questions : [];
+	const earlier = previous?.electionDate === inventory.electionDate
+		? previous.questions
+		: [];
 	return {
 		added: inventory.questions.filter(question => !earlier.some(row => row.resolution === question.resolution)).map(question => question.resolution),
 		changed: inventory.questions.filter(question => earlier.some(row => row.resolution === question.resolution && JSON.stringify(row) !== JSON.stringify(question))).map(question => question.resolution),
@@ -133,9 +151,22 @@ function questionChanges(inventory: ReturnType<typeof readMauiCharterCapture>, p
 async function readQueuedReview(directory: string, latest: StoredCapture, inventory: ReturnType<typeof readMauiCharterCapture>, now: number) {
 	const name = `maui-review-${inventory.electionDate}-${latest.inventorySha256}.json`;
 	const existing: unknown = JSON.parse((await readBoundedStateDataBytes(join(directory, name))).toString("utf8"));
-	if (!exact(existing, ["schemaVersion", "type", "capture", "previousCapture", "inventory", "changes", "publicationApproved", "automaticImportApproved"]) || existing.schemaVersion !== 1 || existing.type !== "maui-charter-review-queue" || !captureReference(existing.capture) || (existing.previousCapture !== null && !captureReference(existing.previousCapture)) || existing.capture.inventorySha256 !== latest.inventorySha256 || JSON.stringify(existing.inventory) !== JSON.stringify(inventory) || existing.publicationApproved !== false || existing.automaticImportApproved !== false) throw new Error("The pending Maui review no longer matches its source inventory.");
+	if (!exact(existing, [
+		"schemaVersion",
+		"type",
+		"capture",
+		"previousCapture",
+		"inventory",
+		"changes",
+		"publicationApproved",
+		"automaticImportApproved"
+	]) || existing.schemaVersion !== 1 || existing.type !== "maui-charter-review-queue" || !captureReference(existing.capture) || (existing.previousCapture !== null && !captureReference(existing.previousCapture)) || existing.capture.inventorySha256 !== latest.inventorySha256 || JSON.stringify(existing.inventory) !== JSON.stringify(inventory) || existing.publicationApproved !== false || existing.automaticImportApproved !== false) {
+		throw new Error("The pending Maui review no longer matches its source inventory.");
+	}
 	await readCapture(directory, existing.capture, now);
-	const previous = existing.previousCapture ? (await readCapture(directory, existing.previousCapture, now)).inventory : null;
+	const previous = existing.previousCapture
+		? (await readCapture(directory, existing.previousCapture, now)).inventory
+		: null;
 	if (JSON.stringify(existing.changes) !== JSON.stringify(questionChanges(inventory, previous))) throw new Error("The pending Maui review changes no longer match their original evidence.");
 	return name;
 }
@@ -150,7 +181,16 @@ async function queueReview(directory: string, latest: StoredCapture, previous: A
 		if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
 	}
 	const changes = questionChanges(inventory, previous.inventory);
-	const body = `${JSON.stringify({ schemaVersion: 1, type: "maui-charter-review-queue", capture: latest, previousCapture: previous.run?.latest ?? null, inventory, changes, publicationApproved: false, automaticImportApproved: false }, null, 2)}\n`;
+	const body = `${JSON.stringify({
+		schemaVersion: 1,
+		type: "maui-charter-review-queue",
+		capture: latest,
+		previousCapture: previous.run?.latest ?? null,
+		inventory,
+		changes,
+		publicationApproved: false,
+		automaticImportApproved: false
+	}, null, 2)}\n`;
 	await checkArchive(directory, Buffer.byteLength(body), "review");
 	await writeState(directory, name, body, true);
 	return name;
@@ -163,16 +203,44 @@ export async function collectMauiCharterMeasures({ directory, accessReview, now 
 		const previous = await readLatestMauiCharterCapture(canonical, now());
 		if (previous.run && Date.parse(previous.run.startedAt) + mauiCharterRefreshIntervalMs > now()) {
 			if (previous.run.status !== "succeeded") throw new Error("Maui collection is awaiting its next permitted attempt.");
-			return { collected: false, publisherRequests: 0, latest: previous.run.latest, status: previous.run.status, path: join(canonical, previous.run.latest!.name), sha256: previous.run.latest!.sha256, questions: previous.inventory!.questions.length, electionDate: previous.inventory!.electionDate, imported: false, published: false, publicationApproved: false, automaticImportApproved: false };
+			return {
+				collected: false,
+				publisherRequests: 0,
+				latest: previous.run.latest,
+				status: previous.run.status,
+				path: join(canonical, previous.run.latest!.name),
+				sha256: previous.run.latest!.sha256,
+				questions: previous.inventory!.questions.length,
+				electionDate: previous.inventory!.electionDate,
+				imported: false,
+				published: false,
+				publicationApproved: false,
+				automaticImportApproved: false
+			};
 		}
-		const run: MauiCharterCollectionRun = { schemaVersion: 1, type: "maui-charter-collection-run", status: "running", startedAt: new Date(now()).toISOString(), finishedAt: null, lastSuccessAt: previous.run?.lastSuccessAt ?? null, publisherRequests: 0, reason: null, latest: previous.run?.latest ?? null };
+		const run: MauiCharterCollectionRun = {
+			schemaVersion: 1,
+			type: "maui-charter-collection-run",
+			status: "running",
+			startedAt: new Date(now()).toISOString(),
+			finishedAt: null,
+			lastSuccessAt: previous.run?.lastSuccessAt ?? null,
+			publisherRequests: 0,
+			reason: null,
+			latest: previous.run?.latest ?? null
+		};
 		await writeRun(canonical, run);
 		let validated = false;
 		try {
-			const capture = await fetchMauiCharterCapture({ accessReview, now, sleep: pause, fetchDocument: async (...args) => {
-				run.publisherRequests++;
-				return request(...args);
-			} });
+			const capture = await fetchMauiCharterCapture({
+				accessReview,
+				now,
+				sleep: pause,
+				fetchDocument: async (...args) => {
+					run.publisherRequests++;
+					return request(...args);
+				}
+			});
 			const inventory = readMauiCharterCapture(capture, now());
 			validated = true;
 			const sameDocuments = previous.capture && JSON.stringify(previous.capture.documents.map(document => [document.url, document.sha256])) === JSON.stringify(capture.documents.map(document => [document.url, document.sha256]));
@@ -181,14 +249,33 @@ export async function collectMauiCharterMeasures({ directory, accessReview, now 
 				const bytes = Buffer.byteLength(`${JSON.stringify({ inventory, capture }, null, 2)}\n`);
 				await checkArchive(canonical, bytes, "capture");
 				const stored = await writeMauiCharterCapture(canonical, capture, now());
-				run.latest = { name: basename(stored.path), sha256: stored.sha256, inventorySha256 };
+				run.latest = {
+					name: basename(stored.path),
+					sha256: stored.sha256,
+					inventorySha256
+				};
 			}
 			const review = await queueReview(canonical, run.latest!, previous, now());
 			run.status = "succeeded";
 			run.finishedAt = new Date(now()).toISOString();
 			run.lastSuccessAt = run.finishedAt;
 			await writeRun(canonical, run);
-			return { collected: true, publisherRequests: run.publisherRequests, latest: run.latest, status: run.status, path: join(canonical, run.latest!.name), sha256: run.latest!.sha256, questions: inventory.questions.length, electionDate: inventory.electionDate, changed: previous.run?.latest?.inventorySha256 !== inventorySha256, review, publicationApproved: false, automaticImportApproved: false, imported: false, published: false };
+			return {
+				collected: true,
+				publisherRequests: run.publisherRequests,
+				latest: run.latest,
+				status: run.status,
+				path: join(canonical, run.latest!.name),
+				sha256: run.latest!.sha256,
+				questions: inventory.questions.length,
+				electionDate: inventory.electionDate,
+				changed: previous.run?.latest?.inventorySha256 !== inventorySha256,
+				review,
+				publicationApproved: false,
+				automaticImportApproved: false,
+				imported: false,
+				published: false
+			};
 		}
 		catch (error) {
 			run.status = "failed";

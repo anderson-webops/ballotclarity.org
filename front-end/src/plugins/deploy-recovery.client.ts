@@ -53,7 +53,9 @@ export default defineNuxtPlugin({
 		});
 
 		window.addEventListener("error", (event) => {
-			recoverFromStaleClient(event.error ?? event, event.target && event.target !== window ? "asset load" : "window error");
+			recoverFromStaleClient(event.error ?? event, event.target && event.target !== window
+				? "asset load"
+				: "window error");
 		}, true);
 
 		window.addEventListener("unhandledrejection", (event) => {

@@ -21,15 +21,37 @@ export function readUnionSampleQuestion(bbox: string, layout: string, document: 
 	readUnionBallotCells(bbox, layout, document, electionDate);
 	if (Buffer.byteLength(bbox) > 4 * 1024 * 1024) return reject();
 	const lines = descendants(parseStateHtml(bbox), node => node.nodeName === "line").map((node): Line => {
-		const line = { text: clean(stateHtmlText(node)), left: Number(attribute(node, "xmin")), right: Number(attribute(node, "xmax")), top: Number(attribute(node, "ymin")), bottom: Number(attribute(node, "ymax")) };
-		if (!line.text || line.text.length > 2000 || ![line.left, line.right, line.top, line.bottom].every(Number.isFinite) || line.left < 0 || line.right > 1824 || line.top < 0 || line.bottom > 1284 || line.left >= line.right || line.top >= line.bottom) return reject();
+		const line = {
+			text: clean(stateHtmlText(node)),
+			left: Number(attribute(node, "xmin")),
+			right: Number(attribute(node, "xmax")),
+			top: Number(attribute(node, "ymin")),
+			bottom: Number(attribute(node, "ymax"))
+		};
+		if (!line.text || line.text.length > 2000 || ![
+			line.left,
+			line.right,
+			line.top,
+			line.bottom
+		].every(Number.isFinite) || line.left < 0 || line.right > 1824 || line.top < 0 || line.bottom > 1284 || line.left >= line.right || line.top >= line.bottom) {
+			return reject();
+		}
 		return line;
 	});
 	if (!lines.length || lines.length > 10000) return reject();
 	const markers = lines.filter(line => /PUBLIC QUESTION|PREGUNTA PÚBLICA|^QUESTION:|^PREGUNTA:|INTERPRETIVE STATEMENT|DECLARACIÓN INTERPRETATIVA/u.test(line.text));
-	const visibleMarkers = [...layout.matchAll(/PUBLIC\s+QUESTION|PREGUNTA\s+PÚBLICA|QUESTION:|PREGUNTA:|INTERPRETIVE\s+STATEMENT|DECLARACIÓN\s+INTERPRETATIVA/gu)];
+	const visibleMarkers = [
+		...layout.matchAll(/PUBLIC\s+QUESTION|PREGUNTA\s+PÚBLICA|QUESTION:|PREGUNTA:|INTERPRETIVE\s+STATEMENT|DECLARACIÓN\s+INTERPRETATIVA/gu)
+	];
 	if (!markers.length && !visibleMarkers.length) return null;
-	const headings = ["PUBLIC QUESTION TO BE VOTED UPON", "PREGUNTA PÚBLICA PARA VOTACIÓN", "QUESTION:", "INTERPRETIVE STATEMENT:", "PREGUNTA:", "DECLARACIÓN INTERPRETATIVA:"];
+	const headings = [
+		"PUBLIC QUESTION TO BE VOTED UPON",
+		"PREGUNTA PÚBLICA PARA VOTACIÓN",
+		"QUESTION:",
+		"INTERPRETIVE STATEMENT:",
+		"PREGUNTA:",
+		"DECLARACIÓN INTERPRETATIVA:"
+	];
 	if (markers.length !== headings.length || visibleMarkers.length !== headings.length) return reject();
 	const selected = headings.map((heading) => {
 		const matches = markers.filter(line => line.text === heading);
@@ -42,7 +64,10 @@ export function readUnionSampleQuestion(bbox: string, layout: string, document: 
 	const visible = canonical(layout);
 	if (lines.some(line => line.left < 640 && line.right > 120 && line.top >= selected[0]!.top && (line.left < 120 || line.right > 640 || line.bottom > 1200))) return reject();
 	const panel = lines.filter(line => line.left >= 120 && line.right <= 640 && line.top >= selected[0]!.top && line.bottom <= 1200).sort((left, right) => left.top - right.top || left.left - right.left);
-	const consumed = new Set<Line>([...selected, ...choices]);
+	const consumed = new Set<Line>([
+		...selected,
+		...choices
+	]);
 	function paragraph(start: Line, end: number) {
 		const content = panel.filter(line => line.top > start.top && line.top < end && !consumed.has(line));
 		if (!content.length || content.length > 30 || content.some(line => line.left > 135 || line.bottom - line.top < 10 || line.bottom - line.top > 17 || !visible.includes(canonical(line.text)))) return reject();
@@ -56,5 +81,12 @@ export function readUnionSampleQuestion(bbox: string, layout: string, document: 
 	const spanishQuestion = paragraph(selected[4]!, selected[5]!.top);
 	const spanishStatement = paragraph(selected[5]!, 1200);
 	if (panel.some(line => !consumed.has(line)) || !englishQuestion.endsWith("?") || !spanishQuestion.startsWith("¿") || !spanishQuestion.endsWith("?")) return reject();
-	return { printedHeading: headings[0]!, municipality: document.claims[0]!.municipality, officialText: { en: englishQuestion, es: spanishQuestion }, interpretiveStatement: { en: englishStatement, es: spanishStatement }, printedChoices: ["YES/SÍ", "NO"], page: 1 };
+	return {
+		printedHeading: headings[0]!,
+		municipality: document.claims[0]!.municipality,
+		officialText: { en: englishQuestion, es: spanishQuestion },
+		interpretiveStatement: { en: englishStatement, es: spanishStatement },
+		printedChoices: ["YES/SÍ", "NO"],
+		page: 1
+	};
 }

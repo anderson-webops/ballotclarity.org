@@ -214,7 +214,10 @@ function buildElectionLogisticsSites(
 			const address = normalizeAddress(location.address);
 			const name = location.name?.trim() || location.address?.locationName?.trim() || `${siteType} site ${index + 1}`;
 			const sourceLabel = (location.sources ?? []).map(source => source.name?.trim()).filter(Boolean).join(", ");
-			const note = [location.pollingHours?.trim(), sourceLabel].filter(Boolean).join(" · ");
+			const note = [
+				location.pollingHours?.trim(),
+				sourceLabel
+			].filter(Boolean).join(" · ");
 
 			if (!name && !address)
 				return null;
@@ -257,7 +260,9 @@ function buildCandidatePreviews(contests: GoogleCivicContest[] | undefined) {
 			if (!name)
 				return null;
 
-			const profileImages = [buildCandidateImage(candidate)].filter((image): image is ProfileImage => Boolean(image));
+			const profileImages = [
+				buildCandidateImage(candidate)
+			].filter((image): image is ProfileImage => Boolean(image));
 
 			return {
 				candidateUrl: normalizePublicHref(candidate.candidateUrl) || undefined,
@@ -283,14 +288,18 @@ function buildBallotContentCandidate(
 	if (!name)
 		return null;
 
-	const profileImages = [buildCandidateImage(candidate)].filter((image): image is ProfileImage => Boolean(image));
+	const profileImages = [
+		buildCandidateImage(candidate)
+	].filter((image): image is ProfileImage => Boolean(image));
 
 	return {
 		candidateUrl: normalizePublicHref(candidate.candidateUrl) || undefined,
 		email: candidate.email?.trim() || undefined,
 		id: `google-civic:ballot-candidate:${contestIndex}:${candidateIndex}`,
 		name,
-		orderOnBallot: typeof candidate.orderOnBallot === "number" ? candidate.orderOnBallot : undefined,
+		orderOnBallot: typeof candidate.orderOnBallot === "number"
+			? candidate.orderOnBallot
+			: undefined,
 		party: candidate.party?.trim() || undefined,
 		phone: candidate.phone?.trim() || undefined,
 		profileImages: profileImages.length ? profileImages : undefined,
@@ -642,7 +651,9 @@ async function fetchGoogleCivicWithPreferredIpv4(resource: URL, headers: Record<
 			}
 
 			response.on("data", (chunk) => {
-				const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+				const buffer = Buffer.isBuffer(chunk)
+					? chunk
+					: Buffer.from(chunk);
 				receivedBytes += buffer.byteLength;
 
 				if (receivedBytes > maxResponseBytes) {
@@ -837,14 +848,36 @@ export function createGoogleCivicClient(
 				ballotContentPreviews: buildVerifiedBallotContentPreviews(payload, actions),
 				logistics,
 				note: [
-					normalizedAddress ? `Google Civic accepted the address as ${normalizedAddress}.` : "Google Civic accepted the submitted address.",
-					payload.election?.name ? `The current official election record is ${payload.election.name}${payload.election.electionDay ? ` on ${payload.election.electionDay}` : ""}.` : "",
-					!payload.election?.name ? "Google Civic did not return an election-specific record for this address, but it did accept the address format." : "",
-					pollingLocation ? `The provider returned a polling location at ${pollingLocation}.` : "",
-					earlyVoteCount ? `${earlyVoteCount} early-vote site${earlyVoteCount === 1 ? "" : "s"} returned.` : "",
-					dropOffCount ? `${dropOffCount} ballot drop-off location${dropOffCount === 1 ? "" : "s"} returned.` : "",
+					normalizedAddress
+						? `Google Civic accepted the address as ${normalizedAddress}.`
+						: "Google Civic accepted the submitted address.",
+					payload.election?.name
+						? `The current official election record is ${payload.election.name}${payload.election.electionDay
+							? ` on ${payload.election.electionDay}`
+							: ""}.`
+						: "",
+					!payload.election?.name
+						? "Google Civic did not return an election-specific record for this address, but it did accept the address format."
+						: "",
+					pollingLocation
+						? `The provider returned a polling location at ${pollingLocation}.`
+						: "",
+					earlyVoteCount
+						? `${earlyVoteCount} early-vote site${earlyVoteCount === 1
+							? ""
+							: "s"} returned.`
+						: "",
+					dropOffCount
+						? `${dropOffCount} ballot drop-off location${dropOffCount === 1
+							? ""
+							: "s"} returned.`
+						: "",
 					payload.mailOnly ? "This precinct is marked as mail-only." : "",
-					otherElectionCount ? `${otherElectionCount} additional election${otherElectionCount === 1 ? "" : "s"} also matched this address.` : ""
+					otherElectionCount
+						? `${otherElectionCount} additional election${otherElectionCount === 1
+							? ""
+							: "s"} also matched this address.`
+						: ""
 				].filter(Boolean).join(" "),
 				verified: true
 			};

@@ -28,7 +28,9 @@ function segmentWidth(health: AdminSourceHealth) {
 }
 
 // Ticks each minute so a check moves to overdue once its time passes.
-const now = useNow({ scheduler: callback => useIntervalFn(callback, 60_000) });
+const now = useNow({
+	scheduler: callback => useIntervalFn(callback, 60_000)
+});
 const scheduledChecks = computed(() => orderScheduledSourceChecks(props.status.sources, now.value));
 </script>
 

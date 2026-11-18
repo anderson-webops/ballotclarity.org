@@ -30,8 +30,22 @@ function buildCandidate(): Candidate {
 			totalRaised: 1_000_000
 		},
 		keyActions: [
-			{ date: "2026-02-01", id: "older", significance: "", sources: [], summary: "", title: "Older action" },
-			{ date: "2026-05-01", id: "newer", significance: "", sources: [], summary: "", title: "Newer action" }
+			{
+				date: "2026-02-01",
+				id: "older",
+				significance: "",
+				sources: [],
+				summary: "",
+				title: "Older action"
+			},
+			{
+				date: "2026-05-01",
+				id: "newer",
+				significance: "",
+				sources: [],
+				summary: "",
+				title: "Newer action"
+			}
 		],
 		slug: "test-candidate",
 		updatedAt: "2026-03-30"
@@ -55,11 +69,31 @@ test("the finance breakdown shows money outside the top-funder sample", () => {
 
 test("lookup provenance cites every representative provider with the canonical Open States authority", () => {
 	const representatives = [
-		{ districtLabel: "District 1", id: "os-1", name: "Open States Rep", officeTitle: "Representative", openstatesUrl: "https://openstates.org/person/a/", sourceSystem: "Open States", updatedAt: "2026-03-14" },
-		{ districtLabel: "District 2", id: "cg-1", name: "Congress Member", officeTitle: "U.S. Representative", sourceSystem: "Congress.gov" }
+		{
+			districtLabel: "District 1",
+			id: "os-1",
+			name: "Open States Rep",
+			officeTitle: "Representative",
+			openstatesUrl: "https://openstates.org/person/a/",
+			sourceSystem: "Open States",
+			updatedAt: "2026-03-14"
+		},
+		{
+			districtLabel: "District 2",
+			id: "cg-1",
+			name: "Congress Member",
+			officeTitle: "U.S. Representative",
+			sourceSystem: "Congress.gov"
+		}
 	] as unknown as LocationRepresentativeMatch[];
 	const tools = [
-		{ description: "", id: "tool-1", kind: "official-verification", title: "My Voter Page", url: "https://example.gov/voter" }
+		{
+			description: "",
+			id: "tool-1",
+			kind: "official-verification",
+			title: "My Voter Page",
+			url: "https://example.gov/voter"
+		}
 	] as unknown as LocationLookupAction[];
 	const summary = buildLookupProvenanceSummary({
 		districtMatches: [],

@@ -40,9 +40,30 @@ export interface ElectionOfficeInventory {
 const hash = (body: string) => createHash("sha256").update(body).digest("hex");
 const clean = (value: string) => value.normalize("NFKC").replace(/\s+/gu, " ").trim();
 const text = (node: StateHtmlNode) => clean(stateHtmlText(node));
-const groups = ["Federal Offices", "State Offices", "Constitutional Amendment", "County Offices", "City Offices", "School District Offices", "Judicial Offices"];
+const groups = [
+	"Federal Offices",
+	"State Offices",
+	"Constitutional Amendment",
+	"County Offices",
+	"City Offices",
+	"School District Offices",
+	"Judicial Offices"
+];
 const requiredGroups = groups.filter(group => group !== "Constitutional Amendment");
-const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const months = [
+	"January",
+	"February",
+	"March",
+	"April",
+	"May",
+	"June",
+	"July",
+	"August",
+	"September",
+	"October",
+	"November",
+	"December"
+];
 const statewideRoles: Record<string, ComparisonRole> = {
 	"United States Senator": "us-senate",
 	"President and Vice President": "president-ticket",
@@ -73,12 +94,29 @@ function officeValues(group: string, court: string, value: string): Omit<Schedul
 		const role = statewideRoles[value];
 		if (role && (group === "Federal Offices") === ["us-senate", "president-ticket"].includes(role)) return { kind: "office", office: value, comparisonRole: role };
 		const match = /^(United States Representative|State Senator|State Representative)(?: for)? Districts: (.+)$/u.exec(value);
-		if (match && (group === "Federal Offices") === (match[1] === "United States Representative")) return { kind: "district-list", office: match[1]!, districts: districtList(match[2]!, match[1] === "State Representative"), comparisonRole: match[1] === "United States Representative" ? "us-house" : match[1] === "State Senator" ? "state-senate" : "state-house" };
+		if (match && (group === "Federal Offices") === (match[1] === "United States Representative")) {
+			return {
+				kind: "district-list",
+				office: match[1]!,
+				districts: districtList(match[2]!, match[1] === "State Representative"),
+				comparisonRole: match[1] === "United States Representative"
+					? "us-house"
+					: match[1] === "State Senator"
+						? "state-senate"
+						: "state-house"
+			};
+		}
 	}
 	if (group === "County Offices") {
 		if (["County Attorney", "County Sheriff"].includes(value)) return { kind: "office", office: value };
 		const match = /^(County Commissioner|Three Rivers Park Commissioner) for Districts (.+)$/u.exec(value);
-		if (match) return { kind: "district-list", office: match[1]!, districts: districtList(match[2]!) };
+		if (match) {
+			return {
+				kind: "district-list",
+				office: match[1]!,
+				districts: districtList(match[2]!)
+			};
+		}
 	}
 	if (["City Offices", "School District Offices"].includes(group)) {
 		const match = /^([\p{L}\d .'-]{1,100})(?::|,) (.{1,500})$/u.exec(value);
@@ -90,7 +128,11 @@ function officeValues(group: string, court: string, value: string): Omit<Schedul
 		const named = /^(.+?) \(([^()]+)\)$/u.exec(value);
 		if (named && (!/^\p{Lu}/u.test(named[2]!) || !named[2]!.includes(" ") || !Array.from(named[2]!).every(character => /^[\p{L} .'-]$/u.test(character) || /^\p{M}$/u.test(character)) || /unexpired|term|year|vacan|appoint|retention/iu.test(named[2]!))) throw new Error("The judicial reference is not a verified name-only annotation.");
 		const office = named?.[1] ?? value;
-		if (court === "4th District Court" ? !/^Judge, Fourth District Court, Seat [1-9]\d?$/u.test(office) : !/^Associate Justice, (?:Seat )?[1-9]\d?$/u.test(office)) throw new Error("The scheduled judicial office requires review.");
+		if (court === "4th District Court"
+			? !/^Judge, Fourth District Court, Seat [1-9]\d?$/u.test(office)
+			: !/^Associate Justice, (?:Seat )?[1-9]\d?$/u.test(office)) {
+			throw new Error("The scheduled judicial office requires review.");
+		}
 		return { kind: "office", area: court, office };
 	}
 	throw new Error("The scheduled office label requires review.");
@@ -99,7 +141,9 @@ function officeValues(group: string, court: string, value: string): Omit<Schedul
 export function parseHennepinOfficeInventory(body: string, retrievedAt: string, now = Date.now()): ElectionOfficeInventory {
 	if (Buffer.byteLength(body) > 2 * 1024 * 1024 || !Number.isFinite(Date.parse(retrievedAt)) || new Date(retrievedAt).toISOString() !== retrievedAt || Date.parse(retrievedAt) > now) throw new Error("The office inventory capture or clock is invalid.");
 	const document = parseStateHtml(body);
-	const pending = [{ node: document, depth: 0 }];
+	const pending = [
+		{ node: document, depth: 0 }
+	];
 	let visited = 0;
 	while (pending.length) {
 		const { node, depth } = pending.pop()!;
@@ -108,14 +152,27 @@ export function parseHennepinOfficeInventory(body: string, retrievedAt: string, 
 	}
 	const mains = descendants(document, node => node.nodeName === "main");
 	if (mains.length !== 1 || descendants(document, node => node.nodeName === "h1" && text(node) === "Offices on the ballot").length !== 1) throw new Error("The office inventory publication identity requires review.");
-	const updates = [...text(mains[0]!).matchAll(/Last updated: ([A-Z][a-z]+ [1-9]\d?, 20\d{2})/gu)];
+	const updates = [
+		...text(mains[0]!).matchAll(/Last updated: ([A-Z][a-z]+ [1-9]\d?, 20\d{2})/gu)
+	];
 	if (updates.length !== 1) throw new Error("The office inventory publication date requires review.");
 	const publicationDate = date(updates[0]![1]!);
 	if (publicationDate > retrievedAt.slice(0, 10)) throw new Error("The office inventory publication date is in the future.");
 	const regions = descendants(mains[0]!, node => (node.childNodes ?? []).some(child => child.nodeName === "h2" && attribute(child, "id") === "general-election"));
 	if (regions.length !== 1) throw new Error("The office inventory has no unique general-election section.");
 	const region = regions[0]!;
-	if ([region, ...descendants(region, () => true)].some(node => ["form", "input", "script", "iframe", "table"].includes(node.nodeName) || node.attrs?.some(item => item.name === "hidden") || attribute(node, "aria-hidden") === "true" || /display\s*:\s*none|visibility\s*:\s*hidden/iu.test(attribute(node, "style")))) throw new Error("The office inventory contains unreviewed hidden or interactive content.");
+	if ([
+		region,
+		...descendants(region, () => true)
+	].some(node => [
+		"form",
+		"input",
+		"script",
+		"iframe",
+		"table"
+	].includes(node.nodeName) || node.attrs?.some(item => item.name === "hidden") || attribute(node, "aria-hidden") === "true" || /display\s*:\s*none|visibility\s*:\s*hidden/iu.test(attribute(node, "style")))) {
+		throw new Error("The office inventory contains unreviewed hidden or interactive content.");
+	}
 	const dates = descendants(region, node => node.nodeName === "h3");
 	if (dates.length !== 1) throw new Error("The office inventory election date is ambiguous.");
 	const electionDate = date(text(dates[0]!));
@@ -150,15 +207,40 @@ export function parseHennepinOfficeInventory(body: string, retrievedAt: string, 
 			if (group === "Constitutional Amendment") {
 				const links = descendants(item, child => child.nodeName === "a");
 				if (links.length !== 1 || text(item) !== `Constitutional amendments on the ballot in ${electionDate.slice(0, 4)}` || attribute(links[0]!, "href") !== "https://sos.mn.gov/elections-voting/whats-on-my-ballot/constitutional-amendments/") throw new Error("The separate amendment reference requires review.");
-				questionReferences.push({ label: text(item), url: attribute(links[0]!, "href") });
+				questionReferences.push({
+					label: text(item),
+					url: attribute(links[0]!, "href")
+				});
 				continue;
 			}
 			const values = officeValues(group, court, text(item));
-			rows.push({ id: hash(JSON.stringify([hennepinOfficeSource.id, electionDate, group, values])).slice(0, 24), group, ...values });
+			rows.push({
+				id: hash(JSON.stringify([
+					hennepinOfficeSource.id,
+					electionDate,
+					group,
+					values
+				])).slice(0, 24),
+				group,
+				...values
+			});
 		}
 	}
 	if (requiredGroups.some(item => !observedGroups.has(item) || !rows.some(row => row.group === item)) || !rows.length || rows.length > 1000 || new Set(rows.map(row => row.id)).size !== rows.length || questionReferences.length > 1) throw new Error("The scheduled office set is incomplete or duplicated.");
-	return { schemaVersion: 1, type: "scheduled-office-inventory", sourceId: hennepinOfficeSource.id, stateCode: "MN", countyName: "Hennepin County", electionDate, publicationDate, sourceUrl: hennepinOfficeSource.url, sourceSha256: hash(body), retrievedAt, rows, questionReferences };
+	return {
+		schemaVersion: 1,
+		type: "scheduled-office-inventory",
+		sourceId: hennepinOfficeSource.id,
+		stateCode: "MN",
+		countyName: "Hennepin County",
+		electionDate,
+		publicationDate,
+		sourceUrl: hennepinOfficeSource.url,
+		sourceSha256: hash(body),
+		retrievedAt,
+		rows,
+		questionReferences
+	};
 }
 
 export function auditOfficeInventory(inventory: ElectionOfficeInventory, snapshots: readonly StateBallotSnapshot[]) {
@@ -170,7 +252,11 @@ export function auditOfficeInventory(inventory: ElectionOfficeInventory, snapsho
 			let role: ComparisonRole | undefined;
 			let district = "";
 			if (["congressional", "state-senate", "state-house"].includes(record.scope)) {
-				role = record.scope === "congressional" ? "us-house" : record.scope === "state-senate" ? "state-senate" : "state-house";
+				role = record.scope === "congressional"
+					? "us-house"
+					: record.scope === "state-senate"
+						? "state-senate"
+						: "state-house";
 				district = record.district ?? "";
 			}
 			else if (record.scope === "statewide") {
@@ -178,12 +264,24 @@ export function auditOfficeInventory(inventory: ElectionOfficeInventory, snapsho
 			}
 			if (!role) continue;
 			const key = `${role}:${district}`;
-			evidence.set(key, [...evidence.get(key) ?? [], { sourceId: snapshot.source.id, recordId: record.id }]);
+			evidence.set(key, [
+				...evidence.get(key) ?? [],
+				{ sourceId: snapshot.source.id, recordId: record.id }
+			]);
 		}
 	}
 	const comparisons = inventory.rows.filter(row => row.comparisonRole).flatMap(row => (row.districts ?? [""]).map((district) => {
 		const key = `${row.comparisonRole}:${district}`;
-		return { inventoryRowId: row.id, key, status: !current.length ? "not-compared" : evidence.has(key) ? "represented-in-selected-snapshots" : "not-represented-in-selected-snapshots", records: evidence.get(key) ?? [] };
+		return {
+			inventoryRowId: row.id,
+			key,
+			status: !current.length
+				? "not-compared"
+				: evidence.has(key)
+					? "represented-in-selected-snapshots"
+					: "not-represented-in-selected-snapshots",
+			records: evidence.get(key) ?? []
+		};
 	}));
 	return {
 		schemaVersion: 1,
@@ -191,9 +289,20 @@ export function auditOfficeInventory(inventory: ElectionOfficeInventory, snapsho
 		sourceId: inventory.sourceId,
 		electionDate: inventory.electionDate,
 		sourceSha256: inventory.sourceSha256,
-		status: !snapshots.length ? "candidate-input-not-configured" : !current.length ? "no-same-election-candidate-snapshot" : "compared",
+		status: !snapshots.length
+			? "candidate-input-not-configured"
+			: !current.length
+					? "no-same-election-candidate-snapshot"
+					: "compared",
 		comparisonScope: "Exact federal and nonjudicial state office/district keys in the selected snapshots; not candidate qualification, personal eligibility, all current officials, or a coverage percentage.",
-		candidateSources: snapshots.map(snapshot => ({ id: snapshot.source.id, electionDate: snapshot.source.electionDate, sourceSha256: snapshot.sha256, factsSha256: hash(JSON.stringify(snapshot.records)), retrievedAt: snapshot.retrievedAt, compared: current.includes(snapshot) })).sort((first, second) => first.id.localeCompare(second.id)),
+		candidateSources: snapshots.map(snapshot => ({
+			id: snapshot.source.id,
+			electionDate: snapshot.source.electionDate,
+			sourceSha256: snapshot.sha256,
+			factsSha256: hash(JSON.stringify(snapshot.records)),
+			retrievedAt: snapshot.retrievedAt,
+			compared: current.includes(snapshot)
+		})).sort((first, second) => first.id.localeCompare(second.id)),
 		inventoryRows: inventory.rows.length,
 		comparableScheduledOffices: comparisons.length,
 		representedOffices: comparisons.filter(item => item.status === "represented-in-selected-snapshots").length,
@@ -204,7 +313,36 @@ export function auditOfficeInventory(inventory: ElectionOfficeInventory, snapsho
 }
 
 export function serializeOfficeInventoryCsv(inventory: ElectionOfficeInventory) {
-	const cell = (value: string) => `"${(/^[=+\-@\t\r]/u.test(value) ? "'" : "") + value.replace(/"/gu, "\"\"")}"`;
-	const rows = [["id", "group", "kind", "area", "office", "districts", "election_date", "publication_date", "source_url", "source_sha256", "retrieved_at"], ...inventory.rows.map(row => [row.id, row.group, row.kind, row.area ?? "", row.office, row.districts?.join("|") ?? "", inventory.electionDate, inventory.publicationDate, inventory.sourceUrl, inventory.sourceSha256, inventory.retrievedAt])];
+	const cell = (value: string) => `"${(/^[=+\-@\t\r]/u.test(value)
+		? "'"
+		: "") + value.replace(/"/gu, "\"\"")}"`;
+	const rows = [
+		[
+			"id",
+			"group",
+			"kind",
+			"area",
+			"office",
+			"districts",
+			"election_date",
+			"publication_date",
+			"source_url",
+			"source_sha256",
+			"retrieved_at"
+		],
+		...inventory.rows.map(row => [
+			row.id,
+			row.group,
+			row.kind,
+			row.area ?? "",
+			row.office,
+			row.districts?.join("|") ?? "",
+			inventory.electionDate,
+			inventory.publicationDate,
+			inventory.sourceUrl,
+			inventory.sourceSha256,
+			inventory.retrievedAt
+		])
+	];
 	return `${rows.map(row => row.map(cell).join(",")).join("\n")}\n`;
 }

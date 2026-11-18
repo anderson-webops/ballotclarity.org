@@ -9,7 +9,11 @@ const sourceRoot = fileURLToPath(new URL("../src", import.meta.url));
 function vueFiles(directory: string): string[] {
 	return readdirSync(directory, { withFileTypes: true }).flatMap(entry => entry.isDirectory()
 		? vueFiles(join(directory, entry.name))
-		: entry.name.endsWith(".vue") ? [join(directory, entry.name)] : []);
+		: entry.name.endsWith(".vue")
+			? [
+					join(directory, entry.name)
+				]
+			: []);
 }
 
 test("launch icons are rendered only by the destination-aware shared link", () => {

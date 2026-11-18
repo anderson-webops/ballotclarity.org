@@ -31,8 +31,12 @@ test("ZIP and reverse-geography requests use bounded abort signals", async () =>
 		return new Response(JSON.stringify({
 			result: {
 				geographies: {
-					Counties: [{ COUNTY: "121", NAME: "Fulton County" }],
-					States: [{ NAME: "Georgia", STUSAB: "GA" }],
+					Counties: [
+						{ COUNTY: "121", NAME: "Fulton County" }
+					],
+					States: [
+						{ NAME: "Georgia", STUSAB: "GA" }
+					],
 				},
 			},
 		}), {

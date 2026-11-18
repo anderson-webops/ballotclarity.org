@@ -27,7 +27,12 @@ export function registerElectionReferenceRoutes(app: Express, repository: Electi
 			return;
 		}
 		try {
-			response.json({ stateCode, elections: repository?.getElections ? await repository.getElections(stateCode) : [] });
+			response.json({
+				stateCode,
+				elections: repository?.getElections
+					? await repository.getElections(stateCode)
+					: []
+			});
 		}
 		catch {
 			response.status(503).json({ message: "Candidate information is temporarily unavailable." });
@@ -42,23 +47,52 @@ export function registerElectionReferenceRoutes(app: Express, repository: Electi
 		let filters: ReturnType<typeof parseStateRecordFilters>;
 		let selection: ReturnType<typeof parseElectionReferenceSelection>;
 		try {
-			if (Object.keys(request.query).some(key => !["q", "scope", "offset", "limit", "source", "electionDate"].includes(key))) throw new Error("The selected information filter is invalid.");
+			if (Object.keys(request.query).some(key => ![
+				"q",
+				"scope",
+				"offset",
+				"limit",
+				"source",
+				"electionDate"
+			].includes(key))) {
+				throw new Error("The selected information filter is invalid.");
+			}
 			filters = parseStateRecordFilters(request.query);
 			selection = parseElectionReferenceSelection(request.query);
 		}
 		catch (error) {
-			response.status(400).json({ message: error instanceof Error ? error.message : "The selected information filter is invalid." });
+			response.status(400).json({
+				message: error instanceof Error
+					? error.message
+					: "The selected information filter is invalid."
+			});
 			return;
 		}
 		try {
-			const sources = (repository?.getSources ? await repository.getSources(stateCode) : electionReferenceSources).filter(item => item.stateCode === stateCode);
+			const sources = (repository?.getSources
+				? await repository.getSources(stateCode)
+				: electionReferenceSources).filter(item => item.stateCode === stateCode);
 			const selected = selectElectionReferenceSources(sources, stateCode, now(), selection);
 			if ((selection.sourceId || selection.electionDate) && !selected.length) {
 				response.status(400).json({ message: "The selected information source or election is unavailable." });
 				return;
 			}
-			const payload: ElectionReferencesResponse = { available: false, collections: selected.map(source => source.id), stateCode, electionDate: selected[0]?.electionDate, total: 0, matched: 0, offset: filters.offset, limit: filters.limit, records: [] };
-			const snapshots = sources.length && repository ? repository.getSnapshots ? await repository.getSnapshots(stateCode, selection) : [await repository.getSnapshot(stateCode, selection)].filter(item => item !== null) : [];
+			const payload: ElectionReferencesResponse = {
+				available: false,
+				collections: selected.map(source => source.id),
+				stateCode,
+				electionDate: selected[0]?.electionDate,
+				total: 0,
+				matched: 0,
+				offset: filters.offset,
+				limit: filters.limit,
+				records: []
+			};
+			const snapshots = sources.length && repository
+				? repository.getSnapshots
+					? await repository.getSnapshots(stateCode, selection)
+					: [await repository.getSnapshot(stateCode, selection)].filter(item => item !== null)
+				: [];
 			if (snapshots.length) {
 				const collections = snapshots.map((snapshot) => {
 					const source = selected.find(item => item.id === snapshot.sourceId && item.electionDate === snapshot.electionDate && item.stateCode === snapshot.stateCode);

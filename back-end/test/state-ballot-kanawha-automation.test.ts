@@ -28,18 +28,45 @@ test("Kanawha registers a county-only family without replacing statewide records
 	assert.equal(kanawhaHash(kanawhaRobots), kanawhaRobotsSha256);
 });
 test("Kanawha discovers only visible offered reports bound to a unique actual election heading", () => {
-	assert.deepEqual(readKanawhaCandidateIndex(kanawhaIndex()), [{ year: "2026", url: kanawhaDocumentUrl("2026") }]);
+	assert.deepEqual(readKanawhaCandidateIndex(kanawhaIndex()), [
+		{
+			year: "2026",
+			url: kanawhaDocumentUrl("2026")
+		}
+	]);
 	assert.deepEqual(readKanawhaCandidateIndex(kanawhaIndex("2028", false)), []);
-	for (const body of [kanawhaIndex().replace("<section>", "<section hidden>"), kanawhaIndex().replace("2026 General Election", "2026 Primary Election"), kanawhaIndex().replace("View Public Test Results", "Other public test results"), kanawhaIndex().replace("</h2>", "</h2><h2>2028 General Election</h2>"), kanawhaIndex().replace("kanawha.us/wp-content", "other.example/wp-content"), kanawhaIndex().replace("</article>", "<a href=\"/terms\">Terms of Use</a></article>")]) assert.throws(() => readKanawhaCandidateIndex(body));
-	for (const url of [`${kanawhaDocumentUrl("2026")}?download=1`, `${kanawhaDocumentUrl("2026")}#page=1`, kanawhaDocumentUrl("2028"), kanawhaDocumentUrl("2026").replace("Zero-Test", "Certificate")]) assert.throws(() => validateKanawhaDocumentUrl(url, "2026"));
+	for (const body of [
+		kanawhaIndex().replace("<section>", "<section hidden>"),
+		kanawhaIndex().replace("2026 General Election", "2026 Primary Election"),
+		kanawhaIndex().replace("View Public Test Results", "Other public test results"),
+		kanawhaIndex().replace("</h2>", "</h2><h2>2028 General Election</h2>"),
+		kanawhaIndex().replace("kanawha.us/wp-content", "other.example/wp-content"),
+		kanawhaIndex().replace("</article>", "<a href=\"/terms\">Terms of Use</a></article>")
+	]) assert.throws(() => readKanawhaCandidateIndex(body));
+	for (const url of [
+		`${kanawhaDocumentUrl("2026")}?download=1`,
+		`${kanawhaDocumentUrl("2026")}#page=1`,
+		kanawhaDocumentUrl("2028"),
+		kanawhaDocumentUrl("2026").replace("Zero-Test", "Certificate")
+	]) assert.throws(() => validateKanawhaDocumentUrl(url, "2026"));
 });
 test("Kanawha accepts a dated unofficial-results link only for its matching general-election heading", () => {
 	const current = kanawhaIndex().replace("2026 General Election</h2>", "2026 General Election Results</h2>").replace("View Public Test Results", "2026 General Election (Unofficial Results)");
-	assert.deepEqual(readKanawhaCandidateIndex(current), [{ year: "2026", url: kanawhaDocumentUrl("2026") }]);
+	assert.deepEqual(readKanawhaCandidateIndex(current), [
+		{
+			year: "2026",
+			url: kanawhaDocumentUrl("2026")
+		}
+	]);
 	assert.throws(() => readKanawhaCandidateIndex(current.replace("2026 General Election (Unofficial Results)", "2028 General Election (Unofficial Results)")));
 	assert.throws(() => readKanawhaCandidateIndex(current.replace("<section>", "<section hidden>")));
 	const duplicate = kanawhaIndex().replace("View Public Test Results</a>", `View Public Test Results</a><a href="${kanawhaDocumentUrl("2026")}">2026 General Election (Unofficial Results)</a>`);
-	assert.deepEqual(readKanawhaCandidateIndex(duplicate), [{ year: "2026", url: kanawhaDocumentUrl("2026") }]);
+	assert.deepEqual(readKanawhaCandidateIndex(duplicate), [
+		{
+			year: "2026",
+			url: kanawhaDocumentUrl("2026")
+		}
+	]);
 	assert.throws(() => readKanawhaCandidateIndex(duplicate.replace(`href="${kanawhaDocumentUrl("2026")}">2026`, `href="${kanawhaDocumentUrl("2026").replace("/10/", "/11/")}">2026`)));
 });
 test("Kanawha native and rendered facts retain complete rosters while excluding counts, placeholders and incomplete measures", () => {
@@ -67,11 +94,27 @@ test("Kanawha native drawing guards hold hidden text, overlays, changed mappings
 		(commands: string) => commands.replace("(REP ALEX EXAMPLE)Tj", "(REP OTHER EXAMPLE)Tj"),
 	]) {
 		const value = structuredClone(fixture.objects);
-		Object.assign(value.qpdf[1]!, { "obj:3 0 R": { stream: { dict: {}, data: Buffer.from(change(fixture.commands)).toString("base64") } } });
-		assert.throws(() => readKanawhaPreparedDocument({ ...fixture.evidence, objects: JSON.stringify(value) }));
+		Object.assign(value.qpdf[1]!, {
+			"obj:3 0 R": {
+				stream: {
+					dict: {},
+					data: Buffer.from(change(fixture.commands)).toString("base64")
+				}
+			}
+		});
+		assert.throws(() => readKanawhaPreparedDocument({
+			...fixture.evidence,
+			objects: JSON.stringify(value)
+		}));
 	}
-	assert.throws(() => readKanawhaPreparedDocument({ ...fixture.evidence, text: fixture.evidence.text.replace("ALEX EXAMPLE", "OTHER EXAMPLE") }));
-	assert.throws(() => readKanawhaPreparedDocument({ ...fixture.evidence, bbox: fixture.evidence.bbox.replace("width=\"612.000000\"", "width=\"620.000000\"") }));
+	assert.throws(() => readKanawhaPreparedDocument({
+		...fixture.evidence,
+		text: fixture.evidence.text.replace("ALEX EXAMPLE", "OTHER EXAMPLE")
+	}));
+	assert.throws(() => readKanawhaPreparedDocument({
+		...fixture.evidence,
+		bbox: fixture.evidence.bbox.replace("width=\"612.000000\"", "width=\"620.000000\"")
+	}));
 });
 test("Kanawha source and future examples use explicit document dates, not constructed nominees or calendar guesses", () => {
 	const fixture = kanawhaFixture("2028");
@@ -80,10 +123,24 @@ test("Kanawha source and future examples use explicit document dates, not constr
 	assert.equal(stateBallotCycleSources(catalog, fixture.now)[0]!.id, "wv-kanawha-general-2028-11-07");
 	assert.throws(() => kanawhaSource("2028-11-03"));
 	assert.throws(() => readKanawhaDiscovery(JSON.stringify(fixture.discovery), Date.parse("2026-10-27T12:00:00Z")));
-	for (const heading of ["FOR GOVERNOR", "FOR SECRETARY OF STATE", "FOR STATE AUDITOR", "FOR STATE TREASURER", "FOR ATTORNEY GENERAL", "FOR COMMISSIONER OF AGRICULTURE", "FOR COUNTY CLERK", "FOR CIRCUIT CLERK", "FOR SHERIFF", "FOR ASSESSOR", "FOR PROSECUTING ATTORNEY"]) {
+	for (const heading of [
+		"FOR GOVERNOR",
+		"FOR SECRETARY OF STATE",
+		"FOR STATE AUDITOR",
+		"FOR STATE TREASURER",
+		"FOR ATTORNEY GENERAL",
+		"FOR COMMISSIONER OF AGRICULTURE",
+		"FOR COUNTY CLERK",
+		"FOR CIRCUIT CLERK",
+		"FOR SHERIFF",
+		"FOR ASSESSOR",
+		"FOR PROSECUTING ATTORNEY"
+	]) {
 		const future = kanawhaFixture("2028", false, heading);
 		const parsed = parseKanawhaCandidateCapture(future.source, JSON.stringify(future.capture), createStateCandidateRecord, future.now);
-		const expectedScope = /COUNTY CLERK|CIRCUIT CLERK|SHERIFF|ASSESSOR|PROSECUTING ATTORNEY/u.test(heading) ? "local" : "statewide";
+		const expectedScope = /COUNTY CLERK|CIRCUIT CLERK|SHERIFF|ASSESSOR|PROSECUTING ATTORNEY/u.test(heading)
+			? "local"
+			: "statewide";
 		assert.equal(parsed.records[0]!.scope, expectedScope);
 		assert.equal(parsed.records[0]!.status, "listed");
 		assert.equal(parsed.records[0]!.name, "ALEX EXAMPLE");
@@ -109,36 +166,89 @@ test("Kanawha policy receipts are exact, reviewed, complete and separate from ra
 test("Kanawha collector stops on access or policy changes before requesting a candidate report", async () => {
 	for (const blocked of ["robots", "home", "privacy"]) {
 		const requests: string[] = [];
-		await assert.rejects(fetchKanawhaCycleDiscovery({ sleep: async () => {}, request: async (url, options) => {
-			requests.push(url);
-			assert.deepEqual(options.allowedHosts, ["kanawha.us"]);
-			if (url.endsWith("robots.txt")) return { status: blocked === "robots" ? 403 : 200, body: Buffer.from(kanawhaRobots), contentType: "text/plain", etag: undefined };
-			if (url === `${kanawhaOrigin}/`) return { status: 200, body: Buffer.from(kanawhaIndex() + (blocked === "home" ? "<a href=\"/terms\">Terms</a>" : "")), contentType: "text/html", etag: undefined };
-			if (url === kanawhaDiscoveryUrl) return { status: 200, body: Buffer.from(kanawhaIndex()), contentType: "text/html", etag: undefined };
-			assert.equal(url, kanawhaPolicies[0].requestUrl);
-			return { status: 200, body: Buffer.from(`<article>Changed collection policy</article>${kanawhaFooter}`), contentType: "text/html", etag: undefined };
-		} }));
+		await assert.rejects(fetchKanawhaCycleDiscovery({
+			sleep: async () => {},
+			request: async (url, options) => {
+				requests.push(url);
+				assert.deepEqual(options.allowedHosts, ["kanawha.us"]);
+				if (url.endsWith("robots.txt")) {
+					return {
+						status: blocked === "robots"
+							? 403
+							: 200,
+						body: Buffer.from(kanawhaRobots),
+						contentType: "text/plain",
+						etag: undefined
+					};
+				}
+				if (url === `${kanawhaOrigin}/`) {
+					return {
+						status: 200,
+						body: Buffer.from(kanawhaIndex() + (blocked === "home"
+							? "<a href=\"/terms\">Terms</a>"
+							: "")),
+						contentType: "text/html",
+						etag: undefined
+					};
+				}
+				if (url === kanawhaDiscoveryUrl) {
+					return {
+						status: 200,
+						body: Buffer.from(kanawhaIndex()),
+						contentType: "text/html",
+						etag: undefined
+					};
+				}
+				assert.equal(url, kanawhaPolicies[0].requestUrl);
+				return {
+					status: 200,
+					body: Buffer.from(`<article>Changed collection policy</article>${kanawhaFooter}`),
+					contentType: "text/html",
+					etag: undefined
+				};
+			}
+		}));
 		assert(!requests.some(url => url.endsWith(".pdf")));
-		assert.equal(requests.length, blocked === "robots" ? 1 : blocked === "home" ? 2 : 4);
+		assert.equal(requests.length, blocked === "robots"
+			? 1
+			: blocked === "home"
+				? 2
+				: 4);
 	}
 });
 test("Kanawha automatic imports persist, repeat without changes and restart without publisher access", async () => {
 	const fixture = kanawhaFixture();
 	const directory = await mkdtemp(join(tmpdir(), "kanawha-automatic-"));
 	try {
-		const options = { familyId: fixture.source.id, catalogPath: join(directory, "cycles.json"), dataDirectory: directory, now: () => fixture.now, fetchDiscovery: async () => JSON.stringify(fixture.discovery) };
+		const options = {
+			familyId: fixture.source.id,
+			catalogPath: join(directory, "cycles.json"),
+			dataDirectory: directory,
+			now: () => fixture.now,
+			fetchDiscovery: async () => JSON.stringify(fixture.discovery)
+		};
 		const first = await syncStateBallotCycles(options);
 		assert.equal(first.results[0]!.records, 3);
 		assert.equal(first.results[0]!.imported, true);
 		assert.equal((await syncStateBallotCycles(options)).results[0]!.imported, false);
-		const repository = createStateBallotRepository({ sources: [fixture.source], dataDirectory: directory, now: () => fixture.now, fetchText: async () => {
-			throw new Error("Publisher access disabled");
-		} });
+		const repository = createStateBallotRepository({
+			sources: [fixture.source],
+			dataDirectory: directory,
+			now: () => fixture.now,
+			fetchText: async () => {
+				throw new Error("Publisher access disabled");
+			}
+		});
 		const snapshot = await repository.getSnapshot("WV", fixture.source.id);
 		assert(snapshot);
 		assert.equal(snapshot.records.length, 3);
 		assert.equal(snapshot.sourceAsOfDate, "2026-10-14");
-		assert.deepEqual(stateRecordDocumentLinks(fixture.source, snapshot), [{ label: "Test report", url: kanawhaDocumentUrl("2026") }]);
+		assert.deepEqual(stateRecordDocumentLinks(fixture.source, snapshot), [
+			{
+				label: "Test report",
+				url: kanawhaDocumentUrl("2026")
+			}
+		]);
 		assert.deepEqual(parseBundledStateSnapshot(fixture.source, serializeStoredStateSnapshot(snapshot), "automatic").records, snapshot.records);
 		const stored = await createStateBallotStorage(directory).read(fixture.source);
 		assert.deepEqual(stored!.records, snapshot.records);
@@ -150,14 +260,23 @@ test("Kanawha empty future reports wait durably and import automatically when po
 	assert.throws(() => parseKanawhaCandidateCapture(fixture.source, JSON.stringify(fixture.capture), createStateCandidateRecord, fixture.now), StateBallotAwaitingRecordsError);
 	const directory = await mkdtemp(join(tmpdir(), "kanawha-waiting-"));
 	try {
-		const options = { familyId: "wv-kanawha-2026", catalogPath: join(directory, "cycles.json"), dataDirectory: directory, now: () => fixture.now, fetchDiscovery: async () => JSON.stringify(fixture.discovery) };
+		const options = {
+			familyId: "wv-kanawha-2026",
+			catalogPath: join(directory, "cycles.json"),
+			dataDirectory: directory,
+			now: () => fixture.now,
+			fetchDiscovery: async () => JSON.stringify(fixture.discovery)
+		};
 		const result = await syncStateBallotCycles(options);
 		assert.equal(result.results[0]!.status, "awaiting-records");
 		assert.equal(result.results[0]!.records, 0);
 		assert.equal(result.results[0]!.imported, false);
 		assert(await createStateBallotStorage(directory).readPending(fixture.source, fixture.now));
 		const available = kanawhaFixture("2028");
-		const imported = await syncStateBallotCycles({ ...options, fetchDiscovery: async () => JSON.stringify(available.discovery) });
+		const imported = await syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => JSON.stringify(available.discovery)
+		});
 		assert.equal(imported.results[0]!.imported, true);
 		assert.equal(imported.results[0]!.records, 3);
 	}
@@ -166,7 +285,16 @@ test("Kanawha empty future reports wait durably and import automatically when po
 test("Kanawha unavailable offered reports persist waiting without constructing an election date", async () => {
 	const fixture = kanawhaFixture();
 	const { evidence: _evidence, ...publication } = fixture.discovery.documents[0]!;
-	const discovery = { ...fixture.discovery, documents: [{ ...publication, status: 404, sha256: kanawhaHash("") }] };
+	const discovery = {
+		...fixture.discovery,
+		documents: [
+			{
+				...publication,
+				status: 404,
+				sha256: kanawhaHash("")
+			}
+		]
+	};
 	const body = JSON.stringify({ ...fixture.capture, discovery });
 	assert.deepEqual(readKanawhaDiscovery(JSON.stringify(discovery), fixture.now).elections, []);
 	const catalog = discoverStateBallotElectionCycles(JSON.stringify(discovery), fixture.source.id, fixture.now);
@@ -174,14 +302,27 @@ test("Kanawha unavailable offered reports persist waiting without constructing a
 	assert.throws(() => parseKanawhaCandidateCapture(fixture.source, body, createStateCandidateRecord, fixture.now), StateBallotAwaitingRecordsError);
 	const directory = await mkdtemp(join(tmpdir(), "kanawha-unavailable-"));
 	try {
-		const repository = createStateBallotRepository({ sources: [fixture.source], dataDirectory: directory, collectionIndexSha256: { [fixture.source.id]: "a".repeat(64) }, now: () => fixture.now, fetchText: async () => body });
+		const repository = createStateBallotRepository({
+			sources: [fixture.source],
+			dataDirectory: directory,
+			collectionIndexSha256: {
+				[fixture.source.id]: "a".repeat(64)
+			},
+			now: () => fixture.now,
+			fetchText: async () => body
+		});
 		assert.equal(await repository.getSnapshot("WV", fixture.source.id), null);
 		assert(await createStateBallotStorage(directory).readPending(fixture.source, fixture.now));
 		let publisherRequests = 0;
-		const restarted = createStateBallotRepository({ sources: [fixture.source], dataDirectory: directory, now: () => fixture.now, fetchText: async () => {
-			publisherRequests++;
-			throw new Error("Publisher access disabled");
-		} });
+		const restarted = createStateBallotRepository({
+			sources: [fixture.source],
+			dataDirectory: directory,
+			now: () => fixture.now,
+			fetchText: async () => {
+				publisherRequests++;
+				throw new Error("Publisher access disabled");
+			}
+		});
 		assert.equal(await restarted.getSnapshot("WV", fixture.source.id), null);
 		assert.equal(restarted.isAwaitingRecords?.(fixture.source.id), true);
 		assert.equal(publisherRequests, 0);
@@ -192,14 +333,23 @@ test("Kanawha disappearance and roster removals preserve previously accepted dat
 	const fixture = kanawhaFixture();
 	const directory = await mkdtemp(join(tmpdir(), "kanawha-retained-"));
 	try {
-		const options = { familyId: fixture.source.id, catalogPath: join(directory, "cycles.json"), dataDirectory: directory, now: () => fixture.now, fetchDiscovery: async () => JSON.stringify(fixture.discovery) };
+		const options = {
+			familyId: fixture.source.id,
+			catalogPath: join(directory, "cycles.json"),
+			dataDirectory: directory,
+			now: () => fixture.now,
+			fetchDiscovery: async () => JSON.stringify(fixture.discovery)
+		};
 		await syncStateBallotCycles(options);
 		const before = await readFile(options.catalogPath);
 		const missing = structuredClone(fixture.discovery);
 		missing.index.body = kanawhaIndex("2026", false);
 		missing.index.sha256 = kanawhaHash(missing.index.body);
 		missing.documents = [];
-		await assert.rejects(syncStateBallotCycles({ ...options, fetchDiscovery: async () => JSON.stringify(missing) }));
+		await assert.rejects(syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => JSON.stringify(missing)
+		}));
 		assert.deepEqual(await readFile(options.catalogPath), before);
 		const previous = await createStateBallotStorage(directory).read(fixture.source);
 		const empty = kanawhaFixture("2026", true);

@@ -19,14 +19,26 @@ const exact = (value: Record<string, unknown>, keys: string[]) => Object.keys(va
 export async function prepareFultonFilingFiles(path: string, now = Date.now(), validateOnly = false, extractor?: (body: Buffer) => Promise<string>) {
 	const planBody = await readBoundedStateData(path);
 	const plan = JSON.parse(planBody);
-	if (!object(plan) || !exact(plan, ["schemaVersion", "type", "reviewedAt", "candidateFile", "documents", "bindings", "outputDirectory"]) || plan.schemaVersion !== 1 || plan.type !== "fulton-filing-context-preparation" || typeof plan.reviewedAt !== "string" || !Number.isFinite(Date.parse(plan.reviewedAt)) || Date.parse(plan.reviewedAt) > now || now - Date.parse(plan.reviewedAt) > 30 * 86400000 || typeof plan.candidateFile !== "string" || !isAbsolute(plan.candidateFile) || typeof plan.outputDirectory !== "string" || !isAbsolute(plan.outputDirectory) || !Array.isArray(plan.documents) || plan.documents.length !== fultonFilingDocuments.length || !Array.isArray(plan.bindings)) throw new Error("Provide a current explicit Fulton filing review with external output.");
+	if (!object(plan) || !exact(plan, [
+		"schemaVersion",
+		"type",
+		"reviewedAt",
+		"candidateFile",
+		"documents",
+		"bindings",
+		"outputDirectory"
+	]) || plan.schemaVersion !== 1 || plan.type !== "fulton-filing-context-preparation" || typeof plan.reviewedAt !== "string" || !Number.isFinite(Date.parse(plan.reviewedAt)) || Date.parse(plan.reviewedAt) > now || now - Date.parse(plan.reviewedAt) > 30 * 86400000 || typeof plan.candidateFile !== "string" || !isAbsolute(plan.candidateFile) || typeof plan.outputDirectory !== "string" || !isAbsolute(plan.outputDirectory) || !Array.isArray(plan.documents) || plan.documents.length !== fultonFilingDocuments.length || !Array.isArray(plan.bindings)) {
+		throw new Error("Provide a current explicit Fulton filing review with external output.");
+	}
 	assertExternalStateDataDirectory(plan.outputDirectory);
 	const candidateBody = await readBoundedStateData(plan.candidateFile);
 	const metadata = JSON.parse(candidateBody);
 	const source = configuredStateBallotSources.find(source => source.id === "ga-fulton-2026");
 	if (!source || !["automatic", "manual-snapshot"].includes(metadata?.retrievalPolicy)) throw new Error("Fulton filing context requires a matching official snapshot.");
 	const candidates = parseBundledStateSnapshot(source, candidateBody, metadata.retrievalPolicy);
-	const executable = extractor ? undefined : await resolveStateBallotPdfExtractor();
+	const executable = extractor
+		? undefined
+		: await resolveStateBallotPdfExtractor();
 	const extract = extractor ?? ((body: Buffer) => extractStateBallotPdfText(body, executable!, undefined, "layout", 1));
 	const documents = [];
 	for (const [index, document] of plan.documents.entries()) {
@@ -36,11 +48,29 @@ export async function prepareFultonFilingFiles(path: string, now = Date.now(), v
 		documents.push({ text: await extract(bytes), sha256: document.sha256, capturedAt: document.capturedAt });
 	}
 	if (plan.bindings.some(binding => !object(binding) || !exact(binding, ["documentIndex", "name", "recordId"]) || typeof binding.name !== "string" || typeof binding.recordId !== "string")) throw new Error("Fulton filing bindings require exact reviewed names and IDs.");
-	const snapshot = prepareFultonFilingContext({ candidates, documents, bindings: plan.bindings as unknown as FultonFilingBinding[], now });
+	const snapshot = prepareFultonFilingContext({
+		candidates,
+		documents,
+		bindings: plan.bindings as unknown as FultonFilingBinding[],
+		now
+	});
 	parseElectionReferenceSnapshot(fultonFilingReferenceSource, JSON.stringify(snapshot), now);
 	const filename = `election-references-${snapshot.sourceId}.json`;
 	const body = `${JSON.stringify(snapshot, null, 2)}\n`;
-	const result = { schemaVersion: 1, type: "fulton-filing-context-preparation-result", sourceId: snapshot.sourceId, file: filename, sha256: hash(body), recordCount: snapshot.recordCount, factCount: snapshot.recordCount, candidateSha256: hash(candidateBody), reviewSha256: hash(planBody), imported: false, published: false, publisherRequests: 0 };
+	const result = {
+		schemaVersion: 1,
+		type: "fulton-filing-context-preparation-result",
+		sourceId: snapshot.sourceId,
+		file: filename,
+		sha256: hash(body),
+		recordCount: snapshot.recordCount,
+		factCount: snapshot.recordCount,
+		candidateSha256: hash(candidateBody),
+		reviewSha256: hash(planBody),
+		imported: false,
+		published: false,
+		publisherRequests: 0
+	};
 	if (validateOnly) return { ...result, outputDirectory: plan.outputDirectory };
 	await mkdir(plan.outputDirectory, { recursive: true });
 	assertExternalStateDataDirectory(await realpath(plan.outputDirectory));
@@ -72,14 +102,34 @@ export async function collectFultonFilingFiles(reviewPath: string, collectionPat
 	const documents = fultonFilingDocuments.map((document) => {
 		const matches = captures.filter(capture => capture.url === document.url);
 		if (matches.length !== 1) throw new Error("Fulton filing collection has an ambiguous document set.");
-		return { url: document.url, path: join(collection.cacheDirectory as string, "bodies", matches[0]!.sha256), sha256: matches[0]!.sha256, capturedAt: matches[0]!.capturedAt };
+		return {
+			url: document.url,
+			path: join(collection.cacheDirectory as string, "bodies", matches[0]!.sha256),
+			sha256: matches[0]!.sha256,
+			capturedAt: matches[0]!.capturedAt
+		};
 	});
-	await writeFile(path, `${JSON.stringify({ ...review, documents, outputDirectory: join(outputRoot, `fulton-filing-${randomUUID()}`) }, null, 2)}\n`, { flag: "wx" });
+	await writeFile(path, `${JSON.stringify({
+		...review,
+		documents,
+		outputDirectory: join(outputRoot, `fulton-filing-${randomUUID()}`)
+	}, null, 2)}\n`, { flag: "wx" });
 	try {
-		return { ...await prepareFultonFilingFiles(path, now(), false, extractor), publisherRequests: result.publisherRequests, preparationPlan: path, collectionFile: result.file };
+		return {
+			...await prepareFultonFilingFiles(path, now(), false, extractor),
+			publisherRequests: result.publisherRequests,
+			preparationPlan: path,
+			collectionFile: result.file
+		};
 	}
 	catch (error) {
-		await writeFile(hold, `${JSON.stringify({ schemaVersion: 1, type: "fulton-filing-review-hold", reviewSha256: hash(reviewBody), collectionFile: result.file, capturedAt: result.collectedAt })}\n`, { flag: "wx" });
+		await writeFile(hold, `${JSON.stringify({
+			schemaVersion: 1,
+			type: "fulton-filing-review-hold",
+			reviewSha256: hash(reviewBody),
+			collectionFile: result.file,
+			capturedAt: result.collectedAt
+		})}\n`, { flag: "wx" });
 		throw error;
 	}
 }

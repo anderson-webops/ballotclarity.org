@@ -171,18 +171,22 @@ test("representative module enrichment bounds and expires its provider attachmen
 
 	const secondContext: ActiveNationwideLookupContext = {
 		...testContext,
-		districtMatches: [{
-			...testContext.districtMatches[0],
-			districtCode: "4",
-			id: "congressional:4",
-			label: "Congressional District 4"
-		}],
-		representativeMatches: [{
-			...testContext.representativeMatches[0],
-			districtLabel: "Representative UT-4",
-			id: "ocd-person:test-jane-example",
-			name: "Jane Example"
-		}]
+		districtMatches: [
+			{
+				...testContext.districtMatches[0],
+				districtCode: "4",
+				id: "congressional:4",
+				label: "Congressional District 4"
+			}
+		],
+		representativeMatches: [
+			{
+				...testContext.representativeMatches[0],
+				districtLabel: "Representative UT-4",
+				id: "ocd-person:test-jane-example",
+				name: "Jane Example"
+			}
+		]
 	};
 	const secondProfile: PersonProfileResponse = {
 		...testProfileResponse,

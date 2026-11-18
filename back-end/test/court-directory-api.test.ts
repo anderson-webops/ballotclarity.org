@@ -14,17 +14,38 @@ delete process.env.ADMIN_DATABASE_URL;
 delete process.env.DATABASE_URL;
 
 async function fixture(context: TestContext, courtDirectoryRepository: CourtDirectoryRepository | null) {
-	const app = await createApp({ adminDbPath: ":memory:", activeLookupCookieSecret: "controlled-court-cookie-secret-long-enough", adminMfaEncryptionKey: "controlled-court-mfa-secret-long-enough", stateBallotRepository: null, electionReferenceRepository: null, congressClient: null, googleCivicClient: null, ldaClient: null, openFecClient: null, openStatesClient: null, fultonOfficeholderRepository: null, fultonCountyOfficeholderRepository: null, courtDirectoryRepository });
+	const app = await createApp({
+		adminDbPath: ":memory:",
+		activeLookupCookieSecret: "controlled-court-cookie-secret-long-enough",
+		adminMfaEncryptionKey: "controlled-court-mfa-secret-long-enough",
+		stateBallotRepository: null,
+		electionReferenceRepository: null,
+		congressClient: null,
+		googleCivicClient: null,
+		ldaClient: null,
+		openFecClient: null,
+		openStatesClient: null,
+		fultonOfficeholderRepository: null,
+		fultonCountyOfficeholderRepository: null,
+		courtDirectoryRepository
+	});
 	const server = app.listen(0, "127.0.0.1");
 	await once(server, "listening");
-	context.after(() => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())));
+	context.after(() => new Promise<void>((resolve, reject) => server.close(error => error
+		? reject(error)
+		: resolve())));
 	return `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 }
 
 test("public court records are reachable from their county and stay separate from representative and candidate records", async (context) => {
 	let snapshot = courtFixture().snapshot;
-	const base = await fixture(context, { getSnapshot: async () => snapshot, inspectSources: async () => [] });
-	assert.deepEqual((await fetch(`${base}/api/courts`).then(response => response.json())).courts, [{ slug: "fulton-state", title: "Fulton County State Court", count: 2 }]);
+	const base = await fixture(context, {
+		getSnapshot: async () => snapshot,
+		inspectSources: async () => []
+	});
+	assert.deepEqual((await fetch(`${base}/api/courts`).then(response => response.json())).courts, [
+		{ slug: "fulton-state", title: "Fulton County State Court", count: 2 }
+	]);
 	assert.deepEqual(await fetch(`${base}/api/courts/fulton-state`).then(response => response.json()), snapshot);
 	const county = await fetch(`${base}/api/districts/fulton-county`).then(response => response.json());
 	assert.equal(county.courtDirectory.count, 2);
@@ -46,9 +67,12 @@ test("an unconfigured court source has no county link and cannot fabricate an av
 });
 
 test("court dependency failures are explicit without breaking unrelated county records", async (context) => {
-	const base = await fixture(context, { getSnapshot: async () => {
-		throw new CourtDirectoryUnavailableError();
-	}, inspectSources: async () => [] });
+	const base = await fixture(context, {
+		getSnapshot: async () => {
+			throw new CourtDirectoryUnavailableError();
+		},
+		inspectSources: async () => []
+	});
 	assert.equal((await fetch(`${base}/api/courts/fulton-state`)).status, 503);
 	assert.equal((await fetch(`${base}/api/courts`)).status, 503);
 	const response = await fetch(`${base}/api/districts/fulton-county`);

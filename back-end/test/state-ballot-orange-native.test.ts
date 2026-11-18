@@ -16,8 +16,20 @@ test("Orange preserves malformed declared code-space evidence only with independ
 	const source = orangeUnicodeMappings(nycUnicodeFixture(), "AAAAAA+Arial");
 	assert.deepEqual(source.declaredCodeSpace, [66, 192]);
 	assert.equal(source.mappingsOutsideDeclaredCodeSpace, 2);
-	assert.deepEqual([...source.mappings], [[32, "0020"], [65, "0041"], [66, "0042"], [192, "00c0"]]);
-	for (const body of [nycUnicodeFixture().replace("<0041>", "<0042>"), nycUnicodeFixture().replace("4 beginbfrange", "3 beginbfrange"), nycUnicodeFixture().replace("<42> <c0>", "<43> <c0>"), nycUnicodeFixture().replace("<41> <41>", "<41> <42>"), `${nycUnicodeFixture()} unknown`, " ".repeat(128 * 1024 + 1)]) assert.throws(() => orangeUnicodeMappings(body, "AAAAAA+Arial"), /review/u);
+	assert.deepEqual([...source.mappings], [
+		[32, "0020"],
+		[65, "0041"],
+		[66, "0042"],
+		[192, "00c0"]
+	]);
+	for (const body of [
+		nycUnicodeFixture().replace("<0041>", "<0042>"),
+		nycUnicodeFixture().replace("4 beginbfrange", "3 beginbfrange"),
+		nycUnicodeFixture().replace("<42> <c0>", "<43> <c0>"),
+		nycUnicodeFixture().replace("<41> <41>", "<41> <42>"),
+		`${nycUnicodeFixture()} unknown`,
+		" ".repeat(128 * 1024 + 1)
+	]) assert.throws(() => orangeUnicodeMappings(body, "AAAAAA+Arial"), /review/u);
 	assert.throws(() => orangeUnicodeMappings(nycUnicodeFixture(), "AAAAAA+Unknown"), /review/u);
 });
 
@@ -33,16 +45,31 @@ test("Orange font objects require five explicit TrueType programs and source-rol
 });
 
 test("Orange rejects active PDF objects, encryption, forms, absent fonts and malformed envelopes", () => {
-	for (const key of ["/JS", "/JavaScript", "/OpenAction", "/AA", "/AcroForm", "/XFA", "/Encrypt", "/Annots"]) {
+	for (const key of [
+		"/JS",
+		"/JavaScript",
+		"/OpenAction",
+		"/AA",
+		"/AcroForm",
+		"/XFA",
+		"/Encrypt",
+		"/Annots"
+	]) {
 		const source = orangeFontFixture();
 		const objects = source.qpdf[1] as Record<string, unknown>;
-		objects["obj:900 0 R"] = { value: { [key]: "unexpected" } };
+		objects["obj:900 0 R"] = {
+			value: { [key]: "unexpected" }
+		};
 		assert.throws(() => readOrangePdfFontPrograms(JSON.stringify(source)), /review/u);
 	}
 	const source = orangeFontFixture();
 	source.encrypt.encrypted = true;
 	assert.throws(() => readOrangePdfFontPrograms(JSON.stringify(source)), /review/u);
-	for (const body of ["{}", "{\"qpdf\":[]}", " ".repeat(8 * 1024 * 1024 + 1)]) assert.throws(() => readOrangePdfFontPrograms(body), /review/u);
+	for (const body of [
+		"{}",
+		"{\"qpdf\":[]}",
+		" ".repeat(8 * 1024 * 1024 + 1)
+	]) assert.throws(() => readOrangePdfFontPrograms(body), /review/u);
 });
 
 test("Orange binds every visible candidate fact to a reviewed original outline", () => {
@@ -63,7 +90,12 @@ test("Orange binds every visible candidate fact to a reviewed original outline",
 test("Orange rejects hidden text, inherited transformations, unsupported paint and duplicate identifiers", () => {
 	const { fields, svg, approvals } = orangeVisualFixture();
 	const inspect = (body: string) => inspectOrangeProofVisual(fields, body, 2, approvals);
-	for (const attribute of ["transform=\"translate(1)\"", "opacity=\"0\"", "style=\"display:none\"", "mask=\"url(#mask)\""]) assert.throws(() => inspect(svg.replace("<g fill=\"", `<g ${attribute} fill="`)), /attributes/u);
+	for (const attribute of [
+		"transform=\"translate(1)\"",
+		"opacity=\"0\"",
+		"style=\"display:none\"",
+		"mask=\"url(#mask)\""
+	]) assert.throws(() => inspect(svg.replace("<g fill=\"", `<g ${attribute} fill="`)), /attributes/u);
 	assert.throws(() => inspect(svg.replace("</svg>", "<script>unexpected()</script></svg>")), /structure/u);
 	assert.throws(() => inspect(svg.replace("</defs>", "<g id=\"glyph-0-0\"/></defs>")), /identifiers/u);
 	assert.throws(() => inspect(svg.replace("rgb(0%, 0%, 100%)", "rgb(100%, 100%, 100%)")), /color/u);
@@ -81,7 +113,14 @@ test("Orange checks original painting order and contrast rather than accepting i
 });
 
 test("Orange permits only right-cropped district metadata and never approves it for ballot matching", () => {
-	const field = { text: "SYNTHETIC DISTRICT METADATA REPEATED FOR CLIP REVIEW ".repeat(3).trim(), left: 502, top: 60, width: 500, height: 15, font: 7 };
+	const field = {
+		text: "SYNTHETIC DISTRICT METADATA REPEATED FOR CLIP REVIEW ".repeat(3).trim(),
+		left: 502,
+		top: 60,
+		width: 500,
+		height: 15,
+		font: 7
+	};
 	const { fields, svg, approvals, fieldUses } = orangeVisualFixture([field]);
 	const clip = "<clipPath id=\"clip-1\"><path d=\"M 334.5 30 L 551.65 30 L 551.65 60 L 334.5 60 Z\"/></clipPath>";
 	let cropped = svg.replace("</defs>", `${clip}</defs>`).replace("<g fill=\"", "<g clip-path=\"url(#clip-1)\" fill=\"");
@@ -89,15 +128,32 @@ test("Orange permits only right-cropped district metadata and never approves it 
 	const proof = inspectOrangeProofVisual(fields, cropped, 2, approvals);
 	assert.equal(proof.clippedSourceDistrictLabels.length, 1);
 	assert.equal(proof.sourceDistrictLabelsApprovedForBallotMatching, false);
-	assert.throws(() => inspectOrangeProofVisual([{ ...field, font: 19 }], cropped, 2, approvals), /inventory/u);
+	assert.throws(() => inspectOrangeProofVisual([
+		{ ...field, font: 19 }
+	], cropped, 2, approvals), /inventory/u);
 	assert.throws(() => inspectOrangeProofVisual(fields, cropped.replace("L 551.65 60", "L 551.65 40").replace("L 334.5 60", "L 334.5 40"), 2, approvals), /clipping/u);
 	assert.throws(() => inspectOrangeProofVisual(fields, cropped.replace(fieldUses[0]![5]!, ""), 2, approvals), /shape/u);
 });
 
 test("Orange validates rule rectangles and reconstructs caption stroke coordinates", () => {
-	assert.deepEqual(orangeRuleShapes("M 1 2 L 8 2 L 8 9 L 1 9 Z M 1 2"), [{ box: [1, 2, 8, 9], closed: true }]);
-	assert.deepEqual(orangeRuleShapes("M 1 2 L 8 2"), [{ box: [1, 2, 8, 2], closed: false }]);
-	for (const path of ["M 1 2 L 8 9", "M 1 2 L 8 2 L 8 9 L 8 2 Z", "M 0 0 C 1 1 2 2 3 3 Z", "M 0 0 L 1 1 Q 2 2"]) assert.throws(() => orangeRuleShapes(path), /review/u);
+	assert.deepEqual(orangeRuleShapes("M 1 2 L 8 2 L 8 9 L 1 9 Z M 1 2"), [
+		{
+			box: [1, 2, 8, 9],
+			closed: true
+		}
+	]);
+	assert.deepEqual(orangeRuleShapes("M 1 2 L 8 2"), [
+		{
+			box: [1, 2, 8, 2],
+			closed: false
+		}
+	]);
+	for (const path of [
+		"M 1 2 L 8 9",
+		"M 1 2 L 8 2 L 8 9 L 8 2 Z",
+		"M 0 0 C 1 1 2 2 3 3 Z",
+		"M 0 0 L 1 1 Q 2 2"
+	]) assert.throws(() => orangeRuleShapes(path), /review/u);
 	const commands = orangePathCommands("M 0 -5 L 1 -5 L 1 0 L 0 0 Z", 20, 30);
 	assert.equal(orangeStrokeMatches(commands, orangePathCommands("M 20 25 L 21 25 L 21 30 L 20 30 Z")), true);
 	assert.equal(orangeStrokeMatches(commands, orangePathCommands("M 20 25 L 22 25 L 21 30 L 20 30 Z")), false);
@@ -111,7 +167,16 @@ test("Orange XML can suppress the seal without suppressing any text while origin
 });
 
 test("Orange caption bolding is an exact reconstructed glyph stroke, not an arbitrary permitted vector", () => {
-	const { fields, svg, approvals } = orangeVisualFixture([{ text: "SYNTHETIC HEADING", left: 90, top: 30, width: 180, height: 15, font: 5 }]);
+	const { fields, svg, approvals } = orangeVisualFixture([
+		{
+			text: "SYNTHETIC HEADING",
+			left: 90,
+			top: 30,
+			width: 180,
+			height: 15,
+			font: 5
+		}
+	]);
 	assert.equal(inspectOrangeProofVisual(fields, svg, 2, approvals).captionStrokes, 1);
 	assert.throws(() => inspectOrangeProofVisual(fields, svg.replace(/<path fill="none"[^>]*\/>/u, ""), 2, approvals), /stroke inventory/u);
 	assert.throws(() => inspectOrangeProofVisual(fields, svg.replace("stroke-width=\"0.3\"", "stroke-width=\"0.2\""), 2, approvals), /stroke/u);

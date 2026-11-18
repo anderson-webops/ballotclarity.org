@@ -110,7 +110,16 @@ test("nationwide district fallback is honest about missing city officeholder dat
 test("a county coverage gap does not hide officials belonging to other districts", () => {
 	const context = {
 		...nationwideLookupResult,
-		districtMatches: [...nationwideLookupResult.districtMatches, { id: "county-033", districtType: "County", districtCode: "033", label: "County 033", sourceSystem: "U.S. Census Geocoder" }],
+		districtMatches: [
+			...nationwideLookupResult.districtMatches,
+			{
+				id: "county-033",
+				districtType: "County",
+				districtCode: "033",
+				label: "County 033",
+				sourceSystem: "U.S. Census Geocoder"
+			}
+		],
 	};
 	const county = buildNationwideDistrictPageRecord(context, "county-033");
 	const directory = buildNationwideDirectoryResponses(context).representatives;
@@ -122,10 +131,20 @@ test("a county coverage gap does not hide officials belonging to other districts
 
 test("district summary cards only link when candidate or representative data exists", () => {
 	assert.equal(buildDistrictCandidateSummaryHref([]), undefined);
-	assert.equal(buildDistrictCandidateSummaryHref([{ slug: "jane-doe" }]), "/candidate/jane-doe");
-	assert.equal(buildDistrictCandidateSummaryHref([{ slug: "jane-doe" }, { slug: "john-smith" }]), "#candidates");
+	assert.equal(buildDistrictCandidateSummaryHref([
+		{ slug: "jane-doe" }
+	]), "/candidate/jane-doe");
+	assert.equal(buildDistrictCandidateSummaryHref([
+		{ slug: "jane-doe" },
+		{ slug: "john-smith" }
+	]), "#candidates");
 
 	assert.equal(buildDistrictRepresentativeSummaryHref([]), undefined);
-	assert.equal(buildDistrictRepresentativeSummaryHref([{ href: "/representatives/john-curtis" }]), "/representatives/john-curtis");
-	assert.equal(buildDistrictRepresentativeSummaryHref([{ href: "/representatives/john-curtis" }, { href: "/representatives/mike-lee" }]), "#representatives");
+	assert.equal(buildDistrictRepresentativeSummaryHref([
+		{ href: "/representatives/john-curtis" }
+	]), "/representatives/john-curtis");
+	assert.equal(buildDistrictRepresentativeSummaryHref([
+		{ href: "/representatives/john-curtis" },
+		{ href: "/representatives/mike-lee" }
+	]), "#representatives");
 });

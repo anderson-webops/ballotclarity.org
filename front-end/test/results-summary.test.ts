@@ -6,7 +6,13 @@ test("results summary cards keep lookup-aware links for district and representat
 	const items = buildResultsSummaryItems(
 		{
 			districtMatches: [
-				{ districtCode: "7", districtType: "congressional", id: "district:congressional-7", label: "Congressional District 7", sourceSystem: "U.S. Census Geocoder" }
+				{
+					districtCode: "7",
+					districtType: "congressional",
+					id: "district:congressional-7",
+					label: "Congressional District 7",
+					sourceSystem: "U.S. Census Geocoder"
+				}
 			],
 			guideAvailability: "not-published",
 			lookupQuery: "30022",
@@ -44,18 +50,39 @@ test("results summary cards still fall back to route roots without a selected ar
 });
 
 test("an unverified published overview describes limited information rather than an editorial review", () => {
-	const items = buildResultsSummaryItems({ districtMatches: [], guideAvailability: "published", lookupQuery: "30022", representativeMatches: [] }, 1);
+	const items = buildResultsSummaryItems({
+		districtMatches: [],
+		guideAvailability: "published",
+		lookupQuery: "30022",
+		representativeMatches: []
+	}, 1);
 	assert.equal(limitedBallotNotice, "Ballot information for your area is currently limited.");
 	assert.equal(items.length, 3);
 	assert.ok(items.every(item => !/guide|published|review/i.test(`${item.label} ${item.note} ${item.value}`)));
 });
 
 test("verified ballot information does not receive a limited-information status", () => {
-	const layer = { count: 1, detail: "Reviewed record", hasContent: true, label: "Reviewed", status: "verified_local" as const };
+	const layer = {
+		count: 1,
+		detail: "Reviewed record",
+		hasContent: true,
+		label: "Reviewed",
+		status: "verified_local" as const
+	};
 	const items = buildResultsSummaryItems({
 		districtMatches: [],
 		guideAvailability: "published",
-		guideContent: { candidates: layer, contests: layer, guideShell: layer, measures: layer, mixedContent: false, officialLogistics: layer, publishedGuideShell: true, summary: "Reviewed guide", verifiedContestPackage: true },
+		guideContent: {
+			candidates: layer,
+			contests: layer,
+			guideShell: layer,
+			measures: layer,
+			mixedContent: false,
+			officialLogistics: layer,
+			publishedGuideShell: true,
+			summary: "Reviewed guide",
+			verifiedContestPackage: true
+		},
 		lookupQuery: "30022",
 		representativeMatches: []
 	}, 1);

@@ -32,7 +32,12 @@ export function parseAutomationRun(value: unknown, now = Date.now()): AdminAutom
 		|| Object.keys(row).sort().join(",") !== "finishedAt,lastImportAt,lastSuccessAt,nextRunAt,results,schemaVersion,startedAt,status,type"
 		|| row.schemaVersion !== 1
 		|| row.type !== "ballot-automation-run"
-		|| !["running", "succeeded", "failed", "stopped"].includes(row.status)
+		|| ![
+			"running",
+			"succeeded",
+			"failed",
+			"stopped"
+		].includes(row.status)
 		|| !row.startedAt
 		|| !timestamp(row.startedAt)
 		|| !timestamp(row.finishedAt)
@@ -60,7 +65,12 @@ export function parseAutomationRun(value: unknown, now = Date.now()): AdminAutom
 			|| !Number.isSafeInteger(result.records)
 			|| result.records < 0
 			|| result.records > 25000
-			|| ![null, "source-unavailable", "persistence-failed", "configuration-invalid"].includes(result.reason)
+			|| ![
+				null,
+				"source-unavailable",
+				"persistence-failed",
+				"configuration-invalid"
+			].includes(result.reason)
 			|| (result.status === "failed") !== (result.reason !== null)
 		) {
 			throw new Error("Automation source results are invalid.");
@@ -136,7 +146,9 @@ export async function buildAdminOperations(options: {
 	let run: AdminAutomationRun | null = null;
 	let invalid = false;
 	try {
-		run = options.dataDirectory ? await readAutomationRun(options.dataDirectory, now) : null;
+		run = options.dataDirectory
+			? await readAutomationRun(options.dataDirectory, now)
+			: null;
 	}
 	catch {
 		invalid = true;

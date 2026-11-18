@@ -8,12 +8,23 @@ const emit = defineEmits<{ sections: [items: ElectionSectionLink[]] }>();
 const api = useApiClient();
 const { data, error, refresh } = await useAsyncData<StateQuestionsResponse | null>(
 	() => `election-questions:${props.source.stateCode}:${props.source.sourceId}:${props.electionDate}`,
-	() => api<StateQuestionsResponse>(`/state-records/${props.source.stateCode}/questions`, { query: { source: props.source.sourceId } }),
-	{ default: () => null, lazy: true }
+	() => api<StateQuestionsResponse>(`/state-records/${props.source.stateCode}/questions`, {
+		query: { source: props.source.sourceId }
+	}),
+	{
+		default: () => null,
+		lazy: true
+	}
 );
 const questions = computed(() => electionQuestions(data.value, props.source, props.electionDate));
-const title = computed(() => data.value?.source.questionKind === "notice" ? "Election notices" : "Ballot questions");
-const sections = computed<ElectionSectionLink[]>(() => questions.value.length && !error.value ? [{ href: "#election-questions-heading", label: title.value }] : []);
+const title = computed(() => data.value?.source.questionKind === "notice"
+	? "Election notices"
+	: "Ballot questions");
+const sections = computed<ElectionSectionLink[]>(() => questions.value.length && !error.value
+	? [
+			{ href: "#election-questions-heading", label: title.value }
+		]
+	: []);
 const mounted = useMounted();
 watch([mounted, sections], ([ready, items]) => {
 	if (ready) emit("sections", items);

@@ -5,7 +5,10 @@ import { readRecoverableStateRecordQuery, stateRecordSourceMismatch } from "~/ut
 const route = useRoute();
 const { formatDate } = useFormatters();
 const { data: stateData } = await useStateRecordStates();
-const filters = computed(() => ({ ...readRecoverableStateRecordQuery(route.query, stateData.value?.states ?? []), includeSupplements: route.query.includeSupplements === "true" }));
+const filters = computed(() => ({
+	...readRecoverableStateRecordQuery(route.query, stateData.value?.states ?? []),
+	includeSupplements: route.query.includeSupplements === "true"
+}));
 const { data, error, pending } = await useStateRecords(filters);
 const sourceMismatch = computed(() => stateRecordSourceMismatch(route.query.source, data.value));
 const title = computed(() => recordSourceTitle(data.value?.source));
@@ -13,7 +16,12 @@ const groups = computed(() => recordPublicationGroups(data.value?.source));
 const sampleBallot = computed(() => recordPublications(data.value?.source).find(isSampleBallotDocument));
 const notice = computed(() => recordSourceNotice(data.value?.source));
 
-usePageSeo({ title: "Election sources", path: "/record-sources", description: "Official election publications.", robots: "noindex,follow" });
+usePageSeo({
+	title: "Election sources",
+	path: "/record-sources",
+	description: "Official election publications.",
+	robots: "noindex,follow"
+});
 </script>
 
 <template>

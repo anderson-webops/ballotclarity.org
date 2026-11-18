@@ -30,7 +30,19 @@ test("Connecticut reconciles every published document and page without counting 
 	assert.equal(result.claims.filter(claim => !claim.votingDistrict).length, 1435);
 	const records = parseStateCandidateRecords(source, body);
 	assert.equal(records.length, 709);
-	assert.deepEqual(Object.fromEntries(["statewide", "congressional", "state-senate", "state-house", "local"].map(scope => [scope, records.filter(record => record.scope === scope).length])), { "statewide": 10, "congressional": 13, "state-senate": 70, "state-house": 246, "local": 370 });
+	assert.deepEqual(Object.fromEntries([
+		"statewide",
+		"congressional",
+		"state-senate",
+		"state-house",
+		"local"
+	].map(scope => [scope, records.filter(record => record.scope === scope).length])), {
+		"statewide": 10,
+		"congressional": 13,
+		"state-senate": 70,
+		"state-house": 246,
+		"local": 370
+	});
 	assert.equal(new Set(records.filter(record => record.scope === "state-house").map(record => record.district)).size, 139);
 	assert.equal(new Set(records.filter(record => record.scope === "state-senate").map(record => record.district)).size, 36);
 	assert.equal(new Set(records.filter(record => record.scope === "congressional").map(record => record.district)).size, 5);
@@ -39,8 +51,15 @@ test("Connecticut reconciles every published document and page without counting 
 
 test("Connecticut accepts an explicitly configured document set without weakening the reviewed default set", () => {
 	const document = fixture().documents[0]!;
-	const data = JSON.stringify({ documents: [document] });
-	const configuration = { electionDate: "2026-11-03", documents: [{ town: document.town, url: document.url, pageCount: document.pages.length }] };
+	const data = JSON.stringify({
+		documents: [document]
+	});
+	const configuration = {
+		electionDate: "2026-11-03",
+		documents: [
+			{ town: document.town, url: document.url, pageCount: document.pages.length }
+		]
+	};
 	assert.throws(() => reconcileConnecticutBallots(data), /document set/u);
 	const result = reconcileConnecticutBallots(data, configuration);
 	assert.equal(result.pageCount, 1);
@@ -49,9 +68,25 @@ test("Connecticut accepts an explicitly configured document set without weakenin
 	for (const invalid of [
 		{ ...configuration, electionDate: "2026-11-04" },
 		{ ...configuration, documents: [] },
-		{ ...configuration, documents: [...configuration.documents, ...configuration.documents] },
-		{ ...configuration, documents: [{ ...configuration.documents[0]!, url: "https://example.com/ballot.pdf" }] },
-		{ ...configuration, documents: [{ ...configuration.documents[0]!, pageCount: 51 }] },
+		{
+			...configuration,
+			documents: [
+				...configuration.documents,
+				...configuration.documents
+			]
+		},
+		{
+			...configuration,
+			documents: [
+				{ ...configuration.documents[0]!, url: "https://example.com/ballot.pdf" }
+			]
+		},
+		{
+			...configuration,
+			documents: [
+				{ ...configuration.documents[0]!, pageCount: 51 }
+			]
+		},
 	]) assert.throws(() => reconcileConnecticutBallots(data, invalid), /Connecticut/u);
 });
 
@@ -59,11 +94,23 @@ test("Connecticut extraction binds future same-layout ballots to their explicit 
 	const document = fixture().documents[0]!;
 	document.url = document.url.replace("/2026/", "/2030/");
 	document.pages[0]!.headerText = document.pages[0]!.headerText.replace("November 3, 2026", "November 5, 2030");
-	const configuration = { electionDate: "2030-11-05", documents: [{ town: document.town, url: document.url, pageCount: document.pages.length }] };
-	const data = JSON.stringify({ documents: [document] });
+	const configuration = {
+		electionDate: "2030-11-05",
+		documents: [
+			{ town: document.town, url: document.url, pageCount: document.pages.length }
+		]
+	};
+	const data = JSON.stringify({
+		documents: [document]
+	});
 	assert.ok(reconcileConnecticutBallots(data, configuration).records.length > 10);
 	assert.throws(() => reconcileConnecticutBallots(data, { ...configuration, electionDate: "2026-11-03" }), /Connecticut/u);
-	assert.throws(() => reconcileConnecticutBallots(data, { ...configuration, documents: [{ ...configuration.documents[0]!, town: "Manchester" }] }), /Connecticut/u);
+	assert.throws(() => reconcileConnecticutBallots(data, {
+		...configuration,
+		documents: [
+			{ ...configuration.documents[0]!, town: "Manchester" }
+		]
+	}), /Connecticut/u);
 });
 
 test("Connecticut leaves an unlabelled minor-party row unspecified instead of guessing affiliation", () => {
@@ -89,8 +136,15 @@ test("Connecticut reconciles reviewed town-scoped spelling and district-scoped s
 	document.pages[0]!.headerText = document.pages[0]!.headerText.replace("Andover", "Morris");
 	const attorneyGeneral = document.pages[0]!.cells.find(cell => cell.text.startsWith("8A") && cell.text.includes("Tong"))!;
 	attorneyGeneral.text = attorneyGeneral.text.replace("William", "Willian");
-	const configuration = { electionDate: "2026-11-03", documents: [{ town: document.town, url: document.url, pageCount: 1 }] };
-	const result = reconcileConnecticutBallots(JSON.stringify({ documents: [document] }), configuration);
+	const configuration = {
+		electionDate: "2026-11-03",
+		documents: [
+			{ town: document.town, url: document.url, pageCount: 1 }
+		]
+	};
+	const result = reconcileConnecticutBallots(JSON.stringify({
+		documents: [document]
+	}), configuration);
 	assert.ok(result.claims.some(claim => claim.name === "Willian Tong"));
 	assert.equal(result.records.some(record => record.value.name === "Willian Tong"), false);
 	assert.ok(result.records.some(record => record.value.name === "William Tong"));
@@ -109,8 +163,15 @@ test("Connecticut reconciles reviewed town-scoped spelling and district-scoped s
 test("Connecticut retains explicitly unassigned district evidence without attaching it to a guessed district or candidacy", () => {
 	const document = fixture().documents[0]!;
 	document.pages[0]!.headerText = document.pages[0]!.headerText.split("\n").filter(line => !/Congressional District|Senatorial District|Assembly District/u.test(line)).join("\n");
-	const body = JSON.stringify({ documents: [document] });
-	const configuration = { electionDate: "2026-11-03", documents: [{ town: document.town, url: document.url, pageCount: 1 }] };
+	const body = JSON.stringify({
+		documents: [document]
+	});
+	const configuration = {
+		electionDate: "2026-11-03",
+		documents: [
+			{ town: document.town, url: document.url, pageCount: 1 }
+		]
+	};
 	assert.throws(() => reconcileConnecticutBallots(body, configuration), /legislative districts/u);
 	const result = reconcileConnecticutBallots(body, { ...configuration, retainUnassignedDistrictClaims: true });
 	assert.ok(result.unassignedClaimIndexes.length > 0);
@@ -118,7 +179,9 @@ test("Connecticut retains explicitly unassigned district evidence without attach
 	assert.ok(result.unassignedClaimIndexes.every(index => result.claims[index]!.district === ""));
 	assert.equal(result.records.flatMap(record => record.claimIndexes).length + result.unassignedClaimIndexes.length, result.claims.length);
 	document.pages[0]!.headerText += "\nAssembly District 55";
-	assert.throws(() => reconcileConnecticutBallots(JSON.stringify({ documents: [document] }), { ...configuration, retainUnassignedDistrictClaims: true }), /legislative districts/u);
+	assert.throws(() => reconcileConnecticutBallots(JSON.stringify({
+		documents: [document]
+	}), { ...configuration, retainUnassignedDistrictClaims: true }), /legislative districts/u);
 });
 
 test("Connecticut derives parties from physical rows even when the printed slot letter is wrong", () => {
@@ -210,15 +273,37 @@ test("Connecticut preview uses only statewide and explicitly matched legislative
 	assert.match(zip.disclaimer, /towns, legislative districts and declared write-ins/u);
 	assert.doesNotMatch(zip.disclaimer, /Filing does not establish/u);
 	const districtMatches: LocationDistrictMatch[] = [
-		{ id: "cd:3", districtCode: "3", districtType: "congressional", label: "Congressional 3", sourceSystem: "Controlled fixture" },
-		{ id: "senate:10", districtCode: "10", districtType: "state-senate", label: "Senate 10", sourceSystem: "Controlled fixture" },
-		{ id: "house:93", districtCode: "93", districtType: "state-house", label: "House 93", sourceSystem: "Controlled fixture" },
+		{
+			id: "cd:3",
+			districtCode: "3",
+			districtType: "congressional",
+			label: "Congressional 3",
+			sourceSystem: "Controlled fixture"
+		},
+		{
+			id: "senate:10",
+			districtCode: "10",
+			districtType: "state-senate",
+			label: "Senate 10",
+			sourceSystem: "Controlled fixture"
+		},
+		{
+			id: "house:93",
+			districtCode: "93",
+			districtType: "state-house",
+			label: "House 93",
+			sourceSystem: "Controlled fixture"
+		},
 	];
 	const address = buildStateBallotPreview(snapshot, { districtMatches })!;
 	assert.equal(address.contestCount, 8);
 	assert.ok(address.candidateCount > 10);
 	assert.ok(address.contests.every(contest => !/Probate|Registrar|Education|Town Meeting/u.test(contest.title)));
-	const missing = buildStateBallotPreview(snapshot, { districtMatches: [{ ...districtMatches[2]!, districtCode: "14" }] })!;
+	const missing = buildStateBallotPreview(snapshot, {
+		districtMatches: [
+			{ ...districtMatches[2]!, districtCode: "14" }
+		]
+	})!;
 	assert.equal(missing.candidateCount, 10);
 	assert.equal(missing.contestCount, 5);
 });
@@ -243,10 +328,13 @@ test("Connecticut manual snapshot retains all original document provenance and r
 	}
 	let now = Date.parse("2026-10-21T12:00:00Z");
 	let requests = 0;
-	const repository = (await createReviewedFixtureRepository(context, { now: () => now, fetchText: async () => {
-		requests += 1;
-		throw new Error("No transport");
-	} }));
+	const repository = (await createReviewedFixtureRepository(context, {
+		now: () => now,
+		fetchText: async () => {
+			requests += 1;
+			throw new Error("No transport");
+		}
+	}));
 	assert.equal((await repository.getSnapshot("CT"))?.retrievedAt, snapshot.retrievedAt);
 	now += 5 * 60 * 60 * 1000;
 	assert.equal((await repository.getSnapshot("CT"))?.retrievedAt, snapshot.retrievedAt);
@@ -269,5 +357,11 @@ test("Connecticut candidate export and every printed ballot-line claim retain ca
 	const grouped = reconcileConnecticutBallots(body);
 	assert.equal(evidence.length, grouped.claims.length);
 	const expected = new Map(grouped.records.flatMap((record, index) => record.claimIndexes.map(claim => [claim, snapshot.records[index]!.id] as const)));
-	for (const [index, claim] of grouped.claims.entries()) assert.deepEqual(evidence[index], { type: "ballot-line", candidateId: expected.get(index), ...JSON.parse(JSON.stringify(claim)) });
+	for (const [index, claim] of grouped.claims.entries()) {
+		assert.deepEqual(evidence[index], {
+			type: "ballot-line",
+			candidateId: expected.get(index),
+			...JSON.parse(JSON.stringify(claim))
+		});
+	}
 });

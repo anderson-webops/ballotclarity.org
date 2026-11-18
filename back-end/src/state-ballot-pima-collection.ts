@@ -45,7 +45,21 @@ function reject(): never {
 	throw new Error("The Pima candidate collection requires review.");
 }
 export function pimaSource(electionDate: string): StateBallotSource {
-	return { stateCode: "AZ", id: electionDate === "2026-11-03" ? "az-pima-2026" : `az-pima-general-${electionDate}`, label: "Pima County candidate lists", electionDate, url: pimaDiscoveryUrl, pageUrl: pimaDiscoveryUrl, format: "pima-pdf", snapshotStorage: "external", defaultPriority: -10, countyName: "Pima County", scopeNotice: "Pima County lists only. Judges and incomplete governor tickets are excluded." };
+	return {
+		stateCode: "AZ",
+		id: electionDate === "2026-11-03"
+			? "az-pima-2026"
+			: `az-pima-general-${electionDate}`,
+		label: "Pima County candidate lists",
+		electionDate,
+		url: pimaDiscoveryUrl,
+		pageUrl: pimaDiscoveryUrl,
+		format: "pima-pdf",
+		snapshotStorage: "external",
+		defaultPriority: -10,
+		countyName: "Pima County",
+		scopeNotice: "Pima County lists only. Judges and incomplete governor tickets are excluded."
+	};
 }
 export function validatePimaSource(source: StateBallotSource) {
 	const expected = pimaSource(source.electionDate);
@@ -53,8 +67,14 @@ export function validatePimaSource(source: StateBallotSource) {
 		return reject();
 }
 export function validatePimaElection(value: unknown): asserts value is PimaElection {
-	if (!exact(value, ["electionId", "electionDate", "pageUrl", "pimaDocuments"]) || value.electionId !== null || typeof value.electionDate !== "string" || value.pageUrl !== pimaDiscoveryUrl || !Array.isArray(value.pimaDocuments) || value.pimaDocuments.length > 2)
+	if (!exact(value, [
+		"electionId",
+		"electionDate",
+		"pageUrl",
+		"pimaDocuments"
+	]) || value.electionId !== null || typeof value.electionDate !== "string" || value.pageUrl !== pimaDiscoveryUrl || !Array.isArray(value.pimaDocuments) || value.pimaDocuments.length > 2) {
 		return reject();
+	}
 	validatePimaSource(pimaSource(value.electionDate));
 	for (const [index, document] of value.pimaDocuments.entries()) {
 		if (!exact(document, ["kind", "url", "sha256"]) || document.kind !== (index ? "write-ins" : "candidates") || typeof document.url !== "string" || typeof document.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(document.sha256))
@@ -74,22 +94,41 @@ export function readPimaCandidateDiscovery(body: string, now = Date.now()) {
 	if (Buffer.byteLength(body) > 32 * 1024 * 1024)
 		return reject();
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "discovery", "documents"]) || value.schemaVersion !== 1 || value.type !== "pima-candidate-discovery" || !Array.isArray(value.documents))
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"discovery",
+		"documents"
+	]) || value.schemaVersion !== 1 || value.type !== "pima-candidate-discovery" || !Array.isArray(value.documents)) {
 		return reject();
+	}
 	const discovery = readPimaCycleDiscovery(JSON.stringify(value.discovery), now);
 	const documents = value.documents;
 	let position = 0;
 	const elections = discovery.elections.map((election) => {
 		const pimaDocuments = election.documents.map((offered) => {
 			const document: unknown = documents[position++];
-			if (!exact(document, ["kind", "url", "sha256", "retrievedAt", "xml", "svgPages"]) || document.kind !== offered.kind || document.url !== offered.url || typeof document.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(document.sha256) || typeof document.retrievedAt !== "string" || !Number.isFinite(Date.parse(document.retrievedAt)) || new Date(document.retrievedAt).toISOString() !== document.retrievedAt || Date.parse(document.retrievedAt) > now || Date.parse(document.retrievedAt) < Date.parse(discovery.index.retrievedAt) || typeof document.xml !== "string" || !Array.isArray(document.svgPages) || !document.svgPages.length || document.svgPages.length > 20 || document.svgPages.some(page => typeof page !== "string"))
+			if (!exact(document, [
+				"kind",
+				"url",
+				"sha256",
+				"retrievedAt",
+				"xml",
+				"svgPages"
+			]) || document.kind !== offered.kind || document.url !== offered.url || typeof document.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(document.sha256) || typeof document.retrievedAt !== "string" || !Number.isFinite(Date.parse(document.retrievedAt)) || new Date(document.retrievedAt).toISOString() !== document.retrievedAt || Date.parse(document.retrievedAt) > now || Date.parse(document.retrievedAt) < Date.parse(discovery.index.retrievedAt) || typeof document.xml !== "string" || !Array.isArray(document.svgPages) || !document.svgPages.length || document.svgPages.length > 20 || document.svgPages.some(page => typeof page !== "string")) {
 				return reject();
+			}
 			const parsed = readPimaDocument(pimaSource(election.electionDate), document.xml, document.svgPages, offered.kind);
 			if (parsed.sourceAsOfDate && parsed.sourceAsOfDate > document.retrievedAt.slice(0, 10))
 				return reject();
 			return { ...offered, sha256: document.sha256 };
 		});
-		const selected = { electionId: null, electionDate: election.electionDate, pageUrl: pimaDiscoveryUrl, pimaDocuments };
+		const selected = {
+			electionId: null,
+			electionDate: election.electionDate,
+			pageUrl: pimaDiscoveryUrl,
+			pimaDocuments
+		};
 		validatePimaElection(selected);
 		return selected;
 	});
@@ -108,7 +147,11 @@ export async function fetchPimaCandidateDiscovery(options: Options = {}) {
 	for (const election of offered.elections) {
 		for (const document of election.documents) {
 			await sleep(11000);
-			const reply = await request(document.url, { allowedHosts: ["content.civicplus.com"], maxBytes: 12 * 1024 * 1024, timeoutMs: 45000 });
+			const reply = await request(document.url, {
+				allowedHosts: ["content.civicplus.com"],
+				maxBytes: 12 * 1024 * 1024,
+				timeoutMs: 45000
+			});
 			if (reply.status !== 200 || reply.contentType !== "application/pdf" || !reply.body.subarray(0, 5).equals(Buffer.from("%PDF-")))
 				return reject();
 			const sha256 = hash(reply.body);
@@ -127,14 +170,24 @@ export async function fetchPimaCandidateDiscovery(options: Options = {}) {
 				native = { xml, svgPages };
 			}
 			readPimaDocument(pimaSource(election.electionDate), native.xml, native.svgPages, document.kind);
-			const captured = { ...document, sha256, retrievedAt, ...native };
+			const captured = {
+				...document,
+				sha256,
+				retrievedAt,
+				...native
+			};
 			bytes += Buffer.byteLength(JSON.stringify(captured));
 			if (bytes > 32 * 1024 * 1024 - 4096)
 				return reject();
 			documents.push(captured);
 		}
 	}
-	const body = JSON.stringify({ schemaVersion: 1, type: "pima-candidate-discovery", discovery: JSON.parse(discovery), documents });
+	const body = JSON.stringify({
+		schemaVersion: 1,
+		type: "pima-candidate-discovery",
+		discovery: JSON.parse(discovery),
+		documents
+	});
 	readPimaCandidateDiscovery(body, now());
 	return body;
 }
@@ -143,7 +196,12 @@ export async function fetchPimaCandidateCapture(source: StateBallotSource, optio
 	const discovery = options.discovery ?? await fetchPimaCandidateDiscovery(options);
 	if (!readPimaCandidateDiscovery(discovery, (options.now ?? Date.now)()).elections.some(election => election.electionDate === source.electionDate))
 		return reject();
-	return JSON.stringify({ schemaVersion: 1, type: "pima-candidate-capture", electionDate: source.electionDate, discovery: JSON.parse(discovery) });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "pima-candidate-capture",
+		electionDate: source.electionDate,
+		discovery: JSON.parse(discovery)
+	});
 }
 export function parsePimaCandidateCapture(source: StateBallotSource, body: string, now = Date.now(), previous: readonly StateCandidateRecord[] = [], previousDocuments: readonly {
 	url: string;
@@ -153,8 +211,14 @@ export function parsePimaCandidateCapture(source: StateBallotSource, body: strin
 	if (Buffer.byteLength(body) > 32 * 1024 * 1024)
 		return reject();
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "electionDate", "discovery"]) || value.schemaVersion !== 1 || value.type !== "pima-candidate-capture" || value.electionDate !== source.electionDate)
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"electionDate",
+		"discovery"
+	]) || value.schemaVersion !== 1 || value.type !== "pima-candidate-capture" || value.electionDate !== source.electionDate) {
 		return reject();
+	}
 	const discovery = readPimaCandidateDiscovery(JSON.stringify(value.discovery), now);
 	const election = discovery.elections.find(election => election.electionDate === source.electionDate);
 	if (!election)
@@ -175,5 +239,17 @@ export function parsePimaCandidateCapture(source: StateBallotSource, body: strin
 	if (!sourceAsOfDate)
 		return reject();
 	const sha256 = pimaDocumentDigest(election.pimaDocuments);
-	return { records, sourceAsOfDate, documents: documents.map((document, index) => ({ url: document.url, sha256: document.sha256, retrievedAt: document.retrievedAt, includedRecordCount: parsed[index]!.records.length })), retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString(), sha256, collectionIndexSha256: sha256 };
+	return {
+		records,
+		sourceAsOfDate,
+		documents: documents.map((document, index) => ({
+			url: document.url,
+			sha256: document.sha256,
+			retrievedAt: document.retrievedAt,
+			includedRecordCount: parsed[index]!.records.length
+		})),
+		retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString(),
+		sha256,
+		collectionIndexSha256: sha256
+	};
 }

@@ -9,7 +9,12 @@ test("major sections have a shared responsive spacing rule", () => {
 });
 
 test("major page groups gain space while retaining compact print spacing", () => {
-	for (const path of ["elections/[slug].vue", "locations/[slug].vue", "districts/[slug].vue", "ballot/[slug].vue"])
+	for (const path of [
+		"elections/[slug].vue",
+		"locations/[slug].vue",
+		"districts/[slug].vue",
+		"ballot/[slug].vue"
+	])
 		assert.match(read(`../src/pages/${path}`), /class="[^"]*section-stack[^"]*print:space-y-8/u);
 	for (const path of ["candidate/[slug]/index.vue", "representatives/[slug]/index.vue"])
 		assert.match(read(`../src/pages/${path}`), /class="[^"]*section-stack[^"]*print:space-y-6/u);

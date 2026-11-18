@@ -164,67 +164,494 @@ const washington = configuredStateBallotSources.find(source => source.id === "wa
 export const stateBallotCycleDiscoveryUrl = "https://voter.votewa.gov/CandidateList.aspx";
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const cycleFamilies = [
-	{ source: configuredStateBallotSources.find(source => source.id === unionSampleSource().id)!, format: "reviewed-pdf", discoveryUrl: unionSampleLandingUrl, prefix: "nj-union", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === fultonMunicipalSource().id)!, format: "fulton-municipal-pdf", discoveryUrl: fultonDiscoveryUrl, prefix: "ga-fulton-municipal-runoff", electionLabel: "Municipal General Runoff Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "ak-fairbanks-2026")!, format: "fairbanks-pdf", discoveryUrl: fairbanksPublicationIndexUrl(), prefix: "ak-fairbanks-municipal", electionLabel: "Municipal Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "ak-juneau-2026")!, format: "juneau-html", discoveryUrl: juneauDiscoveryUrl, prefix: "ak-juneau-municipal", electionLabel: "Municipal Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "nm-los-ranchos-2025")!, format: "los-ranchos-html", discoveryUrl: losRanchosDiscoveryUrl, prefix: "nm-los-ranchos-local", electionLabel: "Regular Local Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "mn-independence-city-2026")!, format: "independence-html", discoveryUrl: independenceDiscoveryUrl, prefix: "mn-independence-city-general", electionLabel: "City Council Candidates", formId: null },
-	...(["Monona", "Woodbury"] as const).map(county => ({ source: configuredStateBallotSources.find(source => source.id === iowaCountySource(county).id)!, format: "iowa-county-pdf", discoveryUrl: iowaCountyDiscoveryUrls[county], prefix: `ia-${county.toLowerCase()}-samples-general`, electionLabel: "General Election", formId: null })),
-	{ source: configuredStateBallotSources.find(source => source.id === "ok-seb-2026")!, format: "oklahoma-html", discoveryUrl: oklahomaDiscoveryUrl, prefix: "ok-seb-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "ma-everett-2026")!, format: "everett-pdf", discoveryUrl: everettIndexUrl, prefix: "ma-everett-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "al-sos-2026")!, format: "alabama-pdf", discoveryUrl: alabamaDiscoveryUrl, prefix: "al-county-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "wv-kanawha-2026")!, format: "kanawha-pdf", discoveryUrl: kanawhaDiscoveryUrl, prefix: "wv-kanawha-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "in-boone-2026")!, format: "boone-xlsx", discoveryUrl: booneDiscoveryUrl, prefix: "in-boone-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "ca-orange-2026")!, format: "orange-pdf", discoveryUrl: orangeDiscoveryUrl, prefix: "ca-orange-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "me-house-clerk-2026")!, format: "maine-house-html", discoveryUrl: maineHouseUrls.index, prefix: "me-house-clerk-general", electionLabel: "House candidate references", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "ny-nyc-2026")!, format: "nyc-pdf", discoveryUrl: nycDiscoveryUrl, prefix: "ny-nyc-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "ne-douglas-2026")!, format: "douglas-html", discoveryUrl: douglasDiscoveryUrl, prefix: "ne-douglas-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "tn-hamilton-2026")!, format: "hamilton-html", discoveryUrl: hamiltonDiscoveryUrl, prefix: "tn-hamilton-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "az-pima-2026")!, format: "pima-pdf", discoveryUrl: pimaDiscoveryUrl, prefix: "az-pima-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "nh-goffstown-2026")!, format: "goffstown-pdf", discoveryUrl: configuredStateBallotSources.find(source => source.id === "nh-goffstown-2026")!.pageUrl, prefix: "nh-goffstown-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "il-chicago-2026")!, format: "chicago-pdf", discoveryUrl: chicagoDiscoveryUrl, prefix: "il-chicago-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "il-winnebago-2026")!, format: "winnebago-pdf", discoveryUrl: winnebagoDiscoveryUrl, prefix: "il-winnebago-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "ri-east-greenwich-2026")!, format: "east-greenwich-pdf", discoveryUrl: eastGreenwichDiscoveryUrl, prefix: "ri-east-greenwich-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "wi-town-dane-2026")!, format: "dane-pdf", discoveryUrl: daneDiscoveryUrl, prefix: "wi-town-dane-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "ar-pulaski-candidates-2026")!, format: "pulaski-pdf", discoveryUrl: pulaskiDiscoveryUrl, prefix: "ar-pulaski-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "mi-tuscola-candidates-2026")!, format: "tuscola-pdf", discoveryUrl: tuscolaDiscoveryUrl, prefix: "mi-tuscola-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "dc-boe-2026")!, format: "dc-pdf", discoveryUrl: dcDiscoveryUrl, prefix: "dc-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "oh-franklin-2026")!, format: "franklin-pdf", discoveryUrl: franklinDiscoveryUrl, prefix: "oh-franklin-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "id-cassia-2026")!, format: "cassia-pdf", discoveryUrl: cassiaDiscoveryUrl, prefix: "id-cassia-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "ia-polk-2026")!, format: "iowa-polk-pdf", discoveryUrl: iowaPolkDiscoveryUrl, prefix: "ia-polk-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "ia-johnson-2026")!, format: "iowa-johnson-html", discoveryUrl: iowaJohnsonDiscoveryUrl, prefix: "ia-johnson-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "co-boulder-2026")!, format: "boulder-html", discoveryUrl: boulderDiscoveryUrl, prefix: "co-boulder-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "pa-bucks-2026")!, format: "bucks-pdf", discoveryUrl: bucksIndexUrl, prefix: "pa-bucks-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "nv-washoe-2026")!, format: "washoe-html", discoveryUrl: washoeDiscoveryUrl, prefix: "nv-washoe-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "nv-clark-2026")!, format: "clark-pdf", discoveryUrl: clarkDiscoveryUrl, prefix: "nv-clark-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "ct-sots-2026")!, format: "connecticut-pdf", discoveryUrl: connecticutDiscoveryUrl, prefix: "ct-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "or-sos-multnomah-2026")!, format: "oregon-pdf", discoveryUrl: oregonDiscoveryUrl, prefix: "or-multnomah-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "tx-sos-2026")!, format: "texas-certified-pdf", discoveryUrl: texasDiscoveryUrl, prefix: "tx-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "vt-sos-2026")!, format: "vermont-xlsx", discoveryUrl: vermontDiscoveryUrl, prefix: "vt-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "mo-sos-2026")!, format: "certified-pdf", discoveryUrl: certifiedPdfDiscoveryUrls.MO, prefix: "mo-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "nj-doe-2026-federal")!, format: "certified-pdf", discoveryUrl: certifiedPdfDiscoveryUrls.NJ, prefix: "nj-federal-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "ga-fulton-2026")!, format: "fulton-pdf", discoveryUrl: fultonDiscoveryUrl, prefix: "ga-fulton-general", electionLabel: "General / Special Election", formId: null },
-	{ source: washington, format: "washington-html", discoveryUrl: stateBallotCycleDiscoveryUrl, prefix: "wa-general", electionLabel: "GENERAL", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "mt-general-2026")!, format: "montana-csv", discoveryUrl: "https://candidatefiling.mt.gov/candidatefiling/CandidateList.aspx", prefix: "mt-general", electionLabel: "FEDERAL GENERAL", formId: "frmMain" },
-	{ source: configuredStateBallotSources.find(source => source.id === "ms-sos-2026")!, format: "mississippi-csv", discoveryUrl: "https://www.sos.ms.gov/content/CandidateQualifying/default.aspx", prefix: "ms-general", electionLabel: "General Election:", formId: "form1" },
-	{ source: configuredStateBallotSources.find(source => source.id === "wy-sos-2026")!, format: "csv", discoveryUrl: "https://sos.wyo.gov/elections/default.aspx", prefix: "wy-general", electionLabel: "General Election:", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "de-doe-2026")!, format: "delaware-html", discoveryUrl: "https://elections.delaware.gov/candidates/candidatelist/", prefix: "de-general", electionLabel: "Statewide General", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "sd-sos-2026")!, format: "south-dakota-csv", discoveryUrl: dakotaDiscoveryUrl("SD"), prefix: "sd-general", electionLabel: "General Election", formId: "Form1" },
-	{ source: configuredStateBallotSources.find(source => source.id === "nd-sos-2026")!, format: "north-dakota-html", discoveryUrl: dakotaDiscoveryUrl("ND"), prefix: "nd-general", electionLabel: "General Election", formId: "aspnetForm" },
-	{ source: configuredStateBallotSources.find(source => source.id === "fl-doe-2026")!, format: "csv", discoveryUrl: floridaDiscoveryUrl, prefix: "fl-general", electionLabel: "Election", formId: "CanDownload" },
-	{ source: configuredStateBallotSources.find(source => source.id === "fl-doe-local-2026")!, format: "florida-local-tsv", discoveryUrl: floridaDiscoveryUrl, prefix: "fl-local-general", electionLabel: "Election", formId: "CanDownload" },
-	{ source: configuredStateBallotSources.find(source => source.id === "sc-sec-2026")!, format: "south-carolina-html", discoveryUrl: southCarolinaDiscoveryUrl, prefix: "sc-general", electionLabel: "Statewide General Election", formId: "SelectElectionForm" },
-	{ source: configuredStateBallotSources.find(source => source.id === "md-sbe-2026")!, format: "csv", discoveryUrl: marylandDiscoveryUrl, prefix: "md-general", electionLabel: "General Election Day", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "md-sbe-local-2026")!, format: "maryland-local-csv", discoveryUrl: marylandDiscoveryUrl, prefix: "md-local-general", electionLabel: "General Election Day", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "nc-sbe-2026")!, format: "csv", discoveryUrl: northCarolinaDiscoveryUrl, prefix: "nc-general", electionLabel: "General Candidate List by Contest", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "ky-sos-2026")!, format: "kentucky-html", discoveryUrl: kentuckyDiscoveryUrl, prefix: "ky-general-core", electionLabel: "General Election", formId: "aspnetForm" },
-	{ source: configuredStateBallotSources.find(source => source.id === "ky-courts-2026")!, format: "kentucky-courts-html", discoveryUrl: kentuckyDiscoveryUrl, prefix: "ky-general-courts", electionLabel: "General Election", formId: "aspnetForm" },
-	{ source: configuredStateBallotSources.find(source => source.id === "ut-lg-2026")!, format: "utah-html", discoveryUrl: utahDiscoveryUrl, prefix: "ut-general", electionLabel: "Regular General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "mi-dos-2026")!, format: "michigan-html", discoveryUrl: michiganDiscoveryUrl, prefix: "mi-general", electionLabel: "November General Candidate Listing", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "ks-johnson-2026")!, format: "kansas-html", discoveryUrl: kansasDiscoveryUrl, prefix: "ks-johnson-general", electionLabel: "General Election", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "va-elect-2026-federal")!, format: "virginia-html", discoveryUrl: virginiaDiscoveryUrl, prefix: "va-general-federal", electionLabel: "General and Special Elections", formId: null },
-	{ source: configuredStateBallotSources.find(source => source.id === "va-elect-2026-local")!, format: "virginia-local-html", discoveryUrl: virginiaDiscoveryUrl, prefix: "va-general-local", electionLabel: "General and Special Elections", formId: null },
+	{
+		source: configuredStateBallotSources.find(source => source.id === unionSampleSource().id)!,
+		format: "reviewed-pdf",
+		discoveryUrl: unionSampleLandingUrl,
+		prefix: "nj-union",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === fultonMunicipalSource().id)!,
+		format: "fulton-municipal-pdf",
+		discoveryUrl: fultonDiscoveryUrl,
+		prefix: "ga-fulton-municipal-runoff",
+		electionLabel: "Municipal General Runoff Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "ak-fairbanks-2026")!,
+		format: "fairbanks-pdf",
+		discoveryUrl: fairbanksPublicationIndexUrl(),
+		prefix: "ak-fairbanks-municipal",
+		electionLabel: "Municipal Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "ak-juneau-2026")!,
+		format: "juneau-html",
+		discoveryUrl: juneauDiscoveryUrl,
+		prefix: "ak-juneau-municipal",
+		electionLabel: "Municipal Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "nm-los-ranchos-2025")!,
+		format: "los-ranchos-html",
+		discoveryUrl: losRanchosDiscoveryUrl,
+		prefix: "nm-los-ranchos-local",
+		electionLabel: "Regular Local Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "mn-independence-city-2026")!,
+		format: "independence-html",
+		discoveryUrl: independenceDiscoveryUrl,
+		prefix: "mn-independence-city-general",
+		electionLabel: "City Council Candidates",
+		formId: null
+	},
+	...(["Monona", "Woodbury"] as const).map(county => ({
+		source: configuredStateBallotSources.find(source => source.id === iowaCountySource(county).id)!,
+		format: "iowa-county-pdf",
+		discoveryUrl: iowaCountyDiscoveryUrls[county],
+		prefix: `ia-${county.toLowerCase()}-samples-general`,
+		electionLabel: "General Election",
+		formId: null
+	})),
+	{
+		source: configuredStateBallotSources.find(source => source.id === "ok-seb-2026")!,
+		format: "oklahoma-html",
+		discoveryUrl: oklahomaDiscoveryUrl,
+		prefix: "ok-seb-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "ma-everett-2026")!,
+		format: "everett-pdf",
+		discoveryUrl: everettIndexUrl,
+		prefix: "ma-everett-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "al-sos-2026")!,
+		format: "alabama-pdf",
+		discoveryUrl: alabamaDiscoveryUrl,
+		prefix: "al-county-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "wv-kanawha-2026")!,
+		format: "kanawha-pdf",
+		discoveryUrl: kanawhaDiscoveryUrl,
+		prefix: "wv-kanawha-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "in-boone-2026")!,
+		format: "boone-xlsx",
+		discoveryUrl: booneDiscoveryUrl,
+		prefix: "in-boone-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "ca-orange-2026")!,
+		format: "orange-pdf",
+		discoveryUrl: orangeDiscoveryUrl,
+		prefix: "ca-orange-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "me-house-clerk-2026")!,
+		format: "maine-house-html",
+		discoveryUrl: maineHouseUrls.index,
+		prefix: "me-house-clerk-general",
+		electionLabel: "House candidate references",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "ny-nyc-2026")!,
+		format: "nyc-pdf",
+		discoveryUrl: nycDiscoveryUrl,
+		prefix: "ny-nyc-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "ne-douglas-2026")!,
+		format: "douglas-html",
+		discoveryUrl: douglasDiscoveryUrl,
+		prefix: "ne-douglas-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "tn-hamilton-2026")!,
+		format: "hamilton-html",
+		discoveryUrl: hamiltonDiscoveryUrl,
+		prefix: "tn-hamilton-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "az-pima-2026")!,
+		format: "pima-pdf",
+		discoveryUrl: pimaDiscoveryUrl,
+		prefix: "az-pima-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "nh-goffstown-2026")!,
+		format: "goffstown-pdf",
+		discoveryUrl: configuredStateBallotSources.find(source => source.id === "nh-goffstown-2026")!.pageUrl,
+		prefix: "nh-goffstown-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "il-chicago-2026")!,
+		format: "chicago-pdf",
+		discoveryUrl: chicagoDiscoveryUrl,
+		prefix: "il-chicago-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "il-winnebago-2026")!,
+		format: "winnebago-pdf",
+		discoveryUrl: winnebagoDiscoveryUrl,
+		prefix: "il-winnebago-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "ri-east-greenwich-2026")!,
+		format: "east-greenwich-pdf",
+		discoveryUrl: eastGreenwichDiscoveryUrl,
+		prefix: "ri-east-greenwich-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "wi-town-dane-2026")!,
+		format: "dane-pdf",
+		discoveryUrl: daneDiscoveryUrl,
+		prefix: "wi-town-dane-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "ar-pulaski-candidates-2026")!,
+		format: "pulaski-pdf",
+		discoveryUrl: pulaskiDiscoveryUrl,
+		prefix: "ar-pulaski-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "mi-tuscola-candidates-2026")!,
+		format: "tuscola-pdf",
+		discoveryUrl: tuscolaDiscoveryUrl,
+		prefix: "mi-tuscola-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "dc-boe-2026")!,
+		format: "dc-pdf",
+		discoveryUrl: dcDiscoveryUrl,
+		prefix: "dc-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "oh-franklin-2026")!,
+		format: "franklin-pdf",
+		discoveryUrl: franklinDiscoveryUrl,
+		prefix: "oh-franklin-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "id-cassia-2026")!,
+		format: "cassia-pdf",
+		discoveryUrl: cassiaDiscoveryUrl,
+		prefix: "id-cassia-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "ia-polk-2026")!,
+		format: "iowa-polk-pdf",
+		discoveryUrl: iowaPolkDiscoveryUrl,
+		prefix: "ia-polk-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "ia-johnson-2026")!,
+		format: "iowa-johnson-html",
+		discoveryUrl: iowaJohnsonDiscoveryUrl,
+		prefix: "ia-johnson-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "co-boulder-2026")!,
+		format: "boulder-html",
+		discoveryUrl: boulderDiscoveryUrl,
+		prefix: "co-boulder-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "pa-bucks-2026")!,
+		format: "bucks-pdf",
+		discoveryUrl: bucksIndexUrl,
+		prefix: "pa-bucks-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "nv-washoe-2026")!,
+		format: "washoe-html",
+		discoveryUrl: washoeDiscoveryUrl,
+		prefix: "nv-washoe-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "nv-clark-2026")!,
+		format: "clark-pdf",
+		discoveryUrl: clarkDiscoveryUrl,
+		prefix: "nv-clark-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "ct-sots-2026")!,
+		format: "connecticut-pdf",
+		discoveryUrl: connecticutDiscoveryUrl,
+		prefix: "ct-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "or-sos-multnomah-2026")!,
+		format: "oregon-pdf",
+		discoveryUrl: oregonDiscoveryUrl,
+		prefix: "or-multnomah-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "tx-sos-2026")!,
+		format: "texas-certified-pdf",
+		discoveryUrl: texasDiscoveryUrl,
+		prefix: "tx-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "vt-sos-2026")!,
+		format: "vermont-xlsx",
+		discoveryUrl: vermontDiscoveryUrl,
+		prefix: "vt-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "mo-sos-2026")!,
+		format: "certified-pdf",
+		discoveryUrl: certifiedPdfDiscoveryUrls.MO,
+		prefix: "mo-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "nj-doe-2026-federal")!,
+		format: "certified-pdf",
+		discoveryUrl: certifiedPdfDiscoveryUrls.NJ,
+		prefix: "nj-federal-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "ga-fulton-2026")!,
+		format: "fulton-pdf",
+		discoveryUrl: fultonDiscoveryUrl,
+		prefix: "ga-fulton-general",
+		electionLabel: "General / Special Election",
+		formId: null
+	},
+	{
+		source: washington,
+		format: "washington-html",
+		discoveryUrl: stateBallotCycleDiscoveryUrl,
+		prefix: "wa-general",
+		electionLabel: "GENERAL",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "mt-general-2026")!,
+		format: "montana-csv",
+		discoveryUrl: "https://candidatefiling.mt.gov/candidatefiling/CandidateList.aspx",
+		prefix: "mt-general",
+		electionLabel: "FEDERAL GENERAL",
+		formId: "frmMain"
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "ms-sos-2026")!,
+		format: "mississippi-csv",
+		discoveryUrl: "https://www.sos.ms.gov/content/CandidateQualifying/default.aspx",
+		prefix: "ms-general",
+		electionLabel: "General Election:",
+		formId: "form1"
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "wy-sos-2026")!,
+		format: "csv",
+		discoveryUrl: "https://sos.wyo.gov/elections/default.aspx",
+		prefix: "wy-general",
+		electionLabel: "General Election:",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "de-doe-2026")!,
+		format: "delaware-html",
+		discoveryUrl: "https://elections.delaware.gov/candidates/candidatelist/",
+		prefix: "de-general",
+		electionLabel: "Statewide General",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "sd-sos-2026")!,
+		format: "south-dakota-csv",
+		discoveryUrl: dakotaDiscoveryUrl("SD"),
+		prefix: "sd-general",
+		electionLabel: "General Election",
+		formId: "Form1"
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "nd-sos-2026")!,
+		format: "north-dakota-html",
+		discoveryUrl: dakotaDiscoveryUrl("ND"),
+		prefix: "nd-general",
+		electionLabel: "General Election",
+		formId: "aspnetForm"
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "fl-doe-2026")!,
+		format: "csv",
+		discoveryUrl: floridaDiscoveryUrl,
+		prefix: "fl-general",
+		electionLabel: "Election",
+		formId: "CanDownload"
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "fl-doe-local-2026")!,
+		format: "florida-local-tsv",
+		discoveryUrl: floridaDiscoveryUrl,
+		prefix: "fl-local-general",
+		electionLabel: "Election",
+		formId: "CanDownload"
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "sc-sec-2026")!,
+		format: "south-carolina-html",
+		discoveryUrl: southCarolinaDiscoveryUrl,
+		prefix: "sc-general",
+		electionLabel: "Statewide General Election",
+		formId: "SelectElectionForm"
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "md-sbe-2026")!,
+		format: "csv",
+		discoveryUrl: marylandDiscoveryUrl,
+		prefix: "md-general",
+		electionLabel: "General Election Day",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "md-sbe-local-2026")!,
+		format: "maryland-local-csv",
+		discoveryUrl: marylandDiscoveryUrl,
+		prefix: "md-local-general",
+		electionLabel: "General Election Day",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "nc-sbe-2026")!,
+		format: "csv",
+		discoveryUrl: northCarolinaDiscoveryUrl,
+		prefix: "nc-general",
+		electionLabel: "General Candidate List by Contest",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "ky-sos-2026")!,
+		format: "kentucky-html",
+		discoveryUrl: kentuckyDiscoveryUrl,
+		prefix: "ky-general-core",
+		electionLabel: "General Election",
+		formId: "aspnetForm"
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "ky-courts-2026")!,
+		format: "kentucky-courts-html",
+		discoveryUrl: kentuckyDiscoveryUrl,
+		prefix: "ky-general-courts",
+		electionLabel: "General Election",
+		formId: "aspnetForm"
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "ut-lg-2026")!,
+		format: "utah-html",
+		discoveryUrl: utahDiscoveryUrl,
+		prefix: "ut-general",
+		electionLabel: "Regular General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "mi-dos-2026")!,
+		format: "michigan-html",
+		discoveryUrl: michiganDiscoveryUrl,
+		prefix: "mi-general",
+		electionLabel: "November General Candidate Listing",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "ks-johnson-2026")!,
+		format: "kansas-html",
+		discoveryUrl: kansasDiscoveryUrl,
+		prefix: "ks-johnson-general",
+		electionLabel: "General Election",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "va-elect-2026-federal")!,
+		format: "virginia-html",
+		discoveryUrl: virginiaDiscoveryUrl,
+		prefix: "va-general-federal",
+		electionLabel: "General and Special Elections",
+		formId: null
+	},
+	{
+		source: configuredStateBallotSources.find(source => source.id === "va-elect-2026-local")!,
+		format: "virginia-local-html",
+		discoveryUrl: virginiaDiscoveryUrl,
+		prefix: "va-general-local",
+		electionLabel: "General and Special Elections",
+		formId: null
+	},
 ] as const;
 
 export function wyomingCandidateRosterUrl(electionDate: string) {
@@ -421,7 +848,9 @@ export function getStateBallotCycleFamily(familyId: string) {
 		targetValid = targetValid && family.source.stateCode === "DE" && family.source.url === delawareCandidateRosterUrl(family.source.electionDate);
 	}
 	else if (["south-dakota-csv", "north-dakota-html"].includes(family.format)) {
-		const state = family.format === "south-dakota-csv" ? "SD" : "ND";
+		const state = family.format === "south-dakota-csv"
+			? "SD"
+			: "ND";
 		targetValid = targetValid && family.source.stateCode === state && family.source.url === dakotaCandidateRosterUrl(state, new URL(family.source.url).searchParams.get("eid") ?? "");
 	}
 	else if (family.format === "mississippi-csv") {
@@ -430,8 +859,26 @@ export function getStateBallotCycleFamily(familyId: string) {
 	else {
 		targetValid = targetValid && new RegExp(`^${family.discoveryUrl.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}\\?e=[1-9]\\d{0,8}$`, "u").test(family.source.url);
 	}
-	if (!targetValid || family.source.format !== family.format || family.source.retrievalPolicy || (family.source.stateCode !== "FL" && family.source.postBody) || (family.source.documentUrls?.length && !["fairbanks-pdf", "juneau-html", "los-ranchos-html", "independence-html", "iowa-polk-pdf", "iowa-johnson-html", "washoe-html"].includes(family.format) && !["KY", "VA", "GA", "MO", "NJ", "VT", "TX", "OR"].includes(family.source.stateCode)) || (family.source.documentLinks?.length && family.source.stateCode !== "GA"))
+	if (!targetValid || family.source.format !== family.format || family.source.retrievalPolicy || (family.source.stateCode !== "FL" && family.source.postBody) || (family.source.documentUrls?.length && ![
+		"fairbanks-pdf",
+		"juneau-html",
+		"los-ranchos-html",
+		"independence-html",
+		"iowa-polk-pdf",
+		"iowa-johnson-html",
+		"washoe-html"
+	].includes(family.format) && ![
+		"KY",
+		"VA",
+		"GA",
+		"MO",
+		"NJ",
+		"VT",
+		"TX",
+		"OR"
+	].includes(family.source.stateCode)) || (family.source.documentLinks?.length && family.source.stateCode !== "GA")) {
 		throw new Error("The automatic election source family is unsupported or has changed.");
+	}
 	return family;
 }
 
@@ -445,7 +892,13 @@ export function stateBallotCycleCatalogLocations(environment: NodeJS.ProcessEnv 
 	const legacy = environment.STATE_BALLOT_CYCLE_CATALOG;
 	const multiple = environment.STATE_BALLOT_CYCLE_CATALOGS;
 	if (legacy && multiple !== undefined) throw new Error("Configure either one legacy catalog or a family catalog map.");
-	if (multiple === undefined) return legacy ? [{ familyId: washington.id, catalogPath: legacy }] : [];
+	if (multiple === undefined) {
+		return legacy
+			? [
+					{ familyId: washington.id, catalogPath: legacy }
+				]
+			: [];
+	}
 	if (Buffer.byteLength(multiple) > 16 * 1024) throw new Error("The election catalog configuration exceeds its bounds.");
 	const value: unknown = JSON.parse(multiple);
 	if (!value || typeof value !== "object" || Array.isArray(value) || !Object.keys(value).length || Object.keys(value).length > cycleFamilies.length)
@@ -505,7 +958,9 @@ export function readMississippiGeneralElectionDate(body: string) {
 	if (!labels.length || labels.length > 100) throw new Error("The Mississippi report has no bounded explicit general-election date.");
 	const dates = labels.map((label) => {
 		const match = /^General Election:\s*November ([2-8]), (20\d{2})$/u.exec(label);
-		const date = match ? `${match[2]}-11-0${match[1]}` : "";
+		const date = match
+			? `${match[2]}-11-0${match[1]}`
+			: "";
 		if (!validStateBallotGeneralDate(date) || date < family.source.electionDate) throw new Error("The Mississippi report has an unsupported general-election date.");
 		return date;
 	});
@@ -524,7 +979,9 @@ export function readWyomingGeneralElectionDate(body: string) {
 	if (!labels.length || labels.length > 10) throw new Error("The Wyoming landing page has no bounded explicit election date.");
 	const dates = labels.map((label) => {
 		const match = /^(?:Primary Election: [A-Za-z]+ \d{1,2}, (20\d{2}) \| )?General Election: November ([2-8]), (20\d{2})$/u.exec(label);
-		const date = match ? `${match[3]}-11-0${match[2]}` : "";
+		const date = match
+			? `${match[3]}-11-0${match[2]}`
+			: "";
 		if (!validStateBallotGeneralDate(date) || date < family.source.electionDate || Number(date.slice(0, 4)) % 2 || (match?.[1] && match[1] !== match[3])) throw new Error("The Wyoming general-election date is unsupported or inconsistent.");
 		return date;
 	});
@@ -533,7 +990,16 @@ export function readWyomingGeneralElectionDate(body: string) {
 	const year = date.slice(0, 4);
 	const sections = stateHtmlDescendants(document, node => node.nodeName === "div" && (node.childNodes ?? []).some(child => child.nodeName === "h3" && normalizedText(child) === `${year} Election Information`));
 	if (sections.length !== 1) throw new Error("The Wyoming election-information section is missing or ambiguous.");
-	for (const [label, url] of [["General Election Candidates (Excel data file)", wyomingCandidateRosterUrl(date)], ["General Election Candidates Roster (PDF file)", wyomingCandidateRosterUrl(date).replace(/\.csv$/u, ".pdf")]]) {
+	for (const [label, url] of [
+		[
+			"General Election Candidates (Excel data file)",
+			wyomingCandidateRosterUrl(date)
+		],
+		[
+			"General Election Candidates Roster (PDF file)",
+			wyomingCandidateRosterUrl(date).replace(/\.csv$/u, ".pdf")
+		]
+	]) {
 		const links = stateHtmlDescendants(sections[0]!, node => node.nodeName === "a" && normalizedText(node) === label);
 		if (links.length !== 1 || new URL(stateHtmlAttribute(links[0]!, "href"), family.discoveryUrl).href !== url) throw new Error("The Wyoming official roster links no longer match the explicit election year.");
 	}
@@ -552,15 +1018,27 @@ function readDelawareGeneralElections(body: string): StateBallotCycleCatalog["el
 		const year = /\b(20\d{2}) Statewide General$/u.exec(label)?.[1];
 		if (year && year < family.source.electionDate.slice(0, 4)) return [];
 		const match = /^11\/(0?[2-8])\/(20\d{2}) Statewide General$/u.exec(label);
-		const date = match ? `${match[2]}-11-${match[1]!.padStart(2, "0")}` : "";
+		const date = match
+			? `${match[2]}-11-${match[1]!.padStart(2, "0")}`
+			: "";
 		if (!validStateBallotGeneralDate(date) || date < family.source.electionDate || Number(date.slice(0, 4)) % 2 || new URL(stateHtmlAttribute(link, "href"), family.discoveryUrl).href !== delawareCandidateRosterUrl(date)) throw new Error("The Delaware published general-election date and roster link do not match.");
-		return [{ electionId: null, electionDate: date }];
+		return [
+			{ electionId: null, electionDate: date }
+		];
 	});
 }
 
 export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): StateBallotCycleCatalog {
-	if (!exactKeys(value, ["schemaVersion", "type", "familyId", "sourceConfigurationSha256", "discovery", "elections"]) || value.schemaVersion !== 1 || value.type !== "state-ballot-cycle-catalog" || typeof value.familyId !== "string")
+	if (!exactKeys(value, [
+		"schemaVersion",
+		"type",
+		"familyId",
+		"sourceConfigurationSha256",
+		"discovery",
+		"elections"
+	]) || value.schemaVersion !== 1 || value.type !== "state-ballot-cycle-catalog" || typeof value.familyId !== "string") {
 		throw new Error("The election cycle catalog must match the approved automatic source family.");
+	}
 	const family = getStateBallotCycleFamily(value.familyId);
 	const original = family.source;
 	if (value.sourceConfigurationSha256 !== digest(JSON.stringify(original))) throw new Error("The election cycle catalog must match the approved automatic source family.");
@@ -896,18 +1374,58 @@ export function parseStateBallotCycleCatalog(value: unknown, now = Date.now()): 
 	}
 	if (original.stateCode === "VA") {
 		for (const election of value.elections) {
-			validateVirginiaElection(election, family.format === "virginia-local-html" ? "local" : "federal");
+			validateVirginiaElection(election, family.format === "virginia-local-html"
+				? "local"
+				: "federal");
 			if (dates.has(election.electionDate)) throw new Error("The Virginia election catalog has duplicate dates.");
-			if (election.electionDate === original.electionDate && (election.reports.map(report => report.url).join("|") !== original.url || (election.allOfficesUrl ?? null) !== (family.format === "virginia-local-html" ? original.documentUrls?.[1] : null))) throw new Error("The Virginia catalog conflicts with its original published source.");
+			if (election.electionDate === original.electionDate && (election.reports.map(report => report.url).join("|") !== original.url || (election.allOfficesUrl ?? null) !== (family.format === "virginia-local-html"
+				? original.documentUrls?.[1]
+				: null))) {
+				throw new Error("The Virginia catalog conflicts with its original published source.");
+			}
 			dates.add(election.electionDate);
 		}
 		return value as unknown as StateBallotCycleCatalog;
 	}
-	const dateOnly = !florida && !maryland && ["mississippi-csv", "csv", "delaware-html", "utah-html", "michigan-html"].includes(family.format);
-	const originalElectionId = family.format === "kansas-html" ? kansasSourceElectionId(original) : florida ? floridaSourceElectionId(original) : maryland ? marylandSourceElectionId(original) : original.stateCode === "KY" ? kentuckyOriginalElectionId : new URL(original.url).searchParams.get(family.format === "south-carolina-html" ? "electionId" : ["south-dakota-csv", "north-dakota-html"].includes(family.format) ? "eid" : "e");
+	const dateOnly = !florida && !maryland && [
+		"mississippi-csv",
+		"csv",
+		"delaware-html",
+		"utah-html",
+		"michigan-html"
+	].includes(family.format);
+	const originalElectionId = family.format === "kansas-html"
+		? kansasSourceElectionId(original)
+		: florida
+			? floridaSourceElectionId(original)
+			: maryland
+				? marylandSourceElectionId(original)
+				: original.stateCode === "KY"
+					? kentuckyOriginalElectionId
+					: new URL(original.url).searchParams.get(family.format === "south-carolina-html"
+							? "electionId"
+							: ["south-dakota-csv", "north-dakota-html"].includes(family.format)
+									? "eid"
+									: "e");
 	for (const election of value.elections) {
-		if (!exactKeys(election, ["electionId", "electionDate"]) || !validStateBallotGeneralDate(election.electionDate) || election.electionDate < original.electionDate || dates.has(election.electionDate) || (dateOnly ? election.electionId !== null : typeof election.electionId !== "string" || (florida ? floridaElectionDate(election.electionId) !== election.electionDate : maryland ? !new RegExp(`^${election.electionDate.slice(0, 4)}_(GG|PG)$`, "u").test(election.electionId) : !/^[1-9]\d{0,8}$/u.test(election.electionId)) || identifiers.has(election.electionId) || ((election.electionId === originalElectionId) !== (election.electionDate === original.electionDate))) || ((maryland || ["montana-csv", "csv", "delaware-html", "south-dakota-csv", "north-dakota-html", "south-carolina-html", "utah-html", "michigan-html"].includes(family.format)) && Number(election.electionDate.slice(0, 4)) % 2 !== 0))
+		if (!exactKeys(election, ["electionId", "electionDate"]) || !validStateBallotGeneralDate(election.electionDate) || election.electionDate < original.electionDate || dates.has(election.electionDate) || (dateOnly
+			? election.electionId !== null
+			: typeof election.electionId !== "string" || (florida
+				? floridaElectionDate(election.electionId) !== election.electionDate
+				: maryland
+					? !new RegExp(`^${election.electionDate.slice(0, 4)}_(GG|PG)$`, "u").test(election.electionId)
+					: !/^[1-9]\d{0,8}$/u.test(election.electionId)) || identifiers.has(election.electionId) || ((election.electionId === originalElectionId) !== (election.electionDate === original.electionDate))) || ((maryland || [
+			"montana-csv",
+			"csv",
+			"delaware-html",
+			"south-dakota-csv",
+			"north-dakota-html",
+			"south-carolina-html",
+			"utah-html",
+			"michigan-html"
+		].includes(family.format)) && Number(election.electionDate.slice(0, 4)) % 2 !== 0)) {
 			throw new Error("The official election identity is duplicate, unsupported or inconsistent.");
+		}
 		if (typeof election.electionId === "string") identifiers.add(election.electionId);
 		dates.add(election.electionDate);
 	}
@@ -922,197 +1440,822 @@ export function discoverStateBallotElectionCycles(body: string, familyId: string
 	if (familyId === fultonMunicipalSource().id) {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readFultonMunicipalDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "ak-fairbanks-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readFairbanksCycleDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.checkedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.checkedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "ak-juneau-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readJuneauDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "nm-los-ranchos-2025") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readLosRanchosDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "mn-independence-city-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readIndependenceDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "ma-everett-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readEverettDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "pa-bucks-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readBucksDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: [capture.election] }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: [capture.election]
+		}, now);
 	}
 	if (familyId === "al-sos-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readAlabamaDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.retrievedAt }, elections: capture.elections.map(election => ({ electionDate: election.electionDate, electionId: null, alabamaElection: election })) }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.retrievedAt
+			},
+			elections: capture.elections.map(election => ({ electionDate: election.electionDate, electionId: null, alabamaElection: election }))
+		}, now);
 	}
 	if (familyId === "wv-kanawha-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readKanawhaDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "in-boone-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readBooneDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "me-house-clerk-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readMaineHouseDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(JSON.stringify({ elections: capture.elections, law: capture.pages.constitution.sha256, policies: [capture.pages.robots.sha256, ...Object.keys(capture.pages).filter(key => key !== "index").map(key => capture.pages[key as keyof typeof capture.pages].sha256)] })), retrievedAt: capture.pages.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(JSON.stringify({
+					elections: capture.elections,
+					law: capture.pages.constitution.sha256,
+					policies: [
+						capture.pages.robots.sha256,
+						...Object.keys(capture.pages).filter(key => key !== "index").map(key => capture.pages[key as keyof typeof capture.pages].sha256)
+					]
+				})),
+				retrievedAt: capture.pages.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "ca-orange-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readOrangeDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "ny-nyc-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readNycDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "ne-douglas-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readDouglasCandidateDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "tn-hamilton-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readHamiltonCandidateDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "az-pima-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readPimaCandidateDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "nh-goffstown-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readGoffstownCandidateDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "il-chicago-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readChicagoDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "il-winnebago-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readWinnebagoDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "ri-east-greenwich-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readEastGreenwichDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "wi-town-dane-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readDaneDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "ar-pulaski-candidates-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readPulaskiDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "mi-tuscola-candidates-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readTuscolaDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "dc-boe-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readDcDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "oh-franklin-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readFranklinDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "id-cassia-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readCassiaDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (["ia-monona-samples-2026", "ia-woodbury-samples-2026"].includes(familyId)) {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readIowaCountyDiscovery(body, validateIowaCountySource(family.source), now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "ia-polk-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readIowaPolkDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "ia-johnson-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readIowaJohnsonDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(JSON.stringify(capture.pages.map(page => ({ url: page.url, sha256: page.sha256 })))), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(JSON.stringify(capture.pages.map(page => ({ url: page.url, sha256: page.sha256 })))),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "ok-seb-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readOklahomaDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: capture.elections }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: capture.elections
+		}, now);
 	}
 	if (familyId === "co-boulder-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readBoulderDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: capture.index.retrievedAt }, elections: [capture.election] }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: capture.index.retrievedAt
+			},
+			elections: [capture.election]
+		}, now);
 	}
 	if (familyId === "nv-washoe-2026") {
 		const family = getStateBallotCycleFamily(familyId);
 		const capture = readWashoeDiscovery(body, now);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: capture.page.sha256, retrievedAt: capture.page.retrievedAt }, elections: [capture.election] }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: { url: family.discoveryUrl, sha256: capture.page.sha256, retrievedAt: capture.page.retrievedAt },
+			elections: [capture.election]
+		}, now);
 	}
 	if (familyId === "nv-clark-2026") {
 		const family = getStateBallotCycleFamily(familyId);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readClarkElectionDiscovery(body) }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: new Date(now).toISOString()
+			},
+			elections: readClarkElectionDiscovery(body)
+		}, now);
 	}
 	if (familyId === "ct-sots-2026") {
 		const family = getStateBallotCycleFamily(familyId);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readConnecticutElectionDiscovery(body) }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: new Date(now).toISOString()
+			},
+			elections: readConnecticutElectionDiscovery(body)
+		}, now);
 	}
 	if (["ky-sos-2026", "ky-courts-2026"].includes(familyId)) {
 		const family = getStateBallotCycleFamily(familyId);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readKentuckyElectionDiscovery(body) }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: new Date(now).toISOString()
+			},
+			elections: readKentuckyElectionDiscovery(body)
+		}, now);
 	}
 	if (familyId === "nc-sbe-2026") {
 		const family = getStateBallotCycleFamily(familyId);
-		return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readNorthCarolinaElectionDiscovery(body) }, now);
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: new Date(now).toISOString()
+			},
+			elections: readNorthCarolinaElectionDiscovery(body)
+		}, now);
 	}
 	const family = getStateBallotCycleFamily(familyId);
-	if (family.format === "oregon-pdf") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readOregonElectionDiscovery(body) }, now);
-	if (family.format === "texas-certified-pdf") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readTexasElectionDiscovery(body) }, now);
-	if (family.format === "vermont-xlsx") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readVermontElectionDiscovery(body) }, now);
-	if (family.format === "certified-pdf") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readCertifiedPdfElectionDiscovery(body) }, now);
-	if (family.source.stateCode === "GA") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readFultonElectionDiscovery(body) }, now);
-	if (family.source.stateCode === "VA") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readVirginiaElectionDiscovery(body, family.format === "virginia-local-html" ? "local" : "federal") }, now);
-	if (family.format === "kansas-html") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readKansasElectionDiscovery(body) }, now);
-	if (family.source.stateCode === "MI") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readMichiganElectionDiscovery(body) }, now);
-	if (family.source.stateCode === "UT") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readUtahElectionDiscovery(body) }, now);
+	if (family.format === "oregon-pdf") {
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: new Date(now).toISOString()
+			},
+			elections: readOregonElectionDiscovery(body)
+		}, now);
+	}
+	if (family.format === "texas-certified-pdf") {
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: new Date(now).toISOString()
+			},
+			elections: readTexasElectionDiscovery(body)
+		}, now);
+	}
+	if (family.format === "vermont-xlsx") {
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: new Date(now).toISOString()
+			},
+			elections: readVermontElectionDiscovery(body)
+		}, now);
+	}
+	if (family.format === "certified-pdf") {
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: new Date(now).toISOString()
+			},
+			elections: readCertifiedPdfElectionDiscovery(body)
+		}, now);
+	}
+	if (family.source.stateCode === "GA") {
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: new Date(now).toISOString()
+			},
+			elections: readFultonElectionDiscovery(body)
+		}, now);
+	}
+	if (family.source.stateCode === "VA") {
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: new Date(now).toISOString()
+			},
+			elections: readVirginiaElectionDiscovery(body, family.format === "virginia-local-html"
+				? "local"
+				: "federal")
+		}, now);
+	}
+	if (family.format === "kansas-html") {
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: new Date(now).toISOString()
+			},
+			elections: readKansasElectionDiscovery(body)
+		}, now);
+	}
+	if (family.source.stateCode === "MI") {
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: new Date(now).toISOString()
+			},
+			elections: readMichiganElectionDiscovery(body)
+		}, now);
+	}
+	if (family.source.stateCode === "UT") {
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: new Date(now).toISOString()
+			},
+			elections: readUtahElectionDiscovery(body)
+		}, now);
+	}
 	if (Buffer.byteLength(body) > 2 * 1024 * 1024) throw new Error("The election discovery page exceeds its size limit.");
-	if (family.source.stateCode === "MD") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readMarylandElectionDiscovery(body, family.format === "csv" ? "state" : "local").map(({ electionId, electionDate }) => ({ electionId, electionDate })) }, now);
-	if (family.source.stateCode === "FL") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readFloridaElectionDiscovery(body, family.source.electionDate.slice(0, 4), family.format === "florida-local-tsv" ? "LOC" : "STA") }, now);
-	if (family.format === "south-carolina-html") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readSouthCarolinaElectionDiscovery(body, family.source.electionDate.slice(0, 4)) }, now);
-	if (family.format === "mississippi-csv") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: [{ electionId: null, electionDate: readMississippiGeneralElectionDate(body) }] }, now);
-	if (family.format === "csv") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: [{ electionId: null, electionDate: readWyomingGeneralElectionDate(body) }] }, now);
-	if (family.format === "delaware-html") return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readDelawareGeneralElections(body) }, now);
-	if (["south-dakota-csv", "north-dakota-html"].includes(family.format)) return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: readDakotaElectionDiscovery(family.format === "south-dakota-csv" ? "SD" : "ND", body, family.source.electionDate.slice(0, 4), now) }, now);
+	if (family.source.stateCode === "MD") {
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: new Date(now).toISOString()
+			},
+			elections: readMarylandElectionDiscovery(body, family.format === "csv"
+				? "state"
+				: "local").map(({ electionId, electionDate }) => ({ electionId, electionDate }))
+		}, now);
+	}
+	if (family.source.stateCode === "FL") {
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: new Date(now).toISOString()
+			},
+			elections: readFloridaElectionDiscovery(body, family.source.electionDate.slice(0, 4), family.format === "florida-local-tsv"
+				? "LOC"
+				: "STA")
+		}, now);
+	}
+	if (family.format === "south-carolina-html") {
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: new Date(now).toISOString()
+			},
+			elections: readSouthCarolinaElectionDiscovery(body, family.source.electionDate.slice(0, 4))
+		}, now);
+	}
+	if (family.format === "mississippi-csv") {
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: new Date(now).toISOString()
+			},
+			elections: [
+				{
+					electionId: null,
+					electionDate: readMississippiGeneralElectionDate(body)
+				}
+			]
+		}, now);
+	}
+	if (family.format === "csv") {
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: new Date(now).toISOString()
+			},
+			elections: [
+				{
+					electionId: null,
+					electionDate: readWyomingGeneralElectionDate(body)
+				}
+			]
+		}, now);
+	}
+	if (family.format === "delaware-html") {
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: new Date(now).toISOString()
+			},
+			elections: readDelawareGeneralElections(body)
+		}, now);
+	}
+	if (["south-dakota-csv", "north-dakota-html"].includes(family.format)) {
+		return parseStateBallotCycleCatalog({
+			schemaVersion: 1,
+			type: "state-ballot-cycle-catalog",
+			familyId,
+			sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+			discovery: {
+				url: family.discoveryUrl,
+				sha256: digest(body),
+				retrievedAt: new Date(now).toISOString()
+			},
+			elections: readDakotaElectionDiscovery(family.format === "south-dakota-csv"
+				? "SD"
+				: "ND", body, family.source.electionDate.slice(0, 4), now)
+		}, now);
+	}
 	const document = parseStateHtml(body);
 	const forms = stateHtmlDescendants(document, node => node.nodeName === "form");
 	const selections = stateHtmlDescendants(document, node => node.nodeName === "select" && stateHtmlAttribute(node, "name") === "ctl00$ContentPlaceHolder1$ddlElection");
@@ -1134,9 +2277,23 @@ export function discoverStateBallotElectionCycles(body: string, familyId: string
 		if (electionDate < family.source.electionDate) continue;
 		if (label !== `${family.electionLabel} ${identity[3]} (${identity[1]}/${identity[2]}/${identity[3]}) (General)`)
 			throw new Error("The official general-election label has changed.");
-		elections.push({ electionId: stateHtmlAttribute(option, "value"), electionDate });
+		elections.push({
+			electionId: stateHtmlAttribute(option, "value"),
+			electionDate
+		});
 	}
-	return parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId: family.source.id, sourceConfigurationSha256: digest(JSON.stringify(family.source)), discovery: { url: family.discoveryUrl, sha256: digest(body), retrievedAt: new Date(now).toISOString() }, elections: elections.sort((first, second) => first.electionDate.localeCompare(second.electionDate)) }, now);
+	return parseStateBallotCycleCatalog({
+		schemaVersion: 1,
+		type: "state-ballot-cycle-catalog",
+		familyId: family.source.id,
+		sourceConfigurationSha256: digest(JSON.stringify(family.source)),
+		discovery: {
+			url: family.discoveryUrl,
+			sha256: digest(body),
+			retrievedAt: new Date(now).toISOString()
+		},
+		elections: elections.sort((first, second) => first.electionDate.localeCompare(second.electionDate))
+	}, now);
 }
 
 export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = Date.now()): StateBallotSource[] {
@@ -1172,55 +2329,134 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 		}
 		if (family.format === "douglas-html") {
 			validateDouglasElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, pageUrl: election.pageUrl };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				pageUrl: election.pageUrl
+			};
 		}
 		if (family.format === "hamilton-html") {
 			validateHamiltonElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, pageUrl: election.pageUrl };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				pageUrl: election.pageUrl
+			};
 		}
 		if (family.format === "pima-pdf") {
 			validatePimaElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, pageUrl: election.pageUrl };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				pageUrl: election.pageUrl
+			};
 		}
 		if (family.format === "goffstown-pdf") {
 			validateGoffstownElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, pageUrl: election.pageUrl };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				pageUrl: election.pageUrl
+			};
 		}
 		if (family.format === "chicago-pdf") {
 			validateChicagoElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, pageUrl: election.pageUrl };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				pageUrl: election.pageUrl
+			};
 		}
 		if (family.format === "winnebago-pdf") {
 			validateWinnebagoElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, pageUrl: election.pageUrl };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				pageUrl: election.pageUrl
+			};
 		}
 		if (family.format === "east-greenwich-pdf") {
 			validateEastGreenwichElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, pageUrl: election.pageUrl };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				pageUrl: election.pageUrl
+			};
 		}
 		if (family.format === "dane-pdf") {
 			validateDaneElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, pageUrl: election.pageUrl };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				pageUrl: election.pageUrl
+			};
 		}
 		if (family.format === "pulaski-pdf") {
 			validatePulaskiElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate
+			};
 		}
 		if (family.format === "tuscola-pdf") {
 			validateTuscolaElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url: election.pageUrl,
+				pageUrl: election.pageUrl
+			};
 		}
 		if (family.format === "dc-pdf") {
 			validateDcElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url: election.pageUrl,
+				pageUrl: election.pageUrl
+			};
 		}
 		if (family.format === "franklin-pdf") {
 			validateFranklinElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url: election.pageUrl,
+				pageUrl: election.pageUrl
+			};
 		}
 		if (family.format === "cassia-pdf") {
 			validateCassiaElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate
+			};
 		}
 		if (family.format === "iowa-county-pdf") {
 			const county = validateIowaCountySource(family.source);
@@ -1229,7 +2465,14 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 		}
 		if (family.format === "iowa-polk-pdf") {
 			validateIowaPolkElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url: election.pageUrl,
+				pageUrl: election.pageUrl
+			};
 		}
 		if (family.format === "fulton-municipal-pdf") {
 			validateFultonMunicipalElection(election);
@@ -1253,7 +2496,15 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 		}
 		if (family.format === "iowa-johnson-html") {
 			validateIowaJohnsonElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl, documentUrls: [election.pageUrl] };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url: election.pageUrl,
+				pageUrl: election.pageUrl,
+				documentUrls: [election.pageUrl]
+			};
 		}
 		if (family.format === "oklahoma-html") {
 			validateOklahomaElection(election);
@@ -1273,63 +2524,258 @@ export function stateBallotCycleSources(catalog: StateBallotCycleCatalog, now = 
 		}
 		if (family.format === "washoe-html") {
 			validateWashoeElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate
+			};
 		}
 		if (family.format === "clark-pdf") {
 			validateClarkElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url: election.pageUrl,
+				pageUrl: election.pageUrl
+			};
 		}
 		if (family.format === "connecticut-pdf") {
 			validateConnecticutElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url: election.pageUrl,
+				pageUrl: election.pageUrl
+			};
 		}
 		if (family.format === "oregon-pdf") {
 			validateOregonElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl, documentUrls: election.oregonDocuments.map(item => item.url), scopeNotice: "County-filed contests outside Multnomah County are not included." };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url: election.pageUrl,
+				pageUrl: election.pageUrl,
+				documentUrls: election.oregonDocuments.map(item => item.url),
+				scopeNotice: "County-filed contests outside Multnomah County are not included."
+			};
 		}
 		if (family.format === "texas-certified-pdf") {
 			validateTexasElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.pageUrl, pageUrl: election.pageUrl, documentUrls: election.texasDocuments.map(item => item.url), scopeNotice: "Separate special elections are not included." };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url: election.pageUrl,
+				pageUrl: election.pageUrl,
+				documentUrls: election.texasDocuments.map(item => item.url),
+				scopeNotice: "Separate special elections are not included."
+			};
 		}
 		if (family.format === "vermont-xlsx") {
 			validateVermontElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: election.workbookUrl, documentUrls: [election.workbookUrl] };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url: election.workbookUrl,
+				documentUrls: [election.workbookUrl]
+			};
 		}
 		if (family.format === "certified-pdf") {
 			validateCertifiedPdfElection(election, family.source.stateCode as "MO" | "NJ");
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: family.source.stateCode === "MO" ? election.pdfDocuments[0]!.url : election.pageUrl, pageUrl: election.pageUrl, snapshotStorage: "external" as const, documentUrls: election.pdfDocuments.map(item => item.url) };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url: family.source.stateCode === "MO"
+					? election.pdfDocuments[0]!.url
+					: election.pageUrl,
+				pageUrl: election.pageUrl,
+				snapshotStorage: "external" as const,
+				documentUrls: election.pdfDocuments.map(item => item.url)
+			};
 		}
 		if (family.source.stateCode === "GA") {
 			validateFultonElection(election);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: fultonDiscoveryUrl, documentUrls: election.documents.map(item => item.url), documentLinks: election.documents.map(item => ({ label: item.kind === "consolidated" ? "Sample ballot" : item.kind === "qualified-writeins" ? "Qualified write-ins" : "PSC elections", url: item.url })) };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url: fultonDiscoveryUrl,
+				documentUrls: election.documents.map(item => item.url),
+				documentLinks: election.documents.map(item => ({
+					label: item.kind === "consolidated"
+						? "Sample ballot"
+						: item.kind === "qualified-writeins"
+							? "Qualified write-ins"
+							: "PSC elections",
+					url: item.url
+				}))
+			};
 		}
 		if (family.source.stateCode === "VA") {
-			validateVirginiaElection(election, family.format === "virginia-local-html" ? "local" : "federal");
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: virginiaDiscoveryUrl, pageUrl: virginiaDiscoveryUrl, snapshotStorage: "external" as const, documentUrls: [...election.reports.map(report => report.url), ...(election.allOfficesUrl ? [election.allOfficesUrl] : [])], ...(family.format === "virginia-html" ? { withheldStatewideOffices: ["President", "Vice President"] } : {}) };
+			validateVirginiaElection(election, family.format === "virginia-local-html"
+				? "local"
+				: "federal");
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url: virginiaDiscoveryUrl,
+				pageUrl: virginiaDiscoveryUrl,
+				snapshotStorage: "external" as const,
+				documentUrls: [
+					...election.reports.map(report => report.url),
+					...(election.allOfficesUrl
+						? [election.allOfficesUrl]
+						: [])
+				],
+				...(family.format === "virginia-html"
+					? {
+							withheldStatewideOffices: ["President", "Vice President"]
+						}
+					: {})
+			};
 		}
-		if (family.format === "kansas-html") return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: kansasCandidateRosterUrl(election.electionId!), pageUrl: kansasElectionPageUrl(election.electionDate) };
-		if (family.source.stateCode === "MI") return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: michiganCandidateRosterUrl(election.electionDate), pageUrl: michiganCandidateRosterUrl(election.electionDate) };
-		if (family.source.stateCode === "UT") return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: utahCandidateRosterUrl(election.electionDate), pageUrl: utahCandidateRosterUrl(election.electionDate) };
-		if (family.source.stateCode === "KY") return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, documentUrls: undefined, postBody: kentuckyCandidatePostBody(election.electionId!) };
-		if (family.source.stateCode === "NC") return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: northCarolinaCandidateCsvUrl(election.electionDate) };
+		if (family.format === "kansas-html") {
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url: kansasCandidateRosterUrl(election.electionId!),
+				pageUrl: kansasElectionPageUrl(election.electionDate)
+			};
+		}
+		if (family.source.stateCode === "MI") {
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url: michiganCandidateRosterUrl(election.electionDate),
+				pageUrl: michiganCandidateRosterUrl(election.electionDate)
+			};
+		}
+		if (family.source.stateCode === "UT") {
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url: utahCandidateRosterUrl(election.electionDate),
+				pageUrl: utahCandidateRosterUrl(election.electionDate)
+			};
+		}
+		if (family.source.stateCode === "KY") {
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				documentUrls: undefined,
+				postBody: kentuckyCandidatePostBody(election.electionId!)
+			};
+		}
+		if (family.source.stateCode === "NC") {
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url: northCarolinaCandidateCsvUrl(election.electionDate)
+			};
+		}
 		if (family.source.stateCode === "MD") {
-			const kind = family.format === "csv" ? "state" : "local";
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: marylandCandidateRosterUrl(election.electionId!, kind), pageUrl: marylandCandidateRosterUrl(election.electionId!, kind, "html") };
+			const kind = family.format === "csv"
+				? "state"
+				: "local";
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url: marylandCandidateRosterUrl(election.electionId!, kind),
+				pageUrl: marylandCandidateRosterUrl(election.electionId!, kind, "html")
+			};
 		}
-		if (family.source.stateCode === "FL") return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, postBody: floridaCandidatePostBody(election.electionId!, family.format === "florida-local-tsv" ? "LOC" : "STA") };
+		if (family.source.stateCode === "FL") {
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				postBody: floridaCandidatePostBody(election.electionId!, family.format === "florida-local-tsv"
+					? "LOC"
+					: "STA")
+			};
+		}
 		if (family.format === "south-carolina-html") {
 			const url = southCarolinaCandidateRosterUrl(election.electionId!);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url, pageUrl: url };
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url,
+				pageUrl: url
+			};
 		}
-		if (family.format === "csv") return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: wyomingCandidateRosterUrl(election.electionDate), pageUrl: family.discoveryUrl };
-		if (family.format === "delaware-html") return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: delawareCandidateRosterUrl(election.electionDate), pageUrl: delawareCandidateRosterUrl(election.electionDate) };
+		if (family.format === "csv") {
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url: wyomingCandidateRosterUrl(election.electionDate),
+				pageUrl: family.discoveryUrl
+			};
+		}
+		if (family.format === "delaware-html") {
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url: delawareCandidateRosterUrl(election.electionDate),
+				pageUrl: delawareCandidateRosterUrl(election.electionDate)
+			};
+		}
 		if (["south-dakota-csv", "north-dakota-html"].includes(family.format)) {
-			const url = dakotaCandidateRosterUrl(family.format === "south-dakota-csv" ? "SD" : "ND", election.electionId!);
-			return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url, pageUrl: url };
+			const url = dakotaCandidateRosterUrl(family.format === "south-dakota-csv"
+				? "SD"
+				: "ND", election.electionId!);
+			return {
+				...family.source,
+				id: `${family.prefix}-${election.electionDate}`,
+				label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+				electionDate: election.electionDate,
+				url,
+				pageUrl: url
+			};
 		}
 		const url = new URL(family.discoveryUrl);
 		if (election.electionId !== null) url.searchParams.set("e", election.electionId);
-		return { ...family.source, id: `${family.prefix}-${election.electionDate}`, label: `${family.source.label} (${election.electionDate.slice(0, 4)})`, electionDate: election.electionDate, url: url.href, pageUrl: url.href };
+		return {
+			...family.source,
+			id: `${family.prefix}-${election.electionDate}`,
+			label: `${family.source.label} (${election.electionDate.slice(0, 4)})`,
+			electionDate: election.electionDate,
+			url: url.href,
+			pageUrl: url.href
+		};
 	}).sort((first, second) => first.electionDate.localeCompare(second.electionDate));
 }
 

@@ -19,7 +19,10 @@ export function loadReleaseIdentity(): ReleaseIdentity {
 		if (process.env.NODE_ENV === "production")
 			throw new Error("Packaged release identity is missing.");
 
-		return { version: "development", commit: "0".repeat(40) };
+		return {
+			version: "development",
+			commit: "0".repeat(40)
+		};
 	}
 
 	const identity: unknown = JSON.parse(bytes);

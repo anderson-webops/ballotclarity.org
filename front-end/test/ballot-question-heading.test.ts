@@ -8,7 +8,14 @@ test("question headings separate printed question and resolution identifiers wit
 });
 
 test("other states and local question headings retain their exact identity", () => {
-	for (const title of ["City of Palmetto Ad Valorem Tax Exemption", "Question 1", "Proposition 2", "Charter Amendment 4", "House Resolution 32", "1. Unknown citation (Other Resolution 32)"])
+	for (const title of [
+		"City of Palmetto Ad Valorem Tax Exemption",
+		"Question 1",
+		"Proposition 2",
+		"Charter Amendment 4",
+		"House Resolution 32",
+		"1. Unknown citation (Other Resolution 32)"
+	])
 		assert.deepEqual(ballotQuestionHeading(title), { title, reference: "" });
 });
 test("local levy headings use the topic while their printed district remains a separate audience", () => {

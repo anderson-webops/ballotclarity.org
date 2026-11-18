@@ -12,13 +12,24 @@ const [
 	{ data: session, error: sessionError, pending: sessionPending, refresh: refreshSession },
 	{ data, error, pending, refresh },
 	{ data: contentData }
-] = await Promise.all([useAdminSession("admin-corrections-session"), useAdminCorrections(), useAdminContent()]);
-const statusOptions: AdminCorrectionStatus[] = ["new", "triaged", "researching", "resolved"];
+] = await Promise.all([
+	useAdminSession("admin-corrections-session"),
+	useAdminCorrections(),
+	useAdminContent()
+]);
+const statusOptions: AdminCorrectionStatus[] = [
+	"new",
+	"triaged",
+	"researching",
+	"resolved"
+];
 const route = useRoute();
 const visibleCorrections = computed(() => (data.value?.corrections ?? []).filter(item => typeof route.query.id !== "string" || item.id === route.query.id));
 const priorityOptions: AdminPriority[] = ["high", "medium", "low"];
 const canManagePublicCorrections = computed(() => session.value?.role === "admin" && Boolean(session.value.mfaEnabledAt));
-const contentOptions = computed(() => [...(contentData.value?.items ?? [])].sort((left, right) => left.title.localeCompare(right.title)));
+const contentOptions = computed(() => [
+	...(contentData.value?.items ?? [])
+].sort((left, right) => left.title.localeCompare(right.title)));
 const savingId = ref<string | null>(null);
 const feedbackMessage = ref("");
 const feedbackTone = ref<"error" | "success">("success");
@@ -33,7 +44,10 @@ const queueState = computed(() =>
 );
 
 async function retryQueue() {
-	await Promise.all([refreshSession(), refresh()]);
+	await Promise.all([
+		refreshSession(),
+		refresh()
+	]);
 }
 
 function canEditCorrection(item: { status: AdminCorrectionStatus }) {
@@ -44,7 +58,9 @@ function availableStatusOptions(item: { status: AdminCorrectionStatus }) {
 	if (canManagePublicCorrections.value)
 		return statusOptions;
 
-	return item.status === "new" ? ["new"] : [item.status];
+	return item.status === "new"
+		? ["new"]
+		: [item.status];
 }
 
 async function saveCorrection(id: string, payload: {

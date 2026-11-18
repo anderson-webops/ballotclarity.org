@@ -12,7 +12,12 @@ test("Tuscola reconciles native person rows, joint tickets, literal markers and 
 	assert.equal(result.records.length, 4);
 	assert.equal(result.printedNames, 6);
 	assert.equal(result.tickets, 2);
-	assert.deepEqual([result.listingPages, result.samplePages, result.populatedContests, result.emptyContests.length], [2, 2, 3, 1]);
+	assert.deepEqual([
+		result.listingPages,
+		result.samplePages,
+		result.populatedContests,
+		result.emptyContests.length
+	], [2, 2, 3, 1]);
 	assert.equal(result.records[0]!.name, "Sample Lead / Sample Mate");
 	assert.equal(result.records[2]!.name, "Cassie Piché");
 	assert.equal(result.records[3]!.ballotDesignation, "Partial Term Ending 12/01/2028 - Vote for not more than 1; (I)");
@@ -42,7 +47,12 @@ test("Tuscola rejects incomplete geometry, sequence, name/party inventory and sa
 		fixture.listing.replace("</html>", ""),
 		fixture.listing.replace("No candidates on ballot", "Name not supplied"),
 	]) assert.throws(() => readTuscolaCandidateDocuments(source, listing, fixture.ballot), /Tuscola/u);
-	for (const ballot of [fixture.ballot.replace("Piché", "Piche"), fixture.ballot.replace("Sample Mate", "Other Mate"), fixture.ballot.replace("November 3", "November 4"), fixture.ballot.split("\f")[0]!]) assert.throws(() => readTuscolaCandidateDocuments(source, fixture.listing, ballot), /Tuscola/u);
+	for (const ballot of [
+		fixture.ballot.replace("Piché", "Piche"),
+		fixture.ballot.replace("Sample Mate", "Other Mate"),
+		fixture.ballot.replace("November 3", "November 4"),
+		fixture.ballot.split("\f")[0]!
+	]) assert.throws(() => readTuscolaCandidateDocuments(source, fixture.listing, ballot), /Tuscola/u);
 });
 
 test("Tuscola explicit withdrawals remain inactive evidence rather than disappearing names", () => {

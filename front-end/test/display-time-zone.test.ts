@@ -45,13 +45,20 @@ test("display time zone utilities format date-times in the supplied time zone", 
 test("date-time punctuation does not inherit platform-specific Intl literals", (context) => {
 	const original = Intl.DateTimeFormat.prototype.formatToParts;
 	context.mock.method(Intl.DateTimeFormat.prototype, "formatToParts", function (this: Intl.DateTimeFormat, value?: Date | number) {
-		return original.call(this, value).map(part => part.type === "literal" ? { ...part, value: "\u202F at \u202F" } : part);
+		return original.call(this, value).map(part => part.type === "literal"
+			? { ...part, value: "\u202F at \u202F" }
+			: part);
 	});
 	assert.equal(formatCivicDateTime("2026-04-24T12:00:00.000Z", "America/New_York"), "Apr 24, 2026 at 8:00 AM");
 });
 
 test("reporting timestamps without an offset preserve their calendar fields across display zones", () => {
-	for (const timeZone of ["UTC", "America/New_York", "Pacific/Honolulu", "Asia/Tokyo"]) {
+	for (const timeZone of [
+		"UTC",
+		"America/New_York",
+		"Pacific/Honolulu",
+		"Asia/Tokyo"
+	]) {
 		assert.equal(formatCivicDateTime("2026-09-30T00:00:00", timeZone), "Sep 30, 2026 at 12:00 AM");
 		assert.equal(formatCivicDateTime("2026-09-30T12:30:45.250", timeZone), "Sep 30, 2026 at 12:30 PM");
 		assert.equal(formatCivicDate("2026-09-30T23:45", timeZone), "September 30, 2026");

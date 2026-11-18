@@ -9,9 +9,17 @@ definePageMeta({
 	// lists the official sample-ballot candidates. Deciding in middleware keeps client-side lookups and
 	// direct loads on the same path; if the ballot can't be read, the page shows its own error state.
 	middleware: async (to) => {
-		const slug = "slug" in to.params && typeof to.params.slug === "string" ? to.params.slug : "";
-		const location = typeof to.query.location === "string" ? to.query.location : undefined;
-		const ballot = slug ? await useApiClient()<BallotResponse>("/ballot", { query: { election: slug, location } }).catch(() => null) : null;
+		const slug = "slug" in to.params && typeof to.params.slug === "string"
+			? to.params.slug
+			: "";
+		const location = typeof to.query.location === "string"
+			? to.query.location
+			: undefined;
+		const ballot = slug
+			? await useApiClient()<BallotResponse>("/ballot", {
+					query: { election: slug, location }
+				}).catch(() => null)
+			: null;
 
 		if (ballot && !ballot.election.contests.length)
 			return navigateTo({ path: `/elections/${slug}`, query: to.query }, { redirectCode: 302 });
@@ -23,14 +31,22 @@ const route = useRoute();
 const { ballotPlan, ballotPlanCount, ballotViewMode, compareList, isHydrated, selectedIssues } = storeToRefs(civicStore);
 
 const ballotSlug = useRouteStringParam("slug");
-const locationSlug = computed(() => typeof route.query.location === "string" ? route.query.location : undefined);
+const locationSlug = computed(() => typeof route.query.location === "string"
+	? route.query.location
+	: undefined);
 
 const { data, error, pending } = await useBallot(ballotSlug, locationSlug);
-const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
+const effectiveBallotPlan = computed(() => isHydrated.value
+	? ballotPlan.value
+	: {});
 const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
 const effectiveBallotViewMode = computed(() => isHydrated.value ? ballotViewMode.value : "quick");
-const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
-const effectiveSelectedIssues = computed(() => isHydrated.value ? selectedIssues.value : []);
+const effectiveCompareList = computed(() => isHydrated.value
+	? compareList.value
+	: []);
+const effectiveSelectedIssues = computed(() => isHydrated.value
+	? selectedIssues.value
+	: []);
 const hasContestContent = computed(() => Boolean(data.value?.election.contests.length));
 const needsGuideNavigation = computed(() => (data.value?.election.contests.reduce((count, contest) => count + (contest.candidates?.length ?? 0) + (contest.measures?.length ?? 0), 0) ?? 0) > 4);
 
@@ -138,8 +154,12 @@ const planHref = computed(() => ({
 const ballotContentsGroups = computed(() => {
 	const contests = filteredContests.value.map(contest => ({
 		countLabel: contest.type === "candidate"
-			? `${contest.candidates?.length ?? 0} candidate${contest.candidates?.length === 1 ? "" : "s"}`
-			: `${contest.measures?.length ?? 0} measure${contest.measures?.length === 1 ? "" : "s"}`,
+			? `${contest.candidates?.length ?? 0} candidate${contest.candidates?.length === 1
+				? ""
+				: "s"}`
+			: `${contest.measures?.length ?? 0} measure${contest.measures?.length === 1
+				? ""
+				: "s"}`,
 		href: `#${contest.slug}`,
 		// Measure contests share a generic office label ("County Ballot Measure"); the measure title tells them apart.
 		label: contest.type === "measure" && contest.measures?.length === 1

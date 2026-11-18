@@ -6,9 +6,41 @@ import { containsControlCharacters } from "./text-validation.js";
 
 type Factory = (source: StateBallotSource, values: StateCandidateValues) => StateCandidateRecord | null;
 const clean = (value: string) => value.normalize("NFKC").replace(/\s+/gu, " ").trim();
-const offices = ["Senator in Congress", "Governor and Lieutenant Governor", "Attorney General", "Secretary of State", "Treasurer", "Auditor", "Representative in Congress", "Councillor", "Senator in General Court", "Representative in General Court", "District Attorney", "Register of Probate"];
-const parties = ["Democratic", "Republican", "Independent", "Socialism and Liberation", "Libertarian", "Unenrolled", "Justice for All"];
-const ordinals = ["First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh", "Eighth", "Ninth", "Tenth"];
+const offices = [
+	"Senator in Congress",
+	"Governor and Lieutenant Governor",
+	"Attorney General",
+	"Secretary of State",
+	"Treasurer",
+	"Auditor",
+	"Representative in Congress",
+	"Councillor",
+	"Senator in General Court",
+	"Representative in General Court",
+	"District Attorney",
+	"Register of Probate"
+];
+const parties = [
+	"Democratic",
+	"Republican",
+	"Independent",
+	"Socialism and Liberation",
+	"Libertarian",
+	"Unenrolled",
+	"Justice for All"
+];
+const ordinals = [
+	"First",
+	"Second",
+	"Third",
+	"Fourth",
+	"Fifth",
+	"Sixth",
+	"Seventh",
+	"Eighth",
+	"Ninth",
+	"Tenth"
+];
 
 function geography(office: string, district: string): Pick<StateCandidateValues, "scope" | "district" | "jurisdiction" | "sourceDistrictLabel"> {
 	if (offices.indexOf(office) < 6) {
@@ -18,22 +50,44 @@ function geography(office: string, district: string): Pick<StateCandidateValues,
 	if (!district || district.length > 100) throw new Error("The Cambridge district label requires review.");
 	if (office === "Representative in Congress") {
 		const ordinal = /^(\w+) District$/u.exec(district);
-		const number = ordinal ? ordinals.indexOf(ordinal[1]!) + 1 : 0;
+		const number = ordinal
+			? ordinals.indexOf(ordinal[1]!) + 1
+			: 0;
 		if (!number) throw new Error("The Cambridge congressional district requires review.");
-		return { scope: "congressional", district: String(number), sourceDistrictLabel: district };
+		return {
+			scope: "congressional",
+			district: String(number),
+			sourceDistrictLabel: district
+		};
 	}
 	if (["Senator in General Court", "Representative in General Court"].includes(office)) {
 		if (!/^[\p{L} &-]+ District$/u.test(district)) throw new Error("The Cambridge legislative district requires review.");
-		return { scope: office === "Senator in General Court" ? "state-senate" : "state-house", district: district.replace(/ District$/u, "").toUpperCase(), sourceDistrictLabel: district };
+		return {
+			scope: office === "Senator in General Court"
+				? "state-senate"
+				: "state-house",
+			district: district.replace(/ District$/u, "").toUpperCase(),
+			sourceDistrictLabel: district
+		};
 	}
 	if (!/^[\p{L} &-]+ (?:District|County)$/u.test(district)) throw new Error("The Cambridge regional office requires review.");
-	return { scope: "local", district: "", jurisdiction: `Massachusetts, ${district}`, sourceDistrictLabel: district };
+	return {
+		scope: "local",
+		district: "",
+		jurisdiction: `Massachusetts, ${district}`,
+		sourceDistrictLabel: district
+	};
 }
 
 export function readCambridgeCandidateDocument(source: StateBallotSource, body: string, factory: Factory) {
 	if (Buffer.byteLength(body) > 2 * 1024 * 1024 || containsControlCharacters(body.replace(/[\r\n\t\f]/gu, ""))) throw new Error("The Cambridge PDF text exceeds its bounds.");
 	const date = new Date(`${source.electionDate}T00:00:00Z`);
-	const heading = `${new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(date)} State Election`;
+	const heading = `${new Intl.DateTimeFormat("en-US", {
+		month: "long",
+		day: "numeric",
+		year: "numeric",
+		timeZone: "UTC"
+	}).format(date)} State Election`;
 	const pages = body.split("\f");
 	if (!pages.at(-1)?.trim()) pages.pop();
 	if (!pages.length || pages.length > 30) throw new Error("The Cambridge PDF page count requires review.");
@@ -78,8 +132,18 @@ export function readCambridgeCandidateDocument(source: StateBallotSource, body: 
 			const party = columns.at(-1)!;
 			const name = columns[0]!;
 			const ticket = office === "Governor and Lieutenant Governor";
-			if (!/^\s{3,}\S/u.test(line) || !parties.includes(party) || name.length < 4 || name.length > 180 || !/^[\p{L}\p{M} .,'’&-]+$/u.test(name) || (ticket ? columns.length !== 2 || !/ AND /u.test(name) : columns.length !== 4 || !/\d/u.test(columns[1]!) || !/^[\p{L} .'-]+$/u.test(columns[2]!))) throw new Error("The Cambridge candidate row or party label requires review.");
-			const record = factory(source, { name, office, party, ...geography(office, district), status: "listed" });
+			if (!/^\s{3,}\S/u.test(line) || !parties.includes(party) || name.length < 4 || name.length > 180 || !/^[\p{L}\p{M} .,'’&-]+$/u.test(name) || (ticket
+				? columns.length !== 2 || !/ AND /u.test(name)
+				: columns.length !== 4 || !/\d/u.test(columns[1]!) || !/^[\p{L} .'-]+$/u.test(columns[2]!))) {
+				throw new Error("The Cambridge candidate row or party label requires review.");
+			}
+			const record = factory(source, {
+				name,
+				office,
+				party,
+				...geography(office, district),
+				status: "listed"
+			});
 			if (!record || seen.has(record.id)) throw new Error("The Cambridge candidate identity is invalid or duplicated.");
 			record.sourceStatus = "Published general-election candidate";
 			seen.add(record.id);

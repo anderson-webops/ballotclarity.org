@@ -12,7 +12,9 @@ function createBodyEvent(
 	body: string,
 	headers: Record<string, string> = { "content-type": "application/json" }
 ) {
-	const request = Readable.from([Buffer.from(body)]);
+	const request = Readable.from([
+		Buffer.from(body)
+	]);
 	Object.assign(request, { headers });
 
 	return {

@@ -13,15 +13,34 @@ const source = (state: string) => stateBallotSources.find(source => source.state
 const colorado = "<title>2026 General Election Official Candidate List</title><table><tr><th>Candidate name</th><th>Office</th><th>District</th><th>Party</th><th>Write in?</th></tr><tr><td>Alex Sample</td><td>US Senate</td><td>State</td><td>Example</td><td>N</td></tr><tr><td><span style=\"text-decoration: line-through\">Withdrawn Sample</span></td><td>US Senate</td><td>State</td><td>Other</td><td>N</td></tr><tr><td>Write-in Sample</td><td>US Senate</td><td>State</td><td>Other</td><td>Y</td></tr><tr><td>Board Sample</td><td>State Board of Education</td><td>1</td><td>Example</td><td>N</td></tr></table>";
 const northDakotaTable = "<table><tr><th>Contest</th><th>Term Length</th><th>Contest</th><th>District</th><th>County</th><th>Name</th><th>First Name</th><th>Last Name</th><th>Party</th><th>Mailing Address</th></tr><tr><td>County Auditor</td><td>4</td><td>County Auditor</td><td></td><td>Alpha County</td><td>Same Name</td><td>Same</td><td>Name</td><td>Example</td><td>Private address</td></tr><tr><td>County Auditor</td><td>4</td><td>County Auditor</td><td></td><td>Beta County</td><td>Same Name</td><td>Same</td><td>Name</td><td>Example</td><td>Private address</td></tr><tr><td>County Auditor</td><td>4</td><td>County Auditor</td><td></td><td>Gamma County</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>Representative in Congress</td><td>2</td><td>Representative in Congress</td><td></td><td></td><td>At Large</td><td>At</td><td>Large</td><td>Example</td><td></td></tr></table>";
 const searchForm = `<title>2026 General Election Contest/Candidate List</title><form id="aspnetForm" method="post" action="./candidatelist.aspx?eid=348"><input type="hidden" name="__VIEWSTATE" value="public-state-token"><input type="hidden" name="unexpected" value="do-not-send">${
-	["ddlJursdiction", "ddlDistrict", "ddlContest", "ddlCandidate"].map(name => `<select name="ctl00$ContentPlaceHolder1$${name}"><option selected value="${name === "ddlJursdiction" ? "AL" : "0"}">${["ddlJursdiction", "ddlDistrict"].includes(name) ? "All" : ""}</option></select>`).join("")
+	[
+		"ddlJursdiction",
+		"ddlDistrict",
+		"ddlContest",
+		"ddlCandidate"
+	].map(name => `<select name="ctl00$ContentPlaceHolder1$${name}"><option selected value="${name === "ddlJursdiction"
+		? "AL"
+		: "0"}">${["ddlJursdiction", "ddlDistrict"].includes(name)
+		? "All"
+		: ""}</option></select>`).join("")
 }<input type="submit" name="ctl00$ContentPlaceHolder1$btnSearch" value="Search"></form>`;
 const northDakota = searchForm.replace("</form>", `${northDakotaTable}</form>`);
 
 test("Colorado retains withdrawal and certified write-in evidence without assigning education districts", () => {
 	const records = parseStateCandidateRecords(source("CO"), colorado);
-	assert.deepEqual(records.map(record => record.status), ["qualified", "withdrawn", "write-in", "qualified"]);
+	assert.deepEqual(records.map(record => record.status), [
+		"qualified",
+		"withdrawn",
+		"write-in",
+		"qualified"
+	]);
 	assert.equal(records.at(-1)?.scope, "local");
-	const preview = buildStateBallotPreview({ source: source("CO"), records, sha256: "test", retrievedAt: "2026-10-21T00:00:00Z" }, { districtMatches: [] });
+	const preview = buildStateBallotPreview({
+		source: source("CO"),
+		records,
+		sha256: "test",
+		retrievedAt: "2026-10-21T00:00:00Z"
+	}, { districtMatches: [] });
 	assert.equal(preview?.candidateCount, 2);
 	assert.throws(() => parseStateCandidateRecords(source("CO"), colorado.replace("2026 General", "2024 General")), /configured general election/u);
 	assert.throws(() => parseStateCandidateRecords(source("CO"), colorado.replace("<th>Office</th><th>District</th>", "<th>District</th><th>Office</th>")), /changed order/u);
@@ -61,7 +80,9 @@ test("North Dakota only posts observed public search tokens and unfiltered selec
 test("Kentucky legacy captures require all configured office documents and retain inactive evidence without contacts", async () => {
 	const election = "<select name=\"ctl00$MainContent$ddlElection\"><option selected value=\"87\">2026 General Election</option></select>";
 	const table = (inactive: boolean) => `<table><tr><td>${inactive ? "Name" : "Name / Running Mate"}</td><td>POBox Address / Email</td><td>Office</td><td>District/Division</td><td>Party</td></tr><tr><td>Alex Sample</td><td>Private address</td><td>US Senator</td><td></td><td>Example</td></tr></table>`;
-	const body = JSON.stringify({ documents: source("KY").documentUrls!.map(url => ({ url, body: election + table(url.endsWith("withdrawn=1")) })) });
+	const body = JSON.stringify({
+		documents: source("KY").documentUrls!.map(url => ({ url, body: election + table(url.endsWith("withdrawn=1")) }))
+	});
 	const records = parseStateCandidateRecords(source("KY"), body);
 	assert.equal(records.length, 1);
 	assert.equal(records[0]?.status, "inactive");
@@ -70,7 +91,10 @@ test("Kentucky legacy captures require all configured office documents and retai
 	incomplete.documents.pop();
 	assert.throws(() => parseStateCandidateRecords(source("KY"), JSON.stringify(incomplete)), /incomplete/u);
 	assert.throws(() => parseStateCandidateRecords(source("KY"), body.replaceAll("2026 General Election", "2027 General Election")), /configured general election/u);
-	await assert.rejects(fetchStateBallotSourceText({ ...source("KY"), documentUrls: ["https://another.example/list"] }, async () => ""), /approved general-election identity/u);
+	await assert.rejects(fetchStateBallotSourceText({
+		...source("KY"),
+		documentUrls: ["https://another.example/list"]
+	}, async () => ""), /approved general-election identity/u);
 });
 
 test("North Carolina county races are not deduplicated across different counties", () => {
@@ -84,7 +108,12 @@ test("North Carolina county races are not deduplicated across different counties
 test("server-transfer exports include a count/provenance manifest and exclude contact fields", () => {
 	const records = parseStateCandidateRecords(source("ND"), northDakota);
 	Object.assign(records[0]!, { email: "do-not-export@example.test", address: "Private address" });
-	const snapshot = { source: source("ND"), records, retrievedAt: "2026-10-21T00:00:00Z", sha256: "a".repeat(64) };
+	const snapshot = {
+		source: source("ND"),
+		records,
+		retrievedAt: "2026-10-21T00:00:00Z",
+		sha256: "a".repeat(64)
+	};
 	const content = serializeStateBallotSnapshots([snapshot]);
 	const rows = content.trim().split("\n").map(line => JSON.parse(line));
 	assert.equal(rows[0].schemaVersion, 1);
@@ -100,7 +129,12 @@ test("server-transfer exports include a count/provenance manifest and exclude co
 
 test("source-published candidate websites retain only safe absolute public links", () => {
 	const header = "Election,Office Sought,Ballot Name,Date Withdrawn,Web Address\n";
-	for (const [website, expected] of [["https://campaign.example.org/", "https://campaign.example.org/"], ["javascript:alert(1)", undefined], ["http://127.0.0.1/private", undefined], ["https://user@campaign.example.org/", undefined]]) {
+	for (const [website, expected] of [
+		["https://campaign.example.org/", "https://campaign.example.org/"],
+		["javascript:alert(1)", undefined],
+		["http://127.0.0.1/private", undefined],
+		["https://user@campaign.example.org/", undefined]
+	]) {
 		const records = parseStateCandidateRecords(source("WY"), `${header}2026 General Election,US Senate,Alex Sample,,${website}\n`);
 		assert.equal(records[0]?.candidateUrl, expected);
 	}

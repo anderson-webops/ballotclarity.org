@@ -7,7 +7,13 @@ import { assertExternalStateDataDirectory, readBoundedStateDataBytes } from "./s
 
 const applicationId = 1111706673;
 const format = "ballot-automation-lock-v1";
-const lockNames = ["automation.lock", ".fulton-board.lock", ".fulton-county-offices.lock", ".court-directory.lock", ".magistrate-court.lock"];
+const lockNames = [
+	"automation.lock",
+	".fulton-board.lock",
+	".fulton-county-offices.lock",
+	".court-directory.lock",
+	".magistrate-court.lock"
+];
 const activeFilenames = new Set<string>();
 
 async function initializeLock(directory: string, filename: string) {

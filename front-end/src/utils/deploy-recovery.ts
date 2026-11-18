@@ -52,7 +52,9 @@ interface NavigatorLike {
 }
 
 function toStringValue(value: unknown): string {
-	return typeof value === "string" ? value.trim() : "";
+	return typeof value === "string"
+		? value.trim()
+		: "";
 }
 
 function readAssetUrl(value: unknown): string {
@@ -72,7 +74,13 @@ function readAssetUrl(value: unknown): string {
 	if (directUrl)
 		return directUrl;
 
-	for (const nestedValue of [error.target, error.currentTarget, error.detail, error.payload, error.reason]) {
+	for (const nestedValue of [
+		error.target,
+		error.currentTarget,
+		error.detail,
+		error.payload,
+		error.reason
+	]) {
 		const nestedUrl = readAssetUrl(nestedValue);
 
 		if (nestedUrl)
@@ -92,17 +100,37 @@ function toMessage(value: unknown): string {
 	if (value && typeof value === "object") {
 		const maybeError = value as ErrorLike;
 		const parts = [
-			typeof maybeError.type === "string" ? maybeError.type : "",
-			typeof maybeError.message === "string" ? maybeError.message : "",
-			typeof maybeError.stack === "string" ? maybeError.stack : "",
-			typeof maybeError.filename === "string" ? maybeError.filename : "",
-			typeof maybeError.sourceURL === "string" ? maybeError.sourceURL : "",
-			typeof maybeError.url === "string" ? maybeError.url : "",
-			typeof maybeError.path === "string" ? maybeError.path : "",
+			typeof maybeError.type === "string"
+				? maybeError.type
+				: "",
+			typeof maybeError.message === "string"
+				? maybeError.message
+				: "",
+			typeof maybeError.stack === "string"
+				? maybeError.stack
+				: "",
+			typeof maybeError.filename === "string"
+				? maybeError.filename
+				: "",
+			typeof maybeError.sourceURL === "string"
+				? maybeError.sourceURL
+				: "",
+			typeof maybeError.url === "string"
+				? maybeError.url
+				: "",
+			typeof maybeError.path === "string"
+				? maybeError.path
+				: "",
 			readAssetUrl(maybeError),
-			maybeError.detail ? toMessage(maybeError.detail) : "",
-			maybeError.payload ? toMessage(maybeError.payload) : "",
-			maybeError.reason ? toMessage(maybeError.reason) : "",
+			maybeError.detail
+				? toMessage(maybeError.detail)
+				: "",
+			maybeError.payload
+				? toMessage(maybeError.payload)
+				: "",
+			maybeError.reason
+				? toMessage(maybeError.reason)
+				: "",
 		];
 
 		return parts.filter(Boolean).join(" ").trim();
@@ -128,7 +156,9 @@ export function isLikelyStaleNuxtChunkError(error: unknown): boolean {
 }
 
 export function normalizeBuildId(value: unknown): string {
-	return typeof value === "string" ? value.trim() : "";
+	return typeof value === "string"
+		? value.trim()
+		: "";
 }
 
 export function readServerBuildId(doc: Pick<Document, "documentElement" | "querySelector"> = document): string {

@@ -71,22 +71,46 @@ export async function refreshApprovedCandidateData(
 		for (const item of prioritizeStateBallotWork(work, item => item.id, stateBallotPriorityFamilies(environment))) {
 			if (item.kind === "family") {
 				const location = item.location;
-				const family = (await syncStateBallotCycleFamilies([{
-					...location,
-					dataDirectory: directory,
-					now,
-					fetchCandidates: options.fetchText,
-					...(options.fetchDiscovery ? { fetchDiscovery: () => options.fetchDiscovery!(location.familyId) } : {}),
-					enabledSourceIds: families.includes(location.familyId) ? undefined : configuration.sources.map(source => source.id)
-				}]))[0]!;
+				const family = (await syncStateBallotCycleFamilies([
+					{
+						...location,
+						dataDirectory: directory,
+						now,
+						fetchCandidates: options.fetchText,
+						...(options.fetchDiscovery
+							? {
+									fetchDiscovery: () => options.fetchDiscovery!(location.familyId)
+								}
+							: {}),
+						enabledSourceIds: families.includes(location.familyId)
+							? undefined
+							: configuration.sources.map(source => source.id)
+					}
+				]))[0]!;
 				if (family.status === "failed") {
-					results.push({ sourceId: family.familyId, status: "failed", records: 0, reason: "source-unavailable" });
+					results.push({
+						sourceId: family.familyId,
+						status: "failed",
+						records: 0,
+						reason: "source-unavailable"
+					});
 				}
 				else {
 					for (const result of family.results) {
 						if (result.status === "expired") continue;
 						const failed = !["available", "awaiting-records"].includes(result.status);
-						results.push({ sourceId: result.sourceId, status: failed ? "failed" : result.imported ? "imported" : "cached", records: result.records, reason: failed ? result.status === "persistence-failed" ? "persistence-failed" : "source-unavailable" : null });
+						results.push({
+							sourceId: result.sourceId,
+							status: failed
+								? "failed"
+								: result.imported ? "imported" : "cached",
+							records: result.records,
+							reason: failed
+								? result.status === "persistence-failed"
+									? "persistence-failed"
+									: "source-unavailable"
+								: null
+						});
 					}
 				}
 				continue;
@@ -98,7 +122,9 @@ export async function refreshApprovedCandidateData(
 			const failed = (!snapshot && !repository.isAwaitingRecords!(source.id)) || persistenceErrors.has(source.id) || Boolean(observation?.failure);
 			results.push({
 				sourceId: source.id,
-				status: failed ? "failed" : observation?.lastImportAt ? "imported" : "cached",
+				status: failed
+					? "failed"
+					: observation?.lastImportAt ? "imported" : "cached",
 				records: snapshot?.records.length ?? 0,
 				reason: failed
 					? persistenceErrors.has(source.id)
@@ -109,11 +135,18 @@ export async function refreshApprovedCandidateData(
 		}
 	}
 	catch {
-		results.push({ sourceId: "configuration", status: "failed", records: 0, reason: "configuration-invalid" });
+		results.push({
+			sourceId: "configuration",
+			status: "failed",
+			records: 0,
+			reason: "configuration-invalid"
+		});
 	}
 	run.finishedAt = new Date(now()).toISOString();
 	run.results = results;
-	run.status = results.some(result => result.status === "failed") ? "failed" : "succeeded";
+	run.status = results.some(result => result.status === "failed")
+		? "failed"
+		: "succeeded";
 	if (results.some(result => result.status === "imported")) {
 		run.lastSuccessAt = run.finishedAt;
 		run.lastImportAt = run.finishedAt;

@@ -30,19 +30,34 @@ function validDate(value: unknown): value is string {
 export function validatePulaskiDocumentUrl(value: string, kind: "notice" | "calendar", date?: string) {
 	const url = new URL(value);
 	if (url.origin !== "https://votepulaskiar.gov" || url.username || url.password || url.search || url.hash || url.href !== value) throw new Error("The Pulaski document origin requires review.");
-	const match = kind === "calendar" ? /^\/wp-content\/uploads\/(20\d{2})(?:_(20\d{2}))?_Election-Dates_v[1-9]\d?\.pdf$/u.exec(url.pathname) : /^\/wp-content\/uploads\/(\d{2})(\d{2})(20\d{2})_(?:Amended-)?Notice-of-Election_v[1-9]\d?\.pdf$/u.exec(url.pathname);
+	const match = kind === "calendar"
+		? /^\/wp-content\/uploads\/(20\d{2})(?:_(20\d{2}))?_Election-Dates_v[1-9]\d?\.pdf$/u.exec(url.pathname)
+		: /^\/wp-content\/uploads\/(\d{2})(\d{2})(20\d{2})_(?:Amended-)?Notice-of-Election_v[1-9]\d?\.pdf$/u.exec(url.pathname);
 	if (!match || (kind === "calendar" && (Number(match[1]) < 2025 || (match[2] && (Number(match[2]) < Number(match[1]) || Number(match[2]) - Number(match[1]) > 2)))) || (kind === "notice" && (!date || !validDate(date) || `${match[3]}-${match[1]}-${match[2]}` !== date))) throw new Error("The Pulaski offered document/date control requires review.");
 }
 export function validatePulaskiElection(value: unknown): asserts value is PulaskiElection {
-	if (!exact(value, ["electionId", "electionDate", "pageUrl", "pulaskiDocuments"]) || value.electionId !== null || !validDate(value.electionDate) || value.pageUrl !== pulaskiDiscoveryUrl || !Array.isArray(value.pulaskiDocuments) || ![1, 2].includes(value.pulaskiDocuments.length)) throw new Error("The Pulaski election configuration requires review.");
+	if (!exact(value, [
+		"electionId",
+		"electionDate",
+		"pageUrl",
+		"pulaskiDocuments"
+	]) || value.electionId !== null || !validDate(value.electionDate) || value.pageUrl !== pulaskiDiscoveryUrl || !Array.isArray(value.pulaskiDocuments) || ![1, 2].includes(value.pulaskiDocuments.length)) {
+		throw new Error("The Pulaski election configuration requires review.");
+	}
 	for (const [index, document] of value.pulaskiDocuments.entries()) {
-		const kind = value.pulaskiDocuments.length === 2 && !index ? "notice" : "calendar";
+		const kind = value.pulaskiDocuments.length === 2 && !index
+			? "notice"
+			: "calendar";
 		if (!exact(document, ["kind", "url", "sha256"]) || document.kind !== kind || typeof document.url !== "string" || typeof document.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(document.sha256)) throw new Error("The Pulaski publication identity requires review.");
 		validatePulaskiDocumentUrl(document.url, kind, value.electionDate);
 	}
 }
 export function validatePulaskiSource(source: StateBallotSource) {
-	if (source.stateCode !== "AR" || source.format !== "pulaski-pdf" || source.url !== pulaskiDiscoveryUrl || source.pageUrl !== pulaskiDiscoveryUrl || source.countyName !== "Pulaski County" || !validDate(source.electionDate) || source.snapshotStorage !== "external" || source.retrievalPolicy || source.postBody || source.documentUrls || source.documentLinks || source.delimiter || source.id !== (source.electionDate === "2026-11-03" ? "ar-pulaski-candidates-2026" : `ar-pulaski-general-${source.electionDate}`)) throw new Error("The Pulaski source contract requires review.");
+	if (source.stateCode !== "AR" || source.format !== "pulaski-pdf" || source.url !== pulaskiDiscoveryUrl || source.pageUrl !== pulaskiDiscoveryUrl || source.countyName !== "Pulaski County" || !validDate(source.electionDate) || source.snapshotStorage !== "external" || source.retrievalPolicy || source.postBody || source.documentUrls || source.documentLinks || source.delimiter || source.id !== (source.electionDate === "2026-11-03"
+		? "ar-pulaski-candidates-2026"
+		: `ar-pulaski-general-${source.electionDate}`)) {
+		throw new Error("The Pulaski source contract requires review.");
+	}
 }
 export function pulaskiDocumentDigest(documents: PulaskiElection["pulaskiDocuments"]) {
 	return hash(JSON.stringify(documents));
@@ -50,7 +65,9 @@ export function pulaskiDocumentDigest(documents: PulaskiElection["pulaskiDocumen
 function html(body: string) {
 	if (Buffer.byteLength(body) > 2 * 1024 * 1024 || containsControlCharacters(body.replace(/[\r\n\t]/gu, ""))) throw new Error("The Pulaski election HTML exceeds its bounds.");
 	const document = parseStateHtml(body);
-	const pending = [{ node: document, depth: 0 }];
+	const pending = [
+		{ node: document, depth: 0 }
+	];
 	let visited = 0;
 	while (pending.length) {
 		const item = pending.pop()!;
@@ -61,9 +78,14 @@ function html(body: string) {
 }
 function offered(body: string) {
 	const document = html(body);
-	const years = [...new Set(descendants(document, node => ["b", "strong"].includes(node.nodeName)).map(node => /^(20\d{2}) GENERAL ELECTION$/u.exec(clean(stateHtmlText(node)))?.[1]).filter((value): value is string => Boolean(value)))];
+	const years = [
+		...new Set(descendants(document, node => ["b", "strong"].includes(node.nodeName)).map(node => /^(20\d{2}) GENERAL ELECTION$/u.exec(clean(stateHtmlText(node)))?.[1]).filter((value): value is string => Boolean(value)))
+	];
 	if (!years.length || years.length > 4 || years.some(year => Number(year) < 2026 || Number(year) % 2)) throw new Error("The Pulaski offered general-election headings require review.");
-	const links = descendants(document, node => node.nodeName === "a").map(node => ({ label: clean(stateHtmlText(node)), url: new URL(attribute(node, "href"), pulaskiDiscoveryUrl).href }));
+	const links = descendants(document, node => node.nodeName === "a").map(node => ({
+		label: clean(stateHtmlText(node)),
+		url: new URL(attribute(node, "href"), pulaskiDiscoveryUrl).href
+	}));
 	const calendars = links.filter(link => link.label === "Scheduled Election Dates");
 	if (calendars.length !== 1) throw new Error("The Pulaski offered calendar is missing or duplicated.");
 	validatePulaskiDocumentUrl(calendars[0]!.url, "calendar");
@@ -92,7 +114,16 @@ function checkedPdf(value: unknown, url: string, now: number): asserts value is 
 export function readPulaskiDiscovery(body: string, now = Date.now()) {
 	if (Buffer.byteLength(body) > 24 * 1024 * 1024) throw new Error("The Pulaski discovery exceeds its bounds.");
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "policies", "index", "calendar", "notices"]) || value.schemaVersion !== 1 || value.type !== "pulaski-discovery" || JSON.stringify(value.policies) !== JSON.stringify(pulaskiPolicyReceipts) || !exact(value.index, ["url", "body", "sha256", "retrievedAt"]) || value.index.url !== pulaskiDiscoveryUrl || typeof value.index.body !== "string" || hash(value.index.body) !== value.index.sha256 || typeof value.index.retrievedAt !== "string" || !Number.isFinite(Date.parse(value.index.retrievedAt)) || new Date(value.index.retrievedAt).toISOString() !== value.index.retrievedAt || Date.parse(value.index.retrievedAt) > now || electionDocumentPolicyFingerprint(Buffer.from(value.index.body), "links", pulaskiDiscoveryUrl) !== pulaskiPolicyReceipts[1].sha256 || !Array.isArray(value.notices)) throw new Error("The Pulaski discovery provenance or legal inventory requires review.");
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"policies",
+		"index",
+		"calendar",
+		"notices"
+	]) || value.schemaVersion !== 1 || value.type !== "pulaski-discovery" || JSON.stringify(value.policies) !== JSON.stringify(pulaskiPolicyReceipts) || !exact(value.index, ["url", "body", "sha256", "retrievedAt"]) || value.index.url !== pulaskiDiscoveryUrl || typeof value.index.body !== "string" || hash(value.index.body) !== value.index.sha256 || typeof value.index.retrievedAt !== "string" || !Number.isFinite(Date.parse(value.index.retrievedAt)) || new Date(value.index.retrievedAt).toISOString() !== value.index.retrievedAt || Date.parse(value.index.retrievedAt) > now || electionDocumentPolicyFingerprint(Buffer.from(value.index.body), "links", pulaskiDiscoveryUrl) !== pulaskiPolicyReceipts[1].sha256 || !Array.isArray(value.notices)) {
+		throw new Error("The Pulaski discovery provenance or legal inventory requires review.");
+	}
 	const index = value.index as unknown as Page;
 	const selected = offered(index.body);
 	checkedPdf(value.calendar, selected.calendarUrl, now);
@@ -109,7 +140,19 @@ export function readPulaskiDiscovery(body: string, now = Date.now()) {
 	});
 	const elections: PulaskiElection[] = dates.map((electionDate) => {
 		const notice = notices.find(document => document.url.includes(`${electionDate.slice(5, 7)}${electionDate.slice(8, 10)}${electionDate.slice(0, 4)}_`));
-		return { electionId: null, electionDate, pageUrl: pulaskiDiscoveryUrl, pulaskiDocuments: [...(notice ? [{ kind: "notice" as const, url: notice.url, sha256: notice.sha256 }] : []), { kind: "calendar" as const, url: calendar.url, sha256: calendar.sha256 }] };
+		return {
+			electionId: null,
+			electionDate,
+			pageUrl: pulaskiDiscoveryUrl,
+			pulaskiDocuments: [
+				...(notice
+					? [
+							{ kind: "notice" as const, url: notice.url, sha256: notice.sha256 }
+						]
+					: []),
+				{ kind: "calendar" as const, url: calendar.url, sha256: calendar.sha256 }
+			]
+		};
 	});
 	for (const election of elections) validatePulaskiElection(election);
 	return { index, calendar, notices, elections };
@@ -122,17 +165,47 @@ export async function fetchPulaskiCycleDiscovery(options: Options = {}) {
 	for (const [position, policy] of pulaskiPolicyReceipts.entries()) {
 		if (position) await sleep(11000);
 		if (robots && !robots.allowed(policy.url)) throw new Error("The Pulaski robots policy disallows this request.");
-		const response = await request(policy.url, { allowedHosts: ["votepulaskiar.gov"], maxBytes: 2 * 1024 * 1024, timeoutMs: 25000 });
-		if (response.status !== 200 || (policy.format === "bytes" ? hash(response.body) : response.contentType !== "text/html" ? "" : electionDocumentPolicyFingerprint(response.body, "links", policy.url)) !== policy.sha256) throw new Error("The Pulaski access or reuse policy changed; review before collection.");
+		const response = await request(policy.url, {
+			allowedHosts: ["votepulaskiar.gov"],
+			maxBytes: 2 * 1024 * 1024,
+			timeoutMs: 25000
+		});
+		if (response.status !== 200 || (policy.format === "bytes"
+			? hash(response.body)
+			: response.contentType !== "text/html"
+				? ""
+				: electionDocumentPolicyFingerprint(response.body, "links", policy.url)) !== policy.sha256) {
+			throw new Error("The Pulaski access or reuse policy changed; review before collection.");
+		}
 		if (!position) robots = electionDocumentRobotsPolicy(response.body);
-		if (policy.url === pulaskiDiscoveryUrl) index = { url: policy.url, body: response.body.toString("utf8"), sha256: hash(response.body), retrievedAt: new Date(now()).toISOString() };
+		if (policy.url === pulaskiDiscoveryUrl) {
+			index = {
+				url: policy.url,
+				body: response.body.toString("utf8"),
+				sha256: hash(response.body),
+				retrievedAt: new Date(now()).toISOString()
+			};
+		}
 	}
 	const selected = offered(index!.body);
-	const executable = options.extractor ? null : await resolveStateBallotPdfExtractor();
+	const executable = options.extractor
+		? null
+		: await resolveStateBallotPdfExtractor();
 	async function get(url: string, kind: "notice" | "calendar") {
 		if (!robots!.allowed(url)) throw new Error("The Pulaski robots policy disallows this publication.");
 		await sleep(11000);
-		return fetchStateBallotPdfDocument(url, { allowedHosts: ["votepulaskiar.gov"], request, now, extractor: bytes => options.extractor ? options.extractor(bytes, kind) : extractStateBallotPdfText(bytes, executable!, 12000, kind === "notice" ? "bbox-layout" : "layout", kind === "notice" ? 40 : 20) });
+		return fetchStateBallotPdfDocument(url, {
+			allowedHosts: ["votepulaskiar.gov"],
+			request,
+			now,
+			extractor: bytes => options.extractor
+				? options.extractor(bytes, kind)
+				: extractStateBallotPdfText(bytes, executable!, 12000, kind === "notice"
+						? "bbox-layout"
+						: "layout", kind === "notice"
+						? 40
+						: 20)
+		});
 	}
 	const calendar = await get(selected.calendarUrl, "calendar");
 	const dates = calendarDates(calendar, now());
@@ -143,7 +216,14 @@ export async function fetchPulaskiCycleDiscovery(options: Options = {}) {
 		validatePulaskiDocumentUrl(notice.url, "notice", date);
 		notices.push(await get(notice.url, "notice"));
 	}
-	const body = JSON.stringify({ schemaVersion: 1, type: "pulaski-discovery", policies: pulaskiPolicyReceipts, index, calendar, notices });
+	const body = JSON.stringify({
+		schemaVersion: 1,
+		type: "pulaski-discovery",
+		policies: pulaskiPolicyReceipts,
+		index,
+		calendar,
+		notices
+	});
 	readPulaskiDiscovery(body, now());
 	return body;
 }
@@ -151,13 +231,25 @@ export async function fetchPulaskiCandidateCapture(source: StateBallotSource, op
 	validatePulaskiSource(source);
 	const body = options.discovery ?? await fetchPulaskiCycleDiscovery(options);
 	if (!readPulaskiDiscovery(body, (options.now ?? Date.now)()).elections.some(item => item.electionDate === source.electionDate)) throw new Error("The Pulaski election is not offered.");
-	return JSON.stringify({ schemaVersion: 1, type: "pulaski-candidate-capture", discovery: JSON.parse(body), electionDate: source.electionDate });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "pulaski-candidate-capture",
+		discovery: JSON.parse(body),
+		electionDate: source.electionDate
+	});
 }
 export function parsePulaskiCandidateCapture(source: StateBallotSource, body: string, now = Date.now(), previous: readonly StateCandidateRecord[] = []) {
 	validatePulaskiSource(source);
 	if (Buffer.byteLength(body) > 24 * 1024 * 1024) throw new Error("The Pulaski candidate capture exceeds its bounds.");
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "discovery", "electionDate"]) || value.schemaVersion !== 1 || value.type !== "pulaski-candidate-capture" || value.electionDate !== source.electionDate) throw new Error("The Pulaski candidate capture requires review.");
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"discovery",
+		"electionDate"
+	]) || value.schemaVersion !== 1 || value.type !== "pulaski-candidate-capture" || value.electionDate !== source.electionDate) {
+		throw new Error("The Pulaski candidate capture requires review.");
+	}
 	const discovery = readPulaskiDiscovery(JSON.stringify(value.discovery), now);
 	const election = discovery.elections.find(election => election.electionDate === source.electionDate);
 	if (!election) throw new Error("The Pulaski captured election is not offered.");
@@ -167,5 +259,16 @@ export function parsePulaskiCandidateCapture(source: StateBallotSource, body: st
 	const identities = new Set(parsed.records.map(record => record.id));
 	if (previous.some(record => !identities.has(record.id))) throw new Error("An accepted Pulaski candidate disappeared or changed identity; retain the accepted data for review.");
 	const documents = [notice, discovery.calendar];
-	return { records: parsed.records, retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString(), sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), documents: documents.map(({ url, sha256, retrievedAt }, index) => ({ url, sha256, retrievedAt, includedRecordCount: index ? 0 : parsed.records.length })), collectionIndexSha256: pulaskiDocumentDigest(election.pulaskiDocuments) };
+	return {
+		records: parsed.records,
+		retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString(),
+		sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+		documents: documents.map(({ url, sha256, retrievedAt }, index) => ({
+			url,
+			sha256,
+			retrievedAt,
+			includedRecordCount: index ? 0 : parsed.records.length
+		})),
+		collectionIndexSha256: pulaskiDocumentDigest(election.pulaskiDocuments)
+	};
 }

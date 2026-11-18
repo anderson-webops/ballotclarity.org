@@ -63,11 +63,21 @@ export function serializeStoredStateSnapshot(snapshot: StateBallotSnapshot) {
 		retrievedAt: snapshot.retrievedAt,
 		sourceSha256: snapshot.sha256,
 		recordCount: snapshot.records.length,
-		records: snapshot.source.stateCode === "MI" && snapshot.source.format === "michigan-html" ? snapshot.records.map(serializeMichiganCandidateRecord) : snapshot.records,
-		...(snapshot.documents ? { documents: snapshot.documents } : {}),
-		...(snapshot.ballotQuestions ? { ballotQuestions: snapshot.ballotQuestions } : {}),
-		...(snapshot.sourceAsOfDate ? { sourceAsOfDate: snapshot.sourceAsOfDate, sourceAsOf: snapshot.sourceAsOf } : {}),
-		...(snapshot.collectionIndexSha256 ? { collectionIndexSha256: snapshot.collectionIndexSha256 } : {}),
+		records: snapshot.source.stateCode === "MI" && snapshot.source.format === "michigan-html"
+			? snapshot.records.map(serializeMichiganCandidateRecord)
+			: snapshot.records,
+		...(snapshot.documents
+			? { documents: snapshot.documents }
+			: {}),
+		...(snapshot.ballotQuestions
+			? { ballotQuestions: snapshot.ballotQuestions }
+			: {}),
+		...(snapshot.sourceAsOfDate
+			? { sourceAsOfDate: snapshot.sourceAsOfDate, sourceAsOf: snapshot.sourceAsOf }
+			: {}),
+		...(snapshot.collectionIndexSha256
+			? { collectionIndexSha256: snapshot.collectionIndexSha256 }
+			: {}),
 	});
 }
 
@@ -122,7 +132,12 @@ export function createStateBallotStorage(directory: string) {
 			}
 		},
 		async writePending(source: StateBallotSource, receipt: StateBallotPendingReceipt, now = Date.now()) {
-			const body = JSON.stringify({ schemaVersion: 1, type: "state-ballot-pending", sourceConfigurationSha256: digest(JSON.stringify(source)), ...receipt });
+			const body = JSON.stringify({
+				schemaVersion: 1,
+				type: "state-ballot-pending",
+				sourceConfigurationSha256: digest(JSON.stringify(source)),
+				...receipt
+			});
 			parsePendingReceipt(source, body, now);
 			if (await this.read(source)) throw new Error("An empty report cannot replace accepted candidate data.");
 			await writeAtomic(`${await location(source)}.pending`, body);
@@ -132,7 +147,9 @@ export function createStateBallotStorage(directory: string) {
 				const body = await readBoundedStateData(await location(source));
 				const envelope = JSON.parse(body);
 				const legacy = legacyReviewedStateBallotSource(source);
-				const selected = legacy && envelope?.sourceConfigurationSha256 === digest(JSON.stringify(legacy)) ? legacy : source;
+				const selected = legacy && envelope?.sourceConfigurationSha256 === digest(JSON.stringify(legacy))
+					? legacy
+					: source;
 				if (!envelope || Object.keys(envelope).sort().join(",") !== "snapshot,sourceConfigurationSha256" || envelope.sourceConfigurationSha256 !== digest(JSON.stringify(selected)) || typeof envelope.snapshot !== "string")
 					throw new Error("Stored state ballot data does not match the configured source.");
 				return parseBundledStateSnapshot(selected, envelope.snapshot, selected.retrievalPolicy ?? "automatic");
@@ -146,11 +163,26 @@ export function createStateBallotStorage(directory: string) {
 		async write(snapshot: StateBallotSnapshot) {
 			const snapshotBody = serializeStoredStateSnapshot(snapshot);
 			parseBundledStateSnapshot(snapshot.source, snapshotBody, snapshot.source.retrievalPolicy ?? "automatic");
-			const body = JSON.stringify({ sourceConfigurationSha256: digest(JSON.stringify(snapshot.source)), snapshot: snapshotBody });
+			const body = JSON.stringify({
+				sourceConfigurationSha256: digest(JSON.stringify(snapshot.source)),
+				snapshot: snapshotBody
+			});
 			if (Buffer.byteLength(body) > maximumBytes)
 				throw new Error("Stored state ballot data exceeds its size limit.");
 			const target = await location(snapshot.source);
-			if (["everett-pdf", "east-greenwich-pdf", "dane-pdf", "pulaski-pdf", "tuscola-pdf", "dc-pdf", "franklin-pdf", "cassia-pdf", "clark-pdf", "connecticut-pdf", "fulton-pdf"].includes(snapshot.source.format) && (await this.read(snapshot.source))?.source.retrievalPolicy === "manual-snapshot") {
+			if ([
+				"everett-pdf",
+				"east-greenwich-pdf",
+				"dane-pdf",
+				"pulaski-pdf",
+				"tuscola-pdf",
+				"dc-pdf",
+				"franklin-pdf",
+				"cassia-pdf",
+				"clark-pdf",
+				"connecticut-pdf",
+				"fulton-pdf"
+			].includes(snapshot.source.format) && (await this.read(snapshot.source))?.source.retrievalPolicy === "manual-snapshot") {
 				const original = await readBoundedStateData(target);
 				const backup = `${target}.legacy-${digest(original)}`;
 				try {

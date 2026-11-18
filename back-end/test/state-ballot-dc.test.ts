@@ -31,7 +31,13 @@ test("D.C. reads the first write-in row even when a revised layout moves it abov
 });
 
 test("D.C. unsupported offices, missing columns, unknown parties and detached rows require review", () => {
-	for (const [document, before, after] of [[0, "Mayor of the District of Columbia", "Unknown Office"], [0, "Independent", "Unknown Party"], [1, "ANC-SMD Name", "Changed Header"], [2, "Office Sought", "Changed Header"], [2, "Independent", "Unknown Party"]] as const) {
+	for (const [document, before, after] of [
+		[0, "Mayor of the District of Columbia", "Unknown Office"],
+		[0, "Independent", "Unknown Party"],
+		[1, "ANC-SMD Name", "Changed Header"],
+		[2, "Office Sought", "Changed Header"],
+		[2, "Independent", "Unknown Party"]
+	] as const) {
 		const documents = dcFixture();
 		documents[document] = documents[document]!.replace(before, after);
 		assert.throws(() => read(documents));
@@ -51,7 +57,14 @@ test("D.C. incomplete office blocks, repeated candidates and broken page sequenc
 });
 
 test("D.C. malformed geometry, truncated XML, wrong dates and invalid withdrawals fail", () => {
-	for (const [before, after] of [["792", "700"], ["xMin=\"52\"", "xMin=\"\""], ["</html>", ""], ["November 3, 2026", "November 4, 2026"], ["10/22/26", "13/22/26"], ["10/22/26", "10/22/25"]]) {
+	for (const [before, after] of [
+		["792", "700"],
+		["xMin=\"52\"", "xMin=\"\""],
+		["</html>", ""],
+		["November 3, 2026", "November 4, 2026"],
+		["10/22/26", "13/22/26"],
+		["10/22/26", "10/22/25"]
+	]) {
 		const documents = dcFixture();
 		documents[2] = documents[2]!.replace(before!, after!);
 		assert.throws(() => read(documents));

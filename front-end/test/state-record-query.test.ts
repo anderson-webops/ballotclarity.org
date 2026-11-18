@@ -6,13 +6,35 @@ import { readRecoverableStateRecordQuery, stateRecordSourceMismatch, stateRecord
 import { readStateRecordQuery } from "../src/utils/state-records.ts";
 
 const states: StateRecordState[] = [
-	{ stateCode: "NE", stateName: "Nebraska", configured: false, sources: [] },
-	{ stateCode: "AL", stateName: "Alabama", configured: true, sources: [{ id: "al-sos-2026", label: "Alabama Secretary of State", electionDate: "2026-11-03" }] },
+	{
+		stateCode: "NE",
+		stateName: "Nebraska",
+		configured: false,
+		sources: []
+	},
+	{
+		stateCode: "AL",
+		stateName: "Alabama",
+		configured: true,
+		sources: [
+			{ id: "al-sos-2026", label: "Alabama Secretary of State", electionDate: "2026-11-03" }
+		]
+	},
 ];
 
 test("a disabled state's bookmarked source recovers without changing its other filters", () => {
-	const query = { state: "Nebraska", source: "ne-sos-2026", q: "Senate", scope: "statewide", status: "all", offset: "50" };
-	assert.deepEqual(readRecoverableStateRecordQuery(query, states), { ...readStateRecordQuery(query, states), sourceId: undefined });
+	const query = {
+		state: "Nebraska",
+		source: "ne-sos-2026",
+		q: "Senate",
+		scope: "statewide",
+		status: "all",
+		offset: "50"
+	};
+	assert.deepEqual(readRecoverableStateRecordQuery(query, states), {
+		...readStateRecordQuery(query, states),
+		sourceId: undefined
+	});
 	assert.equal(readRecoverableStateRecordQuery(query, states).stateCode, "NE");
 });
 
@@ -29,7 +51,14 @@ test("an unknown or cross-state source cannot silently select another enabled pu
 });
 
 test("malformed source values remain subject to API validation even in a disabled state", () => {
-	for (const source of [[], { id: "ne-sos-2026" }, "bad/source", "source,other", "", "x".repeat(102)]) {
+	for (const source of [
+		[],
+		{ id: "ne-sos-2026" },
+		"bad/source",
+		"source,other",
+		"",
+		"x".repeat(102)
+	]) {
 		const query = { state: "NE", source };
 		assert.deepEqual(readRecoverableStateRecordQuery(query, states), readStateRecordQuery(query, states));
 	}
@@ -44,7 +73,9 @@ test("unknown states and pending state metadata do not discard requested sources
 });
 
 test("a state with an offered publisher does not fall back from an explicit source", () => {
-	const inconsistent = [{ ...states[0]!, sources: states[1]!.sources }];
+	const inconsistent = [
+		{ ...states[0]!, sources: states[1]!.sources }
+	];
 	const query = { state: "NE", source: "ne-sos-2026" };
 	assert.deepEqual(readRecoverableStateRecordQuery(query, inconsistent), readStateRecordQuery(query, inconsistent));
 });
@@ -62,7 +93,10 @@ test("Retry refreshes the source catalog before retrying records even with cache
 });
 
 test("an available response cannot silently substitute another explicitly requested publisher", () => {
-	const available = { available: true, source: { id: "al-sos-2026" } };
+	const available = {
+		available: true,
+		source: { id: "al-sos-2026" }
+	};
 	assert.equal(stateRecordSourceMismatch("retired-source-2026", available), true);
 	assert.equal(stateRecordSourceMismatch("al-sos-2026", available), false);
 	assert.equal(stateRecordSourceMismatch(undefined, available), false);
@@ -92,7 +126,14 @@ test("a sole historical election remains selectable without automatically select
 
 test("multiple publications expose the selector even when their election dates agree", () => {
 	const source = states[1]!.sources![0]!;
-	assert.equal(stateRecordSourceSelectionRequired({ ...states[1]!, electionDate: source.electionDate, sources: [source, { ...source, id: "al-county-2026" }] }), true);
+	assert.equal(stateRecordSourceSelectionRequired({
+		...states[1]!,
+		electionDate: source.electionDate,
+		sources: [
+			source,
+			{ ...source, id: "al-county-2026" }
+		]
+	}), true);
 	const page = readFileSync(new URL("../src/components/CandidateDirectory.vue", import.meta.url), "utf8");
 	assert.match(page, /stateRecordSourceSelectionRequired\(selectedStateData.value\)/u);
 	assert.match(page, /<option value="">\s+Current election\s+<\/option>/u);

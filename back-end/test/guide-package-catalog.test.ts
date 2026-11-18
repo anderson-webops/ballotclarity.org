@@ -8,15 +8,21 @@ test("publication options come from loaded elections with a real jurisdiction, n
 	const repository = {
 		...await createCoverageRepository(),
 		data,
-		getElectionBySlug: (slug: string) => data.election?.slug === slug ? data.election : null,
-		getJurisdictionBySlug: (slug: string) => data.jurisdiction?.slug === slug ? data.jurisdiction : null,
+		getElectionBySlug: (slug: string) => data.election?.slug === slug
+			? data.election
+			: null,
+		getJurisdictionBySlug: (slug: string) => data.jurisdiction?.slug === slug
+			? data.jurisdiction
+			: null,
 		getCandidateBySlug: (slug: string) => data.candidates.find(item => item.slug === slug) ?? null,
 		getCandidatesBySlugs: (slugs: string[]) => data.candidates.filter(item => slugs.includes(item.slug)),
 		getMeasureBySlug: (slug: string) => data.measures.find(item => item.slug === slug) ?? null,
 		getSourceById: (id: string) => data.sources.find(item => item.id === id) ?? null,
 	};
 	const list = buildGuidePackageList([], repository, []);
-	assert.deepEqual(list.reviewOptions, [{ electionSlug: data.election!.slug, name: data.election!.name, jurisdictionName: data.jurisdiction!.name }]);
+	assert.deepEqual(list.reviewOptions, [
+		{ electionSlug: data.election!.slug, name: data.election!.name, jurisdictionName: data.jurisdiction!.name }
+	]);
 	const workflow = {
 		id: buildGuidePackageId(data.election!.slug),
 		electionSlug: data.election!.slug,
@@ -35,6 +41,12 @@ test("publication options come from loaded elections with a real jurisdiction, n
 		assert.equal(warning.summary, check.reviewerSignal || check.detail);
 		assert.notEqual(warning.summary, check.warningStandard);
 	}
-	assert.deepEqual(buildGuidePackageList([], { ...repository, getJurisdictionBySlug: () => null }, []).reviewOptions, []);
-	assert.deepEqual(buildGuidePackageList([], { ...repository, data: buildEmptyCoverageSnapshot() }, []).reviewOptions, []);
+	assert.deepEqual(buildGuidePackageList([], {
+		...repository,
+		getJurisdictionBySlug: () => null
+	}, []).reviewOptions, []);
+	assert.deepEqual(buildGuidePackageList([], {
+		...repository,
+		data: buildEmptyCoverageSnapshot()
+	}, []).reviewOptions, []);
 });

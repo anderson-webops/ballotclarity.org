@@ -13,7 +13,9 @@ const barItems = computed(() => props.breakdown.categories.map(category => ({
 	detail: category.note,
 	id: category.label,
 	label: category.label,
-	tone: category.label === unitemizedLabel ? "neutral" as const : "accent" as const,
+	tone: category.label === unitemizedLabel
+		? "neutral" as const
+		: "accent" as const,
 	value: category.amount,
 	valueLabel: formatCurrency(category.amount)
 })));

@@ -17,9 +17,25 @@ const discovery = (montana: boolean) => `<form${montana ? " id=\"frmMain\"" : ""
 
 test("catalog maps accept only distinct external paths for reviewed automatic families and preserve legacy configuration", () => {
 	assert.deepEqual(stateBallotCycleCatalogLocations({}), []);
-	assert.deepEqual(stateBallotCycleCatalogLocations({ STATE_BALLOT_CYCLE_CATALOG: "/tmp/washington.json" }), [{ familyId: "wa-general-2026", catalogPath: "/tmp/washington.json" }]);
-	assert.deepEqual(stateBallotCycleCatalogLocations({ STATE_BALLOT_CYCLE_CATALOGS: JSON.stringify({ "wa-general-2026": "/tmp/washington.json", "mt-general-2026": "/tmp/montana.json" }) }).map(item => item.familyId), ["wa-general-2026", "mt-general-2026"]);
-	for (const value of ["null", "[]", "{}", "not JSON", JSON.stringify({ "ut-qualified-general-2026": "/tmp/utah.json" }), JSON.stringify({ "mt-general-2026": "relative.json" }), JSON.stringify({ "mt-general-2026": "/tmp/bad\nname" }), JSON.stringify({ "mt-general-2026": "/tmp/same.json", "wa-general-2026": "/tmp/../tmp/same.json" }), JSON.stringify({ "mt-general-2026": "/".repeat(17000) })]) assert.throws(() => stateBallotCycleCatalogLocations({ STATE_BALLOT_CYCLE_CATALOGS: value }));
+	assert.deepEqual(stateBallotCycleCatalogLocations({ STATE_BALLOT_CYCLE_CATALOG: "/tmp/washington.json" }), [
+		{ familyId: "wa-general-2026", catalogPath: "/tmp/washington.json" }
+	]);
+	assert.deepEqual(stateBallotCycleCatalogLocations({
+		STATE_BALLOT_CYCLE_CATALOGS: JSON.stringify({ "wa-general-2026": "/tmp/washington.json", "mt-general-2026": "/tmp/montana.json" })
+	}).map(item => item.familyId), ["wa-general-2026", "mt-general-2026"]);
+	for (const value of [
+		"null",
+		"[]",
+		"{}",
+		"not JSON",
+		JSON.stringify({ "ut-qualified-general-2026": "/tmp/utah.json" }),
+		JSON.stringify({ "mt-general-2026": "relative.json" }),
+		JSON.stringify({ "mt-general-2026": "/tmp/bad\nname" }),
+		JSON.stringify({ "mt-general-2026": "/tmp/same.json", "wa-general-2026": "/tmp/../tmp/same.json" }),
+		JSON.stringify({
+			"mt-general-2026": "/".repeat(17000)
+		})
+	]) assert.throws(() => stateBallotCycleCatalogLocations({ STATE_BALLOT_CYCLE_CATALOGS: value }));
 	assert.throws(() => stateBallotCycleCatalogLocations({ STATE_BALLOT_CYCLE_CATALOG: "/tmp/wa.json", STATE_BALLOT_CYCLE_CATALOGS: "{}" }));
 	assert.throws(() => resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_FAMILIES: "mt-general-2026", STATE_BALLOT_ENABLED_STATES: "WA" }));
 	assert.throws(() => resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_FAMILIES: "utah-2026" }));
@@ -32,7 +48,11 @@ test("multiple catalogs preserve exact source allowlists and widen only an expli
 		const montanaPath = join(directory, "montana.json");
 		await writeStateBallotCycleCatalog(washingtonPath, discoverStateBallotElectionCycles(discovery(false), "wa-general-2026", now), now);
 		await writeStateBallotCycleCatalog(montanaPath, discoverStateBallotElectionCycles(discovery(true), "mt-general-2026", now), now);
-		const environment = { STATE_BALLOT_CYCLE_CATALOGS: JSON.stringify({ "wa-general-2026": washingtonPath, "mt-general-2026": montanaPath }), STATE_BALLOT_ENABLED_STATES: "WA,MT", STATE_BALLOT_ENABLED_SOURCES: "wa-general-2026,mt-general-2026" };
+		const environment = {
+			STATE_BALLOT_CYCLE_CATALOGS: JSON.stringify({ "wa-general-2026": washingtonPath, "mt-general-2026": montanaPath }),
+			STATE_BALLOT_ENABLED_STATES: "WA,MT",
+			STATE_BALLOT_ENABLED_SOURCES: "wa-general-2026,mt-general-2026"
+		};
 		assert.deepEqual(resolveStateBallotConfiguration(environment).sources.map(source => source.id), ["wa-general-2026", "mt-general-2026"]);
 		for (const familyId of ["wa-general-2026", "mt-general-2026"]) {
 			const selected = resolveStateBallotConfiguration({ ...environment, STATE_BALLOT_ENABLED_FAMILIES: familyId }).sources;
@@ -67,22 +87,47 @@ test("running APIs hot-load both families, retain last-good descriptors on a cor
 		process.env.STATE_BALLOT_DATA_DIR = dataDirectory;
 		const failures: string[] = [];
 		const clock = Date.parse("2028-10-24T00:00:00Z");
-		const repository = createStateBallotRepository({ now: () => clock, fetchText: async () => {
-			throw new Error("Live publisher requests are disabled");
-		}, onUnavailable: state => failures.push(state) });
+		const repository = createStateBallotRepository({
+			now: () => clock,
+			fetchText: async () => {
+				throw new Error("Live publisher requests are disabled");
+			},
+			onUnavailable: state => failures.push(state)
+		});
 		assert.equal(repository.sources!.length, 2);
 		const storage = createStateBallotStorage(dataDirectory);
-		for (const [familyId, catalogPath, montana] of [["wa-general-2026", washingtonPath, false], ["mt-general-2026", montanaPath, true]] as const) {
+		for (const [familyId, catalogPath, montana] of [
+			["wa-general-2026", washingtonPath, false],
+			["mt-general-2026", montanaPath, true]
+		] as const) {
 			const catalog = discoverStateBallotElectionCycles(discovery(montana), familyId, now);
 			await writeStateBallotCycleCatalog(catalogPath, catalog, now);
 			const source = stateBallotCycleSources(catalog)[0]!;
-			await storage.write({ source, retrievedAt: new Date(clock).toISOString(), sha256: "a".repeat(64), records: [{ id: createHash("sha256").update(source.id).digest("hex").slice(0, 24), name: "Synthetic Cycle Candidate", office: "United States Senator", district: "", jurisdiction: source.stateCode, scope: "statewide", party: "Democratic", status: "filed" }] });
+			await storage.write({
+				source,
+				retrievedAt: new Date(clock).toISOString(),
+				sha256: "a".repeat(64),
+				records: [
+					{
+						id: createHash("sha256").update(source.id).digest("hex").slice(0, 24),
+						name: "Synthetic Cycle Candidate",
+						office: "United States Senator",
+						district: "",
+						jurisdiction: source.stateCode,
+						scope: "statewide",
+						party: "Democratic",
+						status: "filed"
+					}
+				]
+			});
 		}
 		const app = express();
 		registerStateRecordRoutes(app, repository, undefined, () => clock);
 		const server = app.listen(0, "127.0.0.1");
 		await once(server, "listening");
-		close = () => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+		close = () => new Promise<void>((resolve, reject) => server.close(error => error
+			? reject(error)
+			: resolve()));
 		const address = server.address();
 		assert.ok(address && typeof address === "object");
 		const origin = `http://127.0.0.1:${address.port}`;

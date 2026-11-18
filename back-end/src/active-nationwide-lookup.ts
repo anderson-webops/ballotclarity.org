@@ -145,7 +145,10 @@ function parseCookieHeader(cookieHeader: string | undefined) {
 				if (separatorIndex === -1)
 					return [item, ""];
 
-				return [item.slice(0, separatorIndex), item.slice(separatorIndex + 1)];
+				return [
+					item.slice(0, separatorIndex),
+					item.slice(separatorIndex + 1)
+				];
 			})
 	);
 }
@@ -162,17 +165,27 @@ function sanitizeLocationSelection(value: unknown): LocationSelection | null {
 	if (!isRecord(value))
 		return null;
 
-	const displayName = typeof value.displayName === "string" ? value.displayName : "";
-	const slug = typeof value.slug === "string" ? value.slug : "";
-	const state = typeof value.state === "string" ? value.state : "";
+	const displayName = typeof value.displayName === "string"
+		? value.displayName
+		: "";
+	const slug = typeof value.slug === "string"
+		? value.slug
+		: "";
+	const state = typeof value.state === "string"
+		? value.state
+		: "";
 
 	if (!displayName || !slug || !state)
 		return null;
 
 	return {
-		coverageLabel: typeof value.coverageLabel === "string" ? value.coverageLabel : "",
+		coverageLabel: typeof value.coverageLabel === "string"
+			? value.coverageLabel
+			: "",
 		displayName,
-		lookupInput: typeof value.lookupInput === "string" ? value.lookupInput : undefined,
+		lookupInput: typeof value.lookupInput === "string"
+			? value.lookupInput
+			: undefined,
 		lookupMode: value.lookupMode === "address-submitted" || value.lookupMode === "address-verified" || value.lookupMode === "coverage-selection" || value.lookupMode === "zip-preview"
 			? value.lookupMode
 			: undefined,
@@ -186,11 +199,21 @@ function sanitizeDistrictMatch(value: unknown): LocationDistrictMatch | null {
 	if (!isRecord(value))
 		return null;
 
-	const districtCode = typeof value.districtCode === "string" ? value.districtCode : "";
-	const districtType = typeof value.districtType === "string" ? value.districtType : "";
-	const id = typeof value.id === "string" ? value.id : "";
-	const label = typeof value.label === "string" ? value.label : "";
-	const sourceSystem = typeof value.sourceSystem === "string" ? value.sourceSystem : "";
+	const districtCode = typeof value.districtCode === "string"
+		? value.districtCode
+		: "";
+	const districtType = typeof value.districtType === "string"
+		? value.districtType
+		: "";
+	const id = typeof value.id === "string"
+		? value.id
+		: "";
+	const label = typeof value.label === "string"
+		? value.label
+		: "";
+	const sourceSystem = typeof value.sourceSystem === "string"
+		? value.sourceSystem
+		: "";
 
 	if (!districtCode || !districtType || !id || !label || !sourceSystem)
 		return null;
@@ -201,9 +224,15 @@ function sanitizeDistrictMatch(value: unknown): LocationDistrictMatch | null {
 		id,
 		label,
 		sourceSystem,
-		congressionalSession: typeof value.congressionalSession === "number" && Number.isInteger(value.congressionalSession) && value.congressionalSession > 0 && value.congressionalSession < 1000 ? value.congressionalSession : undefined,
-		boundaryVintage: typeof value.boundaryVintage === "string" && /^\w{1,64}$/u.test(value.boundaryVintage) ? value.boundaryVintage : undefined,
-		stateFips: typeof value.stateFips === "string" && /^\d{2}$/u.test(value.stateFips) ? value.stateFips : undefined,
+		congressionalSession: typeof value.congressionalSession === "number" && Number.isInteger(value.congressionalSession) && value.congressionalSession > 0 && value.congressionalSession < 1000
+			? value.congressionalSession
+			: undefined,
+		boundaryVintage: typeof value.boundaryVintage === "string" && /^\w{1,64}$/u.test(value.boundaryVintage)
+			? value.boundaryVintage
+			: undefined,
+		stateFips: typeof value.stateFips === "string" && /^\d{2}$/u.test(value.stateFips)
+			? value.stateFips
+			: undefined,
 	};
 }
 
@@ -211,25 +240,41 @@ function sanitizeProfileImage(value: unknown): ProfileImage | null {
 	if (!isRecord(value))
 		return null;
 
-	const alt = typeof value.alt === "string" ? value.alt.trim() : "";
-	const sourceLabel = typeof value.sourceLabel === "string" ? value.sourceLabel.trim() : "";
-	const sourceSystem = typeof value.sourceSystem === "string" ? value.sourceSystem.trim() : "";
-	const url = typeof value.url === "string" ? value.url.trim() : "";
+	const alt = typeof value.alt === "string"
+		? value.alt.trim()
+		: "";
+	const sourceLabel = typeof value.sourceLabel === "string"
+		? value.sourceLabel.trim()
+		: "";
+	const sourceSystem = typeof value.sourceSystem === "string"
+		? value.sourceSystem.trim()
+		: "";
+	const url = typeof value.url === "string"
+		? value.url.trim()
+		: "";
 
 	if (!alt || !sourceLabel || !sourceSystem || !url)
 		return null;
 
 	return buildProfileImage({
 		alt,
-		attribution: typeof value.attribution === "string" ? value.attribution.trim() || undefined : undefined,
-		capturedAt: typeof value.capturedAt === "string" ? value.capturedAt.trim() || undefined : undefined,
-		priority: typeof value.priority === "number" && Number.isFinite(value.priority) ? value.priority : 100,
+		attribution: typeof value.attribution === "string"
+			? value.attribution.trim() || undefined
+			: undefined,
+		capturedAt: typeof value.capturedAt === "string"
+			? value.capturedAt.trim() || undefined
+			: undefined,
+		priority: typeof value.priority === "number" && Number.isFinite(value.priority)
+			? value.priority
+			: 100,
 		sourceKind: value.sourceKind === "archive" || value.sourceKind === "campaign" || value.sourceKind === "official" || value.sourceKind === "provider"
 			? value.sourceKind
 			: "provider",
 		sourceLabel,
 		sourceSystem,
-		sourceUrl: typeof value.sourceUrl === "string" ? value.sourceUrl.trim() || undefined : undefined,
+		sourceUrl: typeof value.sourceUrl === "string"
+			? value.sourceUrl.trim() || undefined
+			: undefined,
 		url,
 	});
 }
@@ -242,18 +287,30 @@ function sanitizeProviderRecordDate(value: unknown) {
 		return undefined;
 
 	const date = value.trim().slice(0, 10);
-	return providerRecordDatePattern.test(date) && !Number.isNaN(Date.parse(date)) ? date : undefined;
+	return providerRecordDatePattern.test(date) && !Number.isNaN(Date.parse(date))
+		? date
+		: undefined;
 }
 
 function sanitizeRepresentativeMatch(value: unknown): LocationRepresentativeMatch | null {
 	if (!isRecord(value))
 		return null;
 
-	const districtLabel = typeof value.districtLabel === "string" ? value.districtLabel : "";
-	const id = typeof value.id === "string" ? value.id : "";
-	const name = typeof value.name === "string" ? value.name : "";
-	const officeTitle = typeof value.officeTitle === "string" ? value.officeTitle : "";
-	const sourceSystem = typeof value.sourceSystem === "string" ? value.sourceSystem : "";
+	const districtLabel = typeof value.districtLabel === "string"
+		? value.districtLabel
+		: "";
+	const id = typeof value.id === "string"
+		? value.id
+		: "";
+	const name = typeof value.name === "string"
+		? value.name
+		: "";
+	const officeTitle = typeof value.officeTitle === "string"
+		? value.officeTitle
+		: "";
+	const sourceSystem = typeof value.sourceSystem === "string"
+		? value.sourceSystem
+		: "";
 
 	if (!districtLabel || !id || !name || !officeTitle || !sourceSystem)
 		return null;
@@ -263,7 +320,9 @@ function sanitizeRepresentativeMatch(value: unknown): LocationRepresentativeMatc
 		governmentLevel: value.governmentLevel === "federal" || value.governmentLevel === "state" || value.governmentLevel === "county" || value.governmentLevel === "city"
 			? value.governmentLevel
 			: null,
-		officeSought: typeof value.officeDisplayLabel === "string" ? value.officeDisplayLabel : undefined,
+		officeSought: typeof value.officeDisplayLabel === "string"
+			? value.officeDisplayLabel
+			: undefined,
 		officeTitle,
 		officeType: value.officeType === "us_senate"
 			|| value.officeType === "us_house"
@@ -290,7 +349,9 @@ function sanitizeRepresentativeMatch(value: unknown): LocationRepresentativeMatc
 		officeTitle,
 		officialWebsiteUrl: normalizePublicHref(value.officialWebsiteUrl) || undefined,
 		openstatesUrl: normalizePublicHref(value.openstatesUrl) || undefined,
-		party: typeof value.party === "string" ? value.party : undefined,
+		party: typeof value.party === "string"
+			? value.party
+			: undefined,
 		profileImages: Array.isArray(value.profileImages)
 			? value.profileImages.map(sanitizeProfileImage).filter((item): item is ProfileImage => Boolean(item))
 			: undefined,
@@ -303,18 +364,30 @@ function sanitizeLookupAction(value: unknown): LocationLookupAction | null {
 	if (!isRecord(value))
 		return null;
 
-	const id = typeof value.id === "string" ? value.id : "";
-	const kind = value.kind === "ballot-guide" || value.kind === "official-verification" ? value.kind : null;
-	const title = typeof value.title === "string" ? value.title : "";
-	const description = typeof value.description === "string" ? value.description : "";
+	const id = typeof value.id === "string"
+		? value.id
+		: "";
+	const kind = value.kind === "ballot-guide" || value.kind === "official-verification"
+		? value.kind
+		: null;
+	const title = typeof value.title === "string"
+		? value.title
+		: "";
+	const description = typeof value.description === "string"
+		? value.description
+		: "";
 
 	if (!id || !kind || !title || !description)
 		return null;
 
 	return {
-		badge: typeof value.badge === "string" ? value.badge : undefined,
+		badge: typeof value.badge === "string"
+			? value.badge
+			: undefined,
 		description,
-		electionSlug: typeof value.electionSlug === "string" ? value.electionSlug : undefined,
+		electionSlug: typeof value.electionSlug === "string"
+			? value.electionSlug
+			: undefined,
 		id,
 		kind,
 		location: sanitizeLocationSelection(value.location) ?? undefined,
@@ -350,18 +423,30 @@ function sanitizeActiveNationwideLookupContext(value: unknown): ActiveNationwide
 			: [],
 		detectedFromIp: value.detectedFromIp === true,
 		districtMatches,
-		districtContextCongress: typeof value.districtContextCongress === "number" && Number.isInteger(value.districtContextCongress) ? value.districtContextCongress : undefined,
+		districtContextCongress: typeof value.districtContextCongress === "number" && Number.isInteger(value.districtContextCongress)
+			? value.districtContextCongress
+			: undefined,
 		electionDistrictMatches: Array.isArray(value.electionDistrictMatches)
 			? value.electionDistrictMatches.map(sanitizeDistrictMatch).filter((item): item is LocationDistrictMatch => Boolean(item) && isCongressionalDistrict(item!))
 			: undefined,
-		electionSlug: typeof value.electionSlug === "string" ? value.electionSlug : undefined,
-		electionLogistics: isRecord(value.electionLogistics) ? value.electionLogistics as unknown as ElectionLogistics : null,
+		electionSlug: typeof value.electionSlug === "string"
+			? value.electionSlug
+			: undefined,
+		electionLogistics: isRecord(value.electionLogistics)
+			? value.electionLogistics as unknown as ElectionLogistics
+			: null,
 		guideAvailability,
-		inputKind: value.inputKind === "address" ? "address" : "zip",
+		inputKind: value.inputKind === "address"
+			? "address"
+			: "zip",
 		location: sanitizeLocationSelection(value.location),
-		normalizedAddress: typeof value.normalizedAddress === "string" ? value.normalizedAddress : "",
+		normalizedAddress: typeof value.normalizedAddress === "string"
+			? value.normalizedAddress
+			: "",
 		representativeMatches,
-		selectionId: typeof value.selectionId === "string" ? value.selectionId : undefined,
+		selectionId: typeof value.selectionId === "string"
+			? value.selectionId
+			: undefined,
 		resolvedAt: typeof value.resolvedAt === "string" && value.resolvedAt
 			? value.resolvedAt
 			: new Date().toISOString(),
@@ -371,7 +456,9 @@ function sanitizeActiveNationwideLookupContext(value: unknown): ActiveNationwide
 
 function readCompactString(tuple: unknown[], index: number) {
 	const value = tuple[index];
-	return typeof value === "string" ? value : "";
+	return typeof value === "string"
+		? value
+		: "";
 }
 
 function readCompactOptionalString(tuple: unknown[], index: number) {
@@ -383,7 +470,9 @@ function expandCompactCookiePayload(value: unknown) {
 	if (!isRecord(value) || value.v !== 2)
 		return value;
 
-	const locationTuple = Array.isArray(value.l) ? value.l : null;
+	const locationTuple = Array.isArray(value.l)
+		? value.l
+		: null;
 
 	return {
 		actions: Array.isArray(value.a)
@@ -420,15 +509,30 @@ function expandCompactCookiePayload(value: unknown) {
 					};
 				}).filter(isPresent)
 			: [],
-		electionSlug: typeof value.es === "string" ? value.es : undefined,
+		electionSlug: typeof value.es === "string"
+			? value.es
+			: undefined,
 		electionDistrictMatches: Array.isArray(value.edm)
 			? value.edm.map(item => Array.isArray(item)
-					? { id: readCompactString(item, 0), label: readCompactString(item, 1), districtType: readCompactString(item, 2), districtCode: readCompactString(item, 3), sourceSystem: readCompactString(item, 4), congressionalSession: item[5], boundaryVintage: readCompactOptionalString(item, 6), stateFips: readCompactOptionalString(item, 7) }
+					? {
+							id: readCompactString(item, 0),
+							label: readCompactString(item, 1),
+							districtType: readCompactString(item, 2),
+							districtCode: readCompactString(item, 3),
+							sourceSystem: readCompactString(item, 4),
+							congressionalSession: item[5],
+							boundaryVintage: readCompactOptionalString(item, 6),
+							stateFips: readCompactOptionalString(item, 7)
+						}
 					: null)
 			: undefined,
 		electionLogistics: null,
-		guideAvailability: value.ga === "p" ? "published" : "not-published",
-		inputKind: value.ik === "a" ? "address" : "zip",
+		guideAvailability: value.ga === "p"
+			? "published"
+			: "not-published",
+		inputKind: value.ik === "a"
+			? "address"
+			: "zip",
 		location: locationTuple
 			? {
 					displayName: readCompactString(locationTuple, 0),
@@ -438,7 +542,9 @@ function expandCompactCookiePayload(value: unknown) {
 					state: readCompactString(locationTuple, 2),
 				}
 			: null,
-		normalizedAddress: typeof value.q === "string" ? value.q : "",
+		normalizedAddress: typeof value.q === "string"
+			? value.q
+			: "",
 		representativeMatches: Array.isArray(value.rm)
 			? value.rm.map((item) => {
 					if (!Array.isArray(item))
@@ -472,9 +578,13 @@ function expandCompactCookiePayload(value: unknown) {
 					};
 				}).filter(isPresent)
 			: [],
-		resolvedAt: typeof value.t === "string" ? value.t : "",
+		resolvedAt: typeof value.t === "string"
+			? value.t
+			: "",
 		result: "resolved",
-		selectionId: typeof value.s === "string" ? value.s : undefined,
+		selectionId: typeof value.s === "string"
+			? value.s
+			: undefined,
 	};
 }
 
@@ -501,10 +611,23 @@ function buildCookiePayload(context: ActiveNationwideLookupContext) {
 			match.boundaryVintage ?? "",
 			match.stateFips ?? "",
 		]),
-		edm: context.electionDistrictMatches?.map(match => [match.id, match.label, match.districtType, match.districtCode, match.sourceSystem, match.congressionalSession ?? null, match.boundaryVintage ?? "", match.stateFips ?? ""]),
+		edm: context.electionDistrictMatches?.map(match => [
+			match.id,
+			match.label,
+			match.districtType,
+			match.districtCode,
+			match.sourceSystem,
+			match.congressionalSession ?? null,
+			match.boundaryVintage ?? "",
+			match.stateFips ?? ""
+		]),
 		es: context.electionSlug,
-		ga: context.guideAvailability === "published" ? "p" : "n",
-		ik: context.inputKind === "address" ? "a" : "z",
+		ga: context.guideAvailability === "published"
+			? "p"
+			: "n",
+		ik: context.inputKind === "address"
+			? "a"
+			: "z",
 		l: context.location
 			? [
 					context.location.displayName,
@@ -747,8 +870,13 @@ function deriveDistrictPipelineKind(district: DistrictDescriptor) {
 }
 
 function buildDistrictRepresentativeAvailabilityNote(district: DistrictDescriptor, representativeCount: number) {
-	if (representativeCount > 0)
-		return `${representativeCount} current official${representativeCount === 1 ? "" : "s"} ${representativeCount === 1 ? "is" : "are"} linked to this district.`;
+	if (representativeCount > 0) {
+		return `${representativeCount} current official${representativeCount === 1
+			? ""
+			: "s"} ${representativeCount === 1
+			? "is"
+			: "are"} linked to this district.`;
+	}
 
 	const kind = deriveDistrictPipelineKind(district);
 
@@ -915,7 +1043,9 @@ function buildDirectoryBundle(context: ActiveNationwideLookupContext) {
 			party: representative.party ?? "Unknown",
 			profileImages: representative.profileImages,
 			provenance: {
-				label: representative.sourceSystem ? `${representative.sourceSystem} representative match` : "Lookup results representative match",
+				label: representative.sourceSystem
+					? `${representative.sourceSystem} representative match`
+					: "Lookup results representative match",
 				note: "",
 				status: "crosswalked",
 			},
@@ -994,7 +1124,9 @@ export function buildActiveNationwideLookupCookie(
 ) {
 	const context = buildActiveNationwideLookupContext(response);
 
-	return context ? buildActiveNationwideLookupCookieFromContext(context, secret) : null;
+	return context
+		? buildActiveNationwideLookupCookieFromContext(context, secret)
+		: null;
 }
 
 export function buildActiveNationwideLookupCookieFromContext(
@@ -1225,7 +1357,9 @@ export function buildNationwideDistrictRecordResponse(context: ActiveNationwideL
 	const directory = buildDirectoryBundle(context);
 	const aliasMatch = context.districtMatches.find(match => toLookupSlug(match.id) === districtSlug);
 	const district = directory.districts.find(item => item.slug === districtSlug)
-		?? (aliasMatch ? directory.districts.find(item => item.slug === buildDistrictSlugFromMatch(aliasMatch)) : undefined);
+		?? (aliasMatch
+			? directory.districts.find(item => item.slug === buildDistrictSlugFromMatch(aliasMatch))
+			: undefined);
 
 	if (!district)
 		return null;
@@ -1241,14 +1375,18 @@ export function buildNationwideDistrictRecordResponse(context: ActiveNationwideL
 	const sources: Array<ReturnType<typeof toSource> | null> = [
 		districtMatch
 			? toSource({
-					authority: districtMatch.sourceSystem.toLowerCase().includes("census") ? "official-government" : "open-data",
+					authority: districtMatch.sourceSystem.toLowerCase().includes("census")
+						? "official-government"
+						: "open-data",
 					date: updatedAt,
 					id: `district:${district.slug}:match`,
 					note: "",
 					publisher: districtMatch.sourceSystem,
 					sourceSystem: districtMatch.sourceSystem,
 					title: `${district.title} district match`,
-					url: districtMatch.sourceSystem.toLowerCase().includes("census") ? censusGeocoderDocsUrl : openStatesUrl,
+					url: districtMatch.sourceSystem.toLowerCase().includes("census")
+						? censusGeocoderDocsUrl
+						: openStatesUrl,
 				})
 			: null,
 		...representatives.map(representative => toSource({
@@ -1311,7 +1449,9 @@ export function buildNationwideDistrictRecordResponse(context: ActiveNationwideL
 export function buildNationwidePersonProfileResponse(context: ActiveNationwideLookupContext, representativeSlug: string): PersonProfileResponse | null {
 	const directory = buildDirectoryBundle(context);
 	const representativeMatch = context.representativeMatches.find(match => buildNationwideRepresentativeRouteAliases(match).includes(representativeSlug)) ?? null;
-	const representative = directory.representatives.find(item => item.slug === (representativeMatch ? buildNationwideRepresentativeSlug(representativeMatch) : representativeSlug));
+	const representative = directory.representatives.find(item => item.slug === (representativeMatch
+		? buildNationwideRepresentativeSlug(representativeMatch)
+		: representativeSlug));
 
 	if (!representative)
 		return null;

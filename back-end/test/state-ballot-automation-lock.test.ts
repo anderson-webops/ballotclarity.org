@@ -39,7 +39,12 @@ test("canonical aliases share the same process owner and a refused alias leaves 
 test("legacy PID, empty, malformed and oversized lock files remain unchanged pending operator review", async (context) => {
 	const parent = await realpath(await mkdtemp(join(tmpdir(), "ballot-legacy-lock-")));
 	context.after(() => rm(parent, { recursive: true, force: true }));
-	for (const body of [String(process.pid), "", "unrecognized lock", "x".repeat(65537)]) {
+	for (const body of [
+		String(process.pid),
+		"",
+		"unrecognized lock",
+		"x".repeat(65537)
+	]) {
 		const directory = await realpath(await mkdtemp(join(parent, "case-")));
 		await writeFile(join(directory, "automation.lock"), body, { mode: 0o600 });
 		await assert.rejects(acquireStateBallotAutomationLock(directory), /requires operator review/u);
@@ -71,7 +76,10 @@ test("simultaneous initialization admits exactly one owner and independent direc
 	const parent = await realpath(await mkdtemp(join(tmpdir(), "ballot-lock-contention-")));
 	context.after(() => rm(parent, { recursive: true, force: true }));
 	const directory = join(parent, "shared");
-	const results = await Promise.allSettled([acquireStateBallotAutomationLock(directory), acquireStateBallotAutomationLock(directory)]);
+	const results = await Promise.allSettled([
+		acquireStateBallotAutomationLock(directory),
+		acquireStateBallotAutomationLock(directory)
+	]);
 	assert.equal(results.filter(result => result.status === "fulfilled").length, 1);
 	assert.equal(results.filter(result => result.status === "rejected").length, 1);
 	const independent = await acquireStateBallotAutomationLock(join(parent, "independent"));
@@ -103,7 +111,13 @@ test("named feed coordination rejects unsupported paths before creating external
 	const parent = await realpath(await mkdtemp(join(tmpdir(), "ballot-lock-names-")));
 	context.after(() => rm(parent, { recursive: true, force: true }));
 	const directory = join(parent, "unused");
-	for (const name of ["", "../automation.lock", "/automation.lock", "unknown.lock", "nested/automation.lock"])
+	for (const name of [
+		"",
+		"../automation.lock",
+		"/automation.lock",
+		"unknown.lock",
+		"nested/automation.lock"
+	])
 		await assert.rejects(acquireStateBallotAutomationLock(directory, name), /filename requires review/u);
 	await assert.rejects(lstat(directory), { code: "ENOENT" });
 });

@@ -19,13 +19,38 @@ const hash = (value: string) => createHash("sha256").update(value).digest("hex")
 const capturedAt = "2026-10-20T12:00:00.000Z";
 const header = "2025-2026\nOfficial Congressional Directory\n119th Congress\nClosing date for compilation of the Congressional Directory was October 1, 2025.\n\n";
 const biography = (name = "JANE EXAMPLE", state = "CA", education = "B.A., history, Example University, 2001", professional = "teacher; member, Example City Council, 2010-14") => `${name}, Democrat, of Example City, ${state}; born in Example City, ${state}, January 1, 1980; education: ${education}; professional history: ${professional}; military service: example service; religion: example; married: Private Name; children: two; election history: elected in 2024.\n\nCongressional Office\nhttps://example.invalid\n(000) 000-0000\n\n`;
-const candidate = (overrides: Partial<StateCandidateRecord> = {}): StateCandidateRecord => ({ id: hash("candidate").slice(0, 24), name: "Jane Example", office: "U.S. Representative", district: "1", scope: "congressional", status: "listed", ...overrides });
-function candidateSnapshot(state = "CA", records = [candidate()]): StateBallotSnapshot {
-	const source = configuredStateBallotSources.find(item => item.stateCode === state)!;
-	return { source, retrievedAt: capturedAt, sha256: hash("official fixture"), records };
+function candidate(overrides: Partial<StateCandidateRecord> = {}): StateCandidateRecord {
+	return {
+		id: hash("candidate").slice(0, 24),
+		name: "Jane Example",
+		office: "U.S. Representative",
+		district: "1",
+		scope: "congressional",
+		status: "listed",
+		...overrides
+	};
 }
-function prepare(body: string, candidates = [candidateSnapshot()], previous: ElectionReferenceSnapshot[] = []) {
-	return prepareCongressionalBiographies({ body, sha256: hash(body), capturedAt, candidates, previous });
+function candidateSnapshot(state = "CA", records = [
+	candidate()
+]): StateBallotSnapshot {
+	const source = configuredStateBallotSources.find(item => item.stateCode === state)!;
+	return {
+		source,
+		retrievedAt: capturedAt,
+		sha256: hash("official fixture"),
+		records
+	};
+}
+function prepare(body: string, candidates = [
+	candidateSnapshot()
+], previous: ElectionReferenceSnapshot[] = []) {
+	return prepareCongressionalBiographies({
+		body,
+		sha256: hash(body),
+		capturedAt,
+		candidates,
+		previous
+	});
 }
 
 test("directory collections are additive, dated and pinned to the observed public edition", () => {
@@ -56,19 +81,49 @@ test("multiline paragraphs retain only bounded education and professional fields
 	assert.equal(snapshot.records[0]!.jurisdiction, "Congressional District 1");
 	assert.equal("party" in snapshot.records[0]!, false);
 	assert.equal("status" in snapshot.records[0]!, false);
-	const titled = prepare(body, [candidateSnapshot("CA", [candidate({ office: "United States Representative District 1" })])])[0]!.snapshot.records[0]!;
+	const titled = prepare(body, [
+		candidateSnapshot("CA", [
+			candidate({ office: "United States Representative District 1" })
+		])
+	])[0]!.snapshot.records[0]!;
 	assert.equal(titled.office, "U.S. Representative");
 	assert.equal(titled.jurisdiction, "Congressional District 1");
 });
 
 test("exact state/name matches refuse ambiguity, nicknames, stale elections and inactive candidates", () => {
 	const body = header + biography();
-	assert.equal(prepare(body, [candidateSnapshot("MI")]).length, 0);
-	assert.equal(prepare(body, [candidateSnapshot("CA", [candidate({ name: "Janet Example" })])]).length, 0);
+	assert.equal(prepare(body, [
+		candidateSnapshot("MI")
+	]).length, 0);
+	assert.equal(prepare(body, [
+		candidateSnapshot("CA", [
+			candidate({ name: "Janet Example" })
+		])
+	]).length, 0);
 	assert.equal(prepare(body + biography()).length, 0);
-	for (const status of ["withdrawn", "disqualified", "defeated", "elected", "inactive"] as const) assert.equal(prepare(body, [candidateSnapshot("CA", [candidate({ status })])]).length, 0);
-	assert.equal(prepare(body, [candidateSnapshot("CA", [candidate({ scope: "local", office: "School Board" })])]).length, 0);
-	assert.equal(prepare(body, [candidateSnapshot("MI", [candidate({ scope: "statewide", office: "Governor of Wayne State University" })])]).length, 0);
+	for (const status of [
+		"withdrawn",
+		"disqualified",
+		"defeated",
+		"elected",
+		"inactive"
+	] as const) {
+		assert.equal(prepare(body, [
+			candidateSnapshot("CA", [
+				candidate({ status })
+			])
+		]).length, 0);
+	}
+	assert.equal(prepare(body, [
+		candidateSnapshot("CA", [
+			candidate({ scope: "local", office: "School Board" })
+		])
+	]).length, 0);
+	assert.equal(prepare(body, [
+		candidateSnapshot("MI", [
+			candidate({ scope: "statewide", office: "Governor of Wayne State University" })
+		])
+	]).length, 0);
 	const future = candidateSnapshot();
 	future.source = { ...future.source, electionDate: "2028-11-07" };
 	assert.throws(() => prepare(body, [future]), /not permitted/u);
@@ -82,8 +137,20 @@ test("exact state/name matches refuse ambiguity, nicknames, stale elections and 
 
 test("ticket slot and election office come from the official candidate record, not current membership", () => {
 	const body = header + biography("JANE EXAMPLE", "MI") + biography("ROBERT EXAMPLE", "MI");
-	const output = prepare(body, [candidateSnapshot("MI", [candidate({ name: "Example, Jane / Example, Robert", scope: "statewide", district: "", office: "Governor / Lt. Governor 4 Year Term (1) Position" })])])[0]!;
-	assert.deepEqual(output.snapshot.records.map(record => [record.name, record.office, record.scope]), [["Jane Example", "Governor", "statewide"], ["Robert Example", "Lieutenant Governor", "statewide"]]);
+	const output = prepare(body, [
+		candidateSnapshot("MI", [
+			candidate({
+				name: "Example, Jane / Example, Robert",
+				scope: "statewide",
+				district: "",
+				office: "Governor / Lt. Governor 4 Year Term (1) Position"
+			})
+		])
+	])[0]!;
+	assert.deepEqual(output.snapshot.records.map(record => [record.name, record.office, record.scope]), [
+		["Jane Example", "Governor", "statewide"],
+		["Robert Example", "Lieutenant Governor", "statewide"]
+	]);
 	assert.deepEqual(output.identities.map(identity => identity.slot), [0, 1]);
 	assert.equal(output.snapshot.records[0]!.jurisdiction, undefined);
 	assert.equal(new Set(output.snapshot.records.map(record => record.id)).size, 2);
@@ -92,11 +159,23 @@ test("ticket slot and election office come from the official candidate record, n
 test("previous non-directory profiles prevent duplication without blocking directory re-preparation", () => {
 	const body = header + biography();
 	const initial = prepare(body)[0]!.snapshot;
-	const previous = { ...initial, sourceId: "preceding-reviewed-collection", records: [{ ...initial.records[0]!, name: "Jane Q. Example" }] };
-	assert.equal(prepare(body, [candidateSnapshot()], [previous]).length, 0);
-	assert.equal(prepare(body, [candidateSnapshot()], [initial]).length, 1);
+	const previous = {
+		...initial,
+		sourceId: "preceding-reviewed-collection",
+		records: [
+			{ ...initial.records[0]!, name: "Jane Q. Example" }
+		]
+	};
+	assert.equal(prepare(body, [
+		candidateSnapshot()
+	], [previous]).length, 0);
+	assert.equal(prepare(body, [
+		candidateSnapshot()
+	], [initial]).length, 1);
 	const anotherState = { ...previous, stateCode: "MI" };
-	assert.equal(prepare(body, [candidateSnapshot()], [anotherState]).length, 1);
+	assert.equal(prepare(body, [
+		candidateSnapshot()
+	], [anotherState]).length, 1);
 });
 
 test("field splitting preserves clauses, rejects broken encoding and verifies capture provenance", () => {
@@ -108,8 +187,20 @@ test("field splitting preserves clauses, rejects broken encoding and verifies ca
 	for (let index = 0; index < 16; index++) assert.ok(facts.some(fact => fact.includes(`position ${index},`)));
 	const damaged = header + biography("JANE EXAMPLE", "CA", "B.A., Broken\uFFFDUniversity");
 	assert.deepEqual(prepare(damaged)[0]!.snapshot.records[0]!.facts, ["Professional background: teacher; member, Example City Council, 2010-14."]);
-	assert.throws(() => prepareCongressionalBiographies({ body, sha256: hash("different"), capturedAt, candidates: [], previous: [] }), /provenance/u);
-	assert.throws(() => prepareCongressionalBiographies({ body, sha256: hash(body), capturedAt: "2100-01-01", candidates: [], previous: [] }), /provenance/u);
+	assert.throws(() => prepareCongressionalBiographies({
+		body,
+		sha256: hash("different"),
+		capturedAt,
+		candidates: [],
+		previous: []
+	}), /provenance/u);
+	assert.throws(() => prepareCongressionalBiographies({
+		body,
+		sha256: hash(body),
+		capturedAt: "2100-01-01",
+		candidates: [],
+		previous: []
+	}), /provenance/u);
 	assert.throws(() => parseCongressionalBiographies(body.replace("119th Congress", "120th Congress")), /reviewed edition/u);
 	const dated = header + biography("JANE EXAMPLE", "CA", "B.A., Example University", "teacher, 2000-2005; director, 2006-present; current board member; manager, 2010-");
 	assert.deepEqual(prepare(dated)[0]!.snapshot.records[0]!.facts, ["Education: B.A., Example University.", "Professional background: teacher, 2000-2005."]);
@@ -117,60 +208,132 @@ test("field splitting preserves clauses, rejects broken encoding and verifies ca
 
 test("reviewed source discrepancies are withheld without inventing replacement facts", () => {
 	const body = header + biography("KELLY MORRISON", "MN", "B.A., Example University, 2003; M.D., Another University, 1997") + biography("JOHN JAMES", "MI", "M.P.A., supply-chain management, 2014") + biography("VICTORIA SPARTZ", "IN", "B.A., Example University", "business owner; adjunct professor, Indiana State University Kelley School of Business, 2013-20; farmer");
-	const outputs = prepare(body, [candidateSnapshot("MN", [candidate({ name: "Kelly Morrison" })]), candidateSnapshot("MI", [candidate({ name: "John James" })]), candidateSnapshot("IN", [candidate({ name: "Victoria Spartz" })])]);
+	const outputs = prepare(body, [
+		candidateSnapshot("MN", [
+			candidate({ name: "Kelly Morrison" })
+		]),
+		candidateSnapshot("MI", [
+			candidate({ name: "John James" })
+		]),
+		candidateSnapshot("IN", [
+			candidate({ name: "Victoria Spartz" })
+		])
+	]);
 	assert.equal(outputs.length, 3);
 	for (const state of ["MN", "MI"]) assert.ok(outputs.find(output => output.source.stateCode === state)!.snapshot.records[0]!.facts.every(fact => !fact.startsWith("Education:")));
 	const spartz = outputs.find(output => output.source.stateCode === "IN")!.snapshot.records[0]!;
 	assert.deepEqual(spartz.facts, ["Education: B.A., Example University.", "Professional background: business owner; farmer."]);
 	assert.doesNotMatch(JSON.stringify(outputs.map(output => output.snapshot.records)), /Indiana State University|M\.P\.A\./u);
 	const terms = header + biography("MIKE ROUNDS", "SD", "B.A., Example University", "member, South Dakota State Senate, 1990-2000 (Minority Whip, 1993; Majority Leader, 1995); governor, South Dakota, 2002-10") + biography("JOSEPH D. MORELLE", "NY", "B.A., Example University", "member, New York State Assembly, 1990-2018 (Majority Leader, 2013-18)");
-	const termOutputs = prepare(terms, [candidateSnapshot("SD", [candidate({ name: "Mike Rounds" })]), candidateSnapshot("NY", [candidate({ name: "Joseph D. Morelle" })])]);
+	const termOutputs = prepare(terms, [
+		candidateSnapshot("SD", [
+			candidate({ name: "Mike Rounds" })
+		]),
+		candidateSnapshot("NY", [
+			candidate({ name: "Joseph D. Morelle" })
+		])
+	]);
 	assert.deepEqual(termOutputs.map(output => output.snapshot.records[0]!.facts[1]).sort(), ["Professional background: governor, South Dakota.", "Professional background: member, New York State Assembly."].sort());
 });
 
 test("reviewed heading variants retain mixed-case surnames and the printed semicolon before a state", () => {
 	const body = header + biography("SARAH McBRIDE", "DE") + biography("BECCA BALINT", "VT").replace("of Example City, VT;", "of Brattleboro; VT;");
 	const parsed = parseCongressionalBiographies(body);
-	assert.deepEqual(parsed.map(person => [person.name, person.stateCode]), [["SARAH McBRIDE", "DE"], ["BECCA BALINT", "VT"]]);
+	assert.deepEqual(parsed.map(person => [person.name, person.stateCode]), [
+		["SARAH McBRIDE", "DE"],
+		["BECCA BALINT", "VT"]
+	]);
 	assert.equal(parseCongressionalBiographies(body.replace("Democrat, of Brattleboro; VT;", "Democrat, of Brattleboro; not a state;")).length, 1);
 });
 
 test("explicit identity reviews bind source, exact candidate name, office and directory identity", () => {
 	const body = header + biography("CHRISTOPHER A. COONS", "DE");
-	const source = candidateSnapshot("DE", [candidate({ name: "Chris Coons", scope: "statewide", office: "U.S. Senator", district: "" })]);
+	const source = candidateSnapshot("DE", [
+		candidate({
+			name: "Chris Coons",
+			scope: "statewide",
+			office: "U.S. Senator",
+			district: ""
+		})
+	]);
 	const output = prepare(body, [source])[0]!;
 	assert.equal(output.snapshot.records[0]!.name, "Chris Coons");
 	assert.equal(output.identities[0]!.identityReviewUrl, "https://www.coons.senate.gov/meet-chris/");
 	assert.equal(output.identities[0]!.directoryName, "CHRISTOPHER A. COONS");
-	assert.equal(prepare(body, [candidateSnapshot("DE", [candidate({ name: "Christopher Coons", scope: "statewide", office: "U.S. Senator" })])]).length, 0);
-	assert.equal(prepare(body, [candidateSnapshot("DE", [candidate({ name: "Chris Coons", scope: "statewide", office: "Governor" })])]).length, 0);
-	const unrelated = { ...source, source: { ...source.source, id: "unreviewed-source" } };
+	assert.equal(prepare(body, [
+		candidateSnapshot("DE", [
+			candidate({ name: "Christopher Coons", scope: "statewide", office: "U.S. Senator" })
+		])
+	]).length, 0);
+	assert.equal(prepare(body, [
+		candidateSnapshot("DE", [
+			candidate({ name: "Chris Coons", scope: "statewide", office: "Governor" })
+		])
+	]).length, 0);
+	const unrelated = {
+		...source,
+		source: { ...source.source, id: "unreviewed-source" }
+	};
 	assert.equal(prepare(body, [unrelated]).length, 0);
 	assert.equal(source.records[0]!.name, "Chris Coons");
 });
 
 test("reviewed at-large House references do not alter official scopes or infer other districts", () => {
-	for (const [state, name, office] of [["ND", "JULIE FEDORCHAK", "Representative in Congress"], ["DE", "SARAH McBRIDE", "Representative in Congress"], ["VT", "BECCA BALINT", "REPRESENTATIVE TO CONGRESS"]]) {
+	for (const [state, name, office] of [
+		["ND", "JULIE FEDORCHAK", "Representative in Congress"],
+		["DE", "SARAH McBRIDE", "Representative in Congress"],
+		["VT", "BECCA BALINT", "REPRESENTATIVE TO CONGRESS"]
+	]) {
 		const body = header + biography(name, state);
-		const snapshot = candidateSnapshot(state, [candidate({ name, office, scope: "statewide", district: "" })]);
+		const snapshot = candidateSnapshot(state, [
+			candidate({
+				name,
+				office,
+				scope: "statewide",
+				district: ""
+			})
+		]);
 		const original = JSON.stringify(snapshot);
 		const output = prepare(body, [snapshot])[0]!.snapshot.records[0]!;
 		assert.equal(output.scope, "congressional");
 		assert.equal(output.office, "U.S. Representative");
 		assert.equal(output.jurisdiction, "At-large");
 		assert.equal(JSON.stringify(snapshot), original);
-		assert.equal(prepare(body, [{ ...snapshot, records: [{ ...snapshot.records[0]!, district: "7" }] }]).length, 0);
-		assert.equal(prepare(body, [{ ...snapshot, source: { ...snapshot.source, id: "unreviewed-source" } }]).length, 0);
+		assert.equal(prepare(body, [
+			{
+				...snapshot,
+				records: [
+					{ ...snapshot.records[0]!, district: "7" }
+				]
+			}
+		]).length, 0);
+		assert.equal(prepare(body, [
+			{
+				...snapshot,
+				source: { ...snapshot.source, id: "unreviewed-source" }
+			}
+		]).length, 0);
 	}
 });
 
 test("new source holds omit disputed degrees and ambiguous election or service dates", () => {
 	const body = header + biography("BECCA BALINT", "VT", "A.B., Example University, 1990; Ed.M., Harvard University, 1994") + biography("JULIE FEDORCHAK", "ND", "B.A., Example University", "communications director, Governor Ed Schaefer, 1995-2000; president, Liffrig Communications, Inc., 2000-10; North Dakota Public Service Commissioner, 2014, 2016, 2022");
-	const outputs = prepare(body, [candidateSnapshot("VT", [candidate({ name: "Becca Balint" })]), candidateSnapshot("ND", [candidate({ name: "Julie Fedorchak" })])]);
+	const outputs = prepare(body, [
+		candidateSnapshot("VT", [
+			candidate({ name: "Becca Balint" })
+		]),
+		candidateSnapshot("ND", [
+			candidate({ name: "Julie Fedorchak" })
+		])
+	]);
 	assert.equal(outputs.length, 2);
 	assert.ok(outputs.find(output => output.source.stateCode === "VT")!.snapshot.records[0]!.facts.every(fact => !fact.startsWith("Education:")));
 	assert.deepEqual(outputs.find(output => output.source.stateCode === "ND")!.snapshot.records[0]!.facts[1], "Professional background: president, Liffrig Communications, Inc., 2000-10.");
-	const california = prepare(header + biography("MARK DeSAULNIER", "CA", "B.A., Example University", "member, California Area Resources Board, 1997-2006; member, California State Senate, 2008-15"), [candidateSnapshot("CA", [candidate({ name: "Mark DeSaulnier" })])])[0]!;
+	const california = prepare(header + biography("MARK DeSAULNIER", "CA", "B.A., Example University", "member, California Area Resources Board, 1997-2006; member, California State Senate, 2008-15"), [
+		candidateSnapshot("CA", [
+			candidate({ name: "Mark DeSaulnier" })
+		])
+	])[0]!;
 	assert.deepEqual(california.snapshot.records[0]!.facts[1], "Professional background: member, California State Senate.");
 });
 
@@ -178,20 +341,62 @@ test("compiled-compatible preparation stages validated files without import, net
 	const directory = await mkdtemp(join(tmpdir(), "congressional-preparation-"));
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	const source = configuredStateBallotSources.find(item => item.stateCode === "CA")!;
-	const records = [candidate()];
-	const documents = source.documentUrls!.map((url, index) => ({ url, retrievedAt: capturedAt, sha256: hash(url), includedRecordCount: index === 0 ? 1 : 0 }));
-	const candidates = { schemaVersion: 1, stateCode: "CA", sourceId: source.id, electionDate: source.electionDate, sourceUrl: source.pageUrl, retrievalPolicy: "manual-snapshot", retrievedAt: capturedAt, sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), recordCount: 1, records, documents };
+	const records = [
+		candidate()
+	];
+	const documents = source.documentUrls!.map((url, index) => ({
+		url,
+		retrievedAt: capturedAt,
+		sha256: hash(url),
+		includedRecordCount: index === 0
+			? 1
+			: 0
+	}));
+	const candidates = {
+		schemaVersion: 1,
+		stateCode: "CA",
+		sourceId: source.id,
+		electionDate: source.electionDate,
+		sourceUrl: source.pageUrl,
+		retrievalPolicy: "manual-snapshot",
+		retrievedAt: capturedAt,
+		sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+		recordCount: 1,
+		records,
+		documents
+	};
 	const body = header + biography();
 	const input = join(directory, "directory.txt");
 	const candidateFile = join(directory, "candidates.json");
 	const planFile = join(directory, "plan.json");
 	const outputDirectory = join(directory, "prepared");
-	const plan = { schemaVersion: 1, type: "congressional-biography-preparation", sourceText: { path: input, url: congressionalDirectory.url, capturedAt, sha256: hash(body) }, candidateFiles: [candidateFile], referenceFiles: [], outputDirectory };
+	const plan = {
+		schemaVersion: 1,
+		type: "congressional-biography-preparation",
+		sourceText: {
+			path: input,
+			url: congressionalDirectory.url,
+			capturedAt,
+			sha256: hash(body)
+		},
+		candidateFiles: [candidateFile],
+		referenceFiles: [],
+		outputDirectory
+	};
 	await writeFile(input, body);
 	await writeFile(candidateFile, JSON.stringify(candidates));
 	await writeFile(planFile, JSON.stringify(plan));
 	const script = fileURLToPath(new URL("../src/manage-election-references.ts", import.meta.url));
-	const command = () => spawnSync(process.execPath, ["--import", import.meta.resolve("tsx"), script, "prepare-congressional", planFile], { env: { PATH: process.env.PATH, HOME: process.env.HOME }, encoding: "utf8" });
+	const command = () => spawnSync(process.execPath, [
+		"--import",
+		import.meta.resolve("tsx"),
+		script,
+		"prepare-congressional",
+		planFile
+	], {
+		env: { PATH: process.env.PATH, HOME: process.env.HOME },
+		encoding: "utf8"
+	});
 	const result = command();
 	assert.equal(result.status, 0, result.stderr);
 	assert.equal(JSON.parse(result.stdout).profiles, 1);
@@ -201,10 +406,16 @@ test("compiled-compatible preparation stages validated files without import, net
 	const original = await readFile(outputFile, "utf8");
 	assert.notEqual(command().status, 0);
 	assert.equal(await readFile(outputFile, "utf8"), original);
-	await writeFile(planFile, JSON.stringify({ ...plan, sourceText: { ...plan.sourceText, url: "https://example.invalid/private" } }));
+	await writeFile(planFile, JSON.stringify({
+		...plan,
+		sourceText: { ...plan.sourceText, url: "https://example.invalid/private" }
+	}));
 	assert.notEqual(command().status, 0);
 	await writeFile(candidateFile, JSON.stringify({ ...candidates, retrievalPolicy: "unreviewed" }));
-	await writeFile(planFile, JSON.stringify({ ...plan, outputDirectory: join(directory, "invalid-policy") }));
+	await writeFile(planFile, JSON.stringify({
+		...plan,
+		outputDirectory: join(directory, "invalid-policy")
+	}));
 	const invalidPolicy = command();
 	assert.notEqual(invalidPolicy.status, 0);
 	assert.match(invalidPolicy.stderr, /retrieval policy/u);

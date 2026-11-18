@@ -77,7 +77,10 @@ async function rollback(history: AdminContentHistoryItem) {
 		feedbackMessage.value = "Content record rolled back.";
 		feedbackTone.value = "success";
 		confirmRollbackId.value = null;
-		await Promise.all([refreshContent(), refreshHistory()]);
+		await Promise.all([
+			refreshContent(),
+			refreshHistory()
+		]);
 	}
 	catch (error) {
 		feedbackMessage.value = error instanceof FetchError
@@ -94,7 +97,9 @@ usePageSeo({
 	description: "Internal Ballot Clarity content history and rollback controls.",
 	path: `/admin/content/${contentId.value}`,
 	robots: "noindex,nofollow",
-	title: item.value ? `${item.value.title} history` : "Content history"
+	title: item.value
+		? `${item.value.title} history`
+		: "Content history"
 });
 </script>
 

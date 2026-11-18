@@ -33,7 +33,15 @@ test("future officer changes and explicit vacancies need no election-year or per
 
 test("ambiguous roles, changed policy inventories and off-host or credentialed links require review", () => {
 	const source = exampleCountyOfficePages()[0]!;
-	for (const body of [source.page.replace("</main>", `${source.page.match(/<div class="bio-card">.+<\/div>/u)![0]}</main>`), source.page.replace("<div class=\"bio-card__position\">Sheriff</div>", "<div class=\"bio-card__position\">Former Sheriff</div>"), source.page.replace(source.profileUrl, "https://example.org/person"), source.page.replace(source.profileUrl, `${source.profileUrl}?token=private`), source.page.replace("/-/media/Departments/sheriff/portrait.png", "https://example.org/image.png"), source.page.replace("Privacy Statement</a>", "Privacy Statement</a><a href='/new-terms'>Terms of Use</a>"), source.page.replace("Sheriff Avery First", "=FORMULA()")]) assert.throws(() => parseFultonCountyOffice(body, source.definition));
+	for (const body of [
+		source.page.replace("</main>", `${source.page.match(/<div class="bio-card">.+<\/div>/u)![0]}</main>`),
+		source.page.replace("<div class=\"bio-card__position\">Sheriff</div>", "<div class=\"bio-card__position\">Former Sheriff</div>"),
+		source.page.replace(source.profileUrl, "https://example.org/person"),
+		source.page.replace(source.profileUrl, `${source.profileUrl}?token=private`),
+		source.page.replace("/-/media/Departments/sheriff/portrait.png", "https://example.org/image.png"),
+		source.page.replace("Privacy Statement</a>", "Privacy Statement</a><a href='/new-terms'>Terms of Use</a>"),
+		source.page.replace("Sheriff Avery First", "=FORMULA()")
+	]) assert.throws(() => parseFultonCountyOffice(body, source.definition));
 });
 
 test("county-office snapshots reject changed roles, unverified extra fields, clocks and provenance", () => {
@@ -76,10 +84,14 @@ test("fresh imports make no publisher requests or successful-clock changes", asy
 		await importFultonCountyOfficeholders(directory, exampleCountyOfficeholders(), countyOfficeTestTime);
 		const before = await readFile(join(directory, "fulton-county-offices.json"), "utf8");
 		let requests = 0;
-		const result = await collectFultonCountyOfficeholders({ directory, now: () => countyOfficeTestTime + 1000, request: async () => {
-			requests++;
-			throw new Error("No publisher request expected");
-		} });
+		const result = await collectFultonCountyOfficeholders({
+			directory,
+			now: () => countyOfficeTestTime + 1000,
+			request: async () => {
+				requests++;
+				throw new Error("No publisher request expected");
+			}
+		});
 		assert.equal(result.collected, false);
 		assert.equal(requests, 0);
 		assert.equal(await readFile(join(directory, "fulton-county-offices.json"), "utf8"), before);
@@ -94,10 +106,14 @@ test("failed source review preserves accepted data and import clocks, with bound
 		const before = await readFile(join(directory, "fulton-county-offices.json"), "utf8");
 		const now = countyOfficeTestTime + 7 * 3600000;
 		let requests = 0;
-		const options = { directory, now: () => now, request: async () => {
-			requests++;
-			return "Changed robots policy";
-		} };
+		const options = {
+			directory,
+			now: () => now,
+			request: async () => {
+				requests++;
+				return "Changed robots policy";
+			}
+		};
 		await assert.rejects(collectFultonCountyOfficeholders(options), /policy requires review/u);
 		assert.equal(requests, 1);
 		await assert.rejects(collectFultonCountyOfficeholders(options), /next permitted retry/u);

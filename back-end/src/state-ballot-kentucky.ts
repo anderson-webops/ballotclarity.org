@@ -21,7 +21,12 @@ const courtOffice = (office: string) => /\b(?:Judge|Justice)\b|^Commonwealth's A
 const measureOffice = (office: string) => /^Constitutional Amendment \d+$/iu.test(office);
 type Kind = "core" | "courts";
 type RequestText = (url: string, options: { allowedHosts: string[]; maxBytes: number; maxRedirects: number; timeoutMs: number; postBody?: string }) => Promise<string>;
-const options = { allowedHosts: ["web.sos.ky.gov", "elect.ky.gov"], maxBytes: 2 * 1024 * 1024, maxRedirects: 0, timeoutMs: 12000 };
+const options = {
+	allowedHosts: ["web.sos.ky.gov", "elect.ky.gov"],
+	maxBytes: 2 * 1024 * 1024,
+	maxRedirects: 0,
+	timeoutMs: 12000
+};
 
 export function kentuckyCandidatePostBody(electionId: string) {
 	if (!/^[1-9]\d{0,8}$/u.test(electionId)) throw new Error("The Kentucky election control is invalid.");
@@ -29,12 +34,26 @@ export function kentuckyCandidatePostBody(electionId: string) {
 }
 
 export function kentuckySourceElectionId(source: StateBallotSource) {
-	const kind = source.format === "kentucky-html" ? "core" : "courts";
+	const kind = source.format === "kentucky-html"
+		? "core"
+		: "courts";
 	const current = source.electionDate === "2026-11-03";
-	const expected = current ? kind === "core" ? "ky-sos-2026" : "ky-courts-2026" : `ky-general-${kind}-${source.electionDate}`;
+	const expected = current
+		? kind === "core"
+			? "ky-sos-2026"
+			: "ky-courts-2026"
+		: `ky-general-${kind}-${source.electionDate}`;
 	const fields = new URLSearchParams(source.postBody);
-	const electionId = current ? kentuckyOriginalElectionId : fields.get(selection) ?? "";
-	if (source.stateCode !== "KY" || !["kentucky-html", "kentucky-courts-html"].includes(source.format) || source.id !== expected || source.retrievalPolicy || source.url !== kentuckyDiscoveryUrl || source.pageUrl !== kentuckyDiscoveryUrl || source.documentLinks?.length || source.delimiter || !/^20\d{2}-11-0[2-8]$/u.test(source.electionDate) || new Date(source.electionDate).getUTCDay() !== 2 || source.electionDate < "2026-11-03" || (current ? source.postBody !== undefined : source.postBody !== kentuckyCandidatePostBody(electionId)) || JSON.stringify(source.documentUrls) !== JSON.stringify(current && kind === "core" ? originalDocuments : undefined)) throw new Error("The Kentucky source does not retain its approved general-election identity.");
+	const electionId = current
+		? kentuckyOriginalElectionId
+		: fields.get(selection) ?? "";
+	if (source.stateCode !== "KY" || !["kentucky-html", "kentucky-courts-html"].includes(source.format) || source.id !== expected || source.retrievalPolicy || source.url !== kentuckyDiscoveryUrl || source.pageUrl !== kentuckyDiscoveryUrl || source.documentLinks?.length || source.delimiter || !/^20\d{2}-11-0[2-8]$/u.test(source.electionDate) || new Date(source.electionDate).getUTCDay() !== 2 || source.electionDate < "2026-11-03" || (current
+		? source.postBody !== undefined
+		: source.postBody !== kentuckyCandidatePostBody(electionId)) || JSON.stringify(source.documentUrls) !== JSON.stringify(current && kind === "core"
+		? originalDocuments
+		: undefined)) {
+		throw new Error("The Kentucky source does not retain its approved general-election identity.");
+	}
 	return electionId;
 }
 
@@ -47,11 +66,22 @@ function readPortal(body: string, url = kentuckyDiscoveryUrl) {
 	const elections = descendants(selects[0]!, node => node.nodeName === "option");
 	const chosen = elections.filter(node => node.attrs?.some(item => item.name === "selected"));
 	const title = descendants(document, node => node.nodeName === "title");
-	const expectedTitle = url === `${kentuckyDiscoveryUrl}Default.aspx?withdrawn=1` ? "Election Candidate Filings - Withdrawn/Deceased/Disqualified" : `Election: ${chosen[0] ? text(chosen[0]) : ""}`;
+	const expectedTitle = url === `${kentuckyDiscoveryUrl}Default.aspx?withdrawn=1`
+		? "Election Candidate Filings - Withdrawn/Deceased/Disqualified"
+		: `Election: ${chosen[0]
+			? text(chosen[0])
+			: ""}`;
 	if (!elections.length || elections.length > 100 || new Set(elections.map(node => attribute(node, "value"))).size !== elections.length || elections.some(node => !/^[1-9]\d{0,8}$/u.test(attribute(node, "value"))) || chosen.length !== 1 || title.length !== 1 || text(title[0]!) !== expectedTitle) throw new Error("The Kentucky selected election is missing or inconsistent.");
 	const general = elections.flatMap((node) => {
 		const label = /^(20\d{2}) General Election$/u.exec(text(node));
-		return label && label[1]! >= "2026" ? [{ year: label[1]!, electionId: attribute(node, "value") }] : [];
+		return label && label[1]! >= "2026"
+			? [
+					{
+						year: label[1]!,
+						electionId: attribute(node, "value")
+					}
+				]
+			: [];
 	});
 	if (new Set(general.map(item => item.year)).size !== general.length) throw new Error("The Kentucky general-election year controls are ambiguous.");
 	const controls = descendants(forms[0]!, node => ["input", "select"].includes(node.nodeName));
@@ -70,7 +100,12 @@ function readPortal(body: string, url = kentuckyDiscoveryUrl) {
 		const selected = entries.filter(node => node.attrs?.some(item => item.name === "selected"));
 		if (selected.length > 1 || !entries.length || attribute(selected[0] ?? entries[0]!, "value") !== "") throw new Error("The Kentucky candidate view is party-filtered.");
 	}
-	return { document, general, selectedId: attribute(chosen[0]!, "value"), selectedLabel: text(chosen[0]!) };
+	return {
+		document,
+		general,
+		selectedId: attribute(chosen[0]!, "value"),
+		selectedLabel: text(chosen[0]!)
+	};
 }
 
 export function readKentuckyGeneralDates(body: string) {
@@ -80,9 +115,13 @@ export function readKentuckyGeneralDates(body: string) {
 		const label = text(node);
 		const date = /^November (\d{1,2}), (20\d{2}) [-\u2013\u2014] General Election Day$/u.exec(label);
 		if (!date && label.includes("General Election Day")) throw new Error("The Kentucky general-election date label is unfamiliar.");
-		return date ? [`${date[2]}-11-${date[1]!.padStart(2, "0")}`] : [];
+		return date
+			? [`${date[2]}-11-${date[1]!.padStart(2, "0")}`]
+			: [];
 	});
-	const dates = [...new Set(candidates)];
+	const dates = [
+		...new Set(candidates)
+	];
 	if (!dates.length || dates.length > 25 || new Set(dates.map(date => date.slice(0, 4))).size !== dates.length || dates.some(date => !/^20\d{2}-11-0[2-8]$/u.test(date) || date < "2026-11-03" || new Date(date).getUTCDay() !== 2 || !text(document).includes(`${date.slice(0, 4)} General Election Dates`))) throw new Error("The Kentucky published general-election date is missing or contradictory.");
 	return dates.sort();
 }
@@ -106,7 +145,9 @@ export function buildKentuckyElectionForm(body: string, url: string, electionId:
 	for (const select of descendants(portal.document, node => node.nodeName === "select")) {
 		const name = attribute(select, "name");
 		if (![selection, "ctl00$MainContent$ddlParty"].includes(name)) throw new Error("The Kentucky candidate form contains an unfamiliar filter.");
-		fields.set(name, name === selection ? electionId : "");
+		fields.set(name, name === selection
+			? electionId
+			: "");
 	}
 	if (!fields.get("__VIEWSTATE") || !fields.get("__EVENTVALIDATION")) throw new Error("The Kentucky public form state is incomplete.");
 	fields.set("__EVENTTARGET", selection);
@@ -118,7 +159,12 @@ export function buildKentuckyElectionForm(body: string, url: string, electionId:
 
 async function selectedPage(request: RequestText, url: string, body: string, electionId: string, year: string) {
 	const initial = readPortal(body, url);
-	const selected = initial.selectedId === electionId ? body : await request(url, { ...options, postBody: buildKentuckyElectionForm(body, url, electionId) });
+	const selected = initial.selectedId === electionId
+		? body
+		: await request(url, {
+				...options,
+				postBody: buildKentuckyElectionForm(body, url, electionId)
+			});
 	const portal = readPortal(selected, url);
 	if (portal.selectedId !== electionId || portal.selectedLabel !== `${year} General Election`) throw new Error("The Kentucky public response did not apply the selected general election.");
 	return selected;
@@ -128,8 +174,15 @@ interface OfficeGroup { url: string; label: string; count: number; kind: Kind }
 
 function officeHeading(value: string) {
 	const suffix = /\((\d{1,5})\)$/u.exec(value);
-	const label = suffix ? value.slice(0, suffix.index).trim() : "";
-	return suffix && label ? { label, count: Number(suffix[1]) } : null;
+	const label = suffix
+		? value.slice(0, suffix.index).trim()
+		: "";
+	return suffix && label
+		? {
+				label,
+				count: Number(suffix[1])
+			}
+		: null;
 }
 
 function directory(body: string) {
@@ -151,9 +204,16 @@ function directory(body: string) {
 			if (!/^\?id=[1-9]\d{0,8}$/u.test(url.search)) throw new Error("The Kentucky measure directory control has changed.");
 		}
 		else {
-			const kind = courtOffice(name) ? "courts" : "core";
+			const kind = courtOffice(name)
+				? "courts"
+				: "core";
 			if (!/^\?id=[1-9]\d{0,8}$/u.test(url.search) || groups.some(group => group.url === url.href || group.label === name)) throw new Error("The Kentucky office directory is unfamiliar or duplicated.");
-			groups.push({ url: url.href, label: name, count, kind });
+			groups.push({
+				url: url.href,
+				label: name,
+				count,
+				kind
+			});
 		}
 	}
 	if (!withdrawn || groups.length > 30) throw new Error("The Kentucky office directory is incomplete or oversized.");
@@ -163,11 +223,23 @@ function directory(body: string) {
 export function readKentuckyElectionDiscovery(body: string) {
 	if (Buffer.byteLength(body) > 4 * 1024 * 1024) throw new Error("The Kentucky discovery capture exceeds its bounds.");
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "index", "calendar", "selections"]) || value.schemaVersion !== 1 || value.type !== "kentucky-election-discovery" || typeof value.index !== "string" || typeof value.calendar !== "string" || !Array.isArray(value.selections)) throw new Error("The Kentucky election discovery capture is invalid.");
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"index",
+		"calendar",
+		"selections"
+	]) || value.schemaVersion !== 1 || value.type !== "kentucky-election-discovery" || typeof value.index !== "string" || typeof value.calendar !== "string" || !Array.isArray(value.selections)) {
+		throw new Error("The Kentucky election discovery capture is invalid.");
+	}
 	const offered = readPortal(value.index).general;
 	const elections = readKentuckyGeneralDates(value.calendar).flatMap((electionDate) => {
 		const election = offered.find(item => item.year === electionDate.slice(0, 4));
-		return election ? [{ electionId: election.electionId, electionDate }] : [];
+		return election
+			? [
+					{ electionId: election.electionId, electionDate }
+				]
+			: [];
 	});
 	if (!elections.length || value.selections.length !== elections.length) throw new Error("The Kentucky calendar and candidate election do not agree.");
 	for (const [index, election] of elections.entries()) {
@@ -193,7 +265,13 @@ export async function fetchKentuckyCycleDiscovery(request: RequestText) {
 		selected = await selectedPage(request, kentuckyDiscoveryUrl, selected, election.electionId, election.year);
 		selections.push({ electionId: election.electionId, body: selected });
 	}
-	const body = JSON.stringify({ schemaVersion: 1, type: "kentucky-election-discovery", index, calendar, selections });
+	const body = JSON.stringify({
+		schemaVersion: 1,
+		type: "kentucky-election-discovery",
+		index,
+		calendar,
+		selections
+	});
 	readKentuckyElectionDiscovery(body);
 	return body;
 }
@@ -202,12 +280,20 @@ function captureContext(source: StateBallotSource, discovery: string) {
 	const electionId = kentuckySourceElectionId(source);
 	const election = readKentuckyElectionDiscovery(discovery).find(item => item.electionId === electionId && item.electionDate === source.electionDate);
 	if (!election) throw new Error("The Kentucky source is not the published general election.");
-	const kind: Kind = source.format === "kentucky-html" ? "core" : "courts";
+	const kind: Kind = source.format === "kentucky-html"
+		? "core"
+		: "courts";
 	const offered = directory(JSON.parse(discovery).selections.find((item: { electionId: string }) => item.electionId === electionId).body);
 	const groups = offered.groups.filter(group => group.kind === kind);
 	const urls = groups.map(group => group.url).concat(offered.withdrawn.url);
 	if (source.documentUrls && JSON.stringify(source.documentUrls) !== JSON.stringify(urls)) throw new Error("The Kentucky legacy candidate document set has changed.");
-	return { electionId, kind, groups, urls, reportedInactiveDirectoryTotal: offered.withdrawn.count };
+	return {
+		electionId,
+		kind,
+		groups,
+		urls,
+		reportedInactiveDirectoryTotal: offered.withdrawn.count
+	};
 }
 
 export async function fetchKentuckyCandidateCapture(source: StateBallotSource, request: RequestText, discovery?: string) {
@@ -221,7 +307,12 @@ export async function fetchKentuckyCandidateCapture(source: StateBallotSource, r
 		documents.push({ url, body });
 		if (Buffer.byteLength(JSON.stringify({ discovery: evidence, documents })) > 12 * 1024 * 1024) throw new Error("The combined Kentucky candidate pages exceed their bounds.");
 	}
-	return JSON.stringify({ schemaVersion: 1, type: "kentucky-candidate-export", discovery: evidence, documents });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "kentucky-candidate-export",
+		discovery: evidence,
+		documents
+	});
 }
 
 interface ParsedRow { values: StateCandidateValues; tableOffice: string; fullSeat: string }
@@ -229,7 +320,14 @@ interface ParsedRow { values: StateCandidateValues; tableOffice: string; fullSea
 export function parseKentuckyCandidateRecords(source: StateBallotSource, body: string, makeRecord: (source: StateBallotSource, values: StateCandidateValues) => StateCandidateRecord | null): StateCandidateRecord[] {
 	if (Buffer.byteLength(body) > 12 * 1024 * 1024) throw new Error("The Kentucky candidate capture exceeds its bounds.");
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "discovery", "documents"]) || value.schemaVersion !== 1 || value.type !== "kentucky-candidate-export" || typeof value.discovery !== "string" || !Array.isArray(value.documents)) throw new Error("The Kentucky candidate capture is invalid.");
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"discovery",
+		"documents"
+	]) || value.schemaVersion !== 1 || value.type !== "kentucky-candidate-export" || typeof value.discovery !== "string" || !Array.isArray(value.documents)) {
+		throw new Error("The Kentucky candidate capture is invalid.");
+	}
 	const context = captureContext(source, value.discovery);
 	if (JSON.stringify(value.documents.map(item => item?.url)) !== JSON.stringify(context.urls)) throw new Error("The Kentucky candidate pages are missing, reordered or substituted.");
 	const rows: ParsedRow[] = [];
@@ -251,11 +349,24 @@ export function parseKentuckyCandidateRecords(source: StateBallotSource, body: s
 			const tableRows = stateHtmlTableRows(table);
 			const headers = cells(tableRows.shift()!).map(text);
 			const nameColumn = globalInactive ? "Name" : "Name / Running Mate";
-			const expectedHeaders = [nameColumn, "POBox Address / Email", "Office", "District/Division", "Party", ...globalInactive ? [] : ["Date Filed"]];
+			const expectedHeaders = [
+				nameColumn,
+				"POBox Address / Email",
+				"Office",
+				"District/Division",
+				"Party",
+				...globalInactive
+					? []
+					: ["Date Filed"]
+			];
 			if (headers.join("|") !== expectedHeaders.join("|")) throw new Error("The Kentucky candidate columns have changed.");
 			const details = descendants(portal.document, node => node.nodeName === "details" && descendants(node, child => child === table).length > 0);
-			const summaries = details.length === 1 ? descendants(details[0]!, node => node.nodeName === "summary") : [];
-			const summary = summaries.length === 1 ? officeHeading(text(summaries[0]!)) : null;
+			const summaries = details.length === 1
+				? descendants(details[0]!, node => node.nodeName === "summary")
+				: [];
+			const summary = summaries.length === 1
+				? officeHeading(text(summaries[0]!))
+				: null;
 			if (!summary || summary.count !== tableRows.length) throw new Error("The Kentucky candidate section is incomplete or changed.");
 			const inactive = globalInactive || inactiveTables.has(table);
 			if (!inactive) activeCount += tableRows.length;
@@ -269,7 +380,20 @@ export function parseKentuckyCandidateRecords(source: StateBallotSource, body: s
 				if (!name || !tableOffice || tableOffice.length > 250 || measureOffice(tableOffice) || ["FOR", "AGAINST", "YES", "NO"].includes(name.toUpperCase()) || (group && tableOffice !== group.label && !(group.label === "Circuit Judge Family Court" && tableOffice === "Circuit Judge") && !(context.kind === "core" && /^Governor\b/u.test(group.label) && tableOffice === "Governor"))) throw new Error("The Kentucky candidate row does not match its published office.");
 				if (globalInactive && context.kind === "courts" && !courtOffice(tableOffice)) continue;
 				if (globalInactive && context.kind === "core" && source.id !== "ky-sos-2026" && courtOffice(tableOffice)) continue;
-				const values: StateCandidateValues = { name, office: context.kind === "courts" && group ? group.label : tableOffice, district: fullSeat.match(/\d+/u)?.[0], party, status: inactive ? "inactive" : "listed", ...(context.kind === "courts" ? { scope: "local" as const, sourceDistrictLabel: fullSeat } : source.id !== "ky-sos-2026" ? { sourceDistrictLabel: fullSeat } : {}) };
+				const values: StateCandidateValues = {
+					name,
+					office: context.kind === "courts" && group
+						? group.label
+						: tableOffice,
+					district: fullSeat.match(/\d+/u)?.[0],
+					party,
+					status: inactive ? "inactive" : "listed",
+					...(context.kind === "courts"
+						? { scope: "local" as const, sourceDistrictLabel: fullSeat }
+						: source.id !== "ky-sos-2026"
+							? { sourceDistrictLabel: fullSeat }
+							: {})
+				};
 				if (globalInactive && context.kind === "courts") {
 					const matches = rows.filter(row => row.tableOffice === tableOffice && row.fullSeat === fullSeat && row.values.name === name && row.values.party === party);
 					if (new Set(matches.map(row => row.values.office)).size > 1) throw new Error("The Kentucky inactive filing cannot be uniquely reconciled with its court section.");

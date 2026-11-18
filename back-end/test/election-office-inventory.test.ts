@@ -18,15 +18,50 @@ const now = Date.parse("2026-10-26T03:00:00.000Z");
 const hash = (body: string) => createHash("sha256").update(body).digest("hex");
 const read = (body = fixture) => parseHennepinOfficeInventory(body, retrievedAt, now);
 function capture(body = fixture, clock = retrievedAt) {
-	return JSON.stringify({ schemaVersion: 1, type: "hennepin-office-inventory-capture", policies: hennepinOfficePolicyReceipts, page: { url: hennepinOfficeSource.url, body, sha256: hash(body), retrievedAt: clock } });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "hennepin-office-inventory-capture",
+		policies: hennepinOfficePolicyReceipts,
+		page: {
+			url: hennepinOfficeSource.url,
+			body,
+			sha256: hash(body),
+			retrievedAt: clock
+		}
+	});
 }
 function snapshot(): StateBallotSnapshot {
 	const source = configuredStateBallotSources.find(source => source.id === "mn-independence-2026")!;
-	return { source, retrievedAt, sha256: "b".repeat(64), records: [
-		createStateCandidateRecord(source, { name: "Example Senator", office: "United States Senator", scope: "statewide", status: "listed", party: "" })!,
-		createStateCandidateRecord(source, { name: "Example Representative", office: "United States Representative", scope: "congressional", district: "3", status: "listed", party: "" })!,
-		createStateCandidateRecord(source, { name: "Example House Member", office: "State Representative", scope: "state-house", district: "37A", status: "listed", party: "" })!,
-	] };
+	return {
+		source,
+		retrievedAt,
+		sha256: "b".repeat(64),
+		records: [
+			createStateCandidateRecord(source, {
+				name: "Example Senator",
+				office: "United States Senator",
+				scope: "statewide",
+				status: "listed",
+				party: ""
+			})!,
+			createStateCandidateRecord(source, {
+				name: "Example Representative",
+				office: "United States Representative",
+				scope: "congressional",
+				district: "3",
+				status: "listed",
+				party: ""
+			})!,
+			createStateCandidateRecord(source, {
+				name: "Example House Member",
+				office: "State Representative",
+				scope: "state-house",
+				district: "37A",
+				status: "listed",
+				party: ""
+			})!,
+		]
+	};
 }
 
 test("Hennepin inventory retains 91 printed office rows, not 91 candidates or individual contests", () => {
@@ -35,7 +70,16 @@ test("Hennepin inventory retains 91 printed office rows, not 91 candidates or in
 	assert.equal(inventory.questionReferences.length, 1);
 	assert.equal(inventory.electionDate, "2026-11-03");
 	assert.equal(inventory.publicationDate, "2026-09-02");
-	assert.deepEqual(Object.fromEntries([...new Set(inventory.rows.map(row => row.group))].map(group => [group, inventory.rows.filter(row => row.group === group).length])), { "Federal Offices": 2, "State Offices": 6, "County Offices": 4, "City Offices": 38, "School District Offices": 13, "Judicial Offices": 28 });
+	assert.deepEqual(Object.fromEntries([
+		...new Set(inventory.rows.map(row => row.group))
+	].map(group => [group, inventory.rows.filter(row => row.group === group).length])), {
+		"Federal Offices": 2,
+		"State Offices": 6,
+		"County Offices": 4,
+		"City Offices": 38,
+		"School District Offices": 13,
+		"Judicial Offices": 28
+	});
 	assert.equal(inventory.rows.find(row => row.area === "ISD 281 Robbinsdale")?.office, "4 School Board members, 3 ballot questions");
 	assert.ok(inventory.rows.some(row => row.area === "Loretto"));
 	assert.ok(inventory.rows.some(row => row.area === "Champlin" && /special/iu.test(row.office)));
@@ -46,7 +90,9 @@ test("Hennepin inventory retains 91 printed office rows, not 91 candidates or in
 
 test("Hennepin comparisons use exact office and lettered district keys with no local or judicial guesses", () => {
 	const inventory = read();
-	const audit = auditOfficeInventory(inventory, [snapshot()]);
+	const audit = auditOfficeInventory(inventory, [
+		snapshot()
+	]);
 	assert.equal(audit.comparableScheduledOffices, 59);
 	assert.equal(audit.unassessedInventoryRows, 83);
 	assert.equal(audit.representedOffices, 3);
@@ -71,7 +117,10 @@ test("Missing or wrong-election inputs stay explicitly unassessed instead of rep
 	assert.equal(audit.status, "no-same-election-candidate-snapshot");
 	assert.equal(audit.notRepresentedOffices, 0);
 	assert.ok(audit.comparisons.every(row => row.status === "not-compared"));
-	assert.throws(() => auditOfficeInventory(inventory, [snapshot(), snapshot()]), /distinct/u);
+	assert.throws(() => auditOfficeInventory(inventory, [
+		snapshot(),
+		snapshot()
+	]), /distinct/u);
 	stale.source = { ...stale.source, stateCode: "WI" };
 	assert.throws(() => auditOfficeInventory(inventory, [stale]), /same state/u);
 });
@@ -81,7 +130,9 @@ test("A future publisher-printed general-election date is parsed without manufac
 	const inventory = parseHennepinOfficeInventory(body, "2028-10-20T12:00:00.000Z", Date.parse("2028-10-21T12:00:00.000Z"));
 	assert.equal(inventory.electionDate, "2028-11-07");
 	assert.equal(inventory.rows.length, 91);
-	assert.equal(auditOfficeInventory(inventory, [snapshot()]).status, "no-same-election-candidate-snapshot");
+	assert.equal(auditOfficeInventory(inventory, [
+		snapshot()
+	]).status, "no-same-election-candidate-snapshot");
 	assert.notEqual(inventory.rows[0]!.id, read().rows[0]!.id);
 });
 
@@ -129,24 +180,31 @@ test("Only the known copyright year token can change without a new legal-footer 
 
 test("A changed county access policy stops acquisition before the office publication is requested", async () => {
 	const requested: string[] = [];
-	await assert.rejects(collectHennepinOfficeCapture({ requestText: async (url, options) => {
-		requested.push(url);
-		assert.equal(options.maxRedirects, 0);
-		assert.equal(options.timeoutMs, 25000);
-		assert.deepEqual(options.allowedHosts, ["www.hennepincounty.gov"]);
-		return "User-agent: *\nDisallow: /\n";
-	}, wait: async () => {} }), /policy requires review/u);
+	await assert.rejects(collectHennepinOfficeCapture({
+		requestText: async (url, options) => {
+			requested.push(url);
+			assert.equal(options.maxRedirects, 0);
+			assert.equal(options.timeoutMs, 25000);
+			assert.deepEqual(options.allowedHosts, ["www.hennepincounty.gov"]);
+			return "User-agent: *\nDisallow: /\n";
+		},
+		wait: async () => {}
+	}), /policy requires review/u);
 	assert.deepEqual(requested, [hennepinOfficePolicies[0].url]);
 });
 
 test("External inventory state survives cold reads, preserves cached source clocks and keeps recoverable history", async () => {
 	const directory = await mkdtemp(join(tmpdir(), "ballot-offices-"));
 	try {
-		const initial = await persistOfficeInventory(directory, capture(), [snapshot()], now);
+		const initial = await persistOfficeInventory(directory, capture(), [
+			snapshot()
+		], now);
 		assert.equal(initial.inventoryChanged, true);
 		assert.equal((await readOfficeInventoryState(directory, now))!.audit.representedOffices, 3);
 		const later = now + 60000;
-		const repeated = await persistOfficeInventory(directory, capture(fixture, new Date(later).toISOString()), [snapshot()], later);
+		const repeated = await persistOfficeInventory(directory, capture(fixture, new Date(later).toISOString()), [
+			snapshot()
+		], later);
 		assert.equal(repeated.inventoryChanged, false);
 		assert.equal(repeated.auditChanged, false);
 		assert.equal(repeated.state.lastInventoryImportAt, initial.state.lastInventoryImportAt);
@@ -164,7 +222,9 @@ test("External inventory state survives cold reads, preserves cached source cloc
 		assert.equal(history.length, 1);
 		const previous = JSON.parse(await readFile(join(directory, hennepinOfficeSource.id, "history", history[0]!), "utf8"));
 		assert.deepEqual(previous, repeated.state);
-		await assert.rejects(persistOfficeInventory(directory, capture(fixture.replace("September 2,", "September 3,")), [snapshot()], later + 2), /older office publication/u);
+		await assert.rejects(persistOfficeInventory(directory, capture(fixture.replace("September 2,", "September 3,")), [
+			snapshot()
+		], later + 2), /older office publication/u);
 		assert.deepEqual(await readOfficeInventoryState(directory, later + 2), auditOnly.state);
 	}
 	finally { await rm(directory, { recursive: true, force: true }); }
@@ -173,7 +233,9 @@ test("External inventory state survives cold reads, preserves cached source cloc
 test("Corrupt, locked, symlinked and in-checkout inventory storage never replaces accepted evidence", async () => {
 	const directory = await mkdtemp(join(tmpdir(), "ballot-offices-"));
 	try {
-		const result = await persistOfficeInventory(directory, capture(), [snapshot()], now);
+		const result = await persistOfficeInventory(directory, capture(), [
+			snapshot()
+		], now);
 		const path = join(directory, hennepinOfficeSource.id, "current.json");
 		const original = await readFile(path, "utf8");
 		const corrupt = JSON.parse(original);

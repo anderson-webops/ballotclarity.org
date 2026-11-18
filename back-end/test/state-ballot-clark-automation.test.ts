@@ -26,10 +26,33 @@ const main = (body: string) => `<main>${body}</main><footer></footer>`;
 function discovery(date = source.electionDate, available = true) {
 	const year = date.slice(0, 4);
 	const pageUrl = `${clarkDiscoveryUrl}${date.slice(2, 4)}g-info`;
-	return JSON.stringify({ schemaVersion: 1, type: "clark-candidate-discovery", policies: clarkPolicyReceipts, index: main(`<h2>Current Interest</h2><p>Election Day is November ${Number(date.slice(-2))}, ${year}</p><a href="${pageUrl}">One-Stop Page for Information about the ${year} General Election</a>${available ? `<a href="${urls[1]}">All Contests and Candidates in the ${year} General Election</a>` : ""}`), page: { url: pageUrl, body: main(`<h2 id="general-election-information-index">${year} General Election Information Index</h2>${available ? `<a href="${urls[0]}">Contests/Candidates in the ${year} General Election</a>` : ""}`) } });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "clark-candidate-discovery",
+		policies: clarkPolicyReceipts,
+		index: main(`<h2>Current Interest</h2><p>Election Day is November ${Number(date.slice(-2))}, ${year}</p><a href="${pageUrl}">One-Stop Page for Information about the ${year} General Election</a>${available
+			? `<a href="${urls[1]}">All Contests and Candidates in the ${year} General Election</a>`
+			: ""}`),
+		page: {
+			url: pageUrl,
+			body: main(`<h2 id="general-election-information-index">${year} General Election Information Index</h2>${available
+				? `<a href="${urls[0]}">Contests/Candidates in the ${year} General Election</a>`
+				: ""}`)
+		}
+	});
 }
 function capture(entry = source, body = discovery(entry.electionDate)) {
-	return JSON.stringify({ schemaVersion: 1, type: "clark-candidate-capture", discovery: body, documents: urls.map((url, index) => ({ url, sha256: fixture[index]!.sha256, retrievedAt: `${entry.electionDate.slice(0, 4)}-10-25T23:00:00.000Z`, text: JSON.stringify(fixture[index]!.pages).replaceAll("2026", entry.electionDate.slice(0, 4)).replaceAll("November 3", `November ${Number(entry.electionDate.slice(-2))}`) })) });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "clark-candidate-capture",
+		discovery: body,
+		documents: urls.map((url, index) => ({
+			url,
+			sha256: fixture[index]!.sha256,
+			retrievedAt: `${entry.electionDate.slice(0, 4)}-10-25T23:00:00.000Z`,
+			text: JSON.stringify(fixture[index]!.pages).replaceAll("2026", entry.electionDate.slice(0, 4)).replaceAll("November 3", `November ${Number(entry.electionDate.slice(-2))}`)
+		}))
+	});
 }
 
 test("Clark County supports a synthetic future presidential layout while requiring both offered rosters", () => {
@@ -78,7 +101,13 @@ test("Clark County preserves every acknowledged candidate ID and field while ret
 });
 
 test("Clark County rejects incorrect dates, publication identities, policy changes and incomplete evidence", () => {
-	for (const changed of [discovery().replaceAll("November 3", "November 4"), discovery().replace("26g-info", "28g-info"), discovery().replace("https://www.clarkcountynv.gov/adobe", "https://example.org/adobe"), discovery().replace("Contests/Candidates", "Candidate data"), discovery().replace("<footer></footer>", "<footer>New terms</footer>")]) {
+	for (const changed of [
+		discovery().replaceAll("November 3", "November 4"),
+		discovery().replace("26g-info", "28g-info"),
+		discovery().replace("https://www.clarkcountynv.gov/adobe", "https://example.org/adobe"),
+		discovery().replace("Contests/Candidates", "Candidate data"),
+		discovery().replace("<footer></footer>", "<footer>New terms</footer>")
+	]) {
 		assert.throws(() => parseClarkCandidateCapture(source, capture(source, changed), createStateCandidateRecord, now), /Clark County/u);
 	}
 	for (const mutate of [
@@ -106,21 +135,35 @@ test("Clark County rejects incorrect dates, publication identities, policy chang
 test("Clark County uses paced bounded original-PDF acquisition and stops immediately on a changed policy", async () => {
 	const waits: number[] = [];
 	const requests: string[] = [];
-	const body = await fetchClarkCandidateCapture(source, { discovery: discovery(), now: () => now, wait: async (delay) => {
-		waits.push(delay);
-	}, requestDocument: async (url, options) => {
-		assert.deepEqual(options.allowedHosts, ["www.clarkcountynv.gov"]);
-		requests.push(url);
-		return { status: 200, body: Buffer.from(`%PDF-${requests.length}`), contentType: "application/pdf", etag: undefined };
-	}, extractor: async bytes => fixture[Number(bytes.toString().slice(-1)) - 1]!.pages });
+	const body = await fetchClarkCandidateCapture(source, {
+		discovery: discovery(),
+		now: () => now,
+		wait: async (delay) => {
+			waits.push(delay);
+		},
+		requestDocument: async (url, options) => {
+			assert.deepEqual(options.allowedHosts, ["www.clarkcountynv.gov"]);
+			requests.push(url);
+			return {
+				status: 200,
+				body: Buffer.from(`%PDF-${requests.length}`),
+				contentType: "application/pdf",
+				etag: undefined
+			};
+		},
+		extractor: async bytes => fixture[Number(bytes.toString().slice(-1)) - 1]!.pages
+	});
 	assert.equal(parseClarkCandidateCapture(source, body, createStateCandidateRecord, now).records.length, 254);
 	assert.deepEqual(requests, urls);
 	assert.deepEqual(waits, [11000, 11000]);
 	let policyRequests = 0;
-	await assert.rejects(fetchClarkCycleDiscovery({ requestText: async () => {
-		policyRequests++;
-		return "User-agent: *\nDisallow: /";
-	}, wait: async () => {} }), /policy/u);
+	await assert.rejects(fetchClarkCycleDiscovery({
+		requestText: async () => {
+			policyRequests++;
+			return "User-agent: *\nDisallow: /";
+		},
+		wait: async () => {}
+	}), /policy/u);
 	assert.equal(policyRequests, 1);
 });
 
@@ -128,11 +171,29 @@ test("Clark County migrates reviewed data durably, preserves its original envelo
 	const directory = await mkdtemp(join(tmpdir(), "ballot-clark-auto-"));
 	try {
 		const legacy = legacyReviewedStateBallotSource(source)!;
-		const documents = urls.map((url, index) => ({ url, sha256: fixture[index]!.sha256, retrievedAt: "2026-10-25T23:00:00.000Z", includedRecordCount: index ? 0 : previous.length }));
+		const documents = urls.map((url, index) => ({
+			url,
+			sha256: fixture[index]!.sha256,
+			retrievedAt: "2026-10-25T23:00:00.000Z",
+			includedRecordCount: index ? 0 : previous.length
+		}));
 		const { createHash } = await import("node:crypto");
 		const storage = createStateBallotStorage(directory);
-		await storage.write({ source: legacy, records: previous, documents, retrievedAt: documents[0]!.retrievedAt, sha256: createHash("sha256").update(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))).digest("hex") });
-		const options = { familyId: source.id, catalogPath: join(directory, "cycles.json"), dataDirectory: directory, now: () => now, fetchDiscovery: async () => discovery(), fetchCandidates: async () => capture() };
+		await storage.write({
+			source: legacy,
+			records: previous,
+			documents,
+			retrievedAt: documents[0]!.retrievedAt,
+			sha256: createHash("sha256").update(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))).digest("hex")
+		});
+		const options = {
+			familyId: source.id,
+			catalogPath: join(directory, "cycles.json"),
+			dataDirectory: directory,
+			now: () => now,
+			fetchDiscovery: async () => discovery(),
+			fetchCandidates: async () => capture()
+		};
 		const first = await syncStateBallotCycles(options);
 		assert.equal(first.results[0]!.status, "available");
 		assert.equal(first.results[0]!.imported, true);
@@ -140,18 +201,30 @@ test("Clark County migrates reviewed data durably, preserves its original envelo
 		assert.ok((await readdir(directory)).some(name => name.includes(".legacy-")));
 		const accepted = await storage.read(source);
 		assert.deepEqual(accepted!.records.map(record => record.id), previous.map(record => record.id));
-		const second = await syncStateBallotCycles({ ...options, now: () => now + 1000, fetchCandidates: async () => {
-			throw new Error("A cached import must not contact the publisher.");
-		} });
+		const second = await syncStateBallotCycles({
+			...options,
+			now: () => now + 1000,
+			fetchCandidates: async () => {
+				throw new Error("A cached import must not contact the publisher.");
+			}
+		});
 		assert.equal(second.results[0]!.status, "available");
 		assert.equal(second.results[0]!.imported, false);
 		assert.equal(second.results[0]!.retrievedAt, first.results[0]!.retrievedAt);
-		const offline = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => now + 2000, fetchText: async () => {
-			throw new Error("Persisted reads must not need converters or publisher access.");
-		} });
+		const offline = createStateBallotRepository({
+			sources: [source],
+			dataDirectory: directory,
+			now: () => now + 2000,
+			fetchText: async () => {
+				throw new Error("Persisted reads must not need converters or publisher access.");
+			}
+		});
 		assert.equal((await offline.getSnapshot("NV", source.id))!.records.length, 254);
 		const before = await readFile(join(directory, "cycles.json"));
-		await assert.rejects(syncStateBallotCycles({ ...options, fetchDiscovery: async () => discovery("2028-11-07") }), /unexpired/u);
+		await assert.rejects(syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => discovery("2028-11-07")
+		}), /unexpired/u);
 		assert.deepEqual(await readFile(join(directory, "cycles.json")), before);
 	}
 	finally {
@@ -165,10 +238,15 @@ test("Clark County public reads stay offline across stale imports, misses and re
 	const parsed = parseClarkCandidateCapture(source, capture(), createStateCandidateRecord, now, previous);
 	const storage = createStateBallotStorage(directory);
 	let requests = 0;
-	const options = { sources: [source], dataDirectory: directory, now: () => now + 2 * 86400000, fetchText: async () => {
-		requests++;
-		throw new Error("Public readers must remain offline.");
-	} };
+	const options = {
+		sources: [source],
+		dataDirectory: directory,
+		now: () => now + 2 * 86400000,
+		fetchText: async () => {
+			requests++;
+			throw new Error("Public readers must remain offline.");
+		}
+	};
 	const reader = createStateBallotRepository(options);
 	assert.equal(await reader.getSnapshot("NV"), null);
 	await storage.write({ source, ...parsed });
@@ -184,10 +262,16 @@ test("Clark County explicit collection still refreshes native imports without a 
 	const parsed = parseClarkCandidateCapture(source, capture(), createStateCandidateRecord, now, previous);
 	await storage.write({ source, ...parsed });
 	let requests = 0;
-	const collector = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => now + 2 * 86400000, refreshReviewedLegacy: true, fetchText: async () => {
-		requests++;
-		return capture();
-	} });
+	const collector = createStateBallotRepository({
+		sources: [source],
+		dataDirectory: directory,
+		now: () => now + 2 * 86400000,
+		refreshReviewedLegacy: true,
+		fetchText: async () => {
+			requests++;
+			return capture();
+		}
+	});
 	assert.deepEqual((await collector.getSnapshot("NV"))?.records, parsed.records);
 	assert.equal(requests, 1);
 	assert.deepEqual((await storage.read(source))?.records, JSON.parse(JSON.stringify(parsed.records)));
@@ -199,11 +283,22 @@ test("Clark County future publications wait without fabricating candidates and i
 		const clock = Date.parse("2028-10-26T00:00:00.000Z");
 		const body = discovery("2028-11-07", false);
 		const future = stateBallotCycleSources(discoverStateBallotElectionCycles(body, source.id, clock), clock)[0] as StateBallotSource;
-		const options = { familyId: source.id, catalogPath: join(directory, "cycles.json"), dataDirectory: directory, now: () => clock, fetchDiscovery: async () => body, fetchCandidates: async () => fetchClarkCandidateCapture(future, { discovery: body }) };
+		const options = {
+			familyId: source.id,
+			catalogPath: join(directory, "cycles.json"),
+			dataDirectory: directory,
+			now: () => clock,
+			fetchDiscovery: async () => body,
+			fetchCandidates: async () => fetchClarkCandidateCapture(future, { discovery: body })
+		};
 		const pending = await syncStateBallotCycles(options);
 		assert.equal(pending.results[0]!.status, "awaiting-records");
 		assert.equal(pending.results[0]!.records, 0);
-		const available = await syncStateBallotCycles({ ...options, fetchDiscovery: async () => discovery("2028-11-07"), fetchCandidates: async () => capture(future) });
+		const available = await syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => discovery("2028-11-07"),
+			fetchCandidates: async () => capture(future)
+		});
 		assert.equal(available.results[0]!.status, "available");
 		assert.equal(available.results[0]!.records, 254);
 	}

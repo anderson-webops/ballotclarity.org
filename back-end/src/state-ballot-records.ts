@@ -98,7 +98,9 @@ export interface StateCandidateRecord {
 }
 
 function clean(value: unknown) {
-	return typeof value === "string" ? value.normalize("NFKC").replace(/\s+/gu, " ").trim() : "";
+	return typeof value === "string"
+		? value.normalize("NFKC").replace(/\s+/gu, " ").trim()
+		: "";
 }
 
 export function normalizeStateDistrict(value: string) {
@@ -115,25 +117,44 @@ function statusFromText(value: string, party: string): StateCandidateStatus {
 	if (/filed|active|^ACT$/iu.test(value)) return "filed";
 	if (/write.?in|^WRI$/iu.test(`${value} ${party}`)) return "write-in";
 	if (/^qualif|^QUA$/iu.test(value)) return "qualified";
-	return !clean(value) || /^listed$/iu.test(value) ? "listed" : "unrecognized";
+	return !clean(value) || /^listed$/iu.test(value)
+		? "listed"
+		: "unrecognized";
 }
 
 export function classifyStateContest(office: string, district = ""): { scope: StateContestScope; district: string } {
 	const originalLabel = clean(office);
 	const prefix = originalLabel.match(/^(\d+)(?:st|nd|rd|th)\s+District\s+/iu);
-	const label = prefix ? originalLabel.slice(prefix[0].length) : originalLabel;
+	const label = prefix
+		? originalLabel.slice(prefix[0].length)
+		: originalLabel;
 	const number = district || prefix?.[1] || label.match(/(?:district|dist\.?|seat)\s*(?:[-:]\s*)?(\d+[A-Z]?)/iu)?.[1] || "";
 	if (/^(?:u\.?\s*s\.?|united states)\s+senat/iu.test(label))
 		return { scope: "statewide", district: "" };
-	if (/^(?:(?:u\.?\s*s\.?|united states)\s+(?:house|representative)|representative in congress|congressional)/iu.test(label))
-		return { scope: "congressional", district: normalizeStateDistrict(number || "0") };
-	if (/^(?:NC\s+)?(?:state\s+)?senat/iu.test(label))
-		return { scope: "state-senate", district: normalizeStateDistrict(number) };
-	if (/^(?:NC\s+)?(?:state\s+)?(?:house|representative|assembly|delegate)/iu.test(label))
-		return { scope: "state-house", district: normalizeStateDistrict(number) };
+	if (/^(?:(?:u\.?\s*s\.?|united states)\s+(?:house|representative)|representative in congress|congressional)/iu.test(label)) {
+		return {
+			scope: "congressional",
+			district: normalizeStateDistrict(number || "0")
+		};
+	}
+	if (/^(?:NC\s+)?(?:state\s+)?senat/iu.test(label)) {
+		return {
+			scope: "state-senate",
+			district: normalizeStateDistrict(number)
+		};
+	}
+	if (/^(?:NC\s+)?(?:state\s+)?(?:house|representative|assembly|delegate)/iu.test(label)) {
+		return {
+			scope: "state-house",
+			district: normalizeStateDistrict(number)
+		};
+	}
 	if (/^(?:governor|lieutenant governor|lt\.? governor|attorney general|secretary of state|comptroller|state auditor|auditor of accounts|state treasurer|treasurer|superintendent of public instruction|commissioner of (?:agriculture|insurance|labor)|supreme court|NC supreme court|NC court of appeals)/iu.test(label))
 		return { scope: "statewide", district: "" };
-	return { scope: "local", district: normalizeStateDistrict(number) };
+	return {
+		scope: "local",
+		district: normalizeStateDistrict(number)
+	};
 }
 
 function makeRecord(source: StateBallotSource, values: StateCandidateValues): StateCandidateRecord | null {
@@ -142,13 +163,29 @@ function makeRecord(source: StateBallotSource, values: StateCandidateValues): St
 	if (!name || !office || name.length > 250 || office.length > 300)
 		return null;
 	const party = clean(values.party);
-	const geography = values.scope ? { scope: values.scope, district: values.scope === "statewide" ? "" : normalizeStateDistrict(values.district ?? "") } : classifyStateContest(office, values.district);
+	const geography = values.scope
+		? {
+				scope: values.scope,
+				district: values.scope === "statewide"
+					? ""
+					: normalizeStateDistrict(values.district ?? "")
+			}
+		: classifyStateContest(office, values.district);
 	if (geography.scope === "congressional" && geography.district === "0" && ["AK", "DE", "ND", "SD", "VT", "WY"].includes(source.stateCode)) {
 		geography.scope = "statewide";
 		geography.district = "";
 	}
-	const jurisdiction = geography.scope === "local" || geography.scope === "state-board-of-education" || source.format === "virginia-local-html" ? clean(values.jurisdiction) || undefined : undefined;
-	const keyParts = [source.stateCode, source.electionDate, office.toLowerCase(), geography.district, name.toLowerCase(), party.toLowerCase()];
+	const jurisdiction = geography.scope === "local" || geography.scope === "state-board-of-education" || source.format === "virginia-local-html"
+		? clean(values.jurisdiction) || undefined
+		: undefined;
+	const keyParts = [
+		source.stateCode,
+		source.electionDate,
+		office.toLowerCase(),
+		geography.district,
+		name.toLowerCase(),
+		party.toLowerCase()
+	];
 	if (jurisdiction) keyParts.push(jurisdiction.toLowerCase());
 	if (source.format === "kentucky-courts-html") keyParts.push(clean(values.sourceDistrictLabel).toLowerCase());
 	if (source.stateCode === "KY" && source.id.startsWith("ky-general-core-") && geography.scope === "local") keyParts.push(clean(values.sourceDistrictLabel).toLowerCase());
@@ -170,14 +207,22 @@ function makeRecord(source: StateBallotSource, values: StateCandidateValues): St
 		status: statusFromText(values.status ?? "", party),
 		sourceStatus: clean(values.status) || undefined,
 		jurisdiction,
-		candidateUrl: /^https?:\/\//iu.test(values.candidateUrl ?? "") ? normalizePublicHref(values.candidateUrl) || undefined : undefined,
+		candidateUrl: /^https?:\/\//iu.test(values.candidateUrl ?? "")
+			? normalizePublicHref(values.candidateUrl) || undefined
+			: undefined,
 		sourceCandidateId,
 		sourceDistrictLabel: clean(values.sourceDistrictLabel) || undefined,
 		sourceDivision: clean(values.sourceDivision) || undefined,
 		sourceAreaLabel: clean(values.sourceAreaLabel) || undefined,
-		...(values.termYears !== undefined ? { termYears: values.termYears } : {}),
-		...(values.termEnd !== undefined ? { termEnd: values.termEnd } : {}),
-		...(values.seats !== undefined ? { seats: values.seats } : {}),
+		...(values.termYears !== undefined
+			? { termYears: values.termYears }
+			: {}),
+		...(values.termEnd !== undefined
+			? { termEnd: values.termEnd }
+			: {}),
+		...(values.seats !== undefined
+			? { seats: values.seats }
+			: {}),
 	};
 }
 
@@ -189,7 +234,12 @@ function candidateFromCsv(source: StateBallotSource, row: Record<string, string>
 			const [month, day, year] = clean(row.election_dt).split("/");
 			if (`${year}-${month?.padStart(2, "0")}-${day?.padStart(2, "0")}` !== source.electionDate)
 				return null;
-			return makeRecord(source, { name: row.name_on_ballot ?? "", office: row.contest_name ?? "", party: row.party_candidate ?? "", jurisdiction: row.county_name });
+			return makeRecord(source, {
+				name: row.name_on_ballot ?? "",
+				office: row.contest_name ?? "",
+				party: row.party_candidate ?? "",
+				jurisdiction: row.county_name
+			});
 		}
 		case "WY": {
 			if (clean(row.Election).toUpperCase() !== `${source.electionDate.slice(0, 4)} GENERAL ELECTION`) throw new Error("The Wyoming roster election label does not match its configured election.");
@@ -197,11 +247,18 @@ function candidateFromCsv(source: StateBallotSource, row: Record<string, string>
 			const legislativeDistrict = /^STATE (?:SENATOR|REPRESENTATIVE) (\d{1,3})$/iu.exec(office)?.[1];
 			if (/^STATE (?:SENATOR|REPRESENTATIVE)\b/iu.test(office) && (!legislativeDistrict || Number(legislativeDistrict) === 0)) throw new Error("The Wyoming legislative office has no unambiguous district number.");
 			return makeRecord(source, {
-				name: row["Ballot Name"] || [row["Candidate First Name"], row["Candidate Middle Name"], row["Candidate Last Name"], row["Candidate Suffix"]].filter(Boolean).join(" "),
+				name: row["Ballot Name"] || [
+					row["Candidate First Name"],
+					row["Candidate Middle Name"],
+					row["Candidate Last Name"],
+					row["Candidate Suffix"]
+				].filter(Boolean).join(" "),
 				office,
 				district: legislativeDistrict,
 				party: row["Party Affiliation"] ?? "",
-				status: clean(row["Date Withdrawn"]) ? "withdrawn" : "listed",
+				status: clean(row["Date Withdrawn"])
+					? "withdrawn"
+					: "listed",
 				candidateUrl: row["Web Address"],
 			});
 		}
@@ -209,7 +266,9 @@ function candidateFromCsv(source: StateBallotSource, row: Record<string, string>
 			const name = [row["Candidate First Name and Middle Name"], row["Candidate Ballot Last Name and Suffix"]].filter(Boolean).join(" ");
 			const runningMate = [row["Related Candidate First Name and Middle Name"], row["Related Candidate Last Name and Suffix"]].filter(Boolean).join(" ");
 			return makeRecord(source, {
-				name: runningMate ? `${name} / ${runningMate}` : name,
+				name: runningMate
+					? `${name} / ${runningMate}`
+					: name,
 				office: row["Office Name"] ?? "",
 				district: row["Contest Run By District Name and Number"]?.match(/(?:district\s*)?(\d+[A-Z]?)$/iu)?.[1],
 				party: row["Office Political Party"] ?? "",
@@ -223,7 +282,9 @@ function candidateFromCsv(source: StateBallotSource, row: Record<string, string>
 				office: row.OfficeDesc ?? "",
 				district: row.Juris1num,
 				party: row.PartyDesc || row.PartyCode || "",
-				status: row.PartyCode === "WRI" && row.StatusCode === "QUA" ? "write-in" : row.StatusDesc || row.StatusCode,
+				status: row.PartyCode === "WRI" && row.StatusCode === "QUA"
+					? "write-in"
+					: row.StatusDesc || row.StatusCode,
 			});
 		default:
 			throw new Error("No parser is configured for this official source.");
@@ -233,7 +294,9 @@ function candidateFromCsv(source: StateBallotSource, row: Record<string, string>
 function parseDelaware(source: StateBallotSource, body: string) {
 	const document = parseHtml(body) as unknown as HtmlNode;
 	const headings = descendants(document, node => node.nodeName === "h1");
-	const identity = headings.length === 1 ? /^General Election 11\/(0?[2-8])\/(20\d{2})$/u.exec(clean(textContent(headings[0]!))) : null;
+	const identity = headings.length === 1
+		? /^General Election 11\/(0?[2-8])\/(20\d{2})$/u.exec(clean(textContent(headings[0]!)))
+		: null;
 	if (!identity || `${identity[2]}-11-${identity[1]!.padStart(2, "0")}` !== source.electionDate)
 		throw new Error("The official source does not identify the configured general election.");
 	const tables = descendants(document, node => node.nodeName === "table");
@@ -245,13 +308,23 @@ function parseDelaware(source: StateBallotSource, body: string) {
 		if (cells.map(cell => attribute(cell, "data-label")).join("|") !== "Office|County|Party|Candidate|Status|Date Filed") throw new Error("The Delaware candidate row layout has changed.");
 		const field = (label: string) => cells.find(cell => attribute(cell, "data-label") === label);
 		const nameCell = field("Candidate");
-		const names = nameCell ? descendants(nameCell, node => attribute(node, "class").split(/\s/u).includes("main-span")) : [];
+		const names = nameCell
+			? descendants(nameCell, node => attribute(node, "class").split(/\s/u).includes("main-span"))
+			: [];
 		if (names.length !== 1) throw new Error("The Delaware candidate name field has changed.");
 		const value = (label: string) => {
 			const cell = field(label);
-			return cell ? clean(textContent(cell)) : "";
+			return cell
+				? clean(textContent(cell))
+				: "";
 		};
-		const record = makeRecord(source, { name: clean(textContent(names[0]!)), office: value("Office"), party: value("Party"), status: value("Status"), jurisdiction: value("County") });
+		const record = makeRecord(source, {
+			name: clean(textContent(names[0]!)),
+			office: value("Office"),
+			party: value("Party"),
+			status: value("Status"),
+			jurisdiction: value("County")
+		});
 		if (!record || (record.scope === "local" && !record.jurisdiction)) throw new Error("The Delaware public candidate row is incomplete.");
 		return record;
 	});
@@ -273,7 +346,9 @@ function parseMichigan(source: StateBallotSource, body: string) {
 			office = clean(textContent(heading));
 			continue;
 		}
-		const columns = cells.flatMap(cell => Array.from({ length: Math.min(20, Math.max(1, Number(attribute(cell, "colspan")) || 1)) }, () => clean(textContent(cell))));
+		const columns = cells.flatMap(cell => Array.from({
+			length: Math.min(20, Math.max(1, Number(attribute(cell, "colspan")) || 1))
+		}, () => clean(textContent(cell))));
 		if (columns[6] === "Candidate Name" && columns[4] === "Party / Incumbent" && columns[1] === "Status") {
 			if (columns.join("|") !== "|Status|Status||Party / Incumbent|Party / Incumbent|Candidate Name|Candidate Name|Candidate Name|Filed On|Filed On|Filed On|Filing Method|") throw new Error("The official candidate report columns have changed.");
 			schemaSeen = true;
@@ -283,14 +358,21 @@ function parseMichigan(source: StateBallotSource, body: string) {
 		if (!schemaSeen || columns.length !== 14 || !office || !columns[6])
 			throw new Error("The official candidate report has an unexpected layout.");
 		if (!["", "DISQ", "WITHD"].includes(columns[1] ?? "")) throw new Error("The Michigan candidate status vocabulary has changed.");
-		const record = makeRecord(source, { name: columns[6], office, party: columns[4] ?? "", status: columns[1] });
+		const record = makeRecord(source, {
+			name: columns[6],
+			office,
+			party: columns[4] ?? "",
+			status: columns[1]
+		});
 		if (record) {
 			if (/^(?:Justice of (?:the )?Supreme Court|Member of (?:the )?State Board of Education|Regent of (?:the )?University of Michigan|Trustee of Michigan State University|Governor of Wayne State University)/iu.test(office))
 				record.scope = "statewide";
 			records.push(normalizeMichiganCandidateRecord(record));
 		}
 	}
-	const counts = [...reportText.matchAll(/(\d+)\s+Candidates as of/giu)];
+	const counts = [
+		...reportText.matchAll(/(\d+)\s+Candidates as of/giu)
+	];
 	const expectedCount = counts[0]?.[1];
 	const individualCount = records.reduce((total, record) => total + record.name.split(/\s\/\s/u).length, 0);
 	if (!schemaSeen || counts.length !== 1 || !expectedCount || Number(expectedCount) > 25000 || individualCount !== Number(expectedCount))
@@ -310,7 +392,20 @@ function parseStateTable(source: StateBallotSource, body: string) {
 		throw new Error("The official candidate report is missing or paginated.");
 	const rows = descendants(table, node => node.nodeName === "tr").map(row => (row.childNodes ?? []).filter(node => ["td", "th"].includes(node.nodeName)).map(cell => clean(textContent(cell))));
 	const headers = rows.shift() ?? [];
-	const required = virginia ? ["Office Title", "District", "Candidate Party", "Candidate Name"] : ["Contest", "District", "Name", "Party", "Status"];
+	const required = virginia
+		? [
+				"Office Title",
+				"District",
+				"Candidate Party",
+				"Candidate Name"
+			]
+		: [
+				"Contest",
+				"District",
+				"Name",
+				"Party",
+				"Status"
+			];
 	if (required.some(header => !headers.includes(header)))
 		throw new Error("The official candidate report has an unexpected layout.");
 	return rows.flatMap((row) => {
@@ -324,14 +419,18 @@ function parseStateTable(source: StateBallotSource, body: string) {
 			office,
 			party: field(virginia ? "Candidate Party" : "Party"),
 			district: field("District").match(virginia ? /\d+/u : /\d+[A-Z]?/iu)?.[0],
-			status: virginia ? "listed" : field("Status"),
+			status: virginia
+				? "listed"
+				: field("Status"),
 		});
 		if (record && virginia) {
 			if (office === "Member, United States Senate") record.scope = "statewide";
 			else if (office === "Member, House of Representatives") record.scope = "congressional";
 			else throw new Error("The federal candidate list contains an unexpected office.");
 		}
-		return record ? [record] : [];
+		return record
+			? [record]
+			: [];
 	});
 }
 
@@ -342,7 +441,9 @@ function tableCells(row: HtmlNode) {
 function findCandidateTable(document: HtmlNode, required: string[]) {
 	return descendants(document, node => node.nodeName === "table").find((table) => {
 		const first = stateHtmlTableRows(table)[0];
-		const headers = first ? tableCells(first).map(cell => clean(textContent(cell))) : [];
+		const headers = first
+			? tableCells(first).map(cell => clean(textContent(cell)))
+			: [];
 		return required.every(header => headers.includes(header));
 	});
 }
@@ -352,7 +453,13 @@ function parseColorado(source: StateBallotSource, body: string) {
 	const title = descendants(document, node => node.nodeName === "title")[0];
 	if (!title || clean(textContent(title)) !== "2026 General Election Official Candidate List")
 		throw new Error("The official source does not identify the configured general election.");
-	const table = findCandidateTable(document, ["Candidate name", "Office", "District", "Party", "Write in?"]);
+	const table = findCandidateTable(document, [
+		"Candidate name",
+		"Office",
+		"District",
+		"Party",
+		"Write in?"
+	]);
 	if (!table) throw new Error("The official candidate table has an unexpected layout.");
 	if (tableCells(stateHtmlTableRows(table)[0]!).map(cell => clean(textContent(cell))).join("|") !== "Candidate name|Office|District|Party|Write in?")
 		throw new Error("The official candidate columns have changed order.");
@@ -363,7 +470,18 @@ function parseColorado(source: StateBallotSource, body: string) {
 		if (!["Y", "N", ""].includes(writeIn ?? "")) throw new Error("The official write-in marker has changed.");
 		const hasWithdrawalMark = (node: HtmlNode) => ["s", "del", "strike"].includes(node.nodeName) || /text-decoration(?:-line)?\s*:[^;]*line-through/iu.test(attribute(node, "style"));
 		const withdrawn = hasWithdrawalMark(row) || cells.some(cell => hasWithdrawalMark(cell) || descendants(cell, hasWithdrawalMark).length > 0);
-		const record = makeRecord(source, { name: name ?? "", office: office ?? "", district: district ?? "", party: party ?? "", status: withdrawn ? "withdrawn" : writeIn === "Y" ? "write-in" : "qualified", jurisdiction: district });
+		const record = makeRecord(source, {
+			name: name ?? "",
+			office: office ?? "",
+			district: district ?? "",
+			party: party ?? "",
+			status: withdrawn
+				? "withdrawn"
+				: writeIn === "Y"
+					? "write-in"
+					: "qualified",
+			jurisdiction: district
+		});
 		if (!record) throw new Error("The official candidate table contains an incomplete candidate.");
 		if (["Colorado Supreme Court", "Colorado Court of Appeals", "University of Colorado Board of Regents"].includes(office ?? "") && /^(?:state|at[- ]large)$/iu.test(district ?? "")) {
 			record.scope = "statewide";
@@ -379,10 +497,20 @@ function parseNorthDakota(source: StateBallotSource, body: string) {
 	validateDakotaCandidatePage(source, document);
 	const tables = descendants(document, node => node.nodeName === "table").filter((table) => {
 		const heading = stateHtmlTableRows(table)[0];
-		const columns = heading ? tableCells(heading).map(cell => clean(textContent(cell))) : [];
-		return ["Contest", "District", "Name", "Party", "Term Length"].every(column => columns.includes(column));
+		const columns = heading
+			? tableCells(heading).map(cell => clean(textContent(cell)))
+			: [];
+		return [
+			"Contest",
+			"District",
+			"Name",
+			"Party",
+			"Term Length"
+		].every(column => columns.includes(column));
 	});
-	const table = tables.length === 1 ? tables[0] : undefined;
+	const table = tables.length === 1
+		? tables[0]
+		: undefined;
 	if (!table || descendants(table, node => /rgPager/u.test(attribute(node, "class"))).length)
 		throw new Error("The official candidate table is missing or paginated.");
 	const rows = stateHtmlTableRows(table);
@@ -394,9 +522,22 @@ function parseNorthDakota(source: StateBallotSource, body: string) {
 		const office = field("Contest");
 		if (!office) throw new Error("The official candidate table contains an incomplete contest.");
 		if (!field("Name") && !field("First Name") && !field("Last Name")) return [];
-		const record = makeRecord(source, { name: field("Name"), office, party: field("Party"), district: field("District").match(/\d+[A-Z]?/iu)?.[0], status: "listed", jurisdiction: field("County") || field("District"), candidateUrl: field("Website") });
+		const record = makeRecord(source, {
+			name: field("Name"),
+			office,
+			party: field("Party"),
+			district: field("District").match(/\d+[A-Z]?/iu)?.[0],
+			status: "listed",
+			jurisdiction: field("County") || field("District"),
+			candidateUrl: field("Website")
+		});
 		if (!record) throw new Error("The official candidate table contains an incomplete candidate.");
-		if (["Agriculture Commissioner", "Public Service Commissioner", "Tax Commissioner", "Justice of the Supreme Court"].includes(office)) {
+		if ([
+			"Agriculture Commissioner",
+			"Public Service Commissioner",
+			"Tax Commissioner",
+			"Justice of the Supreme Court"
+		].includes(office)) {
 			record.scope = "statewide";
 			record.district = "";
 			delete record.jurisdiction;
@@ -432,7 +573,13 @@ function parseKentucky(source: StateBallotSource, body: string) {
 				const cells = tableCells(row).map(cell => clean(textContent(cell)));
 				if (cells.length !== headers.length) throw new Error("The official candidate table has an inconsistent row layout.");
 				const field = (name: string) => cells[headers.indexOf(name)] ?? "";
-				const record = makeRecord(source, { name: field(nameColumn), office: field("Office"), district: field("District/Division").match(/\d+/u)?.[0], party: field("Party"), status: inactive ? "inactive" : "listed" });
+				const record = makeRecord(source, {
+					name: field(nameColumn),
+					office: field("Office"),
+					district: field("District/Division").match(/\d+/u)?.[0],
+					party: field("Party"),
+					status: inactive ? "inactive" : "listed"
+				});
 				if (!record) throw new Error("The official candidate table contains an incomplete candidate.");
 				return record;
 			});
@@ -441,10 +588,31 @@ function parseKentucky(source: StateBallotSource, body: string) {
 }
 
 const requiredColumns: Record<string, string[]> = {
-	NC: ["election_dt", "contest_name", "name_on_ballot", "party_candidate"],
-	WY: ["Election", "Office Sought", "Ballot Name", "Date Withdrawn"],
-	MD: ["Office Name", "Candidate Ballot Last Name and Suffix", "Candidate First Name and Middle Name", "Candidate Status"],
-	FL: ["ElectionID", "OfficeDesc", "StatusCode", "NameFirst", "NameLast"],
+	NC: [
+		"election_dt",
+		"contest_name",
+		"name_on_ballot",
+		"party_candidate"
+	],
+	WY: [
+		"Election",
+		"Office Sought",
+		"Ballot Name",
+		"Date Withdrawn"
+	],
+	MD: [
+		"Office Name",
+		"Candidate Ballot Last Name and Suffix",
+		"Candidate First Name and Middle Name",
+		"Candidate Status"
+	],
+	FL: [
+		"ElectionID",
+		"OfficeDesc",
+		"StatusCode",
+		"NameFirst",
+		"NameLast"
+	],
 };
 
 export function parseStateCandidateRecords(source: StateBallotSource, body: string): StateCandidateRecord[] {
@@ -563,19 +731,36 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	}
 	else if (["kentucky-html", "kentucky-courts-html"].includes(source.format)) {
 		kentuckySourceElectionId(source);
-		records = source.id === "ky-sos-2026" && !Object.hasOwn(JSON.parse(body), "type") ? parseKentucky(source, body) : parseKentuckyCandidateRecords(source, body, makeRecord);
+		records = source.id === "ky-sos-2026" && !Object.hasOwn(JSON.parse(body), "type")
+			? parseKentucky(source, body)
+			: parseKentuckyCandidateRecords(source, body, makeRecord);
 	}
-	else if (["utah-html", "mississippi-csv", "south-dakota-csv", "hawaii-csv", "illinois-tsv", "montana-csv"].includes(source.format)) {
+	else if ([
+		"utah-html",
+		"mississippi-csv",
+		"south-dakota-csv",
+		"hawaii-csv",
+		"illinois-tsv",
+		"montana-csv"
+	].includes(source.format)) {
 		records = parseAdditionalStateRecords(source, body, makeRecord);
 	}
-	else if (["pennsylvania-html", "west-virginia-json", "alaska-html", "south-carolina-html", "kansas-html"].includes(source.format)) {
+	else if ([
+		"pennsylvania-html",
+		"west-virginia-json",
+		"alaska-html",
+		"south-carolina-html",
+		"kansas-html"
+	].includes(source.format)) {
 		records = parseStatePortalRecords(source, body, makeRecord);
 	}
 	else {
 		const table = parseCsv(body, {
 			bom: true,
 			delimiter: source.delimiter ?? ",",
-			quote: source.stateCode === "FL" ? false : "\"",
+			quote: source.stateCode === "FL"
+				? false
+				: "\"",
 			relax_quotes: source.stateCode === "MD",
 			relax_column_count: source.stateCode === "MD",
 			skip_empty_lines: true,
@@ -597,14 +782,30 @@ export function parseStateCandidateRecords(source: StateBallotSource, body: stri
 	const unique = new Map<string, StateCandidateRecord>();
 	for (const record of records) {
 		const previous = unique.get(record.id);
-		if (!previous || !["withdrawn", "disqualified", "defeated", "elected", "unopposed", "inactive", "unrecognized"].includes(previous.status))
+		if (!previous || ![
+			"withdrawn",
+			"disqualified",
+			"defeated",
+			"elected",
+			"unopposed",
+			"inactive",
+			"unrecognized"
+		].includes(previous.status)) {
 			unique.set(record.id, record);
+		}
 	}
-	return [...unique.values()];
+	return [
+		...unique.values()
+	];
 }
 
 export function isActiveStateCandidateRecord(record: StateCandidateRecord) {
-	return ["listed", "filed", "qualified", "write-in"].includes(record.status);
+	return [
+		"listed",
+		"filed",
+		"qualified",
+		"write-in"
+	].includes(record.status);
 }
 
 export function stateRecordMatchesDistricts(record: StateCandidateRecord, matches: LocationDistrictMatch[]) {
@@ -614,9 +815,23 @@ export function stateRecordMatchesDistricts(record: StateCandidateRecord, matche
 		const type = match.districtType.toLowerCase().replace(/[\s_]+/gu, "-");
 		const scope = ["congressional", "congressional-district", "cd"].includes(type)
 			? "congressional"
-			: ["state-senate", "state-senate-district", "state-upper", "upper", "sldu"].includes(type)
+			: [
+					"state-senate",
+					"state-senate-district",
+					"state-upper",
+					"upper",
+					"sldu"
+				].includes(type)
 					? "state-senate"
-					: ["state-house", "state-house-district", "state-lower", "lower", "sldl"].includes(type) ? "state-house" : null;
+					: [
+							"state-house",
+							"state-house-district",
+							"state-lower",
+							"lower",
+							"sldl"
+						].includes(type)
+							? "state-house"
+							: null;
 		return record.scope === scope && record.district === normalizeStateDistrict(match.districtCode);
 	});
 }

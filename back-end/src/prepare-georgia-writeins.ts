@@ -16,10 +16,17 @@ async function main() {
 	const text = await extractStateBallotPdfText(bytes, await resolveStateBallotPdfExtractor(), 12000, "layout", 1);
 	const prepared = prepareGeorgiaWriteInSnapshot(source, text, createHash("sha256").update(bytes).digest("hex"), retrievedAt);
 	await writeFile(outputPath, `${prepared.body}\n`, { flag: "wx", mode: 0o600 });
-	console.log(JSON.stringify({ sourceId, recordCount: JSON.parse(prepared.body).recordCount, publishedOn: prepared.publishedOn, outputPath }));
+	console.log(JSON.stringify({
+		sourceId,
+		recordCount: JSON.parse(prepared.body).recordCount,
+		publishedOn: prepared.publishedOn,
+		outputPath
+	}));
 }
 
 main().catch((error: unknown) => {
-	console.error(error instanceof Error ? error.message : "Georgia write-in preparation failed.");
+	console.error(error instanceof Error
+		? error.message
+		: "Georgia write-in preparation failed.");
 	process.exitCode = 1;
 });

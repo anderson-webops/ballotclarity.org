@@ -15,7 +15,9 @@ const errorStatusCode = computed(() => {
 if (errorStatusCode.value) {
 	throw createError({
 		statusCode: errorStatusCode.value,
-		statusMessage: errorStatusCode.value === 404 ? "Source record not found" : "Source record unavailable",
+		statusMessage: errorStatusCode.value === 404
+			? "Source record not found"
+			: "Source record unavailable",
 		fatal: true
 	});
 }

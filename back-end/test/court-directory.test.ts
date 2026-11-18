@@ -12,7 +12,10 @@ import { courtDigest, courtFixture, courtTestTime } from "./helpers/court-direct
 test("court roster reconciles active cards, navigation, chief role and independent profile identities", () => {
 	const fixture = courtFixture();
 	const judges = parseCourtDirectory(fixture.body);
-	assert.deepEqual(judges.map(judge => [judge.name, judge.role, judge.division]), [["Avery Future", "Chief Judge", "A"], ["Morgan Second", "Judge", "B"]]);
+	assert.deepEqual(judges.map(judge => [judge.name, judge.role, judge.division]), [
+		["Avery Future", "Chief Judge", "A"],
+		["Morgan Second", "Judge", "B"]
+	]);
 	for (const [index, judge] of judges.entries()) verifyCourtDirectoryProfile(fixture.profiles[index]!.body, judge);
 	assert.equal("party" in judges[0]!, false);
 	assert.equal("onCurrentBallot" in judges[0]!, false);
@@ -71,7 +74,12 @@ test("court imports replace records without restart and preserve exact predecess
 		assert.equal(await readFile(join(directory, "unrelated.json"), "utf8"), "preserved");
 		assert.equal((await stat(join(directory, "ga-fulton-state-court.json"))).mode & 0o777, 0o600);
 		await assert.rejects(importCourtDirectory(directory, courtFixture().snapshot, courtTestTime + 2000), /Older court evidence/u);
-		const operations = await buildAdminOperations({ courts: repository, candidates: null, references: null, dataDirectory: null });
+		const operations = await buildAdminOperations({
+			courts: repository,
+			candidates: null,
+			references: null,
+			dataDirectory: null
+		});
 		assert.equal(operations.datasets.find(source => source.id === "ga-fulton-state-court")?.records, 2);
 	}
 	finally { await rm(directory, { recursive: true, force: true }); }
@@ -83,10 +91,14 @@ test("a court source failure preserves data and success clocks, bounds retry and
 		await importCourtDirectory(directory, courtFixture().snapshot, courtTestTime);
 		const before = await readFile(join(directory, "ga-fulton-state-court.json"));
 		let requests = 0;
-		const options = { directory, now: () => courtTestTime + 7 * 3600000, request: async () => {
-			requests++;
-			return "Changed publisher policy";
-		} };
+		const options = {
+			directory,
+			now: () => courtTestTime + 7 * 3600000,
+			request: async () => {
+				requests++;
+				return "Changed publisher policy";
+			}
+		};
 		await assert.rejects(collectCourtDirectory(options), /policy requires review/u);
 		await assert.rejects(collectCourtDirectory(options), /next permitted retry/u);
 		assert.equal(requests, 1);
@@ -104,10 +116,14 @@ test("warm court imports and competing collectors make no publisher requests", a
 	try {
 		await importCourtDirectory(directory, courtFixture().snapshot, courtTestTime);
 		let requests = 0;
-		assert.equal((await collectCourtDirectory({ directory, now: () => courtTestTime + 1000, request: async () => {
-			requests++;
-			throw new Error("No request expected");
-		} })).collected, false);
+		assert.equal((await collectCourtDirectory({
+			directory,
+			now: () => courtTestTime + 1000,
+			request: async () => {
+				requests++;
+				throw new Error("No request expected");
+			}
+		})).collected, false);
 		assert.equal(requests, 0);
 		await withCourtDirectoryLock(directory, async () => {
 			await assert.rejects(collectCourtDirectory({ directory }), /already running/u);

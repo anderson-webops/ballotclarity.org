@@ -58,26 +58,48 @@ export function createFultonOfficeholderRepository(directory = process.env.FULTO
 	if (!directory) return null;
 	if (!isAbsolute(directory)) throw new Error("The Fulton officeholder directory must be absolute.");
 	assertExternalStateDataDirectory(directory);
-	return { getSnapshot: () => {
-		try {
-			return readFultonOfficeholderEnvelope(directory).snapshot;
+	return {
+		getSnapshot: () => {
+			try {
+				return readFultonOfficeholderEnvelope(directory).snapshot;
+			}
+			catch { throw new FultonOfficeholderUnavailableError(); }
+		},
+		async inspectSources() {
+			let current: FultonOfficeholderEnvelope | null = null;
+			let failure: string | null = null;
+			let run = null;
+			try {
+				current = readFultonOfficeholderEnvelope(directory);
+			}
+			catch { failure = "Officeholder data is unavailable or invalid."; }
+			try {
+				run = await readAutomationRun(join(directory, "automation"));
+			}
+			catch { failure = "Officeholder collection evidence is invalid."; }
+			if (run?.status === "failed" && (run.finishedAt ?? "") >= (current?.importedAt ?? "")) failure = run.results[0]?.reason ?? "source-unavailable";
+			return [
+				{
+					id: "ga-fulton-board",
+					label: "Fulton County commissioners",
+					stateCode: "GA",
+					electionDate: "",
+					kind: "officeholders",
+					mode: "automatic",
+					status: failure
+						? "error"
+						: Date.parse(current!.snapshot.retrievedAt) + fultonOfficeholderPublication.minimumRefreshIntervalMs < Date.now()
+							? "stale"
+							: "current",
+					records: current?.snapshot.seats.filter(seat => seat.person).length ?? null,
+					retrievedAt: current?.snapshot.retrievedAt ?? null,
+					lastAttemptAt: run?.startedAt ?? null,
+					lastImportAt: current?.importedAt ?? null,
+					failure
+				}
+			];
 		}
-		catch { throw new FultonOfficeholderUnavailableError(); }
-	}, async inspectSources() {
-		let current: FultonOfficeholderEnvelope | null = null;
-		let failure: string | null = null;
-		let run = null;
-		try {
-			current = readFultonOfficeholderEnvelope(directory);
-		}
-		catch { failure = "Officeholder data is unavailable or invalid."; }
-		try {
-			run = await readAutomationRun(join(directory, "automation"));
-		}
-		catch { failure = "Officeholder collection evidence is invalid."; }
-		if (run?.status === "failed" && (run.finishedAt ?? "") >= (current?.importedAt ?? "")) failure = run.results[0]?.reason ?? "source-unavailable";
-		return [{ id: "ga-fulton-board", label: "Fulton County commissioners", stateCode: "GA", electionDate: "", kind: "officeholders", mode: "automatic", status: failure ? "error" : Date.parse(current!.snapshot.retrievedAt) + fultonOfficeholderPublication.minimumRefreshIntervalMs < Date.now() ? "stale" : "current", records: current?.snapshot.seats.filter(seat => seat.person).length ?? null, retrievedAt: current?.snapshot.retrievedAt ?? null, lastAttemptAt: run?.startedAt ?? null, lastImportAt: current?.importedAt ?? null, failure }];
-	} };
+	};
 }
 
 async function atomicFile(path: string, body: string) {
@@ -109,7 +131,12 @@ export async function withFultonOfficeholderLock<Result>(directory: string, work
 export async function writeFultonOfficeholders(directory: string, snapshot: FultonOfficeholderSnapshot, acquisition: "collected" | "imported", now = Date.now()) {
 	validateFultonOfficeholderSnapshot(snapshot, now);
 	if (!["collected", "imported"].includes(acquisition) || !Number.isFinite(now) || now < Date.parse(snapshot.retrievedAt)) throw new Error("The Fulton officeholder import clock is invalid.");
-	const envelope: FultonOfficeholderEnvelope = { sourceConfigurationSha256: fultonOfficeholderConfigurationSha256, importedAt: new Date(now).toISOString(), acquisition, snapshot };
+	const envelope: FultonOfficeholderEnvelope = {
+		sourceConfigurationSha256: fultonOfficeholderConfigurationSha256,
+		importedAt: new Date(now).toISOString(),
+		acquisition,
+		snapshot
+	};
 	const body = `${JSON.stringify(envelope)}\n`;
 	if (Buffer.byteLength(body) > 128 * 1024) throw new Error("The Fulton officeholder snapshot exceeds its bounds.");
 	let previous: string | null = null;

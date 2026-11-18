@@ -10,7 +10,9 @@ import { assertExternalStateDataDirectory, readBoundedStateData } from "./state-
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 function csvCell(value: string | number) {
 	const text = String(value);
-	return `"${(/^[=+\-@\t\r]/u.test(text) ? `'${text}` : text).replace(/"/gu, "\"\"")}"`;
+	return `"${(/^[=+\-@\t\r]/u.test(text)
+		? `'${text}`
+		: text).replace(/"/gu, "\"\"")}"`;
 }
 
 export async function readOpenStatesCandidateInputs(files: readonly string[], allowedSourceIds: readonly string[]) {
@@ -23,7 +25,9 @@ export async function readOpenStatesCandidateInputs(files: readonly string[], al
 		const snapshotBody = stored ? envelope.snapshot as string : content;
 		const metadata = JSON.parse(snapshotBody);
 		const configured = configuredStateBallotSources.find(item => item.id === metadata?.sourceId && allowedSourceIds.includes(item.id));
-		const source = configured && metadata.retrievalPolicy === "manual-snapshot" ? legacyReviewedStateBallotSource(configured) ?? configured : configured;
+		const source = configured && metadata.retrievalPolicy === "manual-snapshot"
+			? legacyReviewedStateBallotSource(configured) ?? configured
+			: configured;
 		if (!source || !["manual-snapshot", "automatic"].includes(metadata.retrievalPolicy))
 			throw new Error("Each candidate input must match an explicitly reviewed source and retrieval policy.");
 		if (stored && (Object.keys(envelope).sort().join(",") !== "snapshot,sourceConfigurationSha256" || envelope.sourceConfigurationSha256 !== hash(JSON.stringify(source))))
@@ -51,24 +55,87 @@ export async function prepareOpenStatesReferenceFiles(path: string, now = Date.n
 			throw new Error("Open States downloads must match unique configured state URLs.");
 		seen.add(source.id);
 		const body = await readBoundedStateData(download.path);
-		const prepared = prepareOpenStatesReferences({ source, body, capturedAt: download.capturedAt, sha256: download.sha256, candidates: candidates.filter(snapshot => snapshot.source.stateCode === source.stateCode), allowedCandidateSourceIds: plan.allowedCandidateSourceIds, now });
+		const prepared = prepareOpenStatesReferences({
+			source,
+			body,
+			capturedAt: download.capturedAt,
+			sha256: download.sha256,
+			candidates: candidates.filter(snapshot => snapshot.source.stateCode === source.stateCode),
+			allowedCandidateSourceIds: plan.allowedCandidateSourceIds,
+			now
+		});
 		if (prepared.snapshot) parseElectionReferenceSnapshot(source, JSON.stringify(prepared.snapshot), now);
-		outputs.push({ source, prepared, capture: { url: download.url, capturedAt: download.capturedAt, sha256: download.sha256 } });
+		outputs.push({
+			source,
+			prepared,
+			capture: { url: download.url, capturedAt: download.capturedAt, sha256: download.sha256 }
+		});
 	}
-	const files = outputs.flatMap(({ source, prepared }) => prepared.snapshot ? [{ path: `election-references-openstates-${source.stateCode.toLowerCase()}-${source.electionDate.slice(0, 4)}.json`, content: `${JSON.stringify(prepared.snapshot, null, 2)}\n`, sourceId: source.id, sourceConfigurationSha256: hash(JSON.stringify(source)), stateCode: source.stateCode, recordCount: prepared.snapshot.recordCount }] : []);
+	const files = outputs.flatMap(({ source, prepared }) => prepared.snapshot
+		? [
+				{
+					path: `election-references-openstates-${source.stateCode.toLowerCase()}-${source.electionDate.slice(0, 4)}.json`,
+					content: `${JSON.stringify(prepared.snapshot, null, 2)}\n`,
+					sourceId: source.id,
+					sourceConfigurationSha256: hash(JSON.stringify(source)),
+					stateCode: source.stateCode,
+					recordCount: prepared.snapshot.recordCount
+				}
+			]
+		: []);
 	if (!files.length) throw new Error("No exact state, chamber, district and candidate-name matches were found.");
-	const columns = ["stateCode", "candidateSourceId", "candidateId", "candidateName", "candidateCapturedAt", "candidateSourceSha256", "personId", "datasetName", "chamber", "district", "sourceRow", "referenceId", "datasetUrl", "datasetCapturedAt", "datasetSha256"] as const;
-	const matches = outputs.flatMap(({ source, prepared, capture }) => prepared.matches.map(match => ({ stateCode: source.stateCode, ...match, datasetUrl: capture.url, datasetCapturedAt: capture.capturedAt, datasetSha256: capture.sha256 })));
-	const crosswalk = `${[columns.map(csvCell).join(","), ...matches.map(match => columns.map(column => csvCell(match[column])).join(","))].join("\n")}\n`;
+	const columns = [
+		"stateCode",
+		"candidateSourceId",
+		"candidateId",
+		"candidateName",
+		"candidateCapturedAt",
+		"candidateSourceSha256",
+		"personId",
+		"datasetName",
+		"chamber",
+		"district",
+		"sourceRow",
+		"referenceId",
+		"datasetUrl",
+		"datasetCapturedAt",
+		"datasetSha256"
+	] as const;
+	const matches = outputs.flatMap(({ source, prepared, capture }) => prepared.matches.map(match => ({
+		stateCode: source.stateCode,
+		...match,
+		datasetUrl: capture.url,
+		datasetCapturedAt: capture.capturedAt,
+		datasetSha256: capture.sha256
+	})));
+	const crosswalk = `${[
+		columns.map(csvCell).join(","),
+		...matches.map(match => columns.map(column => csvCell(match[column])).join(","))
+	].join("\n")}\n`;
 	const holds = outputs.flatMap(({ source, prepared }) => prepared.holds.map(hold => ({ stateCode: source.stateCode, ...hold })));
 	const manifest = {
 		schemaVersion: 1,
 		type: "openstates-reference-preparation-result",
 		publication: openStatesBulkPublication,
-		files: files.map(({ content, ...file }) => ({ ...file, sha256: hash(content) })),
-		downloads: outputs.map(({ source, prepared, capture }) => ({ stateCode: source.stateCode, ...capture, datasetRecordCount: prepared.datasetRecordCount, profiles: prepared.snapshot?.recordCount ?? 0, matches: prepared.matches.length, heldCandidates: prepared.holds.length })),
+		files: files.map(({ content, ...file }) => ({
+			...file,
+			sha256: hash(content)
+		})),
+		downloads: outputs.map(({ source, prepared, capture }) => ({
+			stateCode: source.stateCode,
+			...capture,
+			datasetRecordCount: prepared.datasetRecordCount,
+			profiles: prepared.snapshot?.recordCount ?? 0,
+			matches: prepared.matches.length,
+			heldCandidates: prepared.holds.length
+		})),
 		allowedCandidateSourceIds: plan.allowedCandidateSourceIds,
-		candidateCaptures: candidates.map(snapshot => ({ sourceId: snapshot.source.id, capturedAt: snapshot.retrievedAt, sourceSha256: snapshot.sha256, recordCount: snapshot.records.length })),
+		candidateCaptures: candidates.map(snapshot => ({
+			sourceId: snapshot.source.id,
+			capturedAt: snapshot.retrievedAt,
+			sourceSha256: snapshot.sha256,
+			recordCount: snapshot.records.length
+		})),
 		crosswalkSha256: hash(crosswalk),
 		profiles: files.reduce((total, file) => total + file.recordCount, 0),
 		matchedCandidateRecords: matches.length,
@@ -76,7 +143,12 @@ export async function prepareOpenStatesReferenceFiles(path: string, now = Date.n
 		imported: false,
 		publisherRequests: 0,
 	};
-	const exports = [...files, { path: "openstates-service-crosswalk.csv", content: crosswalk }, { path: "openstates-service-review.jsonl", content: `${holds.map(hold => JSON.stringify(hold)).join("\n")}\n` }, { path: "openstates-reference-preparation.json", content: `${JSON.stringify(manifest, null, 2)}\n` }];
+	const exports = [
+		...files,
+		{ path: "openstates-service-crosswalk.csv", content: crosswalk },
+		{ path: "openstates-service-review.jsonl", content: `${holds.map(hold => JSON.stringify(hold)).join("\n")}\n` },
+		{ path: "openstates-reference-preparation.json", content: `${JSON.stringify(manifest, null, 2)}\n` }
+	];
 	await mkdir(plan.outputDirectory, { recursive: true });
 	assertExternalStateDataDirectory(await realpath(plan.outputDirectory));
 	for (const file of exports) {
@@ -89,5 +161,13 @@ export async function prepareOpenStatesReferenceFiles(path: string, now = Date.n
 		}
 	}
 	for (const file of exports) await writeFile(join(plan.outputDirectory, file.path), file.content, { flag: "wx" });
-	return { collections: files.length, profiles: manifest.profiles, matchedCandidateRecords: matches.length, heldCandidateRecords: holds.length, files: exports.length, publisherRequests: 0, imported: false };
+	return {
+		collections: files.length,
+		profiles: manifest.profiles,
+		matchedCandidateRecords: matches.length,
+		heldCandidateRecords: holds.length,
+		files: exports.length,
+		publisherRequests: 0,
+		imported: false
+	};
 }

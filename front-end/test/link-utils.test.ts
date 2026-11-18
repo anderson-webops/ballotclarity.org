@@ -54,14 +54,26 @@ test("public links keep relative, fragment and absolute same-site destinations i
 });
 
 test("other websites, subdomains and ports remain external", () => {
-	for (const href of ["https://openstates.org/person/test", "https://analytics.ballotclarity.org/", "https://ballotclarity.org.attacker.example/", "https://ballotclarity.org:8443/about"]) {
+	for (const href of [
+		"https://openstates.org/person/test",
+		"https://analytics.ballotclarity.org/",
+		"https://ballotclarity.org.attacker.example/",
+		"https://ballotclarity.org:8443/about"
+	]) {
 		assert.deepEqual(resolvePublicLink(href), { external: true, href });
 	}
 	assert.deepEqual(resolvePublicLink("https://example.org/", "not a URL"), { external: true, href: "https://example.org/" });
 });
 
 test("link destination classification preserves URL safety checks", () => {
-	for (const href of ["javascript:alert(1)", "//attacker.example/", "https://user:secret@ballotclarity.org/", "http://127.0.0.1/admin", "/source-files/../private.txt", "https://ballotclarity.org//attacker.example/path"]) {
+	for (const href of [
+		"javascript:alert(1)",
+		"//attacker.example/",
+		"https://user:secret@ballotclarity.org/",
+		"http://127.0.0.1/admin",
+		"/source-files/../private.txt",
+		"https://ballotclarity.org//attacker.example/path"
+	]) {
 		assert.deepEqual(resolvePublicLink(href), { external: false, href: "" });
 	}
 });

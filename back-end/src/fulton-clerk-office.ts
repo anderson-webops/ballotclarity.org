@@ -33,7 +33,9 @@ function reject(): never {
 function document(body: string) {
 	if (typeof body !== "string" || Buffer.byteLength(body) > 3 * 1024 * 1024 || body.includes("\uFFFD")) return reject();
 	const root = parseStateHtml(body);
-	const pending = [{ node: root, depth: 0 }];
+	const pending = [
+		{ node: root, depth: 0 }
+	];
 	let count = 0;
 	while (pending.length) {
 		const { node, depth } = pending.pop()!;
@@ -70,7 +72,9 @@ export function verifyFultonClerkPolicy(body: string, index: number, now = Date.
 		if (digest(text) !== policy.sha256) return reject();
 		return;
 	}
-	const years = [...text.matchAll(/© (1997|2006)-(20\d{2})/gu)];
+	const years = [
+		...text.matchAll(/© (1997|2006)-(20\d{2})/gu)
+	];
 	if (years.length !== 2 || years[0]![1] !== "1997" || years[1]![1] !== "2006" || years[0]![2] !== years[1]![2] || Number(years[0]![2]) > new Date(now).getUTCFullYear() + 1 || digest(text.replace(/(© (?:1997|2006)-)20\d{2}/gu, "$1YEAR")) !== policy.sha256) return reject();
 }
 
@@ -96,7 +100,9 @@ export function parseFultonClerk(home: string, about: string): FultonClerkPerson
 	const name = currentClerk(homeRoot);
 	if (currentClerk(aboutRoot) !== name) return reject();
 	const heading = stateHtmlDescendants(homeRoot, node => node.nodeName === "h1" && clean(stateHtmlText(node)) === "THE FULTON COUNTY CLERK OF SUPERIOR AND MAGISTRATE COURTS");
-	const aboutLinks = [...new Set(stateHtmlDescendants(homeRoot, node => node.nodeName === "a" && clean(stateHtmlText(node)) === "About Us").map(node => new URL(stateHtmlAttribute(node, "href"), origin).href))];
+	const aboutLinks = [
+		...new Set(stateHtmlDescendants(homeRoot, node => node.nodeName === "a" && clean(stateHtmlText(node)) === "About Us").map(node => new URL(stateHtmlAttribute(node, "href"), origin).href))
+	];
 	if (heading.length !== 1 || aboutLinks.length !== 1 || aboutLinks[0] !== fultonClerkPublication.aboutUrl) return reject();
 	const links = stateHtmlDescendants(aboutRoot, node => node.nodeName === "a" && clean(stateHtmlText(node)).startsWith("Meet Clerk,"));
 	if (links.length !== 1 || clean(stateHtmlText(links[0]!)) !== `Meet Clerk, ${name}`) return reject();

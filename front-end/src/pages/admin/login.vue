@@ -15,9 +15,13 @@ const errorMessage = ref("");
 const isSubmitting = ref(false);
 
 const redirectTarget = computed(() => {
-	const redirect = typeof route.query.redirect === "string" ? route.query.redirect : "/admin";
+	const redirect = typeof route.query.redirect === "string"
+		? route.query.redirect
+		: "/admin";
 
-	return redirect.startsWith("/admin") ? redirect : "/admin";
+	return redirect.startsWith("/admin")
+		? redirect
+		: "/admin";
 });
 
 const { data: session } = await useAdminSession("admin-login-session");
@@ -35,7 +39,9 @@ async function handleSubmit() {
 	try {
 		const loginResponse = await $fetch<AdminSessionResponse>("/api/admin/session", {
 			body: {
-				...(mfaRequired.value ? { mfaCode: mfaCode.value } : {}),
+				...(mfaRequired.value
+					? { mfaCode: mfaCode.value }
+					: {}),
 				password: password.value,
 				username: username.value
 			},

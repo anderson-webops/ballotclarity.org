@@ -26,7 +26,25 @@ const futureDate = "2028-11-07";
 const now = Date.parse("2028-10-20T12:00:00Z");
 function futureSource() {
 	const family = getStateBallotCycleFamily(source.id);
-	const catalog = parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId: source.id, sourceConfigurationSha256: hash(JSON.stringify(family.source)), discovery: { url: winnebagoDiscoveryUrl, sha256: hash("Synthetic discovery"), retrievedAt: new Date(now).toISOString() }, elections: [{ electionId: null, electionDate: futureDate, pageUrl: winnebagoDiscoveryUrl, winnebagoDocuments: [] }] }, now);
+	const catalog = parseStateBallotCycleCatalog({
+		schemaVersion: 1,
+		type: "state-ballot-cycle-catalog",
+		familyId: source.id,
+		sourceConfigurationSha256: hash(JSON.stringify(family.source)),
+		discovery: {
+			url: winnebagoDiscoveryUrl,
+			sha256: hash("Synthetic discovery"),
+			retrievedAt: new Date(now).toISOString()
+		},
+		elections: [
+			{
+				electionId: null,
+				electionDate: futureDate,
+				pageUrl: winnebagoDiscoveryUrl,
+				winnebagoDocuments: []
+			}
+		]
+	}, now);
 	return stateBallotCycleSources(catalog, now)[0]!;
 }
 
@@ -80,13 +98,27 @@ test("Winnebago's XML and object worker capabilities are explicit and bounded", 
 
 test("Winnebago refuses robots changes before requesting any publication or running an extractor", async () => {
 	const requests: string[] = [];
-	await assert.rejects(fetchWinnebagoCycleDiscovery({ request: async (url) => {
-		requests.push(url);
-		return { status: 403, body: Buffer.alloc(0), contentType: "text/plain", etag: undefined, location: undefined };
-	}, sleep: async () => {} }), /robots policy/u);
+	await assert.rejects(fetchWinnebagoCycleDiscovery({
+		request: async (url) => {
+			requests.push(url);
+			return {
+				status: 403,
+				body: Buffer.alloc(0),
+				contentType: "text/plain",
+				etag: undefined,
+				location: undefined
+			};
+		},
+		sleep: async () => {}
+	}), /robots policy/u);
 	assert.deepEqual(requests, ["https://wincoil.gov/robots.txt"]);
 	assert.throws(() => readWinnebagoDiscovery(JSON.stringify({ schemaVersion: 1, type: "winnebago-discovery" })), /Winnebago/u);
-	for (const url of ["https://example.com/roster.pdf", "http://wincoil.gov/media/attachments/2028/09/25/test.pdf", "https://wincoil.gov/media/attachments/2028/09/25/../test.pdf", "https://wincoil.gov/media/attachments/2028/09/25/test.pdf?token=1"])
+	for (const url of [
+		"https://example.com/roster.pdf",
+		"http://wincoil.gov/media/attachments/2028/09/25/test.pdf",
+		"https://wincoil.gov/media/attachments/2028/09/25/../test.pdf",
+		"https://wincoil.gov/media/attachments/2028/09/25/test.pdf?token=1"
+	])
 		assert.throws(() => validateWinnebagoDocumentUrl(url), /Winnebago/u);
 });
 
@@ -106,14 +138,34 @@ test("Winnebago's public reader sees durable updates without a worker, publisher
 		const future = futureSource();
 		const records = readWinnebagoCandidateDocument(future, winnebagoFixture(2028), createStateCandidateRecord).records;
 		const url = "https://wincoil.gov/media/attachments/2028/09/25/test-candidates.pdf";
-		const documents = [{ url, sha256: hash("Synthetic PDF"), retrievedAt: new Date(now).toISOString(), includedRecordCount: records.length }];
+		const documents = [
+			{
+				url,
+				sha256: hash("Synthetic PDF"),
+				retrievedAt: new Date(now).toISOString(),
+				includedRecordCount: records.length
+			}
+		];
 		const storage = createStateBallotStorage(directory);
-		const snapshot = { source: future, records, documents, retrievedAt: documents[0]!.retrievedAt, sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), collectionIndexSha256: winnebagoDocumentDigest(documents.map(({ url, sha256 }) => ({ kind: "candidates", url, sha256 }))) };
+		const snapshot = {
+			source: future,
+			records,
+			documents,
+			retrievedAt: documents[0]!.retrievedAt,
+			sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+			collectionIndexSha256: winnebagoDocumentDigest(documents.map(({ url, sha256 }) => ({ kind: "candidates", url, sha256 })))
+		};
 		let requests = 0;
-		const repository = createStateBallotRepository({ sources: [future], dataDirectory: directory, ttlMs: 100, now: () => now + 10000, fetchText: async () => {
-			requests++;
-			throw new Error("The public reader must not collect.");
-		} });
+		const repository = createStateBallotRepository({
+			sources: [future],
+			dataDirectory: directory,
+			ttlMs: 100,
+			now: () => now + 10000,
+			fetchText: async () => {
+				requests++;
+				throw new Error("The public reader must not collect.");
+			}
+		});
 		assert.equal(await repository.getSnapshot("IL", future.id), null);
 		await storage.write(snapshot);
 		assert.deepEqual(JSON.parse(JSON.stringify((await repository.getSnapshot("IL", future.id))!.records)), JSON.parse(JSON.stringify(records)));
@@ -154,5 +206,10 @@ test("Winnebago reconciles every visible native field and rejects opaque overlay
 test("Winnebago clipping checks use actual cubic ink bounds rather than font- or host-specific glyph hashes", () => {
 	assert.deepEqual(winnebagoGlyphBounds("M 0 0 C 0 10 10 10 10 0 Z"), [0, 0, 10, 7.5]);
 	assert.deepEqual(winnebagoGlyphBounds("M 0 0 L 10 0 L 10 5 Z"), [0, 0, 10, 5]);
-	for (const definition of ["M 0 0 H 2", "M 0 0 C 1 2", "M NaN 0", ""]) assert.throws(() => winnebagoGlyphBounds(definition), /Winnebago/u);
+	for (const definition of [
+		"M 0 0 H 2",
+		"M 0 0 C 1 2",
+		"M NaN 0",
+		""
+	]) assert.throws(() => winnebagoGlyphBounds(definition), /Winnebago/u);
 });

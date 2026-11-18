@@ -16,7 +16,9 @@ interface AdminLoginThrottleOptions {
 
 function getNumberEnv(name: string, fallback: number) {
 	const raw = Number(process.env[name]);
-	return Number.isSafeInteger(raw) && raw > 0 ? raw : fallback;
+	return Number.isSafeInteger(raw) && raw > 0
+		? raw
+		: fallback;
 }
 
 function requirePositiveInteger(value: number, name: string) {
@@ -75,7 +77,9 @@ export function createAdminLoginThrottle(options: AdminLoginThrottleOptions = {}
 	}
 
 	function getMaximumAttempts(key: string) {
-		return key.startsWith("ip:") ? ipMaxAttempts : accountMaxAttempts;
+		return key.startsWith("ip:")
+			? ipMaxAttempts
+			: accountMaxAttempts;
 	}
 
 	function getCapacityRetryAfterSeconds(now: number) {
@@ -149,7 +153,9 @@ export function createAdminLoginThrottle(options: AdminLoginThrottleOptions = {}
 				attempts.set(key, {
 					count: nextCount,
 					firstAttemptAt: current.firstAttemptAt,
-					lockedUntil: nextCount >= getMaximumAttempts(key) ? now + lockoutMs : 0
+					lockedUntil: nextCount >= getMaximumAttempts(key)
+						? now + lockoutMs
+						: 0
 				});
 			}
 		}

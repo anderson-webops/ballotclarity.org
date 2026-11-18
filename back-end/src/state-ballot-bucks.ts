@@ -22,7 +22,22 @@ export function validBucksDate(value: string) {
 }
 
 export function bucksSource(electionDate: string): StateBallotSource {
-	return { stateCode: "PA", id: electionDate === "2026-11-03" ? "pa-bucks-2026" : `pa-bucks-general-${electionDate}`, label: "Bucks County candidate listing", electionDate, url: bucksIndexUrl, pageUrl: bucksIndexUrl, format: "bucks-pdf", countyName: "Bucks County", defaultPriority: -20, snapshotStorage: "external", ballotPreview: false, withheldDistrictScopes: ["congressional", "state-senate", "state-house"] };
+	return {
+		stateCode: "PA",
+		id: electionDate === "2026-11-03"
+			? "pa-bucks-2026"
+			: `pa-bucks-general-${electionDate}`,
+		label: "Bucks County candidate listing",
+		electionDate,
+		url: bucksIndexUrl,
+		pageUrl: bucksIndexUrl,
+		format: "bucks-pdf",
+		countyName: "Bucks County",
+		defaultPriority: -20,
+		snapshotStorage: "external",
+		ballotPreview: false,
+		withheldDistrictScopes: ["congressional", "state-senate", "state-house"]
+	};
 }
 
 export function validateBucksSource(source: StateBallotSource) {
@@ -45,7 +60,15 @@ export function validateBucksDocumentUrl(value: string, electionDate: string, of
 function tablePages(value: unknown): StateBallotTablePage[] {
 	if (!Array.isArray(value) || !value.length || value.length > 20 || Buffer.byteLength(JSON.stringify(value)) > 4 * 1024 * 1024) return bucksReject();
 	for (const [index, page] of value.entries()) {
-		if (!bucksExact(page, ["number", "width", "height", "text", "cells"]) || page.number !== index + 1 || page.width !== 1008 || page.height !== 612 || typeof page.text !== "string" || page.text.length > 100000 || !Array.isArray(page.cells) || page.cells.length < 10 || page.cells.length > 500) return bucksReject();
+		if (!bucksExact(page, [
+			"number",
+			"width",
+			"height",
+			"text",
+			"cells"
+		]) || page.number !== index + 1 || page.width !== 1008 || page.height !== 612 || typeof page.text !== "string" || page.text.length > 100000 || !Array.isArray(page.cells) || page.cells.length < 10 || page.cells.length > 500) {
+			return bucksReject();
+		}
 		for (const cell of page.cells) {
 			if (!bucksExact(cell, ["bounds", "text", "logicalText"]) || !Array.isArray(cell.bounds) || cell.bounds.length !== 4 || cell.bounds.some((coordinate: unknown) => typeof coordinate !== "number" || !Number.isFinite(coordinate) || coordinate < 0) || cell.bounds[0] >= cell.bounds[2] || cell.bounds[1] >= cell.bounds[3] || cell.bounds[2] > page.width || cell.bounds[3] > page.height || typeof cell.text !== "string" || typeof cell.logicalText !== "string" || cell.text.length > 3000 || clean(cell.text) !== clean(cell.logicalText)) return bucksReject();
 		}
@@ -68,7 +91,12 @@ function officeFields(label: string): { office: string; scope: StateCandidateVal
 
 export function readBucksCandidateTables(value: unknown) {
 	const pages = tablePages(value);
-	const headings = ["Election:", "Vote for:", "Candidate's Name:", "Political Party:"].map(label => pages[0]!.cells.filter(cell => clean(cell.text) === label));
+	const headings = [
+		"Election:",
+		"Vote for:",
+		"Candidate's Name:",
+		"Political Party:"
+	].map(label => pages[0]!.cells.filter(cell => clean(cell.text) === label));
 	if (headings.some(matches => matches.length !== 1)) return bucksReject();
 	const header = headings.map(matches => matches[0]!);
 	if (header.some((cell, index) => !close(cell.bounds[1], header[0]!.bounds[1]) || !close(cell.bounds[3], header[0]!.bounds[3]) || (index > 0 && !close(cell.bounds[0], header[index - 1]!.bounds[2])))) return bucksReject();
@@ -78,7 +106,9 @@ export function readBucksCandidateTables(value: unknown) {
 	let namedPeople = 0;
 	let jointTickets = 0;
 	for (const page of pages) {
-		const used = new Set<Cell>(page.number === 1 ? header : []);
+		const used = new Set<Cell>(page.number === 1
+			? header
+			: []);
 		const columns = header.map(column => page.cells.filter(cell => close(cell.bounds[0], column.bounds[0]) && close(cell.bounds[2], column.bounds[2]) && cell.bounds[1] >= header[0]!.bounds[3] - 1));
 		for (const officeCell of columns[0]!.filter(cell => clean(cell.text))) {
 			const label = clean(officeCell.text);
@@ -101,7 +131,10 @@ export function readBucksCandidateTables(value: unknown) {
 				names.add(`${key}:${name}`);
 				used.add(row);
 				used.add(parties[0]!);
-				return { name, party: clean(parties[0]!.text) };
+				return {
+					name,
+					party: clean(parties[0]!.text)
+				};
 			});
 			namedPeople += candidates.length;
 			if (fields.ticket) {
@@ -109,16 +142,35 @@ export function readBucksCandidateTables(value: unknown) {
 					const governor = candidates[index]!;
 					const lieutenant = candidates[index + 1]!;
 					if (!governor.name.endsWith(", For Governor") || !lieutenant.name.endsWith(", For Lieutenant Governor") || governor.party !== lieutenant.party) return bucksReject();
-					claims.push({ name: `${governor.name.replace(/, For Governor$/u, "")} / ${lieutenant.name.replace(/, For Lieutenant Governor$/u, "")}`, party: governor.party, office: fields.office, scope: fields.scope, status: "listed" });
+					claims.push({
+						name: `${governor.name.replace(/, For Governor$/u, "")} / ${lieutenant.name.replace(/, For Lieutenant Governor$/u, "")}`,
+						party: governor.party,
+						office: fields.office,
+						scope: fields.scope,
+						status: "listed"
+					});
 					jointTickets++;
 				}
 			}
 			else {
-				for (const candidate of candidates) claims.push({ ...candidate, office: fields.office, district: fields.district, scope: fields.scope, status: "listed" });
+				for (const candidate of candidates) {
+					claims.push({
+						...candidate,
+						office: fields.office,
+						district: fields.district,
+						scope: fields.scope,
+						status: "listed"
+					});
+				}
 			}
 		}
 		if (page.cells.some(cell => clean(cell.text) && !used.has(cell))) return bucksReject();
 	}
 	if (!claims.length || claims.length > 500) return bucksReject();
-	return { claims, namedPeople, jointTickets, offices: offices.size };
+	return {
+		claims,
+		namedPeople,
+		jointTickets,
+		offices: offices.size
+	};
 }

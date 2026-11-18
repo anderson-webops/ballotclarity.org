@@ -124,7 +124,10 @@ export function tuscolaPolicyFingerprint(body: Buffer, url: string) {
 	const footer = descendants(parseStateHtml(body.toString("utf8")), node => attribute(node, "id") === "footer");
 	if (footer.length !== 1 || text(footer[0]!).length < 100)
 		throw new Error("The Tuscola website footer requires review.");
-	return hash(JSON.stringify({ inventory, footer: text(footer[0]!) }));
+	return hash(JSON.stringify({
+		inventory,
+		footer: text(footer[0]!)
+	}));
 }
 export function validateTuscolaDocumentUrl(value: string, kind: Kind, year: string) {
 	const url = new URL(value);
@@ -149,7 +152,12 @@ export function validateTuscolaDocumentUrl(value: string, kind: Kind, year: stri
 }
 export function validateTuscolaElection(value: unknown): asserts value is TuscolaElection {
 	if (
-		!exact(value, ["electionId", "electionDate", "pageUrl", "tuscolaDocuments"])
+		!exact(value, [
+			"electionId",
+			"electionDate",
+			"pageUrl",
+			"tuscolaDocuments"
+		])
 		|| value.electionId !== null
 		|| !validDate(value.electionDate)
 		|| value.pageUrl !== tuscolaDiscoveryUrl
@@ -263,7 +271,13 @@ export function readTuscolaDiscovery(body: string, now = Date.now()) {
 	if (Buffer.byteLength(body) > 24 * 1024 * 1024) throw new Error("The Tuscola discovery exceeds its bounds.");
 	const value: unknown = JSON.parse(body);
 	if (
-		!exact(value, ["schemaVersion", "type", "policies", "index", "documents"])
+		!exact(value, [
+			"schemaVersion",
+			"type",
+			"policies",
+			"index",
+			"documents"
+		])
 		|| value.schemaVersion !== 1
 		|| value.type !== "tuscola-discovery"
 		|| JSON.stringify(value.policies) !== JSON.stringify(tuscolaPolicyReceipts)
@@ -354,7 +368,9 @@ export async function fetchTuscolaCycleDiscovery(options: Options = {}) {
 	}
 	const selected = offered(index!.body, now());
 	const documents: Pdf[][] = [];
-	const executable = options.extractor ? null : await resolveStateBallotPdfExtractor();
+	const executable = options.extractor
+		? null
+		: await resolveStateBallotPdfExtractor();
 	for (const election of selected) {
 		const captured: Pdf[] = [];
 		for (const document of election.documents) {
@@ -373,8 +389,12 @@ export async function fetchTuscolaCycleDiscovery(options: Options = {}) {
 									bytes,
 									executable!,
 									12000,
-									document.kind === "candidates" ? "raw-bbox" : "raw",
-									document.kind === "candidates" ? 100 : 200
+									document.kind === "candidates"
+										? "raw-bbox"
+										: "raw",
+									document.kind === "candidates"
+										? 100
+										: 200
 								)
 				})
 			);
@@ -420,7 +440,12 @@ export function parseTuscolaCandidateCapture(
 		throw new Error("The Tuscola candidate capture exceeds its bounds.");
 	const value: unknown = JSON.parse(body);
 	if (
-		!exact(value, ["schemaVersion", "type", "discovery", "electionDate"])
+		!exact(value, [
+			"schemaVersion",
+			"type",
+			"discovery",
+			"electionDate"
+		])
 		|| value.schemaVersion !== 1
 		|| value.type !== "tuscola-candidate-capture"
 		|| value.electionDate !== source.electionDate

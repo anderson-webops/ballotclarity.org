@@ -140,7 +140,9 @@ export function normalizePublicHref(value: string | null | undefined) {
 
 export function normalizeImageHref(value: string | null | undefined) {
 	const href = normalizePublicHref(value);
-	return href && !href.startsWith("#") ? href : "";
+	return href && !href.startsWith("#")
+		? href
+		: "";
 }
 
 export function resolvePublicLink(value: string | null | undefined, siteUrl = "https://ballotclarity.org") {
@@ -156,7 +158,10 @@ export function resolvePublicLink(value: string | null | undefined, siteUrl = "h
 			&& target.hostname.replace(/\.$/u, "") === site.hostname.replace(/\.$/u, "")
 			&& target.port === site.port
 		) {
-			return { external: false, href: normalizePublicHref(`${target.pathname}${target.search}${target.hash}`) };
+			return {
+				external: false,
+				href: normalizePublicHref(`${target.pathname}${target.search}${target.hash}`)
+			};
 		}
 	}
 	catch {}

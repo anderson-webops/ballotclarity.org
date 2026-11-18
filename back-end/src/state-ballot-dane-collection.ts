@@ -42,18 +42,29 @@ function validDate(value: unknown): value is string {
 function articleDate(value: string) {
 	const url = new URL(value);
 	const match = /^\/(20\d{2})\/(0[1-9]|1[01])\/([0-3]\d)\/november-([2-8])-(20\d{2})-general-election-information\/$/u.exec(url.pathname);
-	const date = match ? `${match[5]}-11-0${match[4]}` : "";
+	const date = match
+		? `${match[5]}-11-0${match[4]}`
+		: "";
 	if (url.origin !== "https://townofdane.gov" || url.username || url.password || url.search || url.hash || url.href !== value || !match || match[1] !== match[5] || !validDate(date) || !Number.isFinite(Date.parse(`${match[1]}-${match[2]}-${match[3]}T00:00:00Z`)) || new Date(`${match[1]}-${match[2]}-${match[3]}T00:00:00Z`).toISOString().slice(0, 10) !== `${match[1]}-${match[2]}-${match[3]}` || `${match[1]}-${match[2]}-${match[3]}` > date) throw new Error("The Dane offered election article requires review.");
 	return date;
 }
 export function validateDaneDocumentUrl(value: string, kind: Role, electionDate: string) {
 	const url = new URL(value);
 	const match = /^\/townofdane\.gov\/wp-content\/uploads\/(20\d{2})\/(?:0[1-9]|1[01])\/([^/]+)$/u.exec(url.pathname);
-	const filename = kind === "notice" ? `Dane-County-Type-B-ToD-Notice-for-Fall-${electionDate.slice(0, 4)}.pdf` : `Sample-Nov-${Number(electionDate.slice(8))}-Ballot-${kind}.pdf`;
+	const filename = kind === "notice"
+		? `Dane-County-Type-B-ToD-Notice-for-Fall-${electionDate.slice(0, 4)}.pdf`
+		: `Sample-Nov-${Number(electionDate.slice(8))}-Ballot-${kind}.pdf`;
 	if (!roles.includes(kind) || !validDate(electionDate) || url.origin !== "https://cdn.townweb.com" || url.href !== value || url.username || url.password || url.search || url.hash || !match || match[1] !== electionDate.slice(0, 4) || match[2] !== filename) throw new Error("The Dane offered PDF identity or date requires review.");
 }
 export function validateDaneElection(value: unknown): asserts value is DaneElection {
-	if (!exact(value, ["electionId", "electionDate", "pageUrl", "daneDocuments"]) || value.electionId !== null || !validDate(value.electionDate) || typeof value.pageUrl !== "string" || articleDate(value.pageUrl) !== value.electionDate || !Array.isArray(value.daneDocuments) || value.daneDocuments.length > 4) throw new Error("The Dane election configuration requires review.");
+	if (!exact(value, [
+		"electionId",
+		"electionDate",
+		"pageUrl",
+		"daneDocuments"
+	]) || value.electionId !== null || !validDate(value.electionDate) || typeof value.pageUrl !== "string" || articleDate(value.pageUrl) !== value.electionDate || !Array.isArray(value.daneDocuments) || value.daneDocuments.length > 4) {
+		throw new Error("The Dane election configuration requires review.");
+	}
 	const kinds: string[] = [];
 	for (const item of value.daneDocuments) {
 		if (!exact(item, ["kind", "url", "sha256"]) || !roles.includes(item.kind as Role) || typeof item.url !== "string" || typeof item.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(item.sha256) || kinds.includes(String(item.kind))) throw new Error("The Dane document configuration requires review.");
@@ -63,20 +74,32 @@ export function validateDaneElection(value: unknown): asserts value is DaneElect
 	if (kinds.join("|") !== roles.filter(kind => kinds.includes(kind)).join("|")) throw new Error("The Dane document order requires review.");
 }
 export function validateDaneSource(source: StateBallotSource) {
-	if (source.stateCode !== "WI" || source.format !== "dane-pdf" || source.url !== daneDiscoveryUrl || articleDate(source.pageUrl) !== source.electionDate || !validDate(source.electionDate) || source.id !== (source.electionDate === "2026-11-03" ? "wi-town-dane-2026" : `wi-town-dane-general-${source.electionDate}`) || source.snapshotStorage !== "external" || source.retrievalPolicy || source.postBody || source.documentUrls || source.documentLinks || source.delimiter) throw new Error("The Dane source contract requires review.");
+	if (source.stateCode !== "WI" || source.format !== "dane-pdf" || source.url !== daneDiscoveryUrl || articleDate(source.pageUrl) !== source.electionDate || !validDate(source.electionDate) || source.id !== (source.electionDate === "2026-11-03"
+		? "wi-town-dane-2026"
+		: `wi-town-dane-general-${source.electionDate}`) || source.snapshotStorage !== "external" || source.retrievalPolicy || source.postBody || source.documentUrls || source.documentLinks || source.delimiter) {
+		throw new Error("The Dane source contract requires review.");
+	}
 }
 export const daneDocumentDigest = (documents: DaneElection["daneDocuments"]) => hash(JSON.stringify(documents));
 function links(body: string, url: string) {
 	if (Buffer.byteLength(body) > 2 * 1024 * 1024 || containsControlCharacters(body.replace(/[\r\n\t]/gu, ""))) throw new Error("The Dane index exceeds its bounds.");
 	const document = parseStateHtml(body);
-	const pending = [{ node: document, depth: 0 }];
+	const pending = [
+		{ node: document, depth: 0 }
+	];
 	let visited = 0;
 	while (pending.length) {
 		const item = pending.pop()!;
 		if (++visited > 80000 || item.depth > 64) throw new Error("The Dane index structure requires review.");
 		for (const child of item.node.childNodes ?? []) pending.push({ node: child, depth: item.depth + 1 });
 	}
-	return { document, links: descendants(document, node => node.nodeName === "a").map(node => ({ label: clean(stateHtmlText(node)), url: new URL(attribute(node, "href"), url).href })) };
+	return {
+		document,
+		links: descendants(document, node => node.nodeName === "a").map(node => ({
+			label: clean(stateHtmlText(node)),
+			url: new URL(attribute(node, "href"), url).href
+		}))
+	};
 }
 function offeredArticles(pages: Page[]) {
 	const result = new Map<string, string>();
@@ -92,7 +115,11 @@ function offeredArticles(pages: Page[]) {
 			result.set(date, link.url);
 		}
 		const next = selected.filter(link => link.label === "Next »");
-		if (next.length > 1 || (next[0] && next[0].url !== `${daneDiscoveryUrl}page/${index + 2}/`) || (index < pages.length - 1 ? !next.length : next.length)) throw new Error("The Dane offered news pagination requires review.");
+		if (next.length > 1 || (next[0] && next[0].url !== `${daneDiscoveryUrl}page/${index + 2}/`) || (index < pages.length - 1
+			? !next.length
+			: next.length)) {
+			throw new Error("The Dane offered news pagination requires review.");
+		}
 		expected = next[0]?.url ?? "";
 	}
 	if (!result.size || result.size > 4) throw new Error("The Dane current/future election inventory requires review.");
@@ -126,8 +153,20 @@ function checkedPdf(value: unknown, url: string, now: number): asserts value is 
 export function readDaneDiscovery(body: string, now = Date.now()) {
 	if (Buffer.byteLength(body) > 24 * 1024 * 1024) throw new Error("The Dane discovery exceeds its bounds.");
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "policies", "news", "articles", "documents"]) || value.schemaVersion !== 1 || value.type !== "dane-discovery" || JSON.stringify(value.policies) !== JSON.stringify(danePolicyReceipts) || !Array.isArray(value.news) || !Array.isArray(value.articles) || !Array.isArray(value.documents)) throw new Error("The Dane discovery contract requires review.");
-	for (const page of [...value.news, ...value.articles]) checkedPage(page, now);
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"policies",
+		"news",
+		"articles",
+		"documents"
+	]) || value.schemaVersion !== 1 || value.type !== "dane-discovery" || JSON.stringify(value.policies) !== JSON.stringify(danePolicyReceipts) || !Array.isArray(value.news) || !Array.isArray(value.articles) || !Array.isArray(value.documents)) {
+		throw new Error("The Dane discovery contract requires review.");
+	}
+	for (const page of [
+		...value.news,
+		...value.articles
+	]) checkedPage(page, now);
 	const offered = offeredArticles(value.news as Page[]);
 	if (offered.length !== value.articles.length) throw new Error("The Dane offered articles are incomplete.");
 	const articles = value.articles;
@@ -141,7 +180,12 @@ export function readDaneDiscovery(body: string, now = Date.now()) {
 			checkedPdf(captured, item.url, now);
 			return { ...item, sha256: captured.sha256 };
 		});
-		const election = { electionId: null, electionDate, pageUrl: url, daneDocuments: documents };
+		const election = {
+			electionId: null,
+			electionDate,
+			pageUrl: url,
+			daneDocuments: documents
+		};
 		validateDaneElection(election);
 		return election;
 	});
@@ -155,7 +199,11 @@ export async function fetchDaneCycleDiscovery(options: Options = {}) {
 	let completed = false;
 	async function get(url: string) {
 		if (completed) await sleep(11000);
-		const response = await request(url, { allowedHosts: [new URL(url).hostname], maxBytes: 2 * 1024 * 1024, timeoutMs: 25000 });
+		const response = await request(url, {
+			allowedHosts: [new URL(url).hostname],
+			maxBytes: 2 * 1024 * 1024,
+			timeoutMs: 25000
+		});
 		completed = true;
 		return response;
 	}
@@ -166,7 +214,12 @@ export async function fetchDaneCycleDiscovery(options: Options = {}) {
 		if (!policy.allowed(url)) throw new Error("The Dane policy disallows the requested page.");
 		const response = await get(url);
 		if (response.status !== 200 || response.contentType !== "text/html") throw new Error("The Dane page access requires review.");
-		return { url, body: new TextDecoder("utf-8", { fatal: true }).decode(response.body), sha256: hash(response.body), retrievedAt: new Date(now()).toISOString() };
+		return {
+			url,
+			body: new TextDecoder("utf-8", { fatal: true }).decode(response.body),
+			sha256: hash(response.body),
+			retrievedAt: new Date(now()).toISOString()
+		};
 	}
 	const news: Page[] = [];
 	const articles: Page[] = [];
@@ -195,17 +248,33 @@ export async function fetchDaneCycleDiscovery(options: Options = {}) {
 	const cdnResponse = await get("https://cdn.townweb.com/robots.txt");
 	if (cdnResponse.status !== 200 || hash(cdnResponse.body) !== danePolicyReceipts.cdnRobots) throw new Error("The Town Web document robots policy changed.");
 	const cdn = electionDocumentRobotsPolicy(cdnResponse.body);
-	const executable = options.extractor ? null : await resolveStateBallotPdfExtractor();
+	const executable = options.extractor
+		? null
+		: await resolveStateBallotPdfExtractor();
 	for (const [date, url] of offered) {
 		const page = await getPage(url);
 		articles.push(page);
 		for (const item of offeredDocuments(page, date)) {
 			if (!cdn.allowed(item.url)) throw new Error("The Town Web robots policy disallows this PDF.");
 			await sleep(11000);
-			documents.push(await fetchStateBallotPdfDocument(item.url, { allowedHosts: ["cdn.townweb.com"], request, now, extractor: bytes => options.extractor ? options.extractor(bytes) : extractStateBallotPdfText(bytes, executable!, 12000, "bbox-layout", 2) }));
+			documents.push(await fetchStateBallotPdfDocument(item.url, {
+				allowedHosts: ["cdn.townweb.com"],
+				request,
+				now,
+				extractor: bytes => options.extractor
+					? options.extractor(bytes)
+					: extractStateBallotPdfText(bytes, executable!, 12000, "bbox-layout", 2)
+			}));
 		}
 	}
-	const body = JSON.stringify({ schemaVersion: 1, type: "dane-discovery", policies: danePolicyReceipts, news, articles, documents });
+	const body = JSON.stringify({
+		schemaVersion: 1,
+		type: "dane-discovery",
+		policies: danePolicyReceipts,
+		news,
+		articles,
+		documents
+	});
 	readDaneDiscovery(body, now());
 	return body;
 }
@@ -213,13 +282,25 @@ export async function fetchDaneCandidateCapture(source: StateBallotSource, optio
 	validateDaneSource(source);
 	const body = options.discovery ?? await fetchDaneCycleDiscovery(options);
 	if (!readDaneDiscovery(body, (options.now ?? Date.now)()).elections.some(item => item.electionDate === source.electionDate && item.pageUrl === source.pageUrl)) throw new Error("The Dane election is not offered.");
-	return JSON.stringify({ schemaVersion: 1, type: "dane-candidate-capture", discovery: JSON.parse(body), electionDate: source.electionDate });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "dane-candidate-capture",
+		discovery: JSON.parse(body),
+		electionDate: source.electionDate
+	});
 }
 export function parseDaneCandidateCapture(source: StateBallotSource, body: string, now = Date.now(), previous: readonly StateCandidateRecord[] = []) {
 	validateDaneSource(source);
 	if (Buffer.byteLength(body) > 24 * 1024 * 1024) throw new Error("The Dane candidate capture exceeds its bounds.");
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "discovery", "electionDate"]) || value.schemaVersion !== 1 || value.type !== "dane-candidate-capture" || value.electionDate !== source.electionDate) throw new Error("The Dane capture contract requires review.");
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"discovery",
+		"electionDate"
+	]) || value.schemaVersion !== 1 || value.type !== "dane-candidate-capture" || value.electionDate !== source.electionDate) {
+		throw new Error("The Dane capture contract requires review.");
+	}
 	const discovery = readDaneDiscovery(JSON.stringify(value.discovery), now);
 	const election = discovery.elections.find(item => item.electionDate === source.electionDate && item.pageUrl === source.pageUrl);
 	if (!election) throw new Error("The Dane captured election is not offered.");
@@ -229,7 +310,9 @@ export function parseDaneCandidateCapture(source: StateBallotSource, body: strin
 	let shared: string | undefined;
 	for (const item of election.daneDocuments) {
 		const pdf = discovery.documents.find(document => document.url === item.url)!;
-		const parsed = item.kind === "notice" ? readDaneCandidateNotice(source, pdf.text) : readDaneCandidateSample(source, pdf.text, item.kind);
+		const parsed = item.kind === "notice"
+			? readDaneCandidateNotice(source, pdf.text)
+			: readDaneCandidateSample(source, pdf.text, item.kind);
 		if (item.kind !== "notice") {
 			const common = JSON.stringify(parsed.records.filter(item => ["statewide", "local"].includes(item.scope)));
 			if (shared && common !== shared) throw new Error("The Dane samples disagree on shared statewide/county candidates.");
@@ -248,8 +331,19 @@ export function parseDaneCandidateCapture(source: StateBallotSource, body: strin
 				includedRecordCount++;
 			}
 		}
-		documents.push({ url: pdf.url, sha256: pdf.sha256, retrievedAt: pdf.retrievedAt, includedRecordCount });
+		documents.push({
+			url: pdf.url,
+			sha256: pdf.sha256,
+			retrievedAt: pdf.retrievedAt,
+			includedRecordCount
+		});
 	}
 	if (previous.some(record => !records.some(item => item.id === record.id))) throw new Error("An accepted Dane candidate disappeared or changed identity; retain accepted data for review.");
-	return { records, retrievedAt: new Date(Math.min(...documents.map(item => Date.parse(item.retrievedAt)))).toISOString(), sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), documents, collectionIndexSha256: daneDocumentDigest(election.daneDocuments) };
+	return {
+		records,
+		retrievedAt: new Date(Math.min(...documents.map(item => Date.parse(item.retrievedAt)))).toISOString(),
+		sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+		documents,
+		collectionIndexSha256: daneDocumentDigest(election.daneDocuments)
+	};
 }

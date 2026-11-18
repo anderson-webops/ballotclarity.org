@@ -11,9 +11,18 @@ const { formatDate } = useFormatters();
 const stateCode = useRouteStringParam("state");
 const recordId = useRouteStringParam("id");
 const isReference = computed(() => route.query.kind === "reference");
-const sourceId = computed(() => typeof route.query.source === "string" ? route.query.source : undefined);
-const search = computed(() => typeof route.query.name === "string" ? route.query.name.slice(0, 120) : "");
-const sourceLabels = { "candidate-statement": "Candidate-provided", "news-report": "News report", "official-biography": "Official biography", "public-dataset": "Public dataset" };
+const sourceId = computed(() => typeof route.query.source === "string"
+	? route.query.source
+	: undefined);
+const search = computed(() => typeof route.query.name === "string"
+	? route.query.name.slice(0, 120)
+	: "");
+const sourceLabels = {
+	"candidate-statement": "Candidate-provided",
+	"news-report": "News report",
+	"official-biography": "Official biography",
+	"public-dataset": "Public dataset"
+};
 const { data, error, pending, refresh } = await useAsyncData(
 	() => `record-detail:${stateCode.value}:${recordId.value}:${isReference.value}:${sourceId.value}:${search.value}`,
 	async () => {
@@ -22,15 +31,43 @@ const { data, error, pending, refresh } = await useAsyncData(
 		if (isReference.value) {
 			if (!search.value.trim()) return null;
 			const result = await findRecordDetail<PublicElectionReference, ElectionReferencesResponse>(
-				offset => api(`/election-references/${stateCode.value}`, { query: { source: sourceId.value, q: search.value, scope: "all", offset, limit: 100 } }),
+				offset => api(`/election-references/${stateCode.value}`, {
+					query: {
+						source: sourceId.value,
+						q: search.value,
+						scope: "all",
+						offset,
+						limit: 100
+					}
+				}),
 				record => record.id === recordId.value && (!sourceId.value || record.source.collectionId === sourceId.value)
 			);
-			return result ? { reference: result.record, official: null, source: null, electionDate: result.page.electionDate, references: [], referencesUnavailable: false } : null;
+			return result
+				? {
+						reference: result.record,
+						official: null,
+						source: null,
+						electionDate: result.page.electionDate,
+						references: [],
+						referencesUnavailable: false
+					}
+				: null;
 		}
-		const result = await api<StateRecordDetailResponse>(`/state-records/${stateCode.value}/${recordId.value}`, { query: { source: sourceId.value } });
-		return { reference: null, official: result.record, source: result.source, electionDate: result.source.electionDate, references: result.references, referencesUnavailable: result.referencesUnavailable ?? false };
+		const result = await api<StateRecordDetailResponse>(`/state-records/${stateCode.value}/${recordId.value}`, {
+			query: { source: sourceId.value }
+		});
+		return {
+			reference: null,
+			official: result.record,
+			source: result.source,
+			electionDate: result.source.electionDate,
+			references: result.references,
+			referencesUnavailable: result.referencesUnavailable ?? false
+		};
 	},
-	{ default: () => null }
+	{
+		default: () => null
+	}
 );
 const name = computed(() => data.value?.reference?.name ?? data.value?.official?.name);
 const profileImages = computed(() => data.value?.reference?.profileImages ?? data.value?.official?.profileImages ?? []);
@@ -41,14 +78,21 @@ const { data: personData, error: personError, refresh: refreshPerson } = await u
 		if (!personSlug.value || !/^[a-z0-9-]{1,160}$/u.test(personSlug.value)) return null;
 		try {
 			const result = await api<PersonProfileResponse>(`/representatives/${personSlug.value}`);
-			return matchingRecordPerson(result, { slug: personSlug.value, name: name.value ?? "", stateCode: stateCode.value, stateName: data.value?.source?.stateName });
+			return matchingRecordPerson(result, {
+				slug: personSlug.value,
+				name: name.value ?? "",
+				stateCode: stateCode.value,
+				stateName: data.value?.source?.stateName
+			});
 		}
 		catch (error) {
 			if (error && typeof error === "object" && "statusCode" in error && error.statusCode === 404) return null;
 			throw error;
 		}
 	},
-	{ default: () => null }
+	{
+		default: () => null
+	}
 );
 const { data: evaluation, error: evaluationError } = await useAsyncData(
 	() => `judicial-evaluation:${stateCode.value}:${data.value?.source?.id}:${data.value?.official?.id}`,
@@ -57,18 +101,30 @@ const { data: evaluation, error: evaluationError } = await useAsyncData(
 		const source = data.value?.source;
 		if (!record || !source?.id || !/Judicial retention/iu.test(record.office)) return null;
 		try {
-			return await api<PublicJudicialEvaluation>(`/judicial-evaluations/${stateCode.value}/${record.id}`, { query: { source: source.id } });
+			return await api<PublicJudicialEvaluation>(`/judicial-evaluations/${stateCode.value}/${record.id}`, {
+				query: { source: source.id }
+			});
 		}
 		catch (error) {
 			if (error && typeof error === "object" && "statusCode" in error && error.statusCode === 404) return null;
 			throw error;
 		}
 	},
-	{ default: () => null }
+	{
+		default: () => null
+	}
 );
 
-usePageSeo({ title: name.value ?? "Candidate record", description: "Candidate source record and supporting information.", path: route.path, robots: "noindex,follow" });
-const sourcesTarget = computed(() => ({ path: "/record-sources", query: { state: stateCode.value, source: data.value?.source?.id, q: search.value } }));
+usePageSeo({
+	title: name.value ?? "Candidate record",
+	description: "Candidate source record and supporting information.",
+	path: route.path,
+	robots: "noindex,follow"
+});
+const sourcesTarget = computed(() => ({
+	path: "/record-sources",
+	query: { state: stateCode.value, source: data.value?.source?.id, q: search.value }
+}));
 </script>
 
 <template>

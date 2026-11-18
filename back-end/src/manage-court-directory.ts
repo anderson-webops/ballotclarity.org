@@ -5,7 +5,11 @@ import { readBoundedStateDataBytes } from "./state-ballot-storage.js";
 
 async function main() {
 	const [command, directory, file, ...extra] = process.argv.slice(2);
-	if (!directory || extra.length || (command === "import" ? !file : file !== undefined) || !["collect", "import", "export"].includes(command ?? "")) throw new Error("Use collect DIRECTORY, import DIRECTORY SNAPSHOT.json, or export DIRECTORY.");
+	if (!directory || extra.length || (command === "import"
+		? !file
+		: file !== undefined) || !["collect", "import", "export"].includes(command ?? "")) {
+		throw new Error("Use collect DIRECTORY, import DIRECTORY SNAPSHOT.json, or export DIRECTORY.");
+	}
 	if (command === "collect") {
 		console.log(JSON.stringify(await collectCourtDirectory({ directory })));
 	}
@@ -20,6 +24,8 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-	console.error(error instanceof Error ? error.message : "The court directory operation failed.");
+	console.error(error instanceof Error
+		? error.message
+		: "The court directory operation failed.");
 	process.exitCode = 1;
 });

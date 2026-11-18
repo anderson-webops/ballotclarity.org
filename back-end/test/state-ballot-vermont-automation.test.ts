@@ -85,8 +85,19 @@ function capture(
 			sha256: "a".repeat(64),
 			retrievedAt: `${year}-10-25T14:00:00.000Z`,
 			sheets: [
-				{ sheet: "Candidate Listing", data: [[...headers], ...rows] },
-				{ sheet: "Selection Criteria", data: [[`Last Updated: 9/23/${year}`]] }
+				{
+					sheet: "Candidate Listing",
+					data: [
+						[...headers],
+						...rows
+					]
+				},
+				{
+					sheet: "Selection Criteria",
+					data: [
+						[`Last Updated: 9/23/${year}`]
+					]
+				}
 			]
 		}
 	};
@@ -135,7 +146,11 @@ function archive(files: Record<string, string>) {
 function workbookFiles() {
 	const sheets = capture().workbook.sheets;
 	const xml = (rows: StateBallotWorkbookSheet["data"]) =>
-		`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:P${rows.length}"/><sheetData>${rows.map((row, rowIndex) => `<row r="${rowIndex + 1}">${row.map((value, column) => `<c r="${String.fromCharCode(65 + column)}${rowIndex + 1}"${typeof value === "number" ? "" : " t=\"inlineStr\""}>${typeof value === "number" ? `<v>${value}</v>` : `<is><t>${escape(String(value ?? ""))}</t></is>`}</c>`).join("")}</row>`).join("")}</sheetData></worksheet>`;
+		`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:P${rows.length}"/><sheetData>${rows.map((row, rowIndex) => `<row r="${rowIndex + 1}">${row.map((value, column) => `<c r="${String.fromCharCode(65 + column)}${rowIndex + 1}"${typeof value === "number"
+			? ""
+			: " t=\"inlineStr\""}>${typeof value === "number"
+			? `<v>${value}</v>`
+			: `<is><t>${escape(String(value ?? ""))}</t></is>`}</c>`).join("")}</row>`).join("")}</sheetData></worksheet>`;
 	return {
 		"[Content_Types].xml":
 			"<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"><Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/><Default Extension=\"xml\" ContentType=\"application/xml\"/><Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/><Override PartName=\"/xl/worksheets/sheet1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/><Override PartName=\"/xl/worksheets/sheet2.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/></Types>",
@@ -247,7 +262,10 @@ test("Vermont retains literal parties, term/vote limits and source areas, exclud
 	assert.deepEqual(parseStateCandidateRecords(source, body(changed)), records);
 	assert.equal(
 		buildStateBallotPreview(
-			{ source, ...parseVermontCandidateCapture(source, body()) },
+			{
+				source,
+				...parseVermontCandidateCapture(source, body())
+			},
 			{
 				districtMatches: [
 					{
@@ -387,7 +405,12 @@ test("a publisher-policy change stops before candidate acquisition", async () =>
 				indexRequests++;
 				return "";
 			},
-			requestDocument: async () => ({ status: 403, contentType: "", body: Buffer.alloc(0), etag: undefined })
+			requestDocument: async () => ({
+				status: 403,
+				contentType: "",
+				body: Buffer.alloc(0),
+				etag: undefined
+			})
 		}),
 		/policy/u
 	);
@@ -402,7 +425,12 @@ test("candidate source identity and retained document hashes remain explicit", (
 	assert.equal(
 		parsed.sha256,
 		createHash("sha256")
-			.update(JSON.stringify([{ url: source.url, sha256: "a".repeat(64) }]))
+			.update(JSON.stringify([
+				{
+					url: source.url,
+					sha256: "a".repeat(64)
+				}
+			]))
 			.digest("hex")
 	);
 	assert.equal(parsed.retrievedAt, new Date(now).toISOString());

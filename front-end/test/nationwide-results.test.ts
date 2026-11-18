@@ -331,7 +331,13 @@ test("verified guide navigation retains only the matching published election loo
 
 test("retained verified civic results do not persist the entered street address", () => {
 	const address = "1234 Controlled Private Street, Example, GA 30303";
-	const response: LocationLookupResponse = { ...manualVerifiedGuideResponse, inputKind: "address", lookupQuery: address, normalizedAddress: address, location: { ...manualVerifiedGuideResponse.location!, lookupInput: address } };
+	const response: LocationLookupResponse = {
+		...manualVerifiedGuideResponse,
+		inputKind: "address",
+		lookupQuery: address,
+		normalizedAddress: address,
+		location: { ...manualVerifiedGuideResponse.location!, lookupInput: address }
+	};
 	const result = deriveCivicLookupStateUpdate(response).nationwideLookupResult!;
 	const stored = sanitizeNationwideLookupResultForStorage(result)!;
 	assert.equal(stored.lookupQuery, "");
@@ -372,7 +378,10 @@ test("lookup display does not inherit another featured election", () => {
 
 test("unsupported or incomplete responses do not navigate into a verified guide", () => {
 	assert.equal(resolveLookupDestination({ ...manualVerifiedGuideResponse, result: "unsupported" }), null);
-	for (const response of [{ ...manualVerifiedGuideResponse, location: undefined }, { ...manualVerifiedGuideResponse, electionSlug: undefined }]) assert.ok(!resolveLookupDestination(response)?.startsWith("/ballot/"));
+	for (const response of [
+		{ ...manualVerifiedGuideResponse, location: undefined },
+		{ ...manualVerifiedGuideResponse, electionSlug: undefined }
+	]) assert.ok(!resolveLookupDestination(response)?.startsWith("/ballot/"));
 });
 
 test("homepage entry state stops promoting the featured guide preview when a nationwide context is active", () => {

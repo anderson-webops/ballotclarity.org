@@ -35,17 +35,28 @@ const districtPageData = computed(() => {
 });
 const pagePending = computed(() => guidePending.value || (!guideData.value && !lookupFallbackData.value));
 const pageError = computed(() => districtPageData.value ? null : guideError.value);
-const courtDirectories = computed(() => districtPageData.value?.courtDirectories ?? (districtPageData.value?.courtDirectory ? [districtPageData.value.courtDirectory] : []));
+const courtDirectories = computed(() => districtPageData.value?.courtDirectories ?? (districtPageData.value?.courtDirectory
+	? [districtPageData.value.courtDirectory]
+	: []));
 const responsibilitiesHeading = computed(() => districtPageData.value?.mode === "nationwide"
 	? buildDistrictResponsibilitiesHeading(districtPageData.value.district)
 	: "Responsibilities");
 const representativeGroups = computed(() => groupCountyOfficeholders(districtPageData.value?.representatives ?? [], districtPageData.value?.officeVacancies));
 const representativeSection = computed(() => districtPageData.value?.officeVacancies !== undefined
-	? { heading: representativeGroups.value.length === 1 && representativeGroups.value[0]?.id === "commission" ? "County commission" : "County officials", emptyNote: "" }
-	: districtPageData.value ? buildDistrictRepresentativeSection(districtPageData.value.district, districtPageData.value.mode) : { heading: "District representatives", emptyNote: "" });
+	? {
+			heading: representativeGroups.value.length === 1 && representativeGroups.value[0]?.id === "commission"
+				? "County commission"
+				: "County officials",
+			emptyNote: ""
+		}
+	: districtPageData.value
+		? buildDistrictRepresentativeSection(districtPageData.value.district, districtPageData.value.mode)
+		: { heading: "District representatives", emptyNote: "" });
 const representativeDirectoryTarget = computed(() => ({
 	path: "/representatives",
-	query: { ...buildCivicDirectoryApiQuery(buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query) }
+	query: {
+		...buildCivicDirectoryApiQuery(buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query)
+	}
 }));
 function buildLookupAwareTarget(path: string) {
 	return buildNationwideRouteTarget(path, buildLookupContextFromNationwideResult(activeNationwideLookupResult.value), route.query);
@@ -64,15 +75,37 @@ const breadcrumbs = computed(() => [
 const sectionLinks = computed(() => (districtPageData.value
 	? [
 			{ href: "#overview", label: "Overview", note: "District and office context" },
-			{ href: "#representatives", label: representativeSection.value.heading, badge: String(districtPageData.value.representatives.length) },
+			{
+				href: "#representatives",
+				label: representativeSection.value.heading,
+				badge: String(districtPageData.value.representatives.length)
+			},
 			...(districtPageData.value.candidates.length
-				? [{ href: "#candidates", label: "Candidates", badge: String(districtPageData.value.candidates.length) }]
+				? [
+						{
+							href: "#candidates",
+							label: "Candidates",
+							badge: String(districtPageData.value.candidates.length)
+						}
+					]
 				: []),
 			...(districtPageData.value.officialResources.length
-				? [{ href: "#official-tools", label: "Official tools", badge: String(districtPageData.value.officialResources.length) }]
+				? [
+						{
+							href: "#official-tools",
+							label: "Official tools",
+							badge: String(districtPageData.value.officialResources.length)
+						}
+					]
 				: []),
 			...(districtPageData.value.sources.length
-				? [{ href: "#sources", label: "Sources", badge: String(districtPageData.value.sources.length) }]
+				? [
+						{
+							href: "#sources",
+							label: "Sources",
+							badge: String(districtPageData.value.sources.length)
+						}
+					]
 				: [])
 		]
 	: []));

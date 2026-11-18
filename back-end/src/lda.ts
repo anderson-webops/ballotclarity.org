@@ -66,7 +66,9 @@ function toNumber(value: number | string | null | undefined) {
 		return value;
 
 	const parsed = Number.parseFloat(String(value ?? "").trim());
-	return Number.isFinite(parsed) ? parsed : 0;
+	return Number.isFinite(parsed)
+		? parsed
+		: 0;
 }
 
 export function createLdaClient({
@@ -99,7 +101,9 @@ export function createLdaClient({
 
 		if (!response.ok) {
 			const detail = await readProviderResponseText(response);
-			throw new Error(`LDA contribution lookup failed: ${response.status} ${response.statusText}${detail ? ` - ${detail}` : ""}`.slice(0, 500));
+			throw new Error(`LDA contribution lookup failed: ${response.status} ${response.statusText}${detail
+				? ` - ${detail}`
+				: ""}`.slice(0, 500));
 		}
 
 		return await readProviderResponseJson<LdaContributionResponse>(response);
@@ -115,10 +119,14 @@ export function createLdaClient({
 				page: "1",
 				page_size: String(resolvedPageSize),
 			});
-			const count = Number.isFinite(firstPage.count) ? Number(firstPage.count) : 0;
+			const count = Number.isFinite(firstPage.count)
+				? Number(firstPage.count)
+				: 0;
 			const pages = Math.max(1, Math.ceil(count / resolvedPageSize));
 			const lastPage = Math.min(pages, maxPages);
-			const results = [...(firstPage.results ?? [])];
+			const results = [
+				...(firstPage.results ?? [])
+			];
 
 			for (let page = 2; page <= lastPage; page += 1) {
 				const payload = await fetchContributionPage({

@@ -30,7 +30,9 @@ export function registerJudicialEvaluationRoutes(app: Express, repository: Judic
 		}
 		try {
 			const roster = await rosters.getSnapshot(stateCode, sourceId);
-			const evaluation = roster ? await repository.getEvaluation(roster, recordId) : null;
+			const evaluation = roster
+				? await repository.getEvaluation(roster, recordId)
+				: null;
 			if (!evaluation) {
 				response.status(404).json({ message: "An official evaluation is unavailable for this record." });
 				return;

@@ -49,7 +49,12 @@ export function proveAlabamaOfficeFrame(
 			|| candidates.some(
 				(span, index) =>
 					index % 2 === 1
-					&& !["democrat", "republican", "independent", "libertarian"].includes(span.text.toLowerCase())
+					&& ![
+						"democrat",
+						"republican",
+						"independent",
+						"libertarian"
+					].includes(span.text.toLowerCase())
 			)
 		) {
 			continue;
@@ -63,7 +68,9 @@ export function proveAlabamaOfficeFrame(
 		groups.get(key)!.push(item);
 	}
 	if (groups.size !== 1) return null;
-	const alternatives = [...groups.values()][0].sort(
+	const alternatives = [
+		...groups.values()
+	][0].sort(
 		(first, second) =>
 			(first.cell.bounds[2] - first.cell.bounds[0]) * (first.cell.bounds[3] - first.cell.bounds[1])
 			- (second.cell.bounds[2] - second.cell.bounds[0]) * (second.cell.bounds[3] - second.cell.bounds[1])
@@ -78,7 +85,11 @@ export function proveAlabamaOfficeFrame(
 			borders: cell.borders,
 			sourceOperations: cell.spans.map(span => span.operation)
 		},
-		boundary: { bounds: cell.bounds, borders: cell.borders, markerOperations: markers.map(span => span.operation) },
+		boundary: {
+			bounds: cell.bounds,
+			borders: cell.borders,
+			markerOperations: markers.map(span => span.operation)
+		},
 		markerTextVisibilityUsedAsFact: false,
 		candidateSpans: candidates
 	};
@@ -99,12 +110,18 @@ export function proveAlabamaOfficeRows(header: AlabamaCell, cells: AlabamaCell[]
 		);
 		const groups = new Map<string, AlabamaCell[]>();
 		for (const cell of candidates) {
-			const key = JSON.stringify([cell.borders.bottom, cell.borders.top, cell.spans.map(span => span.operation)]);
+			const key = JSON.stringify([
+				cell.borders.bottom,
+				cell.borders.top,
+				cell.spans.map(span => span.operation)
+			]);
 			if (!groups.has(key)) groups.set(key, []);
 			groups.get(key)!.push(cell);
 		}
 		if (groups.size !== 1) return null;
-		const alternatives = [...groups.values()][0];
+		const alternatives = [
+			...groups.values()
+		][0];
 		alternatives.sort(
 			(first, second) =>
 				Math.abs(first.bounds[0] - current.bounds[0])
@@ -154,7 +171,12 @@ export function proveAlabamaOfficeRows(header: AlabamaCell, cells: AlabamaCell[]
 					|| !span.fontProven
 					|| !span.glyphs.every(glyph => contains(row.bounds, glyph.ink))
 			)
-			|| !["democrat", "republican", "independent", "libertarian"].includes(row.spans[1].text.toLowerCase())
+			|| ![
+				"democrat",
+				"republican",
+				"independent",
+				"libertarian"
+			].includes(row.spans[1].text.toLowerCase())
 		) {
 			return null;
 		}

@@ -30,17 +30,50 @@ function page(value: unknown, url: string, now: number): Page {
 	return value as unknown as Page;
 }
 function workbook(rows: unknown) {
-	if (!Array.isArray(rows) || !rows.length || rows.length > 2000 || JSON.stringify(rows[0]) !== JSON.stringify(["Candidate Name", null, "Office", "Party"])) return reject();
+	if (!Array.isArray(rows) || !rows.length || rows.length > 2000 || JSON.stringify(rows[0]) !== JSON.stringify([
+		"Candidate Name",
+		null,
+		"Office",
+		"Party"
+	])) {
+		return reject();
+	}
 	const data = rows.map((row, index) => {
 		if (!Array.isArray(row) || row.length > 4 || row.some(value => value !== null && typeof value !== "string")) return reject();
-		return index === 0 ? [...row, "Address", "Contact"] : [...Array.from({ length: 4 }, (_, column) => row[column] ?? null), null, null];
+		return index === 0
+			? [...row, "Address", "Contact"]
+			: [
+					...Array.from({ length: 4 }, (_, column) => row[column] ?? null),
+					null,
+					null
+				];
 	});
-	return parseBooneCandidateSheets([{ sheet: "Sheet1", data }], { allowEmpty: true });
+	return parseBooneCandidateSheets([
+		{ sheet: "Sheet1", data }
+	], { allowEmpty: true });
 }
 function capturedDocument(value: unknown, offer: Offer, role: Document["role"], now: number): Document {
 	const available = Boolean(value && typeof value === "object" && "status" in value && value.status === 200);
-	const fields = ["year", "role", "url", "status", "sha256", "retrievedAt", ...(available ? [role === "workbook" ? "rows" : "text"] : [])];
-	if (!exact(value, fields) || value.year !== offer.year || value.role !== role || value.url !== (role === "workbook" ? offer.workbookUrl : offer.ballotUrl) || (value.status !== 200 && value.status !== 404) || !digest(value.sha256) || !instant(value.retrievedAt, now)) return reject();
+	const fields = [
+		"year",
+		"role",
+		"url",
+		"status",
+		"sha256",
+		"retrievedAt",
+		...(available
+			? [
+					role === "workbook"
+						? "rows"
+						: "text"
+				]
+			: [])
+	];
+	if (!exact(value, fields) || value.year !== offer.year || value.role !== role || value.url !== (role === "workbook"
+		? offer.workbookUrl
+		: offer.ballotUrl) || (value.status !== 200 && value.status !== 404) || !digest(value.sha256) || !instant(value.retrievedAt, now)) {
+		return reject();
+	}
 	if (available && role === "workbook") workbook(value.rows);
 	if (available && role === "ballots") {
 		if (typeof value.text !== "string") return reject();
@@ -51,7 +84,16 @@ function capturedDocument(value: unknown, offer: Offer, role: Document["role"], 
 export function readBooneDiscovery(body: string, now = Date.now()) {
 	if (Buffer.byteLength(body) > 24 * 1024 * 1024) return reject();
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "robots", "home", "index", "documents"]) || value.schemaVersion !== 1 || value.type !== "boone-candidate-discovery" || !Array.isArray(value.documents)) return reject();
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"robots",
+		"home",
+		"index",
+		"documents"
+	]) || value.schemaVersion !== 1 || value.type !== "boone-candidate-discovery" || !Array.isArray(value.documents)) {
+		return reject();
+	}
 	const robots = page(value.robots, `${booneOrigin}/robots.txt`, now);
 	if (robots.sha256 !== booneRobotsSha256) return reject();
 	const home = page(value.home, `${booneOrigin}/`, now);
@@ -71,7 +113,12 @@ export function readBooneDiscovery(body: string, now = Date.now()) {
 		const ballots = capturedDocument(value.documents[offset++], offer, "ballots", now);
 		documents.push(ballots);
 		if (ballots.status === 404) continue;
-		const election = { electionId: null, electionDate: readBooneBallotDate(ballots.text!, offer.year), pageUrl: booneDiscoveryUrl, booneDocuments: [candidates, ballots].map(({ url, sha256, status }) => ({ url, sha256, status })) } satisfies BooneElection;
+		const election = {
+			electionId: null,
+			electionDate: readBooneBallotDate(ballots.text!, offer.year),
+			pageUrl: booneDiscoveryUrl,
+			booneDocuments: [candidates, ballots].map(({ url, sha256, status }) => ({ url, sha256, status }))
+		} satisfies BooneElection;
 		validateBooneElection(election);
 		elections.push(election);
 	}
@@ -86,14 +133,27 @@ export async function fetchBooneCycleDiscovery(options: Options = {}) {
 			if (!policy.allowed(url)) return reject();
 			await (options.sleep ?? wait)(policy.delay);
 		}
-		const response = await request(url, { allowedHosts: ["boonecounty.in.gov"], maxBytes: maximumBytes, timeoutMs: 30000 });
+		const response = await request(url, {
+			allowedHosts: ["boonecounty.in.gov"],
+			maxBytes: maximumBytes,
+			timeoutMs: 30000
+		});
 		await options.onResponse?.(url, response);
 		return response;
 	}
 	async function capturePage(url: string): Promise<Page> {
 		const response = await get(url);
-		if (response.status !== 200 || response.contentType !== (url.endsWith("robots.txt") ? "text/plain" : "text/html")) return reject();
-		return { url, body: new TextDecoder("utf-8", { fatal: true }).decode(response.body), sha256: booneHash(response.body), retrievedAt: new Date(now()).toISOString() };
+		if (response.status !== 200 || response.contentType !== (url.endsWith("robots.txt")
+			? "text/plain"
+			: "text/html")) {
+			return reject();
+		}
+		return {
+			url,
+			body: new TextDecoder("utf-8", { fatal: true }).decode(response.body),
+			sha256: booneHash(response.body),
+			retrievedAt: new Date(now()).toISOString()
+		};
 	}
 	const robots = await capturePage(`${booneOrigin}/robots.txt`);
 	if (robots.sha256 !== booneRobotsSha256) return reject();
@@ -104,9 +164,25 @@ export async function fetchBooneCycleDiscovery(options: Options = {}) {
 	if (boonePolicyFingerprint(index.body) !== boonePolicySha256) return reject();
 	const documents: Document[] = [];
 	for (const offer of readBooneCandidateIndex(index.body)) {
-		for (const [role, url] of [["workbook", offer.workbookUrl], ...offer.ballotUrl ? [["ballots", offer.ballotUrl]] : []] as [Document["role"], string][]) {
-			const response = await get(url, role === "ballots" ? 12 * 1024 * 1024 : 2 * 1024 * 1024);
-			const receipt = { year: offer.year, role, url, status: response.status, sha256: booneHash(response.body), retrievedAt: new Date(now()).toISOString() };
+		for (const [role, url] of [
+			["workbook", offer.workbookUrl],
+			...offer.ballotUrl
+				? [
+						["ballots", offer.ballotUrl]
+					]
+				: []
+		] as [Document["role"], string][]) {
+			const response = await get(url, role === "ballots"
+				? 12 * 1024 * 1024
+				: 2 * 1024 * 1024);
+			const receipt = {
+				year: offer.year,
+				role,
+				url,
+				status: response.status,
+				sha256: booneHash(response.body),
+				retrievedAt: new Date(now()).toISOString()
+			};
 			if (response.status === 404) {
 				documents.push({ ...receipt, status: 404 });
 				continue;
@@ -122,14 +198,23 @@ export async function fetchBooneCycleDiscovery(options: Options = {}) {
 			}
 			else {
 				if (response.contentType !== "application/pdf" || !response.body.subarray(0, 5).equals(Buffer.from("%PDF-"))) return reject();
-				const body = options.extractBallots ? await options.extractBallots(response.body) : await extractStateBallotPdfText(response.body, await resolveStateBallotPdfExtractor(), 12000, "layout", 1000);
+				const body = options.extractBallots
+					? await options.extractBallots(response.body)
+					: await extractStateBallotPdfText(response.body, await resolveStateBallotPdfExtractor(), 12000, "layout", 1000);
 				readBooneBallotDate(body, offer.year);
 				documents.push({ ...receipt, status: 200, text: body });
 			}
 			if (Buffer.byteLength(JSON.stringify(documents)) > 20 * 1024 * 1024) return reject();
 		}
 	}
-	const body = JSON.stringify({ schemaVersion: 1, type: "boone-candidate-discovery", robots, home, index, documents });
+	const body = JSON.stringify({
+		schemaVersion: 1,
+		type: "boone-candidate-discovery",
+		robots,
+		home,
+		index,
+		documents
+	});
 	readBooneDiscovery(body, now());
 	return body;
 }
@@ -137,13 +222,25 @@ export async function fetchBooneCandidateCapture(source: StateBallotSource, opti
 	validateBooneSource(source);
 	const discovery = options.discovery ?? await fetchBooneCycleDiscovery(options);
 	readBooneDiscovery(discovery, (options.now ?? Date.now)());
-	return JSON.stringify({ schemaVersion: 1, type: "boone-candidate-capture", electionDate: source.electionDate, discovery: JSON.parse(discovery) });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "boone-candidate-capture",
+		electionDate: source.electionDate,
+		discovery: JSON.parse(discovery)
+	});
 }
 export function parseBooneCandidateCapture(source: StateBallotSource, body: string, factory: typeof import("./state-ballot-records.js").createStateCandidateRecord, now = Date.now(), previous?: StateBallotSnapshot) {
 	validateBooneSource(source);
 	if (Buffer.byteLength(body) > 24 * 1024 * 1024) return reject();
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "electionDate", "discovery"]) || value.schemaVersion !== 1 || value.type !== "boone-candidate-capture" || value.electionDate !== source.electionDate) return reject();
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"electionDate",
+		"discovery"
+	]) || value.schemaVersion !== 1 || value.type !== "boone-candidate-capture" || value.electionDate !== source.electionDate) {
+		return reject();
+	}
 	const discovery = readBooneDiscovery(JSON.stringify(value.discovery), now);
 	const election = discovery.elections.find(item => item.electionDate === source.electionDate);
 	const candidates = discovery.documents.find(item => item.year === source.electionDate.slice(0, 4) && item.role === "workbook");
@@ -157,15 +254,37 @@ export function parseBooneCandidateCapture(source: StateBallotSource, body: stri
 		throw new StateBallotAwaitingRecordsError(source.id);
 	}
 	const records = facts.claims.map((claim) => {
-		const record = factory(source, { name: claim.name, office: claim.office, party: claim.party ?? "", scope: "local", district: "", jurisdiction: "Boone County", status: claim.ballotExclusion ? "inactive" : "filed", sourceDistrictLabel: claim.sourceDistrictLabel });
+		const record = factory(source, {
+			name: claim.name,
+			office: claim.office,
+			party: claim.party ?? "",
+			scope: "local",
+			district: "",
+			jurisdiction: "Boone County",
+			status: claim.ballotExclusion ? "inactive" : "filed",
+			sourceDistrictLabel: claim.sourceDistrictLabel
+		});
 		if (!record) return reject();
 		return { ...record, sourceStatus: claim.ballotInstruction };
 	});
 	const identities = new Map(records.map(record => [record.id, record]));
 	if (previous?.records.some(record => !identities.has(record.id) || (record.status === "inactive" && identities.get(record.id)!.status !== "inactive"))) return reject();
 	const selected = discovery.documents.filter(item => item.year === source.electionDate.slice(0, 4));
-	const documents = selected.map(({ url, sha256, retrievedAt, role }) => ({ url, sha256, retrievedAt, includedRecordCount: role === "workbook" ? records.length : 0 }));
+	const documents = selected.map(({ url, sha256, retrievedAt, role }) => ({
+		url,
+		sha256,
+		retrievedAt,
+		includedRecordCount: role === "workbook"
+			? records.length
+			: 0
+	}));
 	const retrievedAt = documents.map(item => item.retrievedAt).sort()[0]!;
 	if (previous && Date.parse(retrievedAt) < Date.parse(previous.retrievedAt)) return reject();
-	return { records, documents, retrievedAt, sha256: booneHash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), collectionIndexSha256: booneDocumentDigest(election.booneDocuments) };
+	return {
+		records,
+		documents,
+		retrievedAt,
+		sha256: booneHash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+		collectionIndexSha256: booneDocumentDigest(election.booneDocuments)
+	};
 }

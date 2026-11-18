@@ -37,7 +37,13 @@ test("loops and reversed cubic controls retain their full ink extent", () => {
 	assert.equal(iowaInkOverlaps(loop, rectangle(2, -0.01, 2.1, 0.01)), true);
 });
 test("malformed and excessive ink work fails closed", () => {
-	for (const path of ["", "L 1 1", "M 0 0", "M 0 0 Q 1 1 2 2", `M 0 0 ${"L 1 1 ".repeat(10001)}`])
+	for (const path of [
+		"",
+		"L 1 1",
+		"M 0 0",
+		"M 0 0 Q 1 1 2 2",
+		`M 0 0 ${"L 1 1 ".repeat(10001)}`
+	])
 		assert.throws(() => iowaInkShape(path));
 	assert.throws(() => iowaInkShape("M 0 0 L 1 1", [NaN, 0, 0, 1, 0, 0]));
 	assert.throws(() => iowaInkOverlaps(rectangle(0, 0, 1, 1), rectangle(2, 2, 3, 3), -1));

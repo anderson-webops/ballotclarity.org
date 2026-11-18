@@ -27,11 +27,28 @@ test("compatible synthetic future layouts and distinct printed House districts r
 });
 test("unknown offices, parties, partial rows, duplicated offices and changing vote instructions require review", () => {
 	const body = eastGreenwichFixture();
-	for (const [before, after] of [[">Governor<", ">Unknown Office<"], [">REPUBLICAN<", ">New Party<"], [">Blair Sample<", ">Write-in<"], [">Governor<", ">General Treasurer<"], [">Vote for 1<", ">Vote for 2<"], [">Six Year Term<", ">Six Months<"], [">District 35<", ">District 36<"], [">Write-in<", ">Unexpected row<"]]) assert.throws(() => readEastGreenwichCandidateSample(source, body.replace(before!, after!), "0901"), /requires review|disagree/u);
+	for (const [before, after] of [
+		[">Governor<", ">Unknown Office<"],
+		[">REPUBLICAN<", ">New Party<"],
+		[">Blair Sample<", ">Write-in<"],
+		[">Governor<", ">General Treasurer<"],
+		[">Vote for 1<", ">Vote for 2<"],
+		[">Six Year Term<", ">Six Months<"],
+		[">District 35<", ">District 36<"],
+		[">Write-in<", ">Unexpected row<"]
+	]) assert.throws(() => readEastGreenwichCandidateSample(source, body.replace(before!, after!), "0901"), /requires review|disagree/u);
 });
 test("missing pages, unknown regions, unexpected watermark and provenance mismatches are refused", () => {
 	const body = eastGreenwichFixture();
-	for (const value of [body.replace(/<page width="648\.000000" height="1260\.000000">[\s\S]*?<\/page>/u, ""), body.replace("width=\"648.000000\"", "width=\"612\""), body.replace(">SA<", ">Hidden Candidate<"), body.replace(">Voting continues<", ">Changed footer<"), body.replace(">State Questions<", ">Vote for 1<"), body.replace("</doc>", "<page width=\"648\" height=\"1260\"></page></doc>"), body.slice(0, -7)]) assert.throws(() => readEastGreenwichCandidateSample(source, value, "0901"), /requires review|incomplete|exceeds/u);
+	for (const value of [
+		body.replace(/<page width="648\.000000" height="1260\.000000">[\s\S]*?<\/page>/u, ""),
+		body.replace("width=\"648.000000\"", "width=\"612\""),
+		body.replace(">SA<", ">Hidden Candidate<"),
+		body.replace(">Voting continues<", ">Changed footer<"),
+		body.replace(">State Questions<", ">Vote for 1<"),
+		body.replace("</doc>", "<page width=\"648\" height=\"1260\"></page></doc>"),
+		body.slice(0, -7)
+	]) assert.throws(() => readEastGreenwichCandidateSample(source, value, "0901"), /requires review|incomplete|exceeds/u);
 	assert.throws(() => readEastGreenwichCandidateSample(source, body, "0903"), /requires? review/u);
 	assert.throws(() => readEastGreenwichCandidateSample({ ...source, electionDate: "2026-11-04" }, body, "0901"), /requires review/u);
 	assert.throws(() => readEastGreenwichCandidateSample({ ...source, stateCode: "MA" }, body, "0901"), /requires review/u);

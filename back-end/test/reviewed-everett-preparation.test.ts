@@ -16,8 +16,34 @@ test("Everett preparation rejects unreviewed or mismatched local plans before wr
 	const hash = (body: string | Buffer) => createHash("sha256").update(body).digest("hex");
 	const path = join(directory, "source.pdf");
 	await writeFile(path, bytes);
-	for (const kind of ["hash", "documents", "source", "review", "extraction"]) {
-		const plan = { schemaVersion: 1, type: "reviewed-candidate-preparation", sourceId: source.id, sourceConfigurationSha256: hash(JSON.stringify(source)), input: { path, sha256: hash(bytes), format: "everett-ballots-pdf" }, documents: source.documentUrls!.map(url => ({ url, path, sha256: hash(bytes), capturedAt: "2026-11-06T15:40:33.215Z", pageCount: 6, reviewedPages: [1] })), outputDirectory: join(directory, kind), outputName: "everett-reviewed" };
+	for (const kind of [
+		"hash",
+		"documents",
+		"source",
+		"review",
+		"extraction"
+	]) {
+		const plan = {
+			schemaVersion: 1,
+			type: "reviewed-candidate-preparation",
+			sourceId: source.id,
+			sourceConfigurationSha256: hash(JSON.stringify(source)),
+			input: {
+				path,
+				sha256: hash(bytes),
+				format: "everett-ballots-pdf"
+			},
+			documents: source.documentUrls!.map(url => ({
+				url,
+				path,
+				sha256: hash(bytes),
+				capturedAt: "2026-11-06T15:40:33.215Z",
+				pageCount: 6,
+				reviewedPages: [1]
+			})),
+			outputDirectory: join(directory, kind),
+			outputName: "everett-reviewed"
+		};
 		if (kind === "hash") plan.input.sha256 = "a".repeat(64);
 		if (kind === "documents") plan.documents.reverse();
 		if (kind === "source") plan.sourceConfigurationSha256 = "b".repeat(64);

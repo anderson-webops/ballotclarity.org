@@ -22,7 +22,12 @@ export function proveAlabamaFieldDrawings(
 		= field.boundaryProof?.boundary.bounds[1]
 			?? marker?.bounds[1]
 			?? Math.min(...spans.flatMap(span => span.glyphs.map(glyph => glyph.ink[1])));
-	const region = [field.cell.borders.left[1], bottom, field.cell.borders.right[0], field.cell.borders.top[0]];
+	const region = [
+		field.cell.borders.left[1],
+		bottom,
+		field.cell.borders.right[0],
+		field.cell.borders.top[0]
+	];
 	let checked = 0;
 	for (const paint of content.painted) {
 		if (!intersects(paint.bounds, region)) continue;

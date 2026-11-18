@@ -15,6 +15,8 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-	console.error(error instanceof Error ? error.message : "Maui measure automation failed.");
+	console.error(error instanceof Error
+		? error.message
+		: "Maui measure automation failed.");
 	process.exitCode = 1;
 });

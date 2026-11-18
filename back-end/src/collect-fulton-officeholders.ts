@@ -33,13 +33,34 @@ export async function collectFultonOfficeholders({ directory, now = Date.now, re
 		const previousRun = await readAutomationRun(runDirectory, now());
 		if (previousRun && ["failed", "running"].includes(previousRun.status) && Date.parse(previousRun.startedAt) + fultonOfficeholderPublication.minimumRefreshIntervalMs > now()) throw new Error("The failed or interrupted Fulton collection is awaiting its next permitted retry.");
 		const startedAt = new Date(now()).toISOString();
-		const prior = { schemaVersion: 1 as const, type: "ballot-automation-run" as const, startedAt, lastImportAt, lastSuccessAt: previousRun?.lastSuccessAt ?? null, nextRunAt: null };
-		await writeAutomationRun(runDirectory, { ...prior, status: "running", finishedAt: null, results: [] }, now());
+		const prior = {
+			schemaVersion: 1 as const,
+			type: "ballot-automation-run" as const,
+			startedAt,
+			lastImportAt,
+			lastSuccessAt: previousRun?.lastSuccessAt ?? null,
+			nextRunAt: null
+		};
+		await writeAutomationRun(runDirectory, {
+			...prior,
+			status: "running",
+			finishedAt: null,
+			results: []
+		}, now());
 		let prepared = false;
 		try {
 			const documents: FultonOfficeholderCapture["documents"] = [];
-			const options = { allowedHosts: ["fultoncountyga.gov"], maxBytes: fultonOfficeholderPublication.maximumDocumentBytes, maxRedirects: 0, timeoutMs: 15000 };
-			for (const [index, url] of [...fultonOfficeholderPublication.policies.map(policy => policy.url), fultonOfficeholderPublication.rosterUrl, fultonOfficeholderPublication.districtUrl].entries()) {
+			const options = {
+				allowedHosts: ["fultoncountyga.gov"],
+				maxBytes: fultonOfficeholderPublication.maximumDocumentBytes,
+				maxRedirects: 0,
+				timeoutMs: 15000
+			};
+			for (const [index, url] of [
+				...fultonOfficeholderPublication.policies.map(policy => policy.url),
+				fultonOfficeholderPublication.rosterUrl,
+				fultonOfficeholderPublication.districtUrl
+			].entries()) {
 				if (index) await pause(11000);
 				const body = await request(url, options);
 				const policy = fultonOfficeholderPublication.policies[index];
@@ -52,7 +73,12 @@ export async function collectFultonOfficeholders({ directory, now = Date.now, re
 					}
 					if (digest(region) !== policy.sha256) throw new Error("The Fulton officeholder publisher policy requires review.");
 				}
-				documents.push({ url, body, capturedAt: new Date(now()).toISOString(), sha256: digest(body) });
+				documents.push({
+					url,
+					body,
+					capturedAt: new Date(now()).toISOString(),
+					sha256: digest(body)
+				});
 			}
 			const capture: FultonOfficeholderCapture = { schemaVersion: 1, type: "fulton-officeholder-capture", documents };
 			const snapshot = prepareFultonOfficeholders(capture, now());
@@ -63,11 +89,37 @@ export async function collectFultonOfficeholders({ directory, now = Date.now, re
 			await writeFile(join(captures, `${snapshot.sourceSha256}.json`), `${JSON.stringify(capture)}\n`, { flag: "wx", mode: 0o600 });
 			await writeFultonOfficeholders(canonical, snapshot, "collected", now());
 			const finishedAt = new Date(now()).toISOString();
-			await writeAutomationRun(runDirectory, { ...prior, status: "succeeded", finishedAt, lastSuccessAt: finishedAt, lastImportAt: finishedAt, results: [{ sourceId: "ga-fulton-board", status: "imported", records: snapshot.seats.filter(seat => seat.person).length, reason: null }] }, now());
+			await writeAutomationRun(runDirectory, {
+				...prior,
+				status: "succeeded",
+				finishedAt,
+				lastSuccessAt: finishedAt,
+				lastImportAt: finishedAt,
+				results: [
+					{
+						sourceId: "ga-fulton-board",
+						status: "imported",
+						records: snapshot.seats.filter(seat => seat.person).length,
+						reason: null
+					}
+				]
+			}, now());
 			return { collected: true, publisherRequests: documents.length, retrievedAt: snapshot.retrievedAt };
 		}
 		catch (error) {
-			await writeAutomationRun(runDirectory, { ...prior, status: "failed", finishedAt: new Date(now()).toISOString(), results: [{ sourceId: "ga-fulton-board", status: "failed", records: 0, reason: prepared ? "persistence-failed" : "source-unavailable" }] }, now());
+			await writeAutomationRun(runDirectory, {
+				...prior,
+				status: "failed",
+				finishedAt: new Date(now()).toISOString(),
+				results: [
+					{
+						sourceId: "ga-fulton-board",
+						status: "failed",
+						records: 0,
+						reason: prepared ? "persistence-failed" : "source-unavailable"
+					}
+				]
+			}, now());
 			throw error;
 		}
 	});

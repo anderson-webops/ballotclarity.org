@@ -38,16 +38,37 @@ function documentUrls(value: unknown): value is string[] {
 	return Array.isArray(value) && value.length === 2 && new Set(value).size === 2 && value.every(url => typeof url === "string" && /^https:\/\/www\.fnsb\.gov\/DocumentCenter\/View\/\d{1,8}\/[A-Za-z0-9-]+-PDF$/u.test(url));
 }
 export function validateFairbanksElection(value: unknown): asserts value is FairbanksElection {
-	requireValue(exact(value, ["electionId", "electionDate", "pageUrl", "fairbanksDocuments"]) && value.electionId === null && electionDate(value.electionDate) && value.pageUrl === fairbanksPublicationIndexUrl() && Array.isArray(value.fairbanksDocuments) && value.fairbanksDocuments.length === 2, "election identity");
+	requireValue(exact(value, [
+		"electionId",
+		"electionDate",
+		"pageUrl",
+		"fairbanksDocuments"
+	]) && value.electionId === null && electionDate(value.electionDate) && value.pageUrl === fairbanksPublicationIndexUrl() && Array.isArray(value.fairbanksDocuments) && value.fairbanksDocuments.length === 2, "election identity");
 	const documents = value.fairbanksDocuments;
 	requireValue(documents.every((document, index) => exact(document, ["kind", "url", "sha256"]) && document.kind === (index ? "notice" : "sample") && digest(document.sha256)) && documentUrls(documents.map(document => document.url)), "offered document inventory");
 }
 export function fairbanksSource(date = "2026-10-06", urls = defaults()): StateBallotSource {
 	requireValue(electionDate(date) && documentUrls(urls), "source date and publications");
-	return { stateCode: "AK", id: date === "2026-10-06" ? "ak-fairbanks-2026" : `ak-fairbanks-municipal-${date}`, label: "Fairbanks municipal candidates", electionDate: date, url: urls[0]!, pageUrl: fairbanksPublicationIndexUrl(), format: "fairbanks-pdf", countyName: "Fairbanks North Star Borough", documentUrls: [...urls], snapshotStorage: "external", ballotPreview: false };
+	return {
+		stateCode: "AK",
+		id: date === "2026-10-06"
+			? "ak-fairbanks-2026"
+			: `ak-fairbanks-municipal-${date}`,
+		label: "Fairbanks municipal candidates",
+		electionDate: date,
+		url: urls[0]!,
+		pageUrl: fairbanksPublicationIndexUrl(),
+		format: "fairbanks-pdf",
+		countyName: "Fairbanks North Star Borough",
+		documentUrls: [...urls],
+		snapshotStorage: "external",
+		ballotPreview: false
+	};
 }
 export function validateFairbanksSource(source: StateBallotSource) {
-	const expected = fairbanksSource(source.electionDate, source.documentUrls ? [...source.documentUrls] : []);
+	const expected = fairbanksSource(source.electionDate, source.documentUrls
+		? [...source.documentUrls]
+		: []);
 	requireValue(exact(source, Object.keys(expected)) && Object.entries(expected).every(([key, value]) => isDeepStrictEqual(source[key as keyof StateBallotSource], value)), "source configuration");
 }
 export function fairbanksDocumentDigest(documents: readonly { url: string; sha256: string }[]) {
@@ -58,39 +79,100 @@ export function readFairbanksCycleDiscovery(body: string, now = Date.now()) {
 	const capture: unknown = JSON.parse(body);
 	const inventory = readFairbanksPublicationCapture(capture, now);
 	const accepted = capture as FairbanksPublicationCapture;
-	const election = { electionId: null, electionDate: inventory.electionDate, pageUrl: fairbanksPublicationIndexUrl(), fairbanksDocuments: accepted.documents.map(({ kind, url, sha256 }) => ({ kind, url, sha256 })) };
+	const election = {
+		electionId: null,
+		electionDate: inventory.electionDate,
+		pageUrl: fairbanksPublicationIndexUrl(),
+		fairbanksDocuments: accepted.documents.map(({ kind, url, sha256 }) => ({ kind, url, sha256 }))
+	};
 	validateFairbanksElection(election);
-	return { capture: accepted, index: accepted.index, elections: [election] };
+	return {
+		capture: accepted,
+		index: accepted.index,
+		elections: [election]
+	};
 }
 function geometry(documents: FairbanksCandidateDocument[], capture: FairbanksPublicationCapture) {
 	for (const [index, document] of documents.entries()) {
-		requireValue(exact(document, ["kind", "sourceSha256", "geometry", "bbox", "pages"]) && Array.isArray(document.pages) && document.pages.every(page => exact(page, ["page", "width", "height", "dpi", "pngSha256", "ocr", "svg"])), "native document contract");
+		requireValue(exact(document, [
+			"kind",
+			"sourceSha256",
+			"geometry",
+			"bbox",
+			"pages"
+		]) && Array.isArray(document.pages) && document.pages.every(page => exact(page, [
+			"page",
+			"width",
+			"height",
+			"dpi",
+			"pngSha256",
+			"ocr",
+			"svg"
+		])), "native document contract");
 		const value = document.geometry;
-		const expected = index ? [0, 0, 792, 792] : [0, 0, 612, 1008];
+		const expected = index
+			? [0, 0, 792, 792]
+			: [0, 0, 612, 1008];
 		requireValue(exact(value, ["schemaVersion", "objectsSha256", "pages"]) && value.schemaVersion === 1 && digest(value.objectsSha256) && Array.isArray(value.pages) && value.pages.length === capture.documents[index]!.text.split("\f").filter(page => page.trim()).length, "inspected page inventory");
-		for (const [position, page] of value.pages.entries()) requireValue(exact(page, ["page", "mediaBox", "cropBox", "rotation", "userUnit"]) && page.page === position + 1 && isDeepStrictEqual(page.mediaBox, expected) && isDeepStrictEqual(page.cropBox, expected) && page.rotation === 0 && page.userUnit === 1, "inspected page geometry");
+		for (const [position, page] of value.pages.entries()) {
+			requireValue(exact(page, [
+				"page",
+				"mediaBox",
+				"cropBox",
+				"rotation",
+				"userUnit"
+			]) && page.page === position + 1 && isDeepStrictEqual(page.mediaBox, expected) && isDeepStrictEqual(page.cropBox, expected) && page.rotation === 0 && page.userUnit === 1, "inspected page geometry");
+		}
 	}
 }
 export function readFairbanksCandidateCapture(body: string, now = Date.now()) {
 	requireValue(typeof body === "string" && Buffer.byteLength(body) <= 12 * 1024 * 1024, "capture bounds");
 	const value: unknown = JSON.parse(body);
-	requireValue(exact(value, ["schemaVersion", "type", "capture", "native"]) && value.schemaVersion === 1 && value.type === "fairbanks-candidate-capture", "capture contract");
+	requireValue(exact(value, [
+		"schemaVersion",
+		"type",
+		"capture",
+		"native"
+	]) && value.schemaVersion === 1 && value.type === "fairbanks-candidate-capture", "capture contract");
 	const discovery = readFairbanksCycleDiscovery(JSON.stringify(value.capture), now);
-	requireValue(exact(value.native, ["tools", "prepared", "documents"]) && exact(value.native.tools, ["textSha256", "rendererSha256", "vectorSha256", "inspectorSha256", "readerSha256", "readerVersion"]) && Object.entries(value.native.tools).every(([key, item]) => key === "readerVersion" ? typeof item === "string" && /^tesseract 5\.\d+\.\d+\b/u.test(item) : digest(item)) && Array.isArray(value.native.documents) && value.native.documents.length === 2, "native evidence inventory");
+	requireValue(exact(value.native, ["tools", "prepared", "documents"]) && exact(value.native.tools, [
+		"textSha256",
+		"rendererSha256",
+		"vectorSha256",
+		"inspectorSha256",
+		"readerSha256",
+		"readerVersion"
+	]) && Object.entries(value.native.tools).every(([key, item]) => key === "readerVersion"
+		? typeof item === "string" && /^tesseract 5\.\d+\.\d+\b/u.test(item)
+		: digest(item)) && Array.isArray(value.native.documents) && value.native.documents.length === 2, "native evidence inventory");
 	const documents = value.native.documents as FairbanksCandidateDocument[];
 	geometry(documents, discovery.capture);
 	const prepared = readFairbanksBallotCandidates(discovery.capture, documents, now);
 	requireValue(isDeepStrictEqual(prepared, value.native.prepared), "native evidence result binding");
 	const selected = discovery.elections[0]!;
 	const ballotQuestions = readFairbanksBallotQuestions({ id: fairbanksSource(selected.electionDate, selected.fairbanksDocuments.map(document => document.url)).id, electionDate: selected.electionDate }, discovery.capture, documents);
-	return { ...(value as unknown as CandidateCapture), prepared, ballotQuestions, election: selected };
+	return {
+		...(value as unknown as CandidateCapture),
+		prepared,
+		ballotQuestions,
+		election: selected
+	};
 }
 export function parseFairbanksCandidateCapture(source: StateBallotSource, body: string, factory: Factory, now = Date.now(), previous?: { records: readonly StateCandidateRecord[]; ballotQuestions?: readonly StateBallotQuestion[]; documents?: readonly { url: string; sha256: string; retrievedAt: string }[] }) {
 	validateFairbanksSource(source);
 	const result = readFairbanksCandidateCapture(body, now);
 	requireValue(result.election.electionDate === source.electionDate && isDeepStrictEqual(result.election.fairbanksDocuments.map(item => item.url), source.documentUrls), "source and captured election agreement");
 	const records = result.prepared.records.map((candidate) => {
-		const record = factory(source, { name: candidate.name, office: candidate.office, district: "", scope: "local", jurisdiction: candidate.jurisdiction, party: "", status: "listed", termYears: candidate.termYears });
+		const record = factory(source, {
+			name: candidate.name,
+			office: candidate.office,
+			district: "",
+			scope: "local",
+			jurisdiction: candidate.jurisdiction,
+			party: "",
+			status: "listed",
+			termYears: candidate.termYears
+		});
 		requireValue(record, "normalized candidate identity");
 		record.voteLimit = candidate.voteLimit;
 		return record;
@@ -98,8 +180,22 @@ export function parseFairbanksCandidateCapture(source: StateBallotSource, body: 
 	requireValue(new Set(records.map(record => record.id)).size === records.length, "duplicate candidate identity");
 	if (previous?.records.some(record => !records.some(item => item.id === record.id))) throw new Error("An accepted Fairbanks candidate disappeared; retain the snapshot for review.");
 	if (previous?.ballotQuestions?.some(question => !result.ballotQuestions.some(item => item.id === question.id))) throw new Error("An accepted Fairbanks question changed or disappeared; retain the snapshot for review.");
-	const documents = result.capture.documents.map(document => ({ url: document.url, sha256: document.sha256, retrievedAt: previous?.documents?.find(item => item.url === document.url && item.sha256 === document.sha256)?.retrievedAt ?? document.capturedAt, includedRecordCount: result.prepared.records.filter(record => record.sourceUrl === document.url).length }));
-	return { records, ...(result.ballotQuestions.length ? { ballotQuestions: result.ballotQuestions } : {}), documents, retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString(), sha256: fairbanksDocumentDigest(documents), collectionIndexSha256: fairbanksDocumentDigest(documents) };
+	const documents = result.capture.documents.map(document => ({
+		url: document.url,
+		sha256: document.sha256,
+		retrievedAt: previous?.documents?.find(item => item.url === document.url && item.sha256 === document.sha256)?.retrievedAt ?? document.capturedAt,
+		includedRecordCount: result.prepared.records.filter(record => record.sourceUrl === document.url).length
+	}));
+	return {
+		records,
+		...(result.ballotQuestions.length
+			? { ballotQuestions: result.ballotQuestions }
+			: {}),
+		documents,
+		retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString(),
+		sha256: fairbanksDocumentDigest(documents),
+		collectionIndexSha256: fairbanksDocumentDigest(documents)
+	};
 }
 export function validateFairbanksStoredSnapshot(source: StateBallotSource, data: Record<string, unknown>) {
 	validateFairbanksSource(source);
@@ -133,7 +229,10 @@ export async function fetchFairbanksCandidateCapture(source: StateBallotSource, 
 		throw error;
 	});
 	try {
-		await lock.writeFile(JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }));
+		await lock.writeFile(JSON.stringify({
+			pid: process.pid,
+			startedAt: new Date().toISOString()
+		}));
 		await lock.sync();
 		return await collectFairbanksCandidates(source, options, directory);
 	}
@@ -156,14 +255,32 @@ async function collectFairbanksCandidates(source: StateBallotSource, options: Co
 	requireValue(discovery.elections[0]!.electionDate === source.electionDate && isDeepStrictEqual(discovery.elections[0]!.fairbanksDocuments.map(item => item.url), source.documentUrls), "offered election selection");
 	const capture = discovery.capture;
 	if (previous) {
-		const pages = [...previous.capture.policies, previous.capture.index, ...previous.capture.documents];
-		for (const page of [...capture.policies, capture.index, ...capture.documents]) page.capturedAt = pages.find(item => item.url === page.url && item.sha256 === page.sha256 && item.body === page.body)?.capturedAt ?? page.capturedAt;
+		const pages = [
+			...previous.capture.policies,
+			previous.capture.index,
+			...previous.capture.documents
+		];
+		for (const page of [
+			...capture.policies,
+			capture.index,
+			...capture.documents
+		]) page.capturedAt = pages.find(item => item.url === page.url && item.sha256 === page.sha256 && item.body === page.body)?.capturedAt ?? page.capturedAt;
 	}
 	const { prepareFairbanksCandidateEvidence, storeFairbanksCandidateEvidence } = await import("./fairbanks-candidate-preparation.js");
 	const reuse = previous && previous.election.electionDate === source.electionDate && previous.capture.documents.every((document, index) => document.sha256 === capture.documents[index]!.sha256 && document.url === capture.documents[index]!.url);
-	const native = previous && reuse ? { ...previous.native, prepared: readFairbanksBallotCandidates(capture, previous.native.documents, now) } : await (options.prepare ?? prepareFairbanksCandidateEvidence)(capture, directory, now);
+	const native = previous && reuse
+		? {
+				...previous.native,
+				prepared: readFairbanksBallotCandidates(capture, previous.native.documents, now)
+			}
+		: await (options.prepare ?? prepareFairbanksCandidateEvidence)(capture, directory, now);
 	if (previous?.election.electionDate === source.electionDate && previous.prepared.records.some(record => !native.prepared.records.some(item => item.name === record.name && item.office === record.office && item.jurisdiction === record.jurisdiction))) throw new Error("An accepted Fairbanks candidate disappeared; retain the evidence for review.");
-	const body = Buffer.from(JSON.stringify({ schemaVersion: 1, type: "fairbanks-candidate-capture", capture, native }));
+	const body = Buffer.from(JSON.stringify({
+		schemaVersion: 1,
+		type: "fairbanks-candidate-capture",
+		capture,
+		native
+	}));
 	const accepted = readFairbanksCandidateCapture(body.toString("utf8"), now);
 	if (previous?.election.electionDate === source.electionDate && previous.ballotQuestions.some(question => !accepted.ballotQuestions.some(item => item.id === question.id))) throw new Error("An accepted Fairbanks question changed or disappeared; retain the evidence for review.");
 	const contentUnchanged = previous && reuse && previous.capture.index.sha256 === capture.index.sha256 && previous.capture.policies.every((policy, index) => policy.sha256 === capture.policies[index]!.sha256) && isDeepStrictEqual(previous.capture.accessReview, capture.accessReview);

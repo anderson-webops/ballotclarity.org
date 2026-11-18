@@ -14,7 +14,11 @@ test("About combines editorial standards and neutrality without card stacks or l
 });
 
 test("retired information pages redirect permanently to the corresponding consolidated sections", () => {
-	for (const [page, destination, anchor] of [["methodology", "about", "methodology"], ["neutrality", "about", "neutrality"], ["data-sources", "sources", "providers"]]) {
+	for (const [page, destination, anchor] of [
+		["methodology", "about", "methodology"],
+		["neutrality", "about", "neutrality"],
+		["data-sources", "sources", "providers"]
+	]) {
 		const pageSource = source(`pages/${page}.vue`);
 		assert.ok(pageSource.includes(`path: "/${destination}"`));
 		assert.ok(pageSource.includes(`hash: "#${anchor}"`));
@@ -31,7 +35,12 @@ test("About is a direct link, with secondary destinations preserved in the foote
 	const footer = source("components/AppFooter.vue");
 	assert.match(footer, /label: "Privacy", to: "\/privacy"/);
 	assert.match(footer, /label: "Terms", to: "\/terms"/);
-	for (const destination of ["sources", "coverage", "help", "contact"])
+	for (const destination of [
+		"sources",
+		"coverage",
+		"help",
+		"contact"
+	])
 		assert.ok(footer.includes(`"/${destination}"`));
 	assert.doesNotMatch(footer, /to: "\/(methodology|neutrality|data-sources)"/);
 });

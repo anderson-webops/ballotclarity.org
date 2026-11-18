@@ -49,7 +49,7 @@ test("startup rejects malformed ports and preserves an explicitly configured cov
 	assert.throws(() => buildLocalDevelopmentConfig(process.cwd(), {}, { apiPort: "3333" }), /different ports/u);
 	const config = buildLocalDevelopmentConfig(process.cwd(), { LIVE_COVERAGE_FILE: "data/intentional-missing.json" });
 	assert.match(config.env.LIVE_COVERAGE_FILE, /intentional-missing\.json$/u);
-	assert.throws(() => assertLocalFiles(config, "24.18.1"), /missing snapshot/u);
+	assert.throws(() => assertLocalFiles(config, process.versions.node), /missing snapshot/u);
 	assert.throws(() => assertLocalFiles(config, "26.0.0"), /Node LTS/u);
 });
 

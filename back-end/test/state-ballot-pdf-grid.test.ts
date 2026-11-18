@@ -11,9 +11,24 @@ import { extractStateBallotPdfSvg, extractStateBallotPdfText, resolveStateBallot
 function fixture() {
 	const width = 800;
 	const height = 600;
-	const columns = [60, 140, 200, 260, 320, 380, 440, 500, 560, 620, 680];
+	const columns = [
+		60,
+		140,
+		200,
+		260,
+		320,
+		380,
+		440,
+		500,
+		560,
+		620,
+		680
+	];
 	const rows = [150, 210, 250, 290, 330, 370, 410];
-	const words: Array<{ text: string; left: number; top: number }> = [{ text: "Office", left: 80, top: 160 }, { text: "Party", left: 80, top: 180 }];
+	const words: Array<{ text: string; left: number; top: number }> = [
+		{ text: "Office", left: 80, top: 160 },
+		{ text: "Party", left: 80, top: 180 }
+	];
 	for (let column = 1; column < columns.length - 1; column++) {
 		words.push({ text: `Office${column}`, left: columns[column]! + 5, top: 175 });
 		for (let row = 1; row < rows.length - 1; row++) {
@@ -21,7 +36,13 @@ function fixture() {
 			words.push({ text: `Name${column}`, left: columns[column]! + 5, top: rows[row]! + 20 });
 		}
 	}
-	for (const [index, label] of ["Democratic", "Republican", "WorkingFamilies", "Nonpartisan", "Write-in"].entries()) {
+	for (const [index, label] of [
+		"Democratic",
+		"Republican",
+		"WorkingFamilies",
+		"Nonpartisan",
+		"Write-in"
+	].entries()) {
 		if (label === "Nonpartisan") {
 			for (const character of label) words.push({ text: character, left: 99 + (character.charCodeAt(0) % 3) / 10, top: rows[index + 1]! + 15 });
 		}
@@ -30,26 +51,56 @@ function fixture() {
 		}
 	}
 	const path = (firstX: number, firstY: number, lastX: number, lastY: number) => `<path fill="none" stroke="black" d="M ${firstX} ${height - firstY} L ${lastX} ${height - lastY}" transform="matrix(1, 0, 0, -1, 0, ${height})"/>`;
-	const drawings = [...columns.map(horizontal => path(horizontal, rows[0]!, horizontal, rows.at(-1)!)), ...rows.map(vertical => path(columns[0]!, vertical, columns.at(-1)!, vertical)), path(20, 20, 780, 20), path(20, 580, 780, 580), path(20, 20, 20, 580), path(780, 20, 780, 580)];
+	const drawings = [
+		...columns.map(horizontal => path(horizontal, rows[0]!, horizontal, rows.at(-1)!)),
+		...rows.map(vertical => path(columns[0]!, vertical, columns.at(-1)!, vertical)),
+		path(20, 20, 780, 20),
+		path(20, 580, 780, 580),
+		path(20, 20, 20, 580),
+		path(780, 20, 780, 580)
+	];
 	const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}">${drawings.join("")}<path fill="black" d="M 0 0 C 0 1 1 1 1 0 Z"/></svg>`;
 	const page = `<page width="${width}" height="${height}">${words.map(word => `<word xMin="${word.left}" yMin="${word.top}" xMax="${word.left + 10}" yMax="${word.top + 8}">${word.text}</word>`).join("")}</page>`;
-	return { svg, page, corpus: `<html><body>${page}</body></html>`, path };
+	return {
+		svg,
+		page,
+		corpus: `<html><body>${page}</body></html>`,
+		path
+	};
 }
 
 test("table geometry preserves compound filled borders without accepting other filled shapes", () => {
 	const rectangle = (left: number, top: number, width: number, height: number) => `M ${left} ${top} L ${left + width} ${top} L ${left + width} ${top + height} L ${left} ${top + height} Z`;
-	const rules = [...[50, 400, 650].map(left => rectangle(left, 100, 1, 91)), ...[100, 130, 160, 190].map(top => rectangle(50, top, 601, 1))];
+	const rules = [
+		...[50, 400, 650].map(left => rectangle(left, 100, 1, 91)),
+		...[100, 130, 160, 190].map(top => rectangle(50, top, 601, 1))
+	];
 	const words = [105, 135, 165].flatMap((top, index) => [60, 410].map((left, column) => `<word xMin="${left}" yMin="${top}" xMax="${left + 30}" yMax="${top + 10}">Cell${index}${column}</word>`)).join("");
 	const outside = Array.from({ length: 50 }, (_, index) => `<word xMin="${20 + (index % 10) * 40}" yMin="${300 + Math.floor(index / 10) * 20}" xMax="${50 + (index % 10) * 40}" yMax="${310 + Math.floor(index / 10) * 20}">Footer${index}</word>`).join("");
 	const corpus = `<html><page width="800" height="600">${words}${outside}</page></html>`;
 	const drawing = (paths: string[]) => `<svg viewBox="0 0 800 600">${paths.map(path => `<path fill="rgb(0%, 0%, 0%)" d="${path}"/>`).join("")}</svg>`;
-	const individual = readStateBallotPdfTables(corpus, [drawing(rules)]);
-	const compound = readStateBallotPdfTables(corpus, [drawing([`${rules.join(" ")} M 50 190`])]);
+	const individual = readStateBallotPdfTables(corpus, [
+		drawing(rules)
+	]);
+	const compound = readStateBallotPdfTables(corpus, [
+		drawing([`${rules.join(" ")} M 50 190`])
+	]);
 	assert.equal(compound[0]!.cells.length, 6);
 	assert.deepEqual(compound, individual);
-	for (const invalid of [rectangle(50, 100, 100, 100), "M 50 100 L 100 110 L 130 160 L 50 190 Z", "M 50 100 L 500 100 Z"])
-		assert.equal(readStateBallotPdfTables(corpus, [drawing([`${rules.join(" ")} ${invalid}`])])[0]!.cells.length, 0);
-	assert.throws(() => readStateBallotPdfTables(corpus, [drawing([Array.from<string>({ length: 251 }).fill(rules[0]!).join(" ")])]), /compound rectangle/u);
+	for (const invalid of [
+		rectangle(50, 100, 100, 100),
+		"M 50 100 L 100 110 L 130 160 L 50 190 Z",
+		"M 50 100 L 500 100 Z"
+	]) {
+		assert.equal(readStateBallotPdfTables(corpus, [
+			drawing([`${rules.join(" ")} ${invalid}`])
+		])[0]!.cells.length, 0);
+	}
+	assert.throws(() => readStateBallotPdfTables(corpus, [
+		drawing([
+			Array.from<string>({ length: 251 }).fill(rules[0]!).join(" ")
+		])
+	]), /compound rectangle/u);
 });
 
 test("PDF grids reconcile physical cells and raw logical order without retaining outer frames", () => {
@@ -76,28 +127,65 @@ test("PDF grids reject incomplete, mismatched, malformed and oversized captures"
 	const { svg, corpus } = fixture();
 	for (const [words, drawings] of [
 		[corpus, []],
-		[corpus, [svg.replace("0 0 800 600", "0 0 801 600")]],
-		[corpus.replace("width=\"800\"", "width=\"1\""), [svg]],
-		[corpus.replace("xMin=\"80\"", "xMin=\"NaN\""), [svg]],
-		[corpus.replace(">Office<", ">Unrecognized<"), [svg]],
-		[corpus, [" ".repeat(stateBallotPdfGridContract.maximumSvgBytes + 1)]],
-		[corpus, [svg.replace("matrix(1, 0, 0, -1, 0, 600)", "translate(2)")]],
-		[corpus, [svg.replace("matrix(1, 0, 0, -1, 0, 600)", "matrix(1e309, 0, 0, -1, 0, 600)")]],
+		[
+			corpus,
+			[
+				svg.replace("0 0 800 600", "0 0 801 600")
+			]
+		],
+		[
+			corpus.replace("width=\"800\"", "width=\"1\""),
+			[svg]
+		],
+		[
+			corpus.replace("xMin=\"80\"", "xMin=\"NaN\""),
+			[svg]
+		],
+		[
+			corpus.replace(">Office<", ">Unrecognized<"),
+			[svg]
+		],
+		[
+			corpus,
+			[
+				" ".repeat(stateBallotPdfGridContract.maximumSvgBytes + 1)
+			]
+		],
+		[
+			corpus,
+			[
+				svg.replace("matrix(1, 0, 0, -1, 0, 600)", "translate(2)")
+			]
+		],
+		[
+			corpus,
+			[
+				svg.replace("matrix(1, 0, 0, -1, 0, 600)", "matrix(1e309, 0, 0, -1, 0, 600)")
+			]
+		],
 	] as Array<[string, string[]]>) assert.throws(() => readStateBallotPdfGrid(words, drawings), /ballot grid/u);
 	assert.throws(() => readStateBallotPdfGrid(`<html>${fixture().page.repeat(51)}</html>`, Array.from<string>({ length: 51 }).fill(svg)), /page count/u);
 });
 
 test("PDF grids reject positions omitted by a broken or disconnected border", () => {
 	const { svg, corpus, path } = fixture();
-	assert.throws(() => readStateBallotPdfGrid(corpus, [svg.replace(path(680, 150, 680, 410), "")]), /position/u);
+	assert.throws(() => readStateBallotPdfGrid(corpus, [
+		svg.replace(path(680, 150, 680, 410), "")
+	]), /position/u);
 	assert.throws(() => readStateBallotPdfGrid(corpus.replace("</page>", "<word xMin=\"720\" yMin=\"500\" xMax=\"730\" yMax=\"510\">99Z</word></page>"), [svg]), /position/u);
 });
 
 test("PDF grids reject unsupported inherited transforms and bounded but excessive geometry", () => {
 	const { svg, corpus } = fixture();
-	assert.throws(() => readStateBallotPdfGrid(corpus, [svg.replace("><path", "><g transform=\"scale(2)\"><path").replace("</svg>", "</g></svg>")]), /ancestor transform/u);
-	assert.throws(() => readStateBallotPdfGrid(corpus, [svg.replace("</svg>", "<path stroke=\"black\" d=\"M 0 0 L 1\"/></svg>")]), /incomplete/u);
-	assert.throws(() => readStateBallotPdfGrid(corpus, [svg.replace("</svg>", "<path stroke=\"black\" d=\"M 0 0 L 9999 9999\"/></svg>")]), /outside/u);
+	assert.throws(() => readStateBallotPdfGrid(corpus, [
+		svg.replace("><path", "><g transform=\"scale(2)\"><path").replace("</svg>", "</g></svg>")
+	]), /ancestor transform/u);
+	assert.throws(() => readStateBallotPdfGrid(corpus, [
+		svg.replace("</svg>", "<path stroke=\"black\" d=\"M 0 0 L 1\"/></svg>")
+	]), /incomplete/u);
+	assert.throws(() => readStateBallotPdfGrid(corpus, [
+		svg.replace("</svg>", "<path stroke=\"black\" d=\"M 0 0 L 9999 9999\"/></svg>")
+	]), /outside/u);
 });
 
 test("SVG capability requires its own configured absolute executable without falling back to text extraction", async () => {

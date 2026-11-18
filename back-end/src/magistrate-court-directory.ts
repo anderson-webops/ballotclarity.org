@@ -67,7 +67,9 @@ function validName(value: unknown): value is string {
 function document(body: string) {
 	if (typeof body !== "string" || Buffer.byteLength(body) > magistrateCourtPublication.maximumDocumentBytes || body.includes("\uFFFD")) return reject();
 	const root = parseStateHtml(body);
-	const pending = [{ node: root, depth: 0 }];
+	const pending = [
+		{ node: root, depth: 0 }
+	];
 	let count = 0;
 	while (pending.length) {
 		const { node, depth } = pending.pop()!;
@@ -98,7 +100,9 @@ export function verifyMagistrateCourtPolicy(body: string, index: number, now = D
 	const root = document(body);
 	policyInventory(root);
 	const text = clean(stateHtmlText(content(root)));
-	const years = [...text.matchAll(/© (1997|2006)-(20\d{2})/gu)];
+	const years = [
+		...text.matchAll(/© (1997|2006)-(20\d{2})/gu)
+	];
 	if (years.length !== 2 || years[0]![1] !== "1997" || years[1]![1] !== "2006" || years[0]![2] !== years[1]![2] || Number(years[0]![2]) > new Date(now).getUTCFullYear() + 1 || digest(text.replace(/(© (?:1997|2006)-)20\d{2}/gu, "$1{year}")) !== policy.sha256) return reject();
 }
 export function magistrateProfileUrl(value: string) {
@@ -117,7 +121,9 @@ export function parseMagistrateCourtRoster(body: string): MagistrateCourtJudge[]
 	const headings = stateHtmlDescendants(main, node => node.nodeName === "h1");
 	if (headings.length !== 1 || clean(stateHtmlText(headings[0]!)) !== "Judges") return reject();
 	const judges: MagistrateCourtJudge[] = [];
-	const pending = [{ node: main, parents: [] as StateHtmlNode[] }];
+	const pending = [
+		{ node: main, parents: [] as StateHtmlNode[] }
+	];
 	while (pending.length) {
 		const { node, parents } = pending.pop()!;
 		if (node.nodeName === "h3") {
@@ -127,9 +133,20 @@ export function parseMagistrateCourtRoster(body: string): MagistrateCourtJudge[]
 			if (!card || stateHtmlDescendants(card, child => child.nodeName === "h3").length !== 1) return reject();
 			const links = stateHtmlDescendants(card, child => child.nodeName === "a");
 			if (links.length !== 1 || !visible(links[0]!)) return reject();
-			judges.push({ name: label.slice(6), role: "Judge", profileUrl: magistrateProfileUrl(stateHtmlAttribute(links[0]!, "href")) });
+			judges.push({
+				name: label.slice(6),
+				role: "Judge",
+				profileUrl: magistrateProfileUrl(stateHtmlAttribute(links[0]!, "href"))
+			});
 		}
-		for (const child of [...(node.childNodes ?? [])].reverse()) pending.push({ node: child, parents: [...parents, node] });
+		for (const child of [
+			...(node.childNodes ?? [])
+		].reverse()) {
+			pending.push({
+				node: child,
+				parents: [...parents, node]
+			});
+		}
 	}
 	const profileLinks = stateHtmlDescendants(main, node => node.nodeName === "a").map(node => stateHtmlAttribute(node, "href"));
 	if (!judges.length || judges.length > 100 || profileLinks.length !== judges.length || new Set(judges.map(judge => canonicalName(judge.name))).size !== judges.length || new Set(judges.map(judge => new URL(judge.profileUrl).search)).size !== judges.length) return reject();
@@ -143,7 +160,9 @@ export function parseMagistrateChief(homeBody: string, chiefBody: string): Magis
 	const titles = stateHtmlDescendants(home, node => node.nodeName === "h1" && /\bwidgetTitle\b/u.test(stateHtmlAttribute(node, "class")));
 	if (titles.length !== 1) return reject();
 	const heading = clean(stateHtmlText(titles[0]!));
-	const name = heading.startsWith("Judge ") ? heading.slice(6) : "";
+	const name = heading.startsWith("Judge ")
+		? heading.slice(6)
+		: "";
 	const chiefContent = content(chief);
 	const chiefTitles = stateHtmlDescendants(chiefContent, node => node.nodeName === "h1");
 	const namedRole = new RegExp(`${name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")} (?:is|serves as) (?:(?:the|first|current|newly appointed|newly elected) ){0,2}Chief Magistrate Judge\\b`, "u");
@@ -166,16 +185,50 @@ function validInstant(value: unknown, now: number): value is string {
 	return typeof value === "string" && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value && Date.parse(value) <= now;
 }
 export function validateMagistrateCourtSnapshot(value: unknown, now = Date.now()): asserts value is MagistrateCourtSnapshot {
-	if (!Number.isFinite(now) || !value || typeof value !== "object" || Array.isArray(value) || !exact(value, ["schemaVersion", "type", "sourceId", "slug", "title", "countyFips", "url", "retrievedAt", "sourceSha256", "documents", "judges"])) return reject();
+	if (!Number.isFinite(now) || !value || typeof value !== "object" || Array.isArray(value) || !exact(value, [
+		"schemaVersion",
+		"type",
+		"sourceId",
+		"slug",
+		"title",
+		"countyFips",
+		"url",
+		"retrievedAt",
+		"sourceSha256",
+		"documents",
+		"judges"
+	])) {
+		return reject();
+	}
 	const snapshot = value as MagistrateCourtSnapshot;
-	if (snapshot.schemaVersion !== 1 || snapshot.type !== "court-directory" || !["sourceId", "slug", "title", "countyFips", "url"].every(key => snapshot[key as keyof MagistrateCourtSnapshot] === magistrateCourtPublication[key as keyof typeof magistrateCourtPublication]) || !Array.isArray(snapshot.judges) || snapshot.judges.length < 2 || snapshot.judges.length > 101 || !Array.isArray(snapshot.documents)) return reject();
+	if (snapshot.schemaVersion !== 1 || snapshot.type !== "court-directory" || ![
+		"sourceId",
+		"slug",
+		"title",
+		"countyFips",
+		"url"
+	].every(key => snapshot[key as keyof MagistrateCourtSnapshot] === magistrateCourtPublication[key as keyof typeof magistrateCourtPublication]) || !Array.isArray(snapshot.judges) || snapshot.judges.length < 2 || snapshot.judges.length > 101 || !Array.isArray(snapshot.documents)) {
+		return reject();
+	}
 	for (const [index, judge] of snapshot.judges.entries()) {
-		if (!judge || !exact(judge, ["name", "role", "profileUrl"]) || !validName(judge.name) || (index === 0 ? judge.role !== "Chief Magistrate Judge" || judge.profileUrl !== magistrateCourtPublication.chiefUrl : judge.role !== "Judge" || magistrateProfileUrl(judge.profileUrl) !== judge.profileUrl)) return reject();
+		if (!judge || !exact(judge, ["name", "role", "profileUrl"]) || !validName(judge.name) || (index === 0
+			? judge.role !== "Chief Magistrate Judge" || judge.profileUrl !== magistrateCourtPublication.chiefUrl
+			: judge.role !== "Judge" || magistrateProfileUrl(judge.profileUrl) !== judge.profileUrl)) {
+			return reject();
+		}
 	}
 	if (new Set(snapshot.judges.map(judge => canonicalName(judge.name))).size !== snapshot.judges.length || new Set(snapshot.judges.map(judge => judge.profileUrl.toLowerCase())).size !== snapshot.judges.length) return reject();
-	const fixed = [...magistrateCourtPublication.policies.map(policy => policy.url), magistrateCourtPublication.homeUrl, magistrateCourtPublication.url, magistrateCourtPublication.chiefUrl];
+	const fixed = [
+		...magistrateCourtPublication.policies.map(policy => policy.url),
+		magistrateCourtPublication.homeUrl,
+		magistrateCourtPublication.url,
+		magistrateCourtPublication.chiefUrl
+	];
 	let position = 0;
-	for (const url of [...fixed, ...snapshot.judges.slice(1).map(judge => judge.profileUrl)]) {
+	for (const url of [
+		...fixed,
+		...snapshot.judges.slice(1).map(judge => judge.profileUrl)
+	]) {
 		const entry = snapshot.documents[position++];
 		if (!entry || entry.url !== url) return reject();
 		if (entry.status === 302) {
@@ -189,7 +242,17 @@ export function validateMagistrateCourtSnapshot(value: unknown, now = Date.now()
 	}
 	if (position !== snapshot.documents.length) return reject();
 	for (const entry of snapshot.documents) {
-		if (!entry || !exact(entry, ["url", "status", "capturedAt", "sha256", ...(entry.status === 302 ? ["location"] : [])]) || !validInstant(entry.capturedAt, now) || !/^[a-f0-9]{64}$/u.test(entry.sha256)) return reject();
+		if (!entry || !exact(entry, [
+			"url",
+			"status",
+			"capturedAt",
+			"sha256",
+			...(entry.status === 302
+				? ["location"]
+				: [])
+		]) || !validInstant(entry.capturedAt, now) || !/^[a-f0-9]{64}$/u.test(entry.sha256)) {
+			return reject();
+		}
 	}
 	if (snapshot.retrievedAt !== new Date(Math.min(...snapshot.documents.map(entry => Date.parse(entry.capturedAt)))).toISOString() || snapshot.sourceSha256 !== digest(JSON.stringify(snapshot.documents))) return reject();
 }
@@ -198,10 +261,24 @@ export function prepareMagistrateCourtDirectory(value: unknown, now = Date.now()
 	const capture = value as MagistrateCourtCapture;
 	if (capture.schemaVersion !== 1 || capture.type !== "magistrate-court-capture" || !Array.isArray(capture.documents) || capture.documents.length < 7 || capture.documents.length > 205 || Buffer.byteLength(JSON.stringify(capture)) > magistrateCourtPublication.maximumCaptureBytes) return reject();
 	for (const entry of capture.documents) {
-		if (!entry || !exact(entry, ["url", "status", "capturedAt", "sha256", "body", ...(entry.status === 302 ? ["location"] : [])]) || typeof entry.body !== "string" || Buffer.byteLength(entry.body) > magistrateCourtPublication.maximumDocumentBytes || digest(entry.body) !== entry.sha256) return reject();
+		if (!entry || !exact(entry, [
+			"url",
+			"status",
+			"capturedAt",
+			"sha256",
+			"body",
+			...(entry.status === 302
+				? ["location"]
+				: [])
+		]) || typeof entry.body !== "string" || Buffer.byteLength(entry.body) > magistrateCourtPublication.maximumDocumentBytes || digest(entry.body) !== entry.sha256) {
+			return reject();
+		}
 	}
 	for (const index of [0, 1]) verifyMagistrateCourtPolicy(capture.documents[index]!.body, index, now);
-	const judges = [parseMagistrateChief(capture.documents[2]!.body, capture.documents[4]!.body), ...parseMagistrateCourtRoster(capture.documents[3]!.body)];
+	const judges = [
+		parseMagistrateChief(capture.documents[2]!.body, capture.documents[4]!.body),
+		...parseMagistrateCourtRoster(capture.documents[3]!.body)
+	];
 	let position = 5;
 	for (const judge of judges.slice(1)) {
 		let entry = capture.documents[position++];
@@ -211,7 +288,19 @@ export function prepareMagistrateCourtDirectory(value: unknown, now = Date.now()
 	}
 	const documents = capture.documents.map(({ body: _body, ...entry }) => entry);
 	const { sourceId, slug, title, countyFips, url } = magistrateCourtPublication;
-	const snapshot: MagistrateCourtSnapshot = { schemaVersion: 1, type: "court-directory", sourceId, slug, title, countyFips, url, documents, judges, retrievedAt: new Date(Math.min(...documents.map(entry => Date.parse(entry.capturedAt)))).toISOString(), sourceSha256: digest(JSON.stringify(documents)) };
+	const snapshot: MagistrateCourtSnapshot = {
+		schemaVersion: 1,
+		type: "court-directory",
+		sourceId,
+		slug,
+		title,
+		countyFips,
+		url,
+		documents,
+		judges,
+		retrievedAt: new Date(Math.min(...documents.map(entry => Date.parse(entry.capturedAt)))).toISOString(),
+		sourceSha256: digest(JSON.stringify(documents))
+	};
 	validateMagistrateCourtSnapshot(snapshot, now);
 	return snapshot;
 }

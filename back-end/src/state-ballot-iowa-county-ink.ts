@@ -71,7 +71,9 @@ export function iowaInkShape(
 ): IowaInkShape {
 	if (matrix.length !== 6 || matrix.some(value => !Number.isFinite(value) || Math.abs(value) > 100000))
 		return reject();
-	const commands = typeof path === "string" ? orangePathCommands(path) : path;
+	const commands = typeof path === "string"
+		? orangePathCommands(path)
+		: path;
 	if (!commands.length || commands.length > 10000) return reject();
 	const contours: Point[][] = [];
 	const edges: [Point, Point][] = [];
@@ -115,7 +117,13 @@ export function iowaInkShape(
 	};
 	for (const command of commands) {
 		const expected
-			= command.kind === "M" || command.kind === "L" ? 2 : command.kind === "C" ? 6 : command.kind === "Z" ? 0 : -1;
+			= command.kind === "M" || command.kind === "L"
+				? 2
+				: command.kind === "C"
+					? 6
+					: command.kind === "Z"
+						? 0
+						: -1;
 		if (expected < 0 || command.values.length !== expected || command.values.some(value => !Number.isFinite(value)))
 			return reject();
 		if (command.kind === "M") {

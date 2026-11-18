@@ -50,7 +50,14 @@ test("Florida TSV retains literal quotes and excludes another election", () => {
 test("Delaware reads only the public name and keeps withdrawal evidence authoritative", () => {
 	const row = (status: string) => `<tr><td data-label="Office">Representative in Congress</td><td data-label="County">Statewide</td><td data-label="Party">Example</td><td data-label="Candidate"><span class="main-span">Alex &amp; Sample</span><span class="sub-span">Private address</span></td><td data-label="Status">${status}</td><td data-label="Date Filed">6/12/2026</td></tr>`;
 	for (const rows of [row("Withdrawn") + row("Qualified"), row("Qualified") + row("Withdrawn")]) {
-		const records = parseStateCandidateRecords(source("DE"), `<h1>General Election 11/3/2026</h1><table><tr>${["Office", "County", "Party", "Candidate", "Status", "Filed"].map(label => `<th>${label}</th>`).join("")}</tr>${rows}</table>`);
+		const records = parseStateCandidateRecords(source("DE"), `<h1>General Election 11/3/2026</h1><table><tr>${[
+			"Office",
+			"County",
+			"Party",
+			"Candidate",
+			"Status",
+			"Filed"
+		].map(label => `<th>${label}</th>`).join("")}</tr>${rows}</table>`);
 		assert.equal(records[0]?.name, "Alex & Sample");
 		assert.equal(records[0]?.status, "withdrawn");
 		assert.equal(records[0]?.scope, "statewide");
@@ -63,9 +70,19 @@ test("federal and state senate seats stay distinct, with exact district matching
 	assert.equal(classifyStateContest("US SENATE").scope, "statewide");
 	assert.equal(classifyStateContest("State Senator District 05").scope, "state-senate");
 	const records = parseStateCandidateRecords(source("NC"), ncCsv);
-	const matches = [{ id: "lower:007", label: "State House 7", districtCode: "007", districtType: "state-house", sourceSystem: "Fixture" }];
+	const matches = [
+		{
+			id: "lower:007",
+			label: "State House 7",
+			districtCode: "007",
+			districtType: "state-house",
+			sourceSystem: "Fixture"
+		}
+	];
 	assert.equal(stateRecordMatchesDistricts(records.find(record => record.name === "Jordan Sample")!, matches), true);
-	assert.equal(stateRecordMatchesDistricts(records.find(record => record.name === "Jordan Sample")!, [{ ...matches[0]!, districtType: "State House District" }]), true);
+	assert.equal(stateRecordMatchesDistricts(records.find(record => record.name === "Jordan Sample")!, [
+		{ ...matches[0]!, districtType: "State House District" }
+	]), true);
 	assert.equal(stateRecordMatchesDistricts(records.find(record => record.name === "Other District")!, matches), false);
 	assert.equal(stateRecordMatchesDistricts(records.find(record => record.name === "Jordan Sample")!, []), false);
 });
@@ -88,7 +105,10 @@ test("state source caching shares concurrent reads, retries failures, and expire
 	assert.equal(requests, 1);
 	shouldFail = false;
 	currentTime += 5 * 60 * 1000;
-	const [first, second] = await Promise.all([repository.getSnapshot("NC"), repository.getSnapshot("NC")]);
+	const [first, second] = await Promise.all([
+		repository.getSnapshot("NC"),
+		repository.getSnapshot("NC")
+	]);
 	assert.ok(first);
 	assert.equal(first, second);
 	assert.equal(requests, 2);
@@ -101,7 +121,10 @@ test("state source caching shares concurrent reads, retries failures, and expire
 });
 
 test("state previews expose matched records without claiming a verified guide or retaining a street address", async () => {
-	const repository = createStateBallotRepository({ now: () => testNow, fetchText: async () => ncCsv });
+	const repository = createStateBallotRepository({
+		now: () => testNow,
+		fetchText: async () => ncCsv
+	});
 	const snapshot = await repository.getSnapshot("NC");
 	assert.ok(snapshot);
 	const preview = buildStateBallotPreview(snapshot, { districtMatches: [] });
@@ -109,7 +132,12 @@ test("state previews expose matched records without claiming a verified guide or
 	assert.equal(preview?.status, "official_source_unverified");
 	const lookup = {
 		result: "resolved",
-		location: { state: "North Carolina", displayName: "Fixture", slug: "fixture", coverageLabel: "Fixture" },
+		location: {
+			state: "North Carolina",
+			displayName: "Fixture",
+			slug: "fixture",
+			coverageLabel: "Fixture"
+		},
 		districtMatches: [],
 		representativeMatches: [],
 		actions: [],
@@ -136,7 +164,7 @@ test("every state and DC have a reversible identity and an official election-off
 	}
 	assert.deepEqual(getOfficialToolsForState("ZZ"), []);
 	assert.equal(getStateAbbreviationForName("Unknown"), undefined);
-	assert.match(getOfficialToolsForState("UT")[0]!.url, /vote\.utah\.gov/u);
+	assert.equal(new URL(getOfficialToolsForState("UT")[0]!.url).hostname, "vote.utah.gov");
 });
 
 test("North Dakota offers the official measure guide without losing its election-office directory", () => {
@@ -164,7 +192,7 @@ test("Kansas links the exact amendment publication while retaining election offi
 	assert.equal(resources[0]!.url, "https://www.sos.ks.gov/elections/proposed-constitutional-amendments.html");
 	assert.equal(resources[0]!.note, undefined);
 	assert.equal(resources[1]!.label, "Kansas election offices");
-	assert.match(resources[1]!.url, /www\.eac\.gov/u);
+	assert.equal(new URL(resources[1]!.url).hostname, "www.eac.gov");
 });
 
 test("California links its qualification register without claiming a native guide or losing office contacts", () => {
@@ -179,17 +207,33 @@ test("California links its qualification register without claiming a native guid
 	});
 	assert.equal(resources[0]!.note, undefined);
 	assert.equal(resources[1]!.label, "California election offices");
-	assert.match(resources[1]!.url, /www\.eac\.gov/u);
+	assert.equal(new URL(resources[1]!.url).hostname, "www.eac.gov");
 });
 
 test("inactive, unknown, and unopposed Florida filings never appear as ballot candidates", () => {
-	const statuses = ["Qualified", "Withdrew", "Did Not Qualify", "Defeated", "Elected", "Unopposed", "Deceased", "Removed", "Transferred to Local", "Future Status"];
+	const statuses = [
+		"Qualified",
+		"Withdrew",
+		"Did Not Qualify",
+		"Defeated",
+		"Elected",
+		"Unopposed",
+		"Deceased",
+		"Removed",
+		"Transferred to Local",
+		"Future Status"
+	];
 	const body = `ElectionID\tOfficeDesc\tStatusCode\tStatusDesc\tNameFirst\tNameLast\n${
 		statuses.map((status, index) => `20261103-GEN\tGovernor\tX\t${status}\tPerson\t${index}`).join("\n")}`;
 	const records = parseStateCandidateRecords(source("FL"), body);
 	assert.equal(records.length, statuses.length);
 	assert.deepEqual(records.map(record => record.sourceStatus), statuses);
-	const preview = buildStateBallotPreview({ source: source("FL"), retrievedAt: new Date(testNow).toISOString(), sha256: "test", records }, { districtMatches: [] });
+	const preview = buildStateBallotPreview({
+		source: source("FL"),
+		retrievedAt: new Date(testNow).toISOString(),
+		sha256: "test",
+		records
+	}, { districtMatches: [] });
 	assert.equal(preview?.candidateCount, 1);
 	assert.equal(preview?.contests[0]?.candidates[0]?.ballotStatus, "qualified");
 });
@@ -214,14 +258,40 @@ test("Michigan report headers, row spans, district prefixes, and record totals a
 });
 
 test("ZIP and IP lookups do not turn centroid districts into a personal ballot", async () => {
-	const repository = createStateBallotRepository({ now: () => testNow, fetchText: async () => ncCsv });
-	const districtMatches = [{ id: "lower:7", label: "State House 7", districtCode: "7", districtType: "state-house", sourceSystem: "Fixture" }];
-	for (const [inputKind, detectedFromIp, expectedCount] of [["zip", false, 1], ["address", true, 1], ["address", false, 2]] as const) {
-		const lookup = { result: "resolved", inputKind, detectedFromIp, location: { state: "North Carolina" }, districtMatches } as LocationLookupResponse;
+	const repository = createStateBallotRepository({
+		now: () => testNow,
+		fetchText: async () => ncCsv
+	});
+	const districtMatches = [
+		{
+			id: "lower:7",
+			label: "State House 7",
+			districtCode: "7",
+			districtType: "state-house",
+			sourceSystem: "Fixture"
+		}
+	];
+	for (const [inputKind, detectedFromIp, expectedCount] of [
+		["zip", false, 1],
+		["address", true, 1],
+		["address", false, 2]
+	] as const) {
+		const lookup = {
+			result: "resolved",
+			inputKind,
+			detectedFromIp,
+			location: { state: "North Carolina" },
+			districtMatches
+		} as LocationLookupResponse;
 		await attachStateBallotPreview(lookup, repository, undefined, () => testNow);
 		assert.equal(lookup.ballotContentPreviews?.[0]?.candidateCount, expectedCount);
 	}
-	const ambiguous = { result: "resolved", inputKind: "zip", location: { state: "North Carolina" }, selectionOptions: [{}] } as LocationLookupResponse;
+	const ambiguous = {
+		result: "resolved",
+		inputKind: "zip",
+		location: { state: "North Carolina" },
+		selectionOptions: [{}]
+	} as LocationLookupResponse;
 	await attachStateBallotPreview(ambiguous, repository);
 	assert.equal(ambiguous.ballotContentPreviews, undefined);
 });

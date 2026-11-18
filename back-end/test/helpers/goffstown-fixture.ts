@@ -6,26 +6,106 @@ import { fetchGoffstownCycleDiscovery } from "../../src/state-ballot-goffstown-d
 const fixture: Record<string, string> = JSON.parse(readFileSync(new URL("../fixtures/goffstown-discovery-policy.json", import.meta.url), "utf8"));
 export const goffstownFixtureClock = Date.parse("2026-10-27T04:00:00.000Z");
 function field(text: string, left: number, top: number, overrides: Partial<GoffstownField> = {}): GoffstownField {
-	return { text, left, top, width: 80, height: 10, family: "HelveticaNeueLTStd-BdCn", size: 18, color: "#000000", ...overrides };
+	return {
+		text,
+		left,
+		top,
+		width: 80,
+		height: 10,
+		family: "HelveticaNeueLTStd-BdCn",
+		size: 18,
+		color: "#000000",
+		...overrides
+	};
 }
 export function goffstownFieldsFixture() {
-	const rules = [299.25, 376.875, 454.5, 532.125, 591.75, 821.25, 949.5, 1009.125, 1068.75, 1128.375, 1188, 1265.625, 1343.25];
-	const labels = ["Governor", "United States Senator", "Representative in Congress", "Executive Councilor", "State Senator", "State Representatives Hillsborough District 29", "State Representatives Hillsborough District 44", "Sheriff", "County Attorney", "County Treasurer", "Register of Deeds", "Register of Probate", "County Commissioner"];
-	const suffixes = ["Able", "Baker", "Civic", "Dove", "Elm", "Fir", "Grove", "Hill", "Ivy", "Juniper", "Kite", "Lake", "Maple"];
-	const first = [field("GOFFSTOWN", 535, 105), field("GENERAL ELECTION", 532, 140), field("NOVEMBER 3, 2026", 534, 165), field("SAMPLE", 728, 90)];
-	for (const [text, left, top] of [["Other", 258, 199], ["Republican", 407, 199], ["Democratic", 580, 199], ["Write-in", 756, 199], ["Offices", 95, 208], ["Candidates", 234, 217], ["Candidates", 407, 217], ["Candidates", 581, 217], ["Candidates", 743, 217]] as const) first.push(field(text, left, top, { color: "#ffffff" }));
+	const rules = [
+		299.25,
+		376.875,
+		454.5,
+		532.125,
+		591.75,
+		821.25,
+		949.5,
+		1009.125,
+		1068.75,
+		1128.375,
+		1188,
+		1265.625,
+		1343.25
+	];
+	const labels = [
+		"Governor",
+		"United States Senator",
+		"Representative in Congress",
+		"Executive Councilor",
+		"State Senator",
+		"State Representatives Hillsborough District 29",
+		"State Representatives Hillsborough District 44",
+		"Sheriff",
+		"County Attorney",
+		"County Treasurer",
+		"Register of Deeds",
+		"Register of Probate",
+		"County Commissioner"
+	];
+	const suffixes = [
+		"Able",
+		"Baker",
+		"Civic",
+		"Dove",
+		"Elm",
+		"Fir",
+		"Grove",
+		"Hill",
+		"Ivy",
+		"Juniper",
+		"Kite",
+		"Lake",
+		"Maple"
+	];
+	const first = [
+		field("GOFFSTOWN", 535, 105),
+		field("GENERAL ELECTION", 532, 140),
+		field("NOVEMBER 3, 2026", 534, 165),
+		field("SAMPLE", 728, 90)
+	];
+	for (const [text, left, top] of [
+		["Other", 258, 199],
+		["Republican", 407, 199],
+		["Democratic", 580, 199],
+		["Write-in", 756, 199],
+		["Offices", 95, 208],
+		["Candidates", 234, 217],
+		["Candidates", 407, 217],
+		["Candidates", 581, 217],
+		["Candidates", 743, 217]
+	] as const) first.push(field(text, left, top, { color: "#ffffff" }));
 	const marks: { left: number; top: number }[] = [];
 	let top = 242;
 	for (const [index, bottom] of rules.entries()) {
 		const label = labels[index]!;
-		const limit = index === 5 ? 4 : index === 6 ? 2 : 1;
+		const limit = index === 5
+			? 4
+			: index === 6
+				? 2
+				: 1;
 		const center = (top + bottom) / 2;
 		first.push(field(label, 40, top + 2));
-		first.push(field(limit === 1 ? "Vote for not more than 1" : `Vote for up to ${limit}; ${limit === 4 ? "Four" : "Two"} will be elected`, 40, bottom - 12, { family: "Helvetica-Condensed", size: 12 }));
+		first.push(field(limit === 1
+			? "Vote for not more than 1"
+			: `Vote for up to ${limit}; ${limit === 4
+				? "Four"
+				: "Two"} will be elected`, 40, bottom - 12, { family: "Helvetica-Condensed", size: 12 }));
 		for (const [column, left] of [427, 554].entries()) {
-			const name = index === 7 ? "Dana Civic" : `${column ? "Bob" : "Ada"} ${suffixes[index]}`;
+			const name = index === 7
+				? "Dana Civic"
+				: `${column ? "Bob" : "Ada"} ${suffixes[index]}`;
 			first.push(field(name, left, center - 5));
-			marks.push({ left: column ? 699.1875 : 525.9375, top: center });
+			marks.push({
+				left: column ? 699.1875 : 525.9375,
+				top: center
+			});
 		}
 		if (index < 2) {
 			first.push(field(`Casey ${suffixes[index]}`, 236, center - 5));
@@ -43,14 +123,22 @@ export function goffstownFieldsFixture() {
 	const questionMarks: { left: number; top: number }[] = [];
 	for (const number of [1, 2]) {
 		const top = number * 100;
-		second.push(field(number === 1 ? "CONSTITUTIONAL QUESTIONS" : "STATUTORY QUESTION", 60, top - 30));
+		second.push(field(number === 1
+			? "CONSTITUTIONAL QUESTIONS"
+			: "STATUTORY QUESTION", 60, top - 30));
 		second.push(field(`${number}. <Should this synthetic test question be approved by the voters for this fixture?=`, 55, top, { family: "Helvetica-Condensed", size: 12 }));
 		second.push(field("Yes", 717, top + 20, { width: 24 }));
 		second.push(field("No", 815, top + 20, { width: 19 }));
 		questionMarks.push({ left: 760, top: top + 25 }, { left: 852, top: top + 25 });
 	}
 	second.push(field("GOFFSTOWN", 422, 1441));
-	return { pages: [first, second], geometry: [{ marks, horizontalRules: rules }, { marks: questionMarks, horizontalRules: [] }] };
+	return {
+		pages: [first, second],
+		geometry: [
+			{ marks, horizontalRules: rules },
+			{ marks: questionMarks, horizontalRules: [] }
+		]
+	};
 }
 export function goffstownVisualFixture() {
 	const fields = Array.from({ length: 10 }, (_, index) => `<text top="50" left="${50 + 20 * index}" width="15" height="18" font="0">A</text>`).join("");
@@ -60,11 +148,28 @@ export function goffstownVisualFixture() {
 	return { xml, svg };
 }
 export async function goffstownPendingDiscovery(year = 2026) {
-	const date = year === 2026 ? "November 3, 2026" : "November 2, 2032";
+	const date = year === 2026
+		? "November 3, 2026"
+		: "November 2, 2032";
 	const body = fixture.index!.replace(/<a href="\/DocumentCenter\/View\/6157\/[^"]+">[^<]+<\/a>/u, "").replace("November 3, 2026", date);
 	const pages: Record<string, string> = { ...fixture, index: body };
-	return fetchGoffstownCycleDiscovery({ now: () => year === 2026 ? goffstownFixtureClock : Date.parse("2032-10-01T00:00:00.000Z"), sleep: async () => {}, requestDocument: async (url) => {
-		const name = url.endsWith("/325/Elections") ? "index" : url.split("/").at(-1)!.replace(".txt", "");
-		return { status: 200, contentType: name === "robots" ? "text/plain" : "text/html", body: Buffer.from(pages[name]!), etag: undefined };
-	} });
+	return fetchGoffstownCycleDiscovery({
+		now: () => year === 2026
+			? goffstownFixtureClock
+			: Date.parse("2032-10-01T00:00:00.000Z"),
+		sleep: async () => {},
+		requestDocument: async (url) => {
+			const name = url.endsWith("/325/Elections")
+				? "index"
+				: url.split("/").at(-1)!.replace(".txt", "");
+			return {
+				status: 200,
+				contentType: name === "robots"
+					? "text/plain"
+					: "text/html",
+				body: Buffer.from(pages[name]!),
+				etag: undefined
+			};
+		}
+	});
 }

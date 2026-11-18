@@ -17,10 +17,16 @@ export function usePageSeo(input: MaybeRefOrGetter<PageSeoInput>) {
 	const description = computed(() => page.value.description ?? appDescription);
 	const canonicalUrl = computed(() => {
 		const path = page.value.canonicalPath ?? page.value.path;
-		return path ? `${siteUrl}${path.startsWith("/") ? path : `/${path}`}` : siteUrl;
+		return path
+			? `${siteUrl}${path.startsWith("/")
+				? path
+				: `/${path}`}`
+			: siteUrl;
 	});
 	const socialImageUrl = buildSiteUrl(appSocialImagePath);
-	const jsonLdEntries = computed(() => (Array.isArray(page.value.jsonLd) ? page.value.jsonLd : [page.value.jsonLd]).filter(
+	const jsonLdEntries = computed(() => (Array.isArray(page.value.jsonLd)
+		? page.value.jsonLd
+		: [page.value.jsonLd]).filter(
 		(entry): entry is Record<string, unknown> => Boolean(entry)
 	));
 

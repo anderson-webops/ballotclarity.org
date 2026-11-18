@@ -57,29 +57,48 @@ function parsePennsylvania(source: StateBallotSource, body: string, factory: Rec
 		const status = text(row.CandidateStatusValue);
 		const type = text(row.CandidateTypeValue);
 		const primary = text(row.PrimaryResult);
-		if (!contest || !["Approved", "Withdrawn", "Inactive-CrossFiled"].includes(status) || !["Paper", "Petition", "Substitute", "Write-in"].includes(type) || !["true", "false"].includes(primary) || !["true", "false"].includes(text(row.GeneralResult)))
+		if (!contest || !["Approved", "Withdrawn", "Inactive-CrossFiled"].includes(status) || ![
+			"Paper",
+			"Petition",
+			"Substitute",
+			"Write-in"
+		].includes(type) || !["true", "false"].includes(primary) || !["true", "false"].includes(text(row.GeneralResult))) {
 			throw new Error("The public candidate status or office vocabulary has changed.");
+		}
 		if (primary !== "true" && !["Paper", "Substitute"].includes(type)) return [];
 		const districtLabel = text(row.DistrictName);
 		const districtMatch = districtLabel.match(/^(\d+)(?:st|nd|rd|th) (Congressional|Senatorial|Legislative) District$/u);
-		if (contest.scope === "statewide" ? districtLabel !== "Statewide" : !districtMatch || districtMatch[2] !== contest.districtKind || Number(districtMatch[1]) < 1)
+		if (contest.scope === "statewide"
+			? districtLabel !== "Statewide"
+			: !districtMatch || districtMatch[2] !== contest.districtKind || Number(districtMatch[1]) < 1) {
 			throw new Error("The public candidate district does not match its office.");
+		}
 		const record = requiredRecord(source, {
 			name: text(row.CandidateName),
 			office,
 			party: text(row.PartyName),
 			scope: contest.scope,
 			district: districtMatch?.[1],
-			status: status === "Withdrawn" ? "withdrawn" : status === "Inactive-CrossFiled" ? "inactive" : "listed",
+			status: status === "Withdrawn"
+				? "withdrawn"
+				: status === "Inactive-CrossFiled"
+					? "inactive"
+					: "listed",
 		}, factory);
-		record.sourceStatus = `${status}; ${type}${primary === "true" ? "; primary winner" : ""}`;
+		record.sourceStatus = `${status}; ${type}${primary === "true"
+			? "; primary winner"
+			: ""}`;
 		return [record];
 	});
 }
 
 function campaignUrl(value: unknown) {
 	const published = text(value, true);
-	const href = /^https?:\/\//iu.test(published) ? published : /^(?:[a-z0-9-]+\.)+[a-z]{2,}(?:[/?#].*)?$/iu.test(published) ? `https://${published}` : "";
+	const href = /^https?:\/\//iu.test(published)
+		? published
+		: /^(?:[a-z0-9-]+\.)+[a-z]{2,}(?:[/?#].*)?$/iu.test(published)
+			? `https://${published}`
+			: "";
 	return normalizePublicHref(href) || undefined;
 }
 
@@ -103,8 +122,11 @@ function parseWestVirginia(source: StateBallotSource, body: string, factory: Rec
 			const electionDate = text(row.electionDate);
 			const electionType = text(row.electionType);
 			if (electionDate !== "11/03/2026" || electionType !== "GENERAL") return [];
-			if (source.electionDate !== "2026-11-03" || row.electionId !== 19080 || text(row.electionName) !== "11/03/2026 - GENERAL 2026" || (index === 1 ? row.candidateType !== "W" : !["R", "N"].includes(text(row.candidateType))))
+			if (source.electionDate !== "2026-11-03" || row.electionId !== 19080 || text(row.electionName) !== "11/03/2026 - GENERAL 2026" || (index === 1
+				? row.candidateType !== "W"
+				: !["R", "N"].includes(text(row.candidateType)))) {
 				throw new Error("The public candidate record does not match the configured election.");
+			}
 			if (typeof row.candidateId !== "number" || !Number.isSafeInteger(row.candidateId) || row.candidateId < 1 || seen.has(row.candidateId))
 				throw new Error("The public candidate identity is invalid or duplicated.");
 			seen.add(row.candidateId);
@@ -117,7 +139,9 @@ function parseWestVirginia(source: StateBallotSource, body: string, factory: Rec
 				name: text(row.candidateBallotName),
 				office,
 				party: text(row.partyDescription, true),
-				status: index === 1 ? "write-in" : "listed",
+				status: index === 1
+					? "write-in"
+					: "listed",
 				jurisdiction: text(row.townName, true) || text(row.candidateDistrictName, true),
 				candidateUrl: campaignUrl(row.website),
 				sourceCandidateId: String(row.candidateId),
@@ -149,7 +173,10 @@ function parseKansas(source: StateBallotSource, body: string, factory: RecordFac
 		if (controls.length !== 1) throw new Error("The Kansas candidate filters have changed.");
 		const selected = stateHtmlDescendants(controls[0]!, node => node.nodeName === "option" && Boolean(node.attrs?.some(attribute => attribute.name === "selected")));
 		if (selected.length !== 1) throw new Error("The Kansas candidate filter selection is missing.");
-		return { value: stateHtmlAttribute(selected[0]!, "value"), label: text(stateHtmlText(selected[0]!)) };
+		return {
+			value: stateHtmlAttribute(selected[0]!, "value"),
+			label: text(stateHtmlText(selected[0]!))
+		};
 	};
 	const election = selection("field_election_reference_target_id");
 	if (election.value !== electionId || election.label !== kansasElectionLabel(source.electionDate) || selection("field_office_jurisdiction_target_id_1").value !== "All" || selection("field_office_level_target_id_1").value !== "All")
@@ -169,7 +196,14 @@ function parseKansas(source: StateBallotSource, body: string, factory: RecordFac
 	const records: StateCandidateRecord[] = [];
 	const operationalText = (node: ReturnType<typeof parseStateHtml>): string => {
 		if (["script", "style"].includes(node.nodeName)) return "";
-		if (node.nodeName === "li" && stateHtmlDescendants(node, child => child.nodeName === "label" && ["City:", "Phone:", "Website:", "E-mail:"].includes(text(stateHtmlText(child)))).length) return "";
+		if (node.nodeName === "li" && stateHtmlDescendants(node, child => child.nodeName === "label" && [
+			"City:",
+			"Phone:",
+			"Website:",
+			"E-mail:"
+		].includes(text(stateHtmlText(child)))).length) {
+			return "";
+		}
 		return node.value ?? (node.childNodes ?? []).map(operationalText).join(" ");
 	};
 	for (const group of (content.childNodes ?? []).filter(node => hasClass(node, "view-grouping"))) {
@@ -187,8 +221,15 @@ function parseKansas(source: StateBallotSource, body: string, factory: RecordFac
 			const names = stateHtmlDescendants(node, child => child.nodeName === "h4" && hasClass(child, "title"));
 			const parties = stateHtmlDescendants(node, child => hasClass(child, "party"));
 			const fields = stateHtmlDescendants(node, child => child.nodeName === "li");
-			if (stateHtmlDescendants(node, child => child.nodeName === "label").some(child => !["Incumbent:", "City:", "Phone:", "Website:", "E-mail:"].includes(text(stateHtmlText(child)))) || /\b(?:withdrawn|withdrew|deceased|disqualified|defeated|unopposed|elected)\b/iu.test(operationalText(node)))
+			if (stateHtmlDescendants(node, child => child.nodeName === "label").some(child => ![
+				"Incumbent:",
+				"City:",
+				"Phone:",
+				"Website:",
+				"E-mail:"
+			].includes(text(stateHtmlText(child)))) || /\b(?:withdrawn|withdrew|deceased|disqualified|defeated|unopposed|elected)\b/iu.test(operationalText(node))) {
 				throw new Error("The Kansas candidate card contains an unreviewed status or field.");
+			}
 			const field = (label: string) => fields.filter(child => stateHtmlDescendants(child, item => item.nodeName === "label" && text(stateHtmlText(item)) === label).length);
 			const incumbents = field("Incumbent:");
 			if (!office || names.length !== 1 || parties.length !== 1 || incumbents.length !== 1)
@@ -196,8 +237,15 @@ function parseKansas(source: StateBallotSource, body: string, factory: RecordFac
 			const incumbent = text(stateHtmlText(incumbents[0]!)).replace(/^Incumbent:\s*/u, "");
 			const name = text(stateHtmlText(names[0]!));
 			const party = text(stateHtmlText(parties[0]!));
-			if (!["Yes", "No"].includes(incumbent) || !["Democratic", "Republican", "Libertarian", "United Kansas", "Nonpartisan office"].includes(party))
+			if (!["Yes", "No"].includes(incumbent) || ![
+				"Democratic",
+				"Republican",
+				"Libertarian",
+				"United Kansas",
+				"Nonpartisan office"
+			].includes(party)) {
 				throw new Error("The Kansas candidate party or incumbent vocabulary has changed.");
+			}
 			let scope: StateContestScope;
 			let district = "";
 			let jurisdiction: string | undefined;
@@ -205,7 +253,14 @@ function parseKansas(source: StateBallotSource, body: string, factory: RecordFac
 			const congress = office.match(/^U\.S\. Representative ([1-9]\d*)(?:st|nd|rd|th) District$/u);
 			const statewideJudicial = /^Kansas (?:Supreme Court Justice|Court of Appeals Judge) Position [1-9]\d*$/u.test(office);
 			const localJudicial = /^(?:10th Judicial District Judge Division|10th District Magistrate Judge Position) [1-9]\d*$/u.test(office);
-			if (["U.S. Senate", "Governor/Lieutenant Governor", "Secretary of State", "Attorney General", "State Treasurer", "Commissioner of Insurance"].includes(office) || statewideJudicial) {
+			if ([
+				"U.S. Senate",
+				"Governor/Lieutenant Governor",
+				"Secretary of State",
+				"Attorney General",
+				"State Treasurer",
+				"Commissioner of Insurance"
+			].includes(office) || statewideJudicial) {
 				scope = "statewide";
 			}
 			else if (house || congress) {
@@ -214,8 +269,16 @@ function parseKansas(source: StateBallotSource, body: string, factory: RecordFac
 			}
 			else if (localJudicial || /^State Board of Education [1-9]\d*$/u.test(office) || /^County Commissioner (?:Chairman|District [1-9]\d*)$/u.test(office) || (office === "Clerk" && heading.endsWith(" Township")) || office === "Mayor") {
 				scope = "local";
-				district = localJudicial ? "10" : office.match(/(?:District|Education) ([1-9]\d*)$/u)?.[1] ?? "";
-				jurisdiction = localJudicial ? "10th Judicial District" : office === "Clerk" || office === "Mayor" ? heading : office.startsWith("County Commissioner") ? "Johnson County" : "State Board of Education";
+				district = localJudicial
+					? "10"
+					: office.match(/(?:District|Education) ([1-9]\d*)$/u)?.[1] ?? "";
+				jurisdiction = localJudicial
+					? "10th Judicial District"
+					: office === "Clerk" || office === "Mayor"
+						? heading
+						: office.startsWith("County Commissioner")
+							? "Johnson County"
+							: "State Board of Education";
 			}
 			else {
 				throw new Error("The Kansas candidate office or jurisdiction vocabulary has changed.");
@@ -226,7 +289,20 @@ function parseKansas(source: StateBallotSource, body: string, factory: RecordFac
 				throw new Error("The Kansas retention office has an unexpected party label.");
 			const websites = field("Website:");
 			if (websites.length > 1) throw new Error("The Kansas candidate has ambiguous website fields.");
-			const record = requiredRecord(source, { name, office: statewideJudicial || localJudicial ? `${office}, Judicial retention` : office, party, scope, district, jurisdiction, status: "listed", candidateUrl: websites[0] ? campaignUrl(text(stateHtmlText(websites[0])).replace(/^Website:\s*/u, "")) : undefined }, factory);
+			const record = requiredRecord(source, {
+				name,
+				office: statewideJudicial || localJudicial
+					? `${office}, Judicial retention`
+					: office,
+				party,
+				scope,
+				district,
+				jurisdiction,
+				status: "listed",
+				candidateUrl: websites[0]
+					? campaignUrl(text(stateHtmlText(websites[0])).replace(/^Website:\s*/u, ""))
+					: undefined
+			}, factory);
 			if (incumbent === "Yes") record.ballotDesignation = "Incumbent";
 			if (statewideJudicial || localJudicial) record.sourceStatus = "Judicial retention election";
 			if (source.electionDate === "2026-11-03" && heading === "Spring Hill Township" && name === "Tara A. Combs") record.sourceStatus = "Revised notice: Tara A. Combes";
@@ -253,11 +329,21 @@ export function buildSouthCarolinaSearchForm(source: StateBallotSource, body: st
 	const filename = stateHtmlAttribute(field("ExportFileName")[0]!, "value");
 	if (!filename.includes(`${electionId}_${source.electionDate.slice(5, 7)}_${source.electionDate.slice(8)}_${source.electionDate.slice(0, 4)}`) || filename.length > 300)
 		throw new Error("The public search export identity has changed.");
-	const fields = new URLSearchParams({ ElectionId: electionId, ExportFileName: filename, CandidateFirstName: "", CandidateLastName: "" });
+	const fields = new URLSearchParams({
+		ElectionId: electionId,
+		ExportFileName: filename,
+		CandidateFirstName: "",
+		CandidateLastName: ""
+	});
 	const selectors = stateHtmlDescendants(forms[0]!, node => node.nodeName === "select");
 	const counties = selectors.filter(node => stateHtmlAttribute(node, "name") === "SelectedAssociatedCounties");
 	if (selectors.length !== 4 + counties.length || counties.length > 1 || counties.some(node => stateHtmlDescendants(node, child => child.nodeName === "option" && Boolean(child.attrs?.some(attribute => attribute.name === "selected")) && stateHtmlAttribute(child, "value") !== "").length > 0)) throw new Error("The public candidate search contains changed or filtered controls.");
-	for (const name of ["SelectedOffice", "SelectedCandidateStatus", "SelectedPoliticalParty", "SelectedFilingLocation"]) {
+	for (const name of [
+		"SelectedOffice",
+		"SelectedCandidateStatus",
+		"SelectedPoliticalParty",
+		"SelectedFilingLocation"
+	]) {
 		const select = stateHtmlDescendants(forms[0]!, node => node.nodeName === "select" && stateHtmlAttribute(node, "name") === name);
 		const options = select.length === 1 && stateHtmlDescendants(select[0]!, node => node.nodeName === "option" && text(stateHtmlText(node)) === "All");
 		if (!options || options.length !== 1)
@@ -304,7 +390,17 @@ function parseSouthCarolina(source: StateBallotSource, body: string, factory: Re
 		"Withdrew Before Primary": "withdrawn",
 		"Elected": "elected",
 	};
-	const statewide = ["President and Vice President", "Governor and Lieutenant Governor", "Secretary of State", "State Treasurer", "Attorney General", "Comptroller General", "State Superintendent of Education", "Commissioner of Agriculture", "U.S. Senate"];
+	const statewide = [
+		"President and Vice President",
+		"Governor and Lieutenant Governor",
+		"Secretary of State",
+		"State Treasurer",
+		"Attorney General",
+		"Comptroller General",
+		"State Superintendent of Education",
+		"Commissioner of Agriculture",
+		"U.S. Senate"
+	];
 	const identifiers = new Set<string>();
 	return rows.slice(1).map((row, index) => {
 		const columns = cells(row);
@@ -335,7 +431,13 @@ function parseSouthCarolina(source: StateBallotSource, body: string, factory: Re
 			name,
 			office,
 			party: values[4]!,
-			scope: statewide.includes(office) ? "statewide" : federal ? "congressional" : house ? "state-house" : senate ? "state-senate" : "local",
+			scope: statewide.includes(office)
+				? "statewide"
+				: federal
+					? "congressional"
+					: house
+						? "state-house"
+						: senate ? "state-senate" : "local",
 			district: federal?.[1] ?? house?.[1] ?? senate?.[1],
 			jurisdiction: values[1],
 			candidateUrl: candidateUrl.href,
@@ -361,11 +463,13 @@ function parseAlaska(source: StateBallotSource, body: string, factory: RecordFac
 			throw new Error("The Alaska candidate page does not identify the configured general election.");
 		const pagers = stateHtmlDescendants(document, node => node.nodeName === "ul" && stateHtmlAttribute(node, "class").split(/\s/u).includes("frm_pagination"));
 		const active = pagers.length === 1 && stateHtmlDescendants(pagers[0]!, node => node.nodeName === "li" && stateHtmlAttribute(node, "class").split(/\s/u).includes("active"));
-		const pageNumbers = pagers.length === 1 && [...new Set(stateHtmlDescendants(pagers[0]!, node => node.nodeName === "a").map((node) => {
-			const url = new URL(stateHtmlAttribute(node, "href"), source.url);
-			if (url.origin !== new URL(source.url).origin || url.pathname !== "/candidates/" || url.searchParams.get("election") !== "26genr") throw new Error("The Alaska candidate pager has changed.");
-			return url.searchParams.get("frm-page-407");
-		}))].sort();
+		const pageNumbers = pagers.length === 1 && [
+			...new Set(stateHtmlDescendants(pagers[0]!, node => node.nodeName === "a").map((node) => {
+				const url = new URL(stateHtmlAttribute(node, "href"), source.url);
+				if (url.origin !== new URL(source.url).origin || url.pathname !== "/candidates/" || url.searchParams.get("election") !== "26genr") throw new Error("The Alaska candidate pager has changed.");
+				return url.searchParams.get("frm-page-407");
+			}))
+		].sort();
 		if (!active || active.length !== 1 || text(stateHtmlText(active[0]!)) !== String(index + 1) || JSON.stringify(pageNumbers) !== "[\"1\",\"2\",\"3\"]")
 			throw new Error("The Alaska candidate pagination is incomplete or changed.");
 		let office = "";
@@ -376,7 +480,11 @@ function parseAlaska(source: StateBallotSource, body: string, factory: RecordFac
 				continue;
 			}
 			const legislative = office.match(/^(SENATE|HOUSE) DISTRICT ([A-T]|\d{2})$/u);
-			if (legislative && (legislative[1] === "SENATE" ? !/^[A-T]$/u.test(legislative[2]!) : !/^(?:0[1-9]|[1-3]\d|40)$/u.test(legislative[2]!))) throw new Error("The Alaska legislative district does not match its office.");
+			if (legislative && (legislative[1] === "SENATE"
+				? !/^[A-T]$/u.test(legislative[2]!)
+				: !/^(?:0[1-9]|[1-3]\d|40)$/u.test(legislative[2]!))) {
+				throw new Error("The Alaska legislative district does not match its office.");
+			}
 			const judicial = office.match(/^(?:SUPREME COURT|STATE SUPERIOR COURT 0[1-4]|STATE DISTRICT COURT 0[1-4])$/u);
 			const statewide = ["GOVERNOR / LIEUTENANT GOVERNOR", "UNITED STATES SENATOR", "UNITED STATES REPRESENTATIVE"].includes(office);
 			if (!statewide && !legislative && !judicial) throw new Error("The Alaska candidate office has changed.");
@@ -397,9 +505,17 @@ function parseAlaska(source: StateBallotSource, body: string, factory: RecordFac
 				if (websites.length > 1) throw new Error("The Alaska candidate website is ambiguous.");
 				const record = requiredRecord(source, {
 					name: text(stateHtmlText(names[0]!)),
-					office: judicial ? `${office}, Judicial retention` : office,
+					office: judicial
+						? `${office}, Judicial retention`
+						: office,
 					party: status[1] ?? "",
-					scope: statewide || office === "SUPREME COURT" ? "statewide" : legislative ? legislative[1] === "SENATE" ? "state-senate" : "state-house" : "local",
+					scope: statewide || office === "SUPREME COURT"
+						? "statewide"
+						: legislative
+							? legislative[1] === "SENATE"
+								? "state-senate"
+								: "state-house"
+							: "local",
 					district: legislative?.[2],
 					jurisdiction: judicial ? office : undefined,
 					status: flags.length ? "write-in" : "qualified",

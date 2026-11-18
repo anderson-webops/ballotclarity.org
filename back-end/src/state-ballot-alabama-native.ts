@@ -30,8 +30,17 @@ async function inspectOriginal(bytes: Buffer, executable: string, directory: str
 	return new Promise<string>((resolve, reject) => {
 		const child = spawn(
 			executable,
-			["--json=2", "--json-stream-data=inline", "--decode-level=generalized", filename],
-			{ cwd: directory, env: { LANG: "C", LC_ALL: "C", TMPDIR: directory }, stdio: ["ignore", "pipe", "pipe"] }
+			[
+				"--json=2",
+				"--json-stream-data=inline",
+				"--decode-level=generalized",
+				filename
+			],
+			{
+				cwd: directory,
+				env: { LANG: "C", LC_ALL: "C", TMPDIR: directory },
+				stdio: ["ignore", "pipe", "pipe"]
+			}
 		);
 		const output: Buffer[] = [];
 		const diagnostics: Buffer[] = [];
@@ -138,7 +147,9 @@ export async function verifyAlabamaOriginal(
 						? finish(undefined, { result: value.result, proof: value.proof })
 						: finish(new Error(value?.error ?? "The Alabama native worker failed closed."))
 			);
-			worker.once("error", error => finish(error));
+			worker.once("error", error => finish(error instanceof Error
+				? error
+				: new Error("The Alabama native worker failed.")));
 			worker.once("exit", code =>
 				finish(new Error(`The Alabama native worker exited without a proof (${code}).`)));
 		});

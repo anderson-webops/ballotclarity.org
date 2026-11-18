@@ -105,7 +105,9 @@ function toNumber(value: number | string | null | undefined) {
 		return value;
 
 	const parsed = Number.parseFloat(String(value ?? "").trim());
-	return Number.isFinite(parsed) ? parsed : 0;
+	return Number.isFinite(parsed)
+		? parsed
+		: 0;
 }
 
 export function createOpenFecClient({
@@ -139,7 +141,9 @@ export function createOpenFecClient({
 
 		if (!response.ok) {
 			const detail = await readProviderResponseText(response);
-			throw new Error(`OpenFEC request failed: ${response.status} ${response.statusText}${detail ? ` - ${detail}` : ""}`.slice(0, 500));
+			throw new Error(`OpenFEC request failed: ${response.status} ${response.statusText}${detail
+				? ` - ${detail}`
+				: ""}`.slice(0, 500));
 		}
 
 		return await readProviderResponseJson<T>(response);
@@ -155,7 +159,9 @@ export function createOpenFecClient({
 				});
 			}
 			catch (error) {
-				const message = error instanceof Error ? error.message : String(error);
+				const message = error instanceof Error
+					? error.message
+					: String(error);
 
 				if (message.includes("OpenFEC request failed: 404"))
 					return null;

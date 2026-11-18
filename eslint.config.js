@@ -34,4 +34,7 @@ export default antfu(
 			"markdown/heading-increment": "off"
 		}
 	}
-);
+).override("antfu/unocss", {
+	basePath: import.meta.dirname,
+	files: ["front-end/**/*"]
+});

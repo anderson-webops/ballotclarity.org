@@ -12,7 +12,12 @@ import { electionReferenceDocumentDigest, parseElectionReferenceSnapshot } from 
 import { openStatesProfileLinks, openStatesProfilePolicySha256, openStatesProfileRecordId, supportsOpenStatesProfileMembers } from "./openstates-profile-evidence.js";
 import { containsControlCharacters } from "./text-validation.js";
 
-export const openStatesProfileArchiveLimits = { compressedBytes: 32 * 1024 * 1024, expandedBytes: 128 * 1024 * 1024, members: 50_000, selectedMemberBytes: 256 * 1024 };
+export const openStatesProfileArchiveLimits = {
+	compressedBytes: 32 * 1024 * 1024,
+	expandedBytes: 128 * 1024 * 1024,
+	members: 50_000,
+	selectedMemberBytes: 256 * 1024
+};
 
 export interface OpenStatesProfileCapture {
 	commit: string;
@@ -40,14 +45,24 @@ const objectValue = (value: unknown): value is Record<string, unknown> => Boolea
 const validDate = (value: unknown): value is string => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/u.test(value) && Number.isFinite(Date.parse(`${value}T00:00:00Z`)) && new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
 
 function profileFacts(body: string, personId: string, source: ElectionReferenceSource, record: ReferenceRecord, capturedAt: string) {
-	const document = parseDocument(body, { version: "1.2", schema: "core", uniqueKeys: true, stringKeys: true, strict: true });
+	const document = parseDocument(body, {
+		version: "1.2",
+		schema: "core",
+		uniqueKeys: true,
+		stringKeys: true,
+		strict: true
+	});
 	if (document.errors.length || document.warnings.length) throw new Error("invalid-yaml");
 	const person: unknown = document.toJS({ maxAliasCount: 0 });
 	if (!objectValue(person) || person.id !== personId || typeof person.name !== "string" || normalizeName(person.name) !== normalizeName(record.name) || !Array.isArray(person.roles) || person.roles.length > 100)
 		throw new Error("identity-or-role-format-conflict");
-	const district = record.jurisdiction?.startsWith("District ") ? record.jurisdiction.slice("District ".length) : "";
+	const district = record.jurisdiction?.startsWith("District ")
+		? record.jurisdiction.slice("District ".length)
+		: "";
 	if (!district || !["state-house", "state-senate"].includes(record.scope)) throw new Error("invalid-reference-role");
-	const chamber = record.scope === "state-senate" ? "upper" : "lower";
+	const chamber = record.scope === "state-senate"
+		? "upper"
+		: "lower";
 	const relevant = person.roles.filter((role: unknown): role is Record<string, unknown> => objectValue(role) && role.type === chamber && role.jurisdiction === `ocd-jurisdiction/country:us/state:${source.stateCode.toLowerCase()}/government` && typeof role.district === "string" && normalizeDistrict(role.district) === normalizeDistrict(district));
 	if (relevant.some(role => (role.start_date !== undefined && !validDate(role.start_date)) || (role.end_date !== undefined && !validDate(role.end_date)) || (typeof role.start_date === "string" && typeof role.end_date === "string" && role.start_date >= role.end_date)))
 		throw new Error("invalid-current-role-dates");
@@ -58,12 +73,19 @@ function profileFacts(body: string, personId: string, source: ElectionReferenceS
 	const facts = [`Listed by Open States as a serving state legislator for District ${district}.`];
 	const start = current[0]!.start_date;
 	if (typeof start === "string") {
-		const date = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${start}T12:00:00Z`));
+		const date = new Intl.DateTimeFormat("en-US", {
+			month: "long",
+			day: "numeric",
+			year: "numeric",
+			timeZone: "UTC"
+		}).format(new Date(`${start}T12:00:00Z`));
 		facts.push(`Recorded role start: ${date}.`);
 	}
 	else { holds.push({ field: "currentRoleStartDate", reason: "not-provided" }); }
 	let professionalFacts = 0;
-	const extras = objectValue(person.extras) ? person.extras : {};
+	const extras = objectValue(person.extras)
+		? person.extras
+		: {};
 	const professionalFields = new Set<string>();
 	for (const [field, value] of Object.entries(extras)) {
 		const label = field.toLowerCase();
@@ -71,7 +93,12 @@ function profileFacts(body: string, personId: string, source: ElectionReferenceS
 		if (professionalFields.has(label)) throw new Error("ambiguous-professional-field");
 		professionalFields.add(label);
 		if (typeof value !== "string" || !value.trim() || value.length > 540 || containsControlCharacters(value)) {
-			holds.push({ field: label, reason: value === null || value === "" ? "not-provided" : "invalid-professional-value" });
+			holds.push({
+				field: label,
+				reason: value === null || value === ""
+					? "not-provided"
+					: "invalid-professional-value"
+			});
 			continue;
 		}
 		if (facts.length >= 6) throw new Error("too-many-professional-fields");
@@ -82,7 +109,14 @@ function profileFacts(body: string, personId: string, source: ElectionReferenceS
 		if (objectValue(role) && validDate(role.end_date) && role.end_date <= asOf)
 			holds.push({ field: "historicalRole", reason: "historical-role-labels-require-independent-review" });
 	}
-	return { facts, holds, roleStartDates: typeof start === "string" ? 1 : 0, professionalFacts };
+	return {
+		facts,
+		holds,
+		roleStartDates: typeof start === "string"
+			? 1
+			: 0,
+		professionalFacts
+	};
 }
 
 export async function enrichOpenStatesProfiles(body: Uint8Array, capture: OpenStatesProfileCapture, collections: readonly OpenStatesProfileCollection[], now = Date.now()) {
@@ -106,10 +140,14 @@ export async function enrichOpenStatesProfiles(body: Uint8Array, capture: OpenSt
 	let professionalProfiles = 0;
 	const prefix = `openstates-people-${capture.commit.slice(0, 7)}`;
 	const archive = extract();
-	const pump = pipeline(Readable.from([body]), createGunzip(), new Transform({ transform(chunk: Buffer, _encoding, callback) {
-		expandedBytes += chunk.length;
-		callback(expandedBytes > openStatesProfileArchiveLimits.expandedBytes ? new Error("Open States archive exceeds its expanded size limit.") : null, chunk);
-	} }), archive);
+	const pump = pipeline(Readable.from([body]), createGunzip(), new Transform({
+		transform(chunk: Buffer, _encoding, callback) {
+			expandedBytes += chunk.length;
+			callback(expandedBytes > openStatesProfileArchiveLimits.expandedBytes
+				? new Error("Open States archive exceeds its expanded size limit.")
+				: null, chunk);
+		}
+	}), archive);
 	void pump.catch(() => {});
 	try {
 		for await (const entry of archive) {
@@ -120,11 +158,25 @@ export async function enrichOpenStatesProfiles(body: Uint8Array, capture: OpenSt
 				throw new Error("Open States archive contains an invalid, duplicate or unsupported member.");
 			seen.add(header.name);
 			const readme = parts.length === 2 && parts[1] === "README.md";
-			const personUuid = parts.length === 5 && parts[1] === "data" && parts[3] === "legislature" ? parts[4]!.match(/-([a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12})\.yml$/u)?.[1] : undefined;
-			const source = personUuid ? collections.find(collection => collection.source.stateCode.toLowerCase() === parts[2])?.source : undefined;
-			const personId = personUuid ? `ocd-person/${personUuid}` : "";
-			const member: OpenStatesProfileMember = { policySha256: openStatesProfilePolicySha256, commit: capture.commit, personId, memberPath: parts.slice(1).join("/"), archiveSha256: capture.sha256 };
-			const key = source ? `${source.stateCode}/${openStatesProfileRecordId(source, member)}` : "";
+			const personUuid = parts.length === 5 && parts[1] === "data" && parts[3] === "legislature"
+				? parts[4]!.match(/-([a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12})\.yml$/u)?.[1]
+				: undefined;
+			const source = personUuid
+				? collections.find(collection => collection.source.stateCode.toLowerCase() === parts[2])?.source
+				: undefined;
+			const personId = personUuid
+				? `ocd-person/${personUuid}`
+				: "";
+			const member: OpenStatesProfileMember = {
+				policySha256: openStatesProfilePolicySha256,
+				commit: capture.commit,
+				personId,
+				memberPath: parts.slice(1).join("/"),
+				archiveSha256: capture.sha256
+			};
+			const key = source
+				? `${source.stateCode}/${openStatesProfileRecordId(source, member)}`
+				: "";
 			const selectedPerson = selected.get(key);
 			if (!readme && !selectedPerson) {
 				entry.resume();
@@ -154,14 +206,28 @@ export async function enrichOpenStatesProfiles(body: Uint8Array, capture: OpenSt
 				prepared = profileFacts(new TextDecoder("utf-8", { fatal: true }).decode(content), personId, collectionSource, record, new Date(now).toISOString());
 			}
 			catch {
-				holds.push({ sourceId: collectionSource.id, recordId: record.id, field: "profile", reason: "invalid-or-conflicting-profile-member" });
+				holds.push({
+					sourceId: collectionSource.id,
+					recordId: record.id,
+					field: "profile",
+					reason: "invalid-or-conflicting-profile-member"
+				});
 				continue;
 			}
 			roleStartDates += prepared.roleStartDates;
 			professionalFacts += prepared.professionalFacts;
 			if (prepared.professionalFacts) professionalProfiles++;
 			holds.push(...prepared.holds.map(hold => ({ sourceId: collectionSource.id, recordId: record.id, ...hold })));
-			matches.set(key, { facts: prepared.facts, document: { url: openStatesProfileLinks(member).url, sha256: digest(content), capturedAt: capture.capturedAt, includedRecordCount: 1, member } });
+			matches.set(key, {
+				facts: prepared.facts,
+				document: {
+					url: openStatesProfileLinks(member).url,
+					sha256: digest(content),
+					capturedAt: capture.capturedAt,
+					includedRecordCount: 1,
+					member
+				}
+			});
 		}
 		await pump;
 	}
@@ -178,17 +244,41 @@ export async function enrichOpenStatesProfiles(body: Uint8Array, capture: OpenSt
 		for (const record of snapshot.records) {
 			const match = matches.get(`${source.stateCode}/${record.id}`);
 			if (!match) {
-				if (!holds.some(hold => hold.recordId === record.id && hold.sourceId === source.id && hold.field === "profile")) holds.push({ sourceId: source.id, recordId: record.id, field: "profile", reason: "profile-member-not-found" });
+				if (!holds.some(hold => hold.recordId === record.id && hold.sourceId === source.id && hold.field === "profile")) {
+					holds.push({
+						sourceId: source.id,
+						recordId: record.id,
+						field: "profile",
+						reason: "profile-member-not-found"
+					});
+				}
 				continue;
 			}
 			records.push({ ...record, facts: match.facts, sourceDocumentIndex: documents.length });
 			documents.push(match.document);
 		}
 		if (!records.length) continue;
-		const enriched = { ...snapshot, records, recordCount: records.length, documents, sourceSha256: electionReferenceDocumentDigest(documents), retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.capturedAt)))).toISOString() };
+		const enriched = {
+			...snapshot,
+			records,
+			recordCount: records.length,
+			documents,
+			sourceSha256: electionReferenceDocumentDigest(documents),
+			retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.capturedAt)))).toISOString()
+		};
 		parseElectionReferenceSnapshot(source, JSON.stringify(enriched), now);
 		snapshots.push({ source, snapshot: enriched });
 	}
 	if (!snapshots.length) throw new Error("No valid profile members matched the reviewed Open States records.");
-	return { snapshots, holds, roleStartDates, professionalFacts, professionalProfiles, archiveMembers: members, archiveExpandedBytes: expandedBytes, readmeSha256, excludedProfiles: selected.size - matches.size };
+	return {
+		snapshots,
+		holds,
+		roleStartDates,
+		professionalFacts,
+		professionalProfiles,
+		archiveMembers: members,
+		archiveExpandedBytes: expandedBytes,
+		readmeSha256,
+		excludedProfiles: selected.size - matches.size
+	};
 }

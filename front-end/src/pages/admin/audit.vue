@@ -24,7 +24,9 @@ function formatEventType(value: string) {
 }
 
 function shortHash(value: string | undefined) {
-	return value ? `${value.slice(0, 12)}...${value.slice(-8)}` : "Genesis event";
+	return value
+		? `${value.slice(0, 12)}...${value.slice(-8)}`
+		: "Genesis event";
 }
 
 function metadataEntries(metadata: AdminAuditEvent["metadata"]) {

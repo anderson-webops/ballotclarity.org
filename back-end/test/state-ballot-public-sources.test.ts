@@ -27,7 +27,12 @@ const illinoisPage = `${publicTokens}<h1>GENERAL ELECTION - 11/3/2026</h1><a hre
 const envelope = (page: string, records: string) => JSON.stringify({ page, records });
 
 test("public export forms retain only observed election fields and the supported download command", async () => {
-	for (const [code, page] of [["MS", mississippiPage], ["HI", hawaiiPage], ["SD", southDakotaPage], ["IL", illinoisPage]]) {
+	for (const [code, page] of [
+		["MS", mississippiPage],
+		["HI", hawaiiPage],
+		["SD", southDakotaPage],
+		["IL", illinoisPage]
+	]) {
 		const fields = new URLSearchParams(buildPublicStateExportForm(source(code!), page!));
 		assert.equal(fields.get("__VIEWSTATE"), "public-form-state");
 		assert.equal(fields.has("privateEmail"), false);
@@ -85,14 +90,74 @@ test("Illinois uses its captured snapshot without crawling or relabeling the ori
 
 test("Mississippi requires explicit November dates and distinguishes judicial places and special House districts", () => {
 	const records = csv([
-		["Office", "Candidate Name", "Party", "District", "Place", "General Election", "Election", "MailingAddress"],
-		["Candidates for United States Senate", "Alex Sample", "Example", "", "", "November 3, 2026", "", "Private address"],
-		["Candidates for Mississippi Court of Appeals", "Judge One", "", "1", "2", "", "November 3, 2026", ""],
-		["Candidates for Mississippi Court of Appeals", "Judge Two", "", "1", "1", "", "November 3, 2026", ""],
-		["Candidates for State House of Representatives District 70 & 77 - Special Election", "House Sample", "Independent", "77", "", "", "November 3, 2026", ""],
-		["Candidates for State Senate 34", "Undated Sample", "", "34", "", "", "", ""],
+		[
+			"Office",
+			"Candidate Name",
+			"Party",
+			"District",
+			"Place",
+			"General Election",
+			"Election",
+			"MailingAddress"
+		],
+		[
+			"Candidates for United States Senate",
+			"Alex Sample",
+			"Example",
+			"",
+			"",
+			"November 3, 2026",
+			"",
+			"Private address"
+		],
+		[
+			"Candidates for Mississippi Court of Appeals",
+			"Judge One",
+			"",
+			"1",
+			"2",
+			"",
+			"November 3, 2026",
+			""
+		],
+		[
+			"Candidates for Mississippi Court of Appeals",
+			"Judge Two",
+			"",
+			"1",
+			"1",
+			"",
+			"November 3, 2026",
+			""
+		],
+		[
+			"Candidates for State House of Representatives District 70 & 77 - Special Election",
+			"House Sample",
+			"Independent",
+			"77",
+			"",
+			"",
+			"November 3, 2026",
+			""
+		],
+		[
+			"Candidates for State Senate 34",
+			"Undated Sample",
+			"",
+			"34",
+			"",
+			"",
+			"",
+			""
+		],
 	]);
-	const report = mississippiPage.replace("</form>", `<table><tr><th>Name</th><th>Party</th></tr>${["Alex Sample", "Judge One", "Judge Two", "House Sample", "Undated Sample"].map(name => `<tr><td>${name}</td><td></td></tr>`).join("")}</table></form>`);
+	const report = mississippiPage.replace("</form>", `<table><tr><th>Name</th><th>Party</th></tr>${[
+		"Alex Sample",
+		"Judge One",
+		"Judge Two",
+		"House Sample",
+		"Undated Sample"
+	].map(name => `<tr><td>${name}</td><td></td></tr>`).join("")}</table></form>`);
 	const parsed = parseStateCandidateRecords(source("MS"), envelope(report, records));
 	assert.equal(parsed.length, 4);
 	assert.equal(parsed[0]?.scope, "statewide");
@@ -107,10 +172,38 @@ test("Mississippi requires explicit November dates and distinguishes judicial pl
 
 test("South Dakota validates complete export counts, withdrawal timestamps, at-large scope and local county identity", () => {
 	const records = csv([
-		["Contest", "Name", "Party", "District/County", "Ballot Order", "Mailing Address"],
-		["United States Representative", "Alex Sample", "Example", "", "1", "Private address"],
-		["United States Senator", "Withdrawn Sample (Withdrawn 8/4/2026 12:00:00 AM)", "Example", "", "", ""],
-		["Sheriff", "County Sample", "Example", "Alpha County", "", ""],
+		[
+			"Contest",
+			"Name",
+			"Party",
+			"District/County",
+			"Ballot Order",
+			"Mailing Address"
+		],
+		[
+			"United States Representative",
+			"Alex Sample",
+			"Example",
+			"",
+			"1",
+			"Private address"
+		],
+		[
+			"United States Senator",
+			"Withdrawn Sample (Withdrawn 8/4/2026 12:00:00 AM)",
+			"Example",
+			"",
+			"",
+			""
+		],
+		[
+			"Sheriff",
+			"County Sample",
+			"Example",
+			"Alpha County",
+			"",
+			""
+		],
 	]);
 	const parsed = parseStateCandidateRecords(source("SD"), envelope(southDakotaPage, records));
 	assert.equal(parsed.length, 3);
@@ -127,13 +220,62 @@ test("South Dakota validates complete export counts, withdrawal timestamps, at-l
 
 test("Hawaii includes only explicit general-election candidates and retains safe campaign links", () => {
 	const records = csv([
-		["Contests", "Party", "BallotName", "Status", "Website", "MailingAddress"],
-		["U.S. REPRESENTATIVE, DIST I", "Example", "General One", "In General", "campaign.example.org", "Private address"],
-		["U.S. REPRESENTATIVE, DIST II", "Example", "General Two", "In General", "http://127.0.0.1/private", ""],
-		["GOVERNOR", "Example", "Primary Only", "In Primary", "", ""],
-		["GOVERNOR", "Example", "Issued Only", "Issued", "", ""],
-		["GOVERNOR", "Example", "Withdrawn Only", "Withdrawn", "", ""],
-		["STATE SENATOR, DIST 18", "Example", "Already Elected", "Elected After Primary", "", ""],
+		[
+			"Contests",
+			"Party",
+			"BallotName",
+			"Status",
+			"Website",
+			"MailingAddress"
+		],
+		[
+			"U.S. REPRESENTATIVE, DIST I",
+			"Example",
+			"General One",
+			"In General",
+			"campaign.example.org",
+			"Private address"
+		],
+		[
+			"U.S. REPRESENTATIVE, DIST II",
+			"Example",
+			"General Two",
+			"In General",
+			"http://127.0.0.1/private",
+			""
+		],
+		[
+			"GOVERNOR",
+			"Example",
+			"Primary Only",
+			"In Primary",
+			"",
+			""
+		],
+		[
+			"GOVERNOR",
+			"Example",
+			"Issued Only",
+			"Issued",
+			"",
+			""
+		],
+		[
+			"GOVERNOR",
+			"Example",
+			"Withdrawn Only",
+			"Withdrawn",
+			"",
+			""
+		],
+		[
+			"STATE SENATOR, DIST 18",
+			"Example",
+			"Already Elected",
+			"Elected After Primary",
+			"",
+			""
+		],
 	]);
 	const parsed = parseStateCandidateRecords(source("HI"), envelope(hawaiiPage, records));
 	assert.equal(parsed.length, 2);
@@ -145,14 +287,98 @@ test("Hawaii includes only explicit general-election candidates and retains safe
 	assert.throws(() => parseStateCandidateRecords(source("HI"), envelope(hawaiiPage, records.replace("\"Issued\"", "\"New Status\""))), /status vocabulary/u);
 });
 
-const illinoisHeaders = ["CandidateID", "BracketID", "FirstName", "LastName", "CandidateStatus", "WebSiteAddress", "ElecDate", "ElectionType", "PartyName", "OfficeName", "Address1"];
+const illinoisHeaders = [
+	"CandidateID",
+	"BracketID",
+	"FirstName",
+	"LastName",
+	"CandidateStatus",
+	"WebSiteAddress",
+	"ElecDate",
+	"ElectionType",
+	"PartyName",
+	"OfficeName",
+	"Address1"
+];
 const illinoisRows = [
-	["2", "1", "Running", "Mate", "Active", "", "11/3/2026", "GE", "EXAMPLE", "GOVERNOR AND LIEUTENANT GOVERNOR", "Private address"],
-	["1", "1", "Head", "Candidate", "Active", "https://campaign.example.org", "11/3/2026", "GE", "EXAMPLE", "GOVERNOR AND LIEUTENANT GOVERNOR", ""],
-	["3", "0", "Congress", "Sample", "Active", "", "11/3/2026", "GE", "EXAMPLE", "2ND CONGRESS", ""],
-	["4", "0", "Senate", "Sample", "Withdrawn", "", "11/3/2026", "GE", "EXAMPLE", "42ND SENATE", ""],
-	["5", "0", "House", "Sample", "Active", "", "11/3/2026", "GE", "EXAMPLE", "14TH REPRESENTATIVE", ""],
-	["6", "0", "Judicial", "Sample", "Active", "", "11/3/2026", "GE", "EXAMPLE", "SUPREME COURT RETENTION", ""],
+	[
+		"2",
+		"1",
+		"Running",
+		"Mate",
+		"Active",
+		"",
+		"11/3/2026",
+		"GE",
+		"EXAMPLE",
+		"GOVERNOR AND LIEUTENANT GOVERNOR",
+		"Private address"
+	],
+	[
+		"1",
+		"1",
+		"Head",
+		"Candidate",
+		"Active",
+		"https://campaign.example.org",
+		"11/3/2026",
+		"GE",
+		"EXAMPLE",
+		"GOVERNOR AND LIEUTENANT GOVERNOR",
+		""
+	],
+	[
+		"3",
+		"0",
+		"Congress",
+		"Sample",
+		"Active",
+		"",
+		"11/3/2026",
+		"GE",
+		"EXAMPLE",
+		"2ND CONGRESS",
+		""
+	],
+	[
+		"4",
+		"0",
+		"Senate",
+		"Sample",
+		"Withdrawn",
+		"",
+		"11/3/2026",
+		"GE",
+		"EXAMPLE",
+		"42ND SENATE",
+		""
+	],
+	[
+		"5",
+		"0",
+		"House",
+		"Sample",
+		"Active",
+		"",
+		"11/3/2026",
+		"GE",
+		"EXAMPLE",
+		"14TH REPRESENTATIVE",
+		""
+	],
+	[
+		"6",
+		"0",
+		"Judicial",
+		"Sample",
+		"Active",
+		"",
+		"11/3/2026",
+		"GE",
+		"EXAMPLE",
+		"SUPREME COURT RETENTION",
+		""
+	],
 ];
 const illinoisRecords = `${illinoisHeaders.join("\t")}\t\n${illinoisRows.map(row => row.join("\t")).join("\n")}`;
 
@@ -178,11 +404,75 @@ function utahTable(rows: string[][]) {
 }
 
 const utahPage = `<h1>2026 Candidate Filings</h1>${[
-	[["Candidate", "Office", "Party", "Status"], ["Congress Sample", "U.S. House District 1", "Example", "Election Candidate"], ["Primary Loser", "U.S. House District 1", "Example", "Out in Primary"]],
-	[["Candidate", "Office", "Party", "Status"], ["Senate Sample", "State Senate District 11", "Example", "Election Candidate"]],
-	[["Candidate", "Office", "Party", "Status"], ["House Sample", "State House District 10", "Example", "Write-In"]],
-	[["Candidate", "Office", "Party", "Status"], ["Board Sample", "State School Board District 4", "Example", "Election Candidate"]],
-	[["Judicial Retention", "Status"], ["Shall Judicial Sample be retained in the office of Judge of the Court of Appeals of Utah?", "Election Candidate"], ["Shall Local Sample be retained in the office of Judge of the Juvenile Court of the Third Juvenile Court District?", "Election Candidate"], ["Shall Second Judicial be retained in the office of Judge of the Court of Appeals of Utah?", "Election Candidate"], ["Shall Withdrawn Sample be retained in the office of Justice of the Supreme Court of Utah?", "Withdrew"]],
+	[
+		[
+			"Candidate",
+			"Office",
+			"Party",
+			"Status"
+		],
+		[
+			"Congress Sample",
+			"U.S. House District 1",
+			"Example",
+			"Election Candidate"
+		],
+		[
+			"Primary Loser",
+			"U.S. House District 1",
+			"Example",
+			"Out in Primary"
+		]
+	],
+	[
+		[
+			"Candidate",
+			"Office",
+			"Party",
+			"Status"
+		],
+		[
+			"Senate Sample",
+			"State Senate District 11",
+			"Example",
+			"Election Candidate"
+		]
+	],
+	[
+		[
+			"Candidate",
+			"Office",
+			"Party",
+			"Status"
+		],
+		[
+			"House Sample",
+			"State House District 10",
+			"Example",
+			"Write-In"
+		]
+	],
+	[
+		[
+			"Candidate",
+			"Office",
+			"Party",
+			"Status"
+		],
+		[
+			"Board Sample",
+			"State School Board District 4",
+			"Example",
+			"Election Candidate"
+		]
+	],
+	[
+		["Judicial Retention", "Status"],
+		["Shall Judicial Sample be retained in the office of Judge of the Court of Appeals of Utah?", "Election Candidate"],
+		["Shall Local Sample be retained in the office of Judge of the Juvenile Court of the Third Juvenile Court District?", "Election Candidate"],
+		["Shall Second Judicial be retained in the office of Judge of the Court of Appeals of Utah?", "Election Candidate"],
+		["Shall Withdrawn Sample be retained in the office of Justice of the Supreme Court of Utah?", "Withdrew"]
+	],
 ].map(utahTable).join("")}`;
 
 test("Utah separates general/write-in candidates from primary losers and never assigns school/judicial districts to legislative voters", () => {
@@ -194,7 +484,12 @@ test("Utah separates general/write-in candidates from primary losers and never a
 	assert.equal(parsed[4]?.office, "Shall Judicial Sample be retained in the office of Judge of the Court of Appeals of Utah?");
 	assert.equal(parsed[4]?.scope, "statewide");
 	assert.equal(parsed[5]?.scope, "local");
-	const preview = buildStateBallotPreview({ source: source("UT"), records: parsed, retrievedAt: "2026-10-21T00:00:00Z", sha256: "a".repeat(64) }, { districtMatches: [] });
+	const preview = buildStateBallotPreview({
+		source: source("UT"),
+		records: parsed,
+		retrievedAt: "2026-10-21T00:00:00Z",
+		sha256: "a".repeat(64)
+	}, { districtMatches: [] });
 	assert.equal(preview?.candidateCount, 2);
 	assert.equal(preview?.contestCount, 2);
 	assert.throws(() => parseStateCandidateRecords(source("UT"), utahPage.replace("2026 Candidate Filings", "2027 Candidate Filings")), /configured election year/u);

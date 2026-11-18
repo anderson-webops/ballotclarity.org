@@ -1,5 +1,9 @@
 const escaped = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll("\"", "&quot;");
-export const winnebagoField = (text: string, left: number, top: number, bold = true) => `<text top="${top}" left="${left}" width="200" height="14" font="0">${bold ? `<b>${escaped(text)}</b>` : escaped(text)}</text>`;
+export function winnebagoField(text: string, left: number, top: number, bold = true) {
+	return `<text top="${top}" left="${left}" width="200" height="14" font="0">${bold
+		? `<b>${escaped(text)}</b>`
+		: escaped(text)}</text>`;
+}
 const candidate = (name: string, left: number, top: number) => winnebagoField(name, left, top) + winnebagoField("123 PRIVATE SAMPLE RD.", left, top + 18, false);
 
 export function winnebagoFixture(year = 2026) {

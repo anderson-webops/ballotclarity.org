@@ -10,5 +10,7 @@ export function getAdminCorrectionsState(input: {
 	if (input.pending) return "loading";
 	if (input.unauthorized || input.authenticated === false) return "authentication-required";
 	if (input.failed || input.authenticated !== true || !Array.isArray(input.corrections)) return "error";
-	return input.corrections.length === 0 ? "empty" : "ready";
+	return input.corrections.length === 0
+		? "empty"
+		: "ready";
 }

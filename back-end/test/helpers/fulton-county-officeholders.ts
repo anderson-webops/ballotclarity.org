@@ -8,13 +8,25 @@ const footer = `<footer><a href="/Privacy-Statement">Privacy Statement</a></foot
 
 export function exampleCountyOfficePages(sheriffName = "Avery First", vacant = false) {
 	return fultonCountyOfficeholderPublication.offices.filter(definition => "profilePrefix" in definition).map((definition) => {
-		const name = definition.id === "sheriff" ? sheriffName : "Jordan Second";
-		const sourceName = definition.id === "sheriff" ? `Sheriff ${name}` : name;
+		const name = definition.id === "sheriff"
+			? sheriffName
+			: "Jordan Second";
+		const sourceName = definition.id === "sheriff"
+			? `Sheriff ${name}`
+			: name;
 		const profileUrl = `https://fultoncountyga.gov${definition.profilePrefix}${name.replaceAll(" ", "-")}`;
-		const card = `<div class="bio-card"><h4 class="bio-card__name">${vacant && definition.id === "sheriff" ? "Vacant" : sourceName}</h4><div class="bio-card__position">${definition.role}</div><div class="bio-card__frame" style="background-image: url(/-/media/Departments/${definition.id}/portrait.png);"></div><a href="${profileUrl}">Read More</a></div>`;
+		const card = `<div class="bio-card"><h4 class="bio-card__name">${vacant && definition.id === "sheriff"
+			? "Vacant"
+			: sourceName}</h4><div class="bio-card__position">${definition.role}</div><div class="bio-card__frame" style="background-image: url(/-/media/Departments/${definition.id}/portrait.png);"></div><a href="${profileUrl}">Read More</a></div>`;
 		const page = `<main><h1>Fulton County ${definition.role}</h1>${card}</main>${footer}`;
 		const profile = `<main><h1 class="name">${sourceName}</h1><p>${definition.role}, Fulton County</p></main>${footer}`;
-		return { definition, name, profileUrl, page, profile };
+		return {
+			definition,
+			name,
+			profileUrl,
+			page,
+			profile
+		};
 	});
 }
 
@@ -23,10 +35,38 @@ export function exampleCountyOfficeholders(sheriffName = "Avery First", vacant =
 	const capturedAt = new Date(now).toISOString();
 	const offices = pages.map(row => parseFultonCountyOffice(row.page, row.definition));
 	const documents = [
-		...fultonCountyOfficeholderPublication.policies.map((policy, index) => ({ url: policy.url, capturedAt, sha256: countyOfficeHash(`Controlled county policy ${index}`) })),
-		...pages.flatMap((row, index) => [{ url: row.definition.pageUrl, capturedAt, sha256: countyOfficeHash(row.page) }, ...(offices[index]!.person ? [{ url: row.profileUrl, capturedAt, sha256: countyOfficeHash(row.profile) }] : [])])
+		...fultonCountyOfficeholderPublication.policies.map((policy, index) => ({
+			url: policy.url,
+			capturedAt,
+			sha256: countyOfficeHash(`Controlled county policy ${index}`)
+		})),
+		...pages.flatMap((row, index) => [
+			{
+				url: row.definition.pageUrl,
+				capturedAt,
+				sha256: countyOfficeHash(row.page)
+			},
+			...(offices[index]!.person
+				? [
+						{
+							url: row.profileUrl,
+							capturedAt,
+							sha256: countyOfficeHash(row.profile)
+						}
+					]
+				: [])
+		])
 	];
-	return { schemaVersion: 1, type: "fulton-county-officeholders", sourceId: "ga-fulton-county-offices", countyFips: "13121", retrievedAt: capturedAt, sourceSha256: countyOfficeHash(JSON.stringify(documents)), documents, offices };
+	return {
+		schemaVersion: 1,
+		type: "fulton-county-officeholders",
+		sourceId: "ga-fulton-county-offices",
+		countyFips: "13121",
+		retrievedAt: capturedAt,
+		sourceSha256: countyOfficeHash(JSON.stringify(documents)),
+		documents,
+		offices
+	};
 }
 
 export function exampleExpandedCountyOfficeholders() {
@@ -38,7 +78,11 @@ export function exampleExpandedCountyOfficeholders() {
 	];
 	for (const [index, definition] of fultonCountyOfficeholderPublication.offices.slice(2, 4).entries()) {
 		value.offices.push(parseFultonCountyOffice(pages[index]!, definition));
-		value.documents.push({ url: definition.pageUrl, capturedAt: value.retrievedAt, sha256: countyOfficeHash(pages[index]!) });
+		value.documents.push({
+			url: definition.pageUrl,
+			capturedAt: value.retrievedAt,
+			sha256: countyOfficeHash(pages[index]!)
+		});
 	}
 	value.sourceSha256 = countyOfficeHash(JSON.stringify(value.documents));
 	return value;
@@ -48,8 +92,29 @@ export function exampleCompleteCountyOfficeholders(name = "Casey Future") {
 	const value = exampleExpandedCountyOfficeholders();
 	value.schemaVersion = 3;
 	const officialWebsiteUrl = `https://www.fultonclerk.org/400/Meet-Clerk-${name.replaceAll(" ", "-")}`;
-	value.offices.push({ id: "clerk", status: "occupied", person: { name, slug: name.toLowerCase().replaceAll(" ", "-"), officialWebsiteUrl } });
-	for (const url of ["https://www.fultonclerk.org/robots.txt", "https://www.fultonclerk.org/site/copyright", "https://www.fultonclerk.org/182/Legal-Disclaimer", "https://www.fultonclerk.org/", "https://www.fultonclerk.org/101/About-Us", officialWebsiteUrl]) value.documents.push({ url, capturedAt: value.retrievedAt, sha256: countyOfficeHash(url) });
+	value.offices.push({
+		id: "clerk",
+		status: "occupied",
+		person: {
+			name,
+			slug: name.toLowerCase().replaceAll(" ", "-"),
+			officialWebsiteUrl
+		}
+	});
+	for (const url of [
+		"https://www.fultonclerk.org/robots.txt",
+		"https://www.fultonclerk.org/site/copyright",
+		"https://www.fultonclerk.org/182/Legal-Disclaimer",
+		"https://www.fultonclerk.org/",
+		"https://www.fultonclerk.org/101/About-Us",
+		officialWebsiteUrl
+	]) {
+		value.documents.push({
+			url,
+			capturedAt: value.retrievedAt,
+			sha256: countyOfficeHash(url)
+		});
+	}
 	value.sourceSha256 = countyOfficeHash(JSON.stringify(value.documents));
 	return value;
 }

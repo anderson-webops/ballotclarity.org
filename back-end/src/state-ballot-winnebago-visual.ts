@@ -32,7 +32,13 @@ export function winnebagoGlyphBounds(definition: string) {
 	}
 	for (let index = 0; index < tokens.length;) {
 		const command = tokens[index++];
-		const count = command === "C" ? 6 : command === "M" || command === "L" ? 2 : command === "Z" ? 0 : -1;
+		const count = command === "C"
+			? 6
+			: command === "M" || command === "L"
+				? 2
+				: command === "Z"
+					? 0
+					: -1;
 		const numbers = tokens.slice(index, index + count).map(Number);
 		if (count < 0 || numbers.length !== count || numbers.some(value => !Number.isFinite(value))) return reject();
 		index += count;
@@ -44,7 +50,13 @@ export function winnebagoGlyphBounds(definition: string) {
 		else if (command === "C") {
 			const horizontal = curve(position[0]!, numbers[0]!, numbers[2]!, numbers[4]!);
 			const vertical = curve(position[1]!, numbers[1]!, numbers[3]!, numbers[5]!);
-			points.push([Math.min(...horizontal), Math.min(...vertical)], [Math.max(...horizontal), Math.max(...vertical)]);
+			points.push([
+				Math.min(...horizontal),
+				Math.min(...vertical)
+			], [
+				Math.max(...horizontal),
+				Math.max(...vertical)
+			]);
 			position = numbers.slice(4);
 		}
 		else {
@@ -53,7 +65,12 @@ export function winnebagoGlyphBounds(definition: string) {
 		}
 	}
 	if (!points.length || points.some(point => point.length !== 2)) return reject();
-	return [Math.min(...points.map(point => point[0]!)), Math.min(...points.map(point => point[1]!)), Math.max(...points.map(point => point[0]!)), Math.max(...points.map(point => point[1]!))];
+	return [
+		Math.min(...points.map(point => point[0]!)),
+		Math.min(...points.map(point => point[1]!)),
+		Math.max(...points.map(point => point[0]!)),
+		Math.max(...points.map(point => point[1]!))
+	];
 }
 
 export function inspectWinnebagoVisual(xml: string, svg: string, page: number) {
@@ -62,23 +79,45 @@ export function inspectWinnebagoVisual(xml: string, svg: string, page: number) {
 	const document = parseStateHtml(svg);
 	const roots = descendants(document, node => node.nodeName === "svg");
 	if (roots.length !== 1 || attribute(roots[0]!, "width") !== "612pt" || attribute(roots[0]!, "height") !== "792pt" || attribute(roots[0]!, "viewBox") !== "0 0 612 792") return reject();
-	const definitions = new Map(descendants(roots[0]!, node => attribute(node, "id").startsWith("glyph-")).map(node => [attribute(node, "id"), descendants(node, child => child.nodeName === "path").map(child => attribute(child, "d")).join(" ")]));
+	const definitions = new Map(descendants(roots[0]!, node => attribute(node, "id").startsWith("glyph-")).map(node => [
+		attribute(node, "id"),
+		descendants(node, child => child.nodeName === "path").map(child => attribute(child, "d")).join(" ")
+	]));
 	const identified = descendants(roots[0]!, node => Boolean(attribute(node, "id")));
 	if (new Set(identified.map(node => attribute(node, "id"))).size !== identified.length) return reject();
 	for (const glyph of identified.filter(node => attribute(node, "id").startsWith("glyph-"))) {
 		if (descendants(glyph, node => node.nodeName !== "#text" && node.nodeName !== "path").length || descendants(glyph, node => node.nodeName === "path").some(node => node.attrs?.some(item => item.name !== "d"))) return reject();
 	}
-	const fields = native.map(field => ({ ...field, left: field.left / 1.5, right: (field.left + field.width) / 1.5, top: field.top / 1.5, bottom: (field.top + field.height) / 1.5, count: 0 }));
+	const fields = native.map(field => ({
+		...field,
+		left: field.left / 1.5,
+		right: (field.left + field.width) / 1.5,
+		top: field.top / 1.5,
+		bottom: (field.top + field.height) / 1.5,
+		count: 0
+	}));
 	const clipping = new Map(descendants(roots[0]!, node => node.nodeName.toLowerCase() === "clippath").map((node) => {
 		const paths = descendants(node, child => child.nodeName === "path");
-		const definition = paths.length === 1 ? attribute(paths[0]!, "d") : "";
+		const definition = paths.length === 1
+			? attribute(paths[0]!, "d")
+			: "";
 		const numbers = (definition.match(/[-+]?(?:\d+\.?\d*|\.\d+)/gu) ?? []).map(Number);
 		if (definition.replace(/[-+]?(?:\d+\.?\d*|\.\d+)/gu, "").replace(/\s/gu, "") !== "MLLLZM" || numbers.length !== 10 || numbers.some(number => !Number.isFinite(number))) return reject();
 		const corners = [0, 2, 4, 6].map(index => [numbers[index]!, numbers[index + 1]!]);
 		if (new Set(corners.map(point => point[0])).size !== 2 || new Set(corners.map(point => point[1])).size !== 2 || new Set(corners.map(point => point.join(","))).size !== 4 || corners.some((point, index) => point[0] !== corners[(index + 1) % 4]![0] && point[1] !== corners[(index + 1) % 4]![1]) || numbers[8] !== numbers[0] || numbers[9] !== numbers[1]) return reject();
-		return [attribute(node, "id"), [Math.min(numbers[0]!, numbers[2]!, numbers[4]!, numbers[6]!), Math.min(numbers[1]!, numbers[3]!, numbers[5]!, numbers[7]!), Math.max(numbers[0]!, numbers[2]!, numbers[4]!, numbers[6]!), Math.max(numbers[1]!, numbers[3]!, numbers[5]!, numbers[7]!)]] as const;
+		return [
+			attribute(node, "id"),
+			[
+				Math.min(numbers[0]!, numbers[2]!, numbers[4]!, numbers[6]!),
+				Math.min(numbers[1]!, numbers[3]!, numbers[5]!, numbers[7]!),
+				Math.max(numbers[0]!, numbers[2]!, numbers[4]!, numbers[6]!),
+				Math.max(numbers[1]!, numbers[3]!, numbers[5]!, numbers[7]!)
+			]
+		] as const;
 	}));
-	const pending = [{ node: roots[0]!, clips: [] as string[] }];
+	const pending = [
+		{ node: roots[0]!, clips: [] as string[] }
+	];
 	let visited = 0;
 	let visibleGlyphs = 0;
 	let underlines = 0;
@@ -94,7 +133,12 @@ export function inspectWinnebagoVisual(xml: string, svg: string, page: number) {
 		if (!["svg", "g", "use", "path", "#text"].includes(node.nodeName) || attribute(node, "style") || attribute(node, "transform") || attribute(node, "mask") || attribute(node, "opacity") || attribute(node, "filter")) return reject();
 		const clip = attribute(node, "clip-path");
 		if (clip && (node.nodeName !== "g" || !/^url\(#clip-\d+\)$/u.test(clip) || !clipping.has(clip.slice(5, -1)))) return reject();
-		const clips = clip ? [...item.clips, clip.slice(5, -1)] : item.clips;
+		const clips = clip
+			? [
+					...item.clips,
+					clip.slice(5, -1)
+				]
+			: item.clips;
 		if ((attribute(node, "fill-opacity") && attribute(node, "fill-opacity") !== "1") || (attribute(node, "fill") && !colors.includes(attribute(node, "fill")) && !(node.nodeName === "path" && attribute(node, "fill") === "rgb(100%, 100%, 100%)"))) return reject();
 		if (node.nodeName === "use") {
 			const glyph = attribute(node, "href");
@@ -108,8 +152,12 @@ export function inspectWinnebagoVisual(xml: string, svg: string, page: number) {
 				const field = matches.sort((first, second) => second.left - first.left)[0]!;
 				if (clips.length) {
 					if (field.bold) {
-						const bounds = clips.length === 1 ? clipping.get(clips[0]!) : undefined;
-						const ink = winnebagoGlyphBounds(definitions.get(glyph.slice(1))!).map((value, index) => value + (index % 2 ? top : left));
+						const bounds = clips.length === 1
+							? clipping.get(clips[0]!)
+							: undefined;
+						const ink = winnebagoGlyphBounds(definitions.get(glyph.slice(1))!).map((value, index) => value + (index % 2
+							? top
+							: left));
 						if (!bounds || ink[0]! < bounds[0]! - 0.005 || ink[1]! < bounds[1]! - 0.005 || ink[2]! > bounds[2]! + 0.005 || ink[3]! > bounds[3]! + 0.005) return reject();
 						reviewedCandidateClips++;
 					}
@@ -128,8 +176,18 @@ export function inspectWinnebagoVisual(xml: string, svg: string, page: number) {
 			if (definition.replace(/[-+]?(?:\d+\.?\d*|\.\d+)/gu, "").replace(/\s/gu, "") !== "MLLLZM") return reject();
 			const numbers = (definition.match(/[-+]?(?:\d+\.?\d*|\.\d+)/gu) ?? []).map(Number);
 			if (numbers.length !== 10 || numbers.some(number => !Number.isFinite(number))) return reject();
-			const horizontal = [numbers[0]!, numbers[2]!, numbers[4]!, numbers[6]!];
-			const vertical = [numbers[1]!, numbers[3]!, numbers[5]!, numbers[7]!];
+			const horizontal = [
+				numbers[0]!,
+				numbers[2]!,
+				numbers[4]!,
+				numbers[6]!
+			];
+			const vertical = [
+				numbers[1]!,
+				numbers[3]!,
+				numbers[5]!,
+				numbers[7]!
+			];
 			const left = Math.min(...horizontal);
 			const right = Math.max(...horizontal);
 			const top = Math.min(...vertical);
@@ -144,8 +202,18 @@ export function inspectWinnebagoVisual(xml: string, svg: string, page: number) {
 				underlines++;
 			}
 		}
-		for (const child of [...(node.childNodes ?? [])].reverse()) pending.push({ node: child, clips });
+		for (const child of [
+			...(node.childNodes ?? [])
+		].reverse()) pending.push({ node: child, clips });
 	}
 	if (fields.some(field => field.count !== field.text.replace(/\s/gu, "").length)) return reject();
-	return { svgSha256: hash(svg), fields: fields.length, visibleGlyphs, underlines, clippedContactGlyphs, reviewedCandidateClips, backgrounds };
+	return {
+		svgSha256: hash(svg),
+		fields: fields.length,
+		visibleGlyphs,
+		underlines,
+		clippedContactGlyphs,
+		reviewedCandidateClips,
+		backgrounds
+	};
 }

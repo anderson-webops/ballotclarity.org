@@ -1019,7 +1019,9 @@ export function findSupplementalOfficeholdersByDistrictSlug(slug: string, record
 
 export function listSupplementalOfficeholdersForDistrictMatches(districtMatches: LocationDistrictMatch[], stateCode: string, records = supplementalOfficeholders) {
 	const districtSlugs = new Set(districtMatches.map(buildDistrictSlug));
-	const state = typeof stateCode === "string" ? stateCode.trim() : "";
+	const state = typeof stateCode === "string"
+		? stateCode.trim()
+		: "";
 	const normalizedStateCode = getStateAbbreviationForName(state) ?? state.toUpperCase();
 	return records.filter(record => record.stateCode === normalizedStateCode && districtSlugs.has(record.districtSlug));
 }
@@ -1050,42 +1052,85 @@ export function resolveFultonSupplementalOfficeholders(snapshot: FultonOfficehol
 	if (!snapshot) return listSupplementalOfficeholders();
 	const existing = listSupplementalOfficeholders();
 	const retained = existing.filter(record => !(record.stateCode === "GA" && record.districtSlug === "fulton-county" && /commission|chair/iu.test(record.officeTitle)));
-	const sources: Source[] = snapshot.documents.slice(2).map((document, index) => ({ authority: "official-government", date: document.capturedAt, id: `fulton-board:${snapshot.sourceSha256}:${index}`, publisher: "Fulton County Government", sourceSystem: "Fulton County Board of Commissioners", title: index === 0 ? "Board of Commissioners" : "Commission districts", type: "official record", url: document.url }));
+	const sources: Source[] = snapshot.documents.slice(2).map((document, index) => ({
+		authority: "official-government",
+		date: document.capturedAt,
+		id: `fulton-board:${snapshot.sourceSha256}:${index}`,
+		publisher: "Fulton County Government",
+		sourceSystem: "Fulton County Board of Commissioners",
+		title: index === 0
+			? "Board of Commissioners"
+			: "Commission districts",
+		type: "official record",
+		url: document.url
+	}));
 	const records: SupplementalOfficeholderRecord[] = snapshot.seats.flatMap((seat) => {
 		if (!seat.person) return [];
 		const person = seat.person;
-		const districtLabel = seat.district === null ? "Fulton County" : `Fulton County Commission District ${seat.district}`;
-		const districtSlug = seat.district === null ? "fulton-county" : `fulton-county-commission-district-${seat.district}`;
-		const officeTitle = seat.district === null ? "County Commission Chair" : `${seat.person.viceChair ? "County Commission Vice Chair" : "County Commissioner"}, District ${seat.district}`;
+		const districtLabel = seat.district === null
+			? "Fulton County"
+			: `Fulton County Commission District ${seat.district}`;
+		const districtSlug = seat.district === null
+			? "fulton-county"
+			: `fulton-county-commission-district-${seat.district}`;
+		const officeTitle = seat.district === null
+			? "County Commission Chair"
+			: `${seat.person.viceChair ? "County Commission Vice Chair" : "County Commissioner"}, District ${seat.district}`;
 		const prior = existing.find(record => record.slug === person.slug);
 		if (prior && (prior.name !== person.name || prior.stateCode !== "GA")) throw new Error("A Fulton officeholder identity conflicts with an existing person record.");
-		return [{
-			biographySummary: prior?.biographySummary ?? "",
-			districtLabel,
-			districtSlug,
-			districtType: seat.district === null ? "county" : "county-commission",
-			parentDistrictSlug: seat.district === null ? undefined : "fulton-county",
-			enrichment: prior?.districtSlug === districtSlug ? prior.enrichment : undefined,
-			jurisdiction: "Local",
-			location: "Fulton County, Georgia",
-			name: person.name,
-			officeSought: officeTitle,
-			officeTitle,
-			officialWebsiteUrl: person.officialWebsiteUrl,
-			party: "",
-			profileImages: [{ alt: person.name, attribution: "Fulton County Government", capturedAt: snapshot.documents[2]!.capturedAt, priority: 1, sourceKind: "official" as const, sourceLabel: "Fulton County Board of Commissioners", sourceSystem: "Fulton County Government", sourceUrl: snapshot.documents[2]!.url, url: person.portraitUrl }],
-			provenanceLabel: "Official county roster",
-			provenanceNote: "Fulton County Board of Commissioners and commission district records.",
-			slug: person.slug,
-			sourceSystem: "Official Fulton County Board of Commissioners",
-			sources: [...sources, ...(prior?.sources ?? [])],
-			stateCode: "GA",
-			stateName: "Georgia",
-			summary: "",
-			updatedAt: snapshot.retrievedAt,
-		}];
+		return [
+			{
+				biographySummary: prior?.biographySummary ?? "",
+				districtLabel,
+				districtSlug,
+				districtType: seat.district === null
+					? "county"
+					: "county-commission",
+				parentDistrictSlug: seat.district === null
+					? undefined
+					: "fulton-county",
+				enrichment: prior?.districtSlug === districtSlug
+					? prior.enrichment
+					: undefined,
+				jurisdiction: "Local",
+				location: "Fulton County, Georgia",
+				name: person.name,
+				officeSought: officeTitle,
+				officeTitle,
+				officialWebsiteUrl: person.officialWebsiteUrl,
+				party: "",
+				profileImages: [
+					{
+						alt: person.name,
+						attribution: "Fulton County Government",
+						capturedAt: snapshot.documents[2]!.capturedAt,
+						priority: 1,
+						sourceKind: "official" as const,
+						sourceLabel: "Fulton County Board of Commissioners",
+						sourceSystem: "Fulton County Government",
+						sourceUrl: snapshot.documents[2]!.url,
+						url: person.portraitUrl
+					}
+				],
+				provenanceLabel: "Official county roster",
+				provenanceNote: "Fulton County Board of Commissioners and commission district records.",
+				slug: person.slug,
+				sourceSystem: "Official Fulton County Board of Commissioners",
+				sources: [
+					...sources,
+					...(prior?.sources ?? [])
+				],
+				stateCode: "GA",
+				stateName: "Georgia",
+				summary: "",
+				updatedAt: snapshot.retrievedAt,
+			}
+		];
 	});
-	return [...retained, ...records];
+	return [
+		...retained,
+		...records
+	];
 }
 
 export function resolveFultonCountySupplementalOfficeholders(snapshot: FultonCountyOfficeholderSnapshot | null, existing = listSupplementalOfficeholders()) {
@@ -1098,7 +1143,59 @@ export function resolveFultonCountySupplementalOfficeholders(snapshot: FultonCou
 		if (prior) throw new Error("A Fulton county-office identity conflicts with an existing person record.");
 		const urls = [definition.pageUrl, person.officialWebsiteUrl];
 		const documents = snapshot.documents.filter(document => urls.includes(document.url));
-		return [{ biographySummary: "", districtLabel: "Fulton County", districtSlug: "fulton-county", districtType: "county", jurisdiction: "Local", location: "Fulton County, Georgia", name: person.name, officeSought: definition.role, officeTitle: definition.role, officialWebsiteUrl: person.officialWebsiteUrl, party: "", profileImages: person.portraitUrl ? [{ alt: person.name, attribution: "Fulton County Government", capturedAt: documents[0]!.capturedAt, priority: 1, sourceKind: "official", sourceLabel: `Fulton County ${definition.role}`, sourceSystem: "Fulton County Government", sourceUrl: definition.pageUrl, url: person.portraitUrl }] : [], provenanceLabel: "Official county office", provenanceNote: "", slug: person.slug, sourceSystem: `Official Fulton County ${definition.role}`, sources: documents.map((document, index) => ({ authority: "official-government", date: document.capturedAt, id: `fulton-county-offices:${snapshot.sourceSha256}:${office.id}:${index}`, publisher: "Fulton County Government", sourceSystem: `Fulton County ${definition.role}`, title: index ? person.name : `Fulton County ${definition.role}`, type: "official record", url: document.url })), stateCode: "GA", stateName: "Georgia", summary: "", updatedAt: snapshot.retrievedAt }];
+		return [
+			{
+				biographySummary: "",
+				districtLabel: "Fulton County",
+				districtSlug: "fulton-county",
+				districtType: "county",
+				jurisdiction: "Local",
+				location: "Fulton County, Georgia",
+				name: person.name,
+				officeSought: definition.role,
+				officeTitle: definition.role,
+				officialWebsiteUrl: person.officialWebsiteUrl,
+				party: "",
+				profileImages: person.portraitUrl
+					? [
+							{
+								alt: person.name,
+								attribution: "Fulton County Government",
+								capturedAt: documents[0]!.capturedAt,
+								priority: 1,
+								sourceKind: "official",
+								sourceLabel: `Fulton County ${definition.role}`,
+								sourceSystem: "Fulton County Government",
+								sourceUrl: definition.pageUrl,
+								url: person.portraitUrl
+							}
+						]
+					: [],
+				provenanceLabel: "Official county office",
+				provenanceNote: "",
+				slug: person.slug,
+				sourceSystem: `Official Fulton County ${definition.role}`,
+				sources: documents.map((document, index) => ({
+					authority: "official-government",
+					date: document.capturedAt,
+					id: `fulton-county-offices:${snapshot.sourceSha256}:${office.id}:${index}`,
+					publisher: "Fulton County Government",
+					sourceSystem: `Fulton County ${definition.role}`,
+					title: index
+						? person.name
+						: `Fulton County ${definition.role}`,
+					type: "official record",
+					url: document.url
+				})),
+				stateCode: "GA",
+				stateName: "Georgia",
+				summary: "",
+				updatedAt: snapshot.retrievedAt
+			}
+		];
 	});
-	return [...existing, ...records];
+	return [
+		...existing,
+		...records
+	];
 }

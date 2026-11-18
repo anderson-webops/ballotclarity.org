@@ -29,11 +29,19 @@ export async function readStateBallotWorkbook(bytes: Buffer, profile: "standard"
 		throw new Error("The official workbook exceeds its supported format or size.");
 	}
 	const worker = new URL(
-		import.meta.url.endsWith(".ts") ? "./state-ballot-workbook-worker.ts" : "./state-ballot-workbook-worker.js",
+		import.meta.url.endsWith(".ts")
+			? "./state-ballot-workbook-worker.ts"
+			: "./state-ballot-workbook-worker.js",
 		import.meta.url
 	);
 	return new Promise((resolve, reject) => {
-		const child = spawn(process.execPath, ["--max-old-space-size=128", fileURLToPath(worker), ...(profile === "boone-candidates" ? [profile] : [])], {
+		const child = spawn(process.execPath, [
+			"--max-old-space-size=128",
+			fileURLToPath(worker),
+			...(profile === "boone-candidates"
+				? [profile]
+				: [])
+		], {
 			stdio: ["pipe", "pipe", "pipe"],
 			env: { PATH: process.env.PATH, LANG: "C.UTF-8", TZ: "UTC" }
 		});

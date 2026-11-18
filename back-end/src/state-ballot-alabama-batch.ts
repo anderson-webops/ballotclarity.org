@@ -8,7 +8,13 @@ import { assertExternalStateDataDirectory, readBoundedStateDataBytes } from "./s
 export async function selectAlabamaCountyBatch(sources: StateBallotSource[], catalogPath: string) {
 	assertExternalStateDataDirectory(dirname(catalogPath));
 	const ordered = [...sources].sort((first, second) => first.id.localeCompare(second.id));
-	if (!ordered.length) return { sources: [], deferredSources: [], complete: async () => undefined };
+	if (!ordered.length) {
+		return {
+			sources: [],
+			deferredSources: [],
+			complete: async () => undefined
+		};
+	}
 	const selectionSha256 = alabamaHash(JSON.stringify(ordered.map(source => source.id)));
 	const path = `${catalogPath}.alabama-batch.json`;
 	let start = 0;
@@ -40,7 +46,10 @@ export async function selectAlabamaCountyBatch(sources: StateBallotSource[], cat
 	catch (error) {
 		if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
 	}
-	const rotated = [...ordered.slice(start), ...ordered.slice(0, start)];
+	const rotated = [
+		...ordered.slice(start),
+		...ordered.slice(0, start)
+	];
 	const selected = rotated.slice(0, 25);
 	const deferredSources = rotated.slice(25).map(source => source.id);
 	return {

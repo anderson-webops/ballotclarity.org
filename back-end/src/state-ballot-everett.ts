@@ -25,7 +25,21 @@ export function validateEverettDocumentUrl(address: string, year: string) {
 
 export function everettAutomaticSource(electionDate: string): StateBallotSource {
 	assert(/^20\d{2}-11-0[2-8]$/u.test(electionDate) && Number(electionDate.slice(0, 4)) % 2 === 0 && new Date(`${electionDate}T00:00:00Z`).getUTCDay() === 2);
-	return { stateCode: "MA", id: electionDate === "2026-11-03" ? "ma-everett-2026" : `ma-everett-general-${electionDate}`, label: "Everett election ballots", electionDate, url: everettIndexUrl, pageUrl: everettIndexUrl, format: "everett-pdf", snapshotStorage: "external", placeName: "Everett city", withheldDistrictScopes: ["state-senate", "state-house"], defaultPriority: -20 };
+	return {
+		stateCode: "MA",
+		id: electionDate === "2026-11-03"
+			? "ma-everett-2026"
+			: `ma-everett-general-${electionDate}`,
+		label: "Everett election ballots",
+		electionDate,
+		url: everettIndexUrl,
+		pageUrl: everettIndexUrl,
+		format: "everett-pdf",
+		snapshotStorage: "external",
+		placeName: "Everett city",
+		withheldDistrictScopes: ["state-senate", "state-house"],
+		defaultPriority: -20
+	};
 }
 
 export function everettSource(electionDate: string, documentUrls: readonly string[] = everettDocumentUrls): StateBallotSource {
@@ -33,22 +47,72 @@ export function everettSource(electionDate: string, documentUrls: readonly strin
 	assert.equal(new Date(`${electionDate}T00:00:00Z`).toISOString().slice(0, 10), electionDate);
 	assert(documentUrls.length > 0 && documentUrls.length <= 20 && new Set(documentUrls).size === documentUrls.length);
 	for (const address of documentUrls) validateEverettDocumentUrl(address, electionDate.slice(0, 4));
-	return { stateCode: "MA", id: `ma-everett-${electionDate.slice(0, 4)}`, label: "Everett election ballots", electionDate, url: documentUrls[0], pageUrl: everettIndexUrl, format: "reviewed-pdf", retrievalPolicy: "manual-snapshot", snapshotStorage: "external", placeName: "Everett city", documentUrls: [...documentUrls], withheldDistrictScopes: ["state-senate", "state-house"], defaultPriority: -20 };
+	return {
+		stateCode: "MA",
+		id: `ma-everett-${electionDate.slice(0, 4)}`,
+		label: "Everett election ballots",
+		electionDate,
+		url: documentUrls[0],
+		pageUrl: everettIndexUrl,
+		format: "reviewed-pdf",
+		retrievalPolicy: "manual-snapshot",
+		snapshotStorage: "external",
+		placeName: "Everett city",
+		documentUrls: [...documentUrls],
+		withheldDistrictScopes: ["state-senate", "state-house"],
+		defaultPriority: -20
+	};
 }
 
 const offices = new Map<string, { office: string; scope: EverettClaimScope; jointTicket?: true }>([
-	["SENATOR IN CONGRESS", { office: "Senator in Congress", scope: "statewide" }],
-	["GOVERNOR AND LIEUTENANT GOVERNOR", { office: "Governor and Lieutenant Governor", scope: "statewide", jointTicket: true }],
-	["ATTORNEY GENERAL", { office: "Attorney General", scope: "statewide" }],
-	["SECRETARY OF STATE", { office: "Secretary of State", scope: "statewide" }],
-	["TREASURER", { office: "Treasurer", scope: "statewide" }],
-	["AUDITOR", { office: "Auditor", scope: "statewide" }],
-	["REPRESENTATIVE IN CONGRESS", { office: "Representative in Congress", scope: "congressional" }],
-	["COUNCILLOR", { office: "Councillor", scope: "regional" }],
-	["SENATOR IN GENERAL COURT", { office: "Senator in General Court", scope: "state-senate" }],
-	["REPRESENTATIVE IN GENERAL COURT", { office: "Representative in General Court", scope: "state-house" }],
-	["DISTRICT ATTORNEY", { office: "District Attorney", scope: "regional" }],
-	["REGISTER OF PROBATE", { office: "Register of Probate", scope: "county" }]
+	[
+		"SENATOR IN CONGRESS",
+		{ office: "Senator in Congress", scope: "statewide" }
+	],
+	[
+		"GOVERNOR AND LIEUTENANT GOVERNOR",
+		{ office: "Governor and Lieutenant Governor", scope: "statewide", jointTicket: true }
+	],
+	[
+		"ATTORNEY GENERAL",
+		{ office: "Attorney General", scope: "statewide" }
+	],
+	[
+		"SECRETARY OF STATE",
+		{ office: "Secretary of State", scope: "statewide" }
+	],
+	[
+		"TREASURER",
+		{ office: "Treasurer", scope: "statewide" }
+	],
+	[
+		"AUDITOR",
+		{ office: "Auditor", scope: "statewide" }
+	],
+	[
+		"REPRESENTATIVE IN CONGRESS",
+		{ office: "Representative in Congress", scope: "congressional" }
+	],
+	[
+		"COUNCILLOR",
+		{ office: "Councillor", scope: "regional" }
+	],
+	[
+		"SENATOR IN GENERAL COURT",
+		{ office: "Senator in General Court", scope: "state-senate" }
+	],
+	[
+		"REPRESENTATIVE IN GENERAL COURT",
+		{ office: "Representative in General Court", scope: "state-house" }
+	],
+	[
+		"DISTRICT ATTORNEY",
+		{ office: "District Attorney", scope: "regional" }
+	],
+	[
+		"REGISTER OF PROBATE",
+		{ office: "Register of Probate", scope: "county" }
+	]
 ]);
 
 export function readEverettCandidateDocument(body: string, electionDate: string) {
@@ -58,7 +122,14 @@ export function readEverettCandidateDocument(body: string, electionDate: string)
 	const pages = descendants(document, node => node.nodeName === "page");
 	assert(pages.length > 0 && pages.length <= 20);
 	assert(pages.every((page, index) => attribute(page, "number") === String(index + 1) && attribute(page, "width") === "918" && attribute(page, "height") === "1944"));
-	const fonts = new Map(descendants(document, node => node.nodeName === "fontspec").map(node => [attribute(node, "id"), { family: attribute(node, "family"), color: attribute(node, "color"), size: Number(attribute(node, "size")) }]));
+	const fonts = new Map(descendants(document, node => node.nodeName === "fontspec").map(node => [
+		attribute(node, "id"),
+		{
+			family: attribute(node, "family"),
+			color: attribute(node, "color"),
+			size: Number(attribute(node, "size"))
+		}
+	]));
 	assert(pages.slice(1).every(page => descendants(page, node => node.nodeName === "text").every((node) => {
 		const font = fonts.get(attribute(node, "font"));
 		return font && !(font.family === "HelveticaLTStd" && font.size === 13) && !offices.has(stateHtmlText(node).replace(/\s+/gu, " ").trim());
@@ -66,14 +137,32 @@ export function readEverettCandidateDocument(body: string, electionDate: string)
 	const all = descendants(pages[0], node => node.nodeName === "text").map((node) => {
 		const font = fonts.get(attribute(node, "font"));
 		assert(font);
-		const field = { text: stateHtmlText(node).replace(/\s+/gu, " ").trim(), left: Number(attribute(node, "left")), top: Number(attribute(node, "top")), width: Number(attribute(node, "width")), height: Number(attribute(node, "height")), font };
-		assert([field.left, field.top, field.width, field.height].every(Number.isFinite));
+		const field = {
+			text: stateHtmlText(node).replace(/\s+/gu, " ").trim(),
+			left: Number(attribute(node, "left")),
+			top: Number(attribute(node, "top")),
+			width: Number(attribute(node, "width")),
+			height: Number(attribute(node, "height")),
+			font
+		};
+		assert([
+			field.left,
+			field.top,
+			field.width,
+			field.height
+		].every(Number.isFinite));
 		assert(field.left >= 0 && field.top >= 0 && field.width >= 0 && field.height > 0 && field.left + field.width <= 919 && field.top + field.height <= 1945);
 		return field;
 	}).filter(field => field.text);
 	const date = new Date(`${electionDate}T00:00:00Z`);
 	assert.equal(date.toISOString().slice(0, 10), electionDate);
-	const printedDate = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(date);
+	const printedDate = new Intl.DateTimeFormat("en-US", {
+		weekday: "long",
+		month: "long",
+		day: "numeric",
+		year: "numeric",
+		timeZone: "UTC"
+	}).format(date);
 	const dateFields = all.filter(field => field.font.family.endsWith("+HelveticaNeueLTStd-Bd") && field.font.size === 18 && field.text.startsWith(`${printedDate} / `));
 	assert.equal(dateFields.length, 1);
 	const city = all.filter(field => field.font.color === "#000000" && field.top < 200 && field.text === "EVERETT");
@@ -98,7 +187,9 @@ export function readEverettCandidateDocument(body: string, electionDate: string)
 		assert(heading);
 		const properties = offices.get(heading.text)!;
 		const districtFields = fields.filter(field => Math.abs(field.left - heading.left) <= 1 && field.top > heading.top && field.top < name.top && /(?:DISTRICT|COUNTY)$/u.test(field.text));
-		assert.equal(districtFields.length, properties.scope === "statewide" ? 0 : 1);
+		assert.equal(districtFields.length, properties.scope === "statewide"
+			? 0
+			: 1);
 		const votes = fields.filter(field => field.top > heading.top && field.top < name.top && Math.floor(field.left / 300) === Math.floor(name.left / 300) && field.text === "Vote for not more than ONE");
 		assert.equal(votes.length, 1);
 		const partyFields = fields.filter(field => field.font.family === "HelveticaLTStd-LightCond" && field.top >= name.top && field.top <= name.top + 6 && Math.floor(field.left / 300) === Math.floor(name.left / 300) && field.text.includes("/"));
@@ -109,11 +200,29 @@ export function readEverettCandidateDocument(body: string, electionDate: string)
 		assert.match(partyDesignation, /^[A-Za-z][A-Za-z -]{1,99}$/u);
 		const reelection = fields.filter(field => Math.floor(field.left / 300) === Math.floor(name.left / 300) && field.top > name.top + 6 && field.top < name.top + 20 && field.text.includes("Candidate for Re-election"));
 		assert(reelection.length <= 1);
-		return { name: name.text, ...properties, ...(districtFields[0] ? { districtLabel: districtFields[0].text } : {}), partyDesignation, ...(reelection.length ? { incumbent: true } : {}) };
+		return {
+			name: name.text,
+			...properties,
+			...(districtFields[0]
+				? { districtLabel: districtFields[0].text }
+				: {}),
+			partyDesignation,
+			...(reelection.length
+				? { incumbent: true }
+				: {})
+		};
 	});
 	assert(groups.every(group => records.some(record => record.office === offices.get(group.text)!.office)));
 	assert.equal(new Set(records.map(record => JSON.stringify(record))).size, records.length);
-	return { pageCount: pages.length, electionDate, styleLabel: ["EVERETT", ...styleFields.map(field => field.text)].join(" "), records };
+	return {
+		pageCount: pages.length,
+		electionDate,
+		styleLabel: [
+			"EVERETT",
+			...styleFields.map(field => field.text)
+		].join(" "),
+		records
+	};
 }
 
 function geography(claim: ReturnType<typeof readEverettCandidateDocument>["records"][number]): Pick<StateCandidateValues, "scope" | "district" | "jurisdiction" | "sourceDistrictLabel"> {
@@ -121,18 +230,46 @@ function geography(claim: ReturnType<typeof readEverettCandidateDocument>["recor
 	const label = claim.districtLabel;
 	assert(label && label.length <= 100);
 	if (claim.scope === "congressional") {
-		const names = ["FIRST", "SECOND", "THIRD", "FOURTH", "FIFTH", "SIXTH", "SEVENTH", "EIGHTH", "NINTH", "TENTH"];
+		const names = [
+			"FIRST",
+			"SECOND",
+			"THIRD",
+			"FOURTH",
+			"FIFTH",
+			"SIXTH",
+			"SEVENTH",
+			"EIGHTH",
+			"NINTH",
+			"TENTH"
+		];
 		const district = names.indexOf(label.replace(/ DISTRICT$/u, "")) + 1;
 		assert(district > 0 && label.endsWith(" DISTRICT"));
-		return { scope: "congressional", district: String(district), sourceDistrictLabel: label };
+		return {
+			scope: "congressional",
+			district: String(district),
+			sourceDistrictLabel: label
+		};
 	}
-	if (claim.scope === "state-senate" || claim.scope === "state-house") return { scope: claim.scope, district: label.replace(/ DISTRICT$/u, ""), sourceDistrictLabel: label };
+	if (claim.scope === "state-senate" || claim.scope === "state-house") {
+		return {
+			scope: claim.scope,
+			district: label.replace(/ DISTRICT$/u, ""),
+			sourceDistrictLabel: label
+		};
+	}
 	assert(claim.scope === "regional" || claim.scope === "county");
-	return { scope: "local", district: "", jurisdiction: `Massachusetts, ${label}`, sourceDistrictLabel: label };
+	return {
+		scope: "local",
+		district: "",
+		jurisdiction: `Massachusetts, ${label}`,
+		sourceDistrictLabel: label
+	};
 }
 
 export function validateEverettSource(source: StateBallotSource) {
-	const expected = source.format === "everett-pdf" ? everettAutomaticSource(source.electionDate) : everettSource(source.electionDate, source.documentUrls);
+	const expected = source.format === "everett-pdf"
+		? everettAutomaticSource(source.electionDate)
+		: everettSource(source.electionDate, source.documentUrls);
 	assert.deepEqual(source, expected, "The Everett source configuration requires review.");
 	return expected;
 }
@@ -154,7 +291,13 @@ export function readEverettCandidateDocuments(source: StateBallotSource, documen
 		styles.add(parsed.styleLabel);
 		pageCounts.push(parsed.pageCount);
 		for (const claim of parsed.records) {
-			const candidate = factory(source, { name: claim.name, office: claim.office, party: claim.partyDesignation, ...geography(claim), status: "listed" });
+			const candidate = factory(source, {
+				name: claim.name,
+				office: claim.office,
+				party: claim.partyDesignation,
+				...geography(claim),
+				status: "listed"
+			});
 			assert(candidate, "The Everett candidate identity requires review.");
 			candidate.sourceStatus = "Sample ballot candidate";
 			candidate.voteLimit = 1;
@@ -166,13 +309,26 @@ export function readEverettCandidateDocuments(source: StateBallotSource, documen
 			const selected = records.get(candidate.id)!;
 			if (!areas.has(candidate.id)) areas.set(candidate.id, new Set());
 			areas.get(candidate.id)!.add(parsed.styleLabel);
-			claims.push({ record: selected, documentIndex, page: 1, styleLabel: parsed.styleLabel });
+			claims.push({
+				record: selected,
+				documentIndex,
+				page: 1,
+				styleLabel: parsed.styleLabel
+			});
 		}
 	}
 	for (const [id, record] of records) {
-		const area = [...areas.get(id)!].join("; ");
+		const area = [
+			...areas.get(id)!
+		].join("; ");
 		assert(area.length <= 300, "The Everett style inventory exceeds its record bounds.");
 		record.sourceAreaLabel = area;
 	}
-	return { records: [...records.values()], claims, pageCounts };
+	return {
+		records: [
+			...records.values()
+		],
+		claims,
+		pageCounts
+	};
 }

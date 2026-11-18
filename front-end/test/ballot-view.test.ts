@@ -7,19 +7,66 @@ import { buildBallotCandidateTarget, buildElectionView, civicLookupNeedsRefresh,
 
 const before = new Date("2026-10-24T12:00:00Z");
 const after = new Date("2026-11-05T12:00:00Z");
-const candidate = { id: "candidate-1", name: "Synthetic Candidate", party: "Example", ballotStatus: "filed" as const, candidateUrl: "https://campaign.example.org/" };
-const preview: BallotContentPreview = { id: "wa-general-2026", providerId: "official-state-wa", providerLabel: "Controlled fixture", sourceAuthority: "official-government", officialOnly: true, generatedAt: "2026-10-24T12:00:00Z", electionDate: "2026-11-03", candidateCount: 1, contestCount: 1, measureCount: 0, status: "official_source_unverified", disclaimer: "Filing is not qualification.", contests: [{ id: "office-1", title: "Example office", sourceLabels: ["Controlled fixture"], candidates: [candidate] }] };
-const context = { result: "resolved", inputKind: "zip", lookupQuery: "98101", location: { state: "WA", slug: "seattle" }, districtMatches: [], representativeMatches: [], selectionOptions: [], actions: [], availability: null, election: null, electionLogistics: null, resolvedAt: before.toISOString(), ballotContentPreviews: [preview] } as unknown as NationwideLookupResultContext;
+const candidate = {
+	id: "candidate-1",
+	name: "Synthetic Candidate",
+	party: "Example",
+	ballotStatus: "filed" as const,
+	candidateUrl: "https://campaign.example.org/"
+};
+const preview: BallotContentPreview = {
+	id: "wa-general-2026",
+	providerId: "official-state-wa",
+	providerLabel: "Controlled fixture",
+	sourceAuthority: "official-government",
+	officialOnly: true,
+	generatedAt: "2026-10-24T12:00:00Z",
+	electionDate: "2026-11-03",
+	candidateCount: 1,
+	contestCount: 1,
+	measureCount: 0,
+	status: "official_source_unverified",
+	disclaimer: "Filing is not qualification.",
+	contests: [
+		{
+			id: "office-1",
+			title: "Example office",
+			sourceLabels: ["Controlled fixture"],
+			candidates: [candidate]
+		}
+	]
+};
+const context = {
+	result: "resolved",
+	inputKind: "zip",
+	lookupQuery: "98101",
+	location: { state: "WA", slug: "seattle" },
+	districtMatches: [],
+	representativeMatches: [],
+	selectionOptions: [],
+	actions: [],
+	availability: null,
+	election: null,
+	electionLogistics: null,
+	resolvedAt: before.toISOString(),
+	ballotContentPreviews: [preview]
+} as unknown as NationwideLookupResultContext;
 
 test("ballot cards use a source-bound dedicated record instead of making the name a campaign link", () => {
-	assert.deepEqual(buildBallotCandidateTarget(preview, candidate), { path: "/record/WA/candidate-1", query: { source: "wa-general-2026", name: "Synthetic Candidate" } });
+	assert.deepEqual(buildBallotCandidateTarget(preview, candidate), {
+		path: "/record/WA/candidate-1",
+		query: { source: "wa-general-2026", name: "Synthetic Candidate" }
+	});
 	assert.equal(buildBallotCandidateTarget(preview, { ...candidate, sourceId: "certified-supplement" })?.query.source, "certified-supplement");
 	assert.equal(buildBallotCandidateTarget(preview, { ...candidate, sourceId: "../invalid" }), null);
 });
 
 test("other providers receive dedicated pages with ZIP-only lookup context and no raw address", () => {
 	const other = { ...preview, id: "provider-election", providerId: "provider" };
-	assert.deepEqual(buildBallotCandidateTarget(other, candidate, { lookupQuery: "98101", selectionId: "zip:98101:seattle" }), { path: "/ballot-record/provider-election/candidate-1", query: { lookup: "98101", selection: "zip:98101:seattle" } });
+	assert.deepEqual(buildBallotCandidateTarget(other, candidate, { lookupQuery: "98101", selectionId: "zip:98101:seattle" }), {
+		path: "/ballot-record/provider-election/candidate-1",
+		query: { lookup: "98101", selection: "zip:98101:seattle" }
+	});
 	assert.deepEqual(buildBallotCandidateTarget(other, candidate, { lookupQuery: "123 Main St, Seattle WA" })?.query, {});
 	assert.equal(buildBallotCandidateTarget({ ...other, id: ".." }, candidate), null);
 	assert.equal(buildBallotCandidateTarget(other, { ...candidate, id: "../other" }), null);
@@ -29,8 +76,16 @@ test("person pages resolve exact source and candidate IDs and refuse ambiguous o
 	assert.equal(findBallotCandidate(context, preview.id, candidate.id)?.candidate, candidate);
 	assert.equal(findBallotCandidate(context, "different-source", candidate.id), null);
 	assert.equal(findBallotCandidate(context, preview.id, "Synthetic Candidate"), null);
-	const duplicate = { ...preview, contests: [...preview.contests, { ...preview.contests[0]!, id: "office-2" }] };
-	assert.equal(findBallotCandidate({ ballotContentPreviews: [duplicate] }, preview.id, candidate.id), null);
+	const duplicate = {
+		...preview,
+		contests: [
+			...preview.contests,
+			{ ...preview.contests[0]!, id: "office-2" }
+		]
+	};
+	assert.equal(findBallotCandidate({
+		ballotContentPreviews: [duplicate]
+	}, preview.id, candidate.id), null);
 });
 
 test("election day remains visible through the last possible local calendar day", () => {
@@ -52,12 +107,30 @@ test("the election view separates past records and does not conjecture another r
 });
 
 test("a newly published later election replaces the old ballot rather than borrowing its candidates", () => {
-	const future = { ...preview, id: "fixture-2028", electionDate: "2028-11-07", contests: [{ ...preview.contests[0]!, candidates: [{ ...candidate, id: "future-person", name: "Future Synthetic Candidate" }] }] };
-	const view = buildElectionView({ ...context, ballotContentPreviews: [preview, future] }, after);
+	const future = {
+		...preview,
+		id: "fixture-2028",
+		electionDate: "2028-11-07",
+		contests: [
+			{
+				...preview.contests[0]!,
+				candidates: [
+					{ ...candidate, id: "future-person", name: "Future Synthetic Candidate" }
+				]
+			}
+		]
+	};
+	const view = buildElectionView({
+		...context,
+		ballotContentPreviews: [preview, future]
+	}, after);
 	assert.equal(view.betweenElections, true);
 	assert.deepEqual(view.previews, [future]);
 	assert.equal(view.previews[0]!.contests[0]!.candidates[0]!.name, "Future Synthetic Candidate");
-	assert.equal(buildElectionView({ ...context, electionLogistics: { electionDay: "2026-11-17" } as NationwideLookupResultContext["electionLogistics"] }, after).betweenElections, false);
+	assert.equal(buildElectionView({
+		...context,
+		electionLogistics: { electionDay: "2026-11-17" } as NationwideLookupResultContext["electionLogistics"]
+	}, after).betweenElections, false);
 });
 
 test("configured source dates provide a cycle after temporary candidate data expires", () => {
@@ -68,19 +141,31 @@ test("configured source dates provide a cycle after temporary candidate data exp
 });
 
 test("post-election refresh takes current representatives from the refreshed lookup, never the candidate list", () => {
-	const current = { ...context, resolvedAt: after.toISOString(), ballotContentPreviews: [], representativeMatches: [{ id: "officeholder-1", name: "Synthetic Officeholder" }] } as unknown as NationwideLookupResultContext;
+	const current = {
+		...context,
+		resolvedAt: after.toISOString(),
+		ballotContentPreviews: [],
+		representativeMatches: [
+			{ id: "officeholder-1", name: "Synthetic Officeholder" }
+		]
+	} as unknown as NationwideLookupResultContext;
 	assert.equal(needsBallotPreviewRefresh(context, after), true);
 	const refreshed = restoreMatchingBallotPreviews(context, current, after)!;
 	assert.deepEqual(refreshed.representativeMatches, current.representativeMatches);
 	assert.equal(buildElectionView(refreshed, after).betweenElections, true);
 	assert.deepEqual(buildElectionView(refreshed, after).previews, []);
 	assert.equal(restoreMatchingBallotPreviews(context, { ...current, lookupQuery: "98102" }, after), context);
-	assert.equal(restoreMatchingBallotPreviews(context, { ...current, location: { ...context.location!, slug: "different-place" } }, after), context);
+	assert.equal(restoreMatchingBallotPreviews(context, {
+		...current,
+		location: { ...context.location!, slug: "different-place" }
+	}, after), context);
 });
 
 test("freshness remains explicit for off-election representatives", () => {
 	assert.equal(civicLookupNeedsRefresh(context, after), true);
-	assert.equal(civicLookupNeedsRefresh({ resolvedAt: after.toISOString() }, after), false);
+	assert.equal(civicLookupNeedsRefresh({
+		resolvedAt: after.toISOString()
+	}, after), false);
 	assert.equal(civicLookupNeedsRefresh({}, after), true);
 });
 

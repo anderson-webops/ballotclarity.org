@@ -10,19 +10,35 @@ const api = useApiClient();
 const { formatDate } = useFormatters();
 const state = useRouteStringParam("state");
 const id = useRouteStringParam("id");
-const source = computed(() => typeof route.query.source === "string" ? route.query.source : "");
+const source = computed(() => typeof route.query.source === "string"
+	? route.query.source
+	: "");
 const { data, error, pending, refresh } = await useAsyncData(
 	() => `ballot-question:${state.value}:${source.value}:${id.value}`,
-	() => /^[A-Z]{2}$/u.test(state.value) && /^[a-f0-9]{24}$/u.test(id.value) && source.value ? api<StateQuestionsResponse>(`/state-records/${state.value}/questions`, { query: { source: source.value, id: id.value } }) : Promise.resolve(null),
-	{ default: () => null }
+	() => /^[A-Z]{2}$/u.test(state.value) && /^[a-f0-9]{24}$/u.test(id.value) && source.value
+		? api<StateQuestionsResponse>(`/state-records/${state.value}/questions`, {
+				query: { source: source.value, id: id.value }
+			})
+		: Promise.resolve(null),
+	{
+		default: () => null
+	}
 );
 const question = computed(() => data.value?.questions.find(item => item.id === id.value));
 const notice = computed(() => question.value?.textKind === "notice");
 const heading = computed(() => ballotQuestionHeading(question.value?.title ?? "Ballot question", question.value?.audience));
 const paragraphs = computed(() => ballotQuestionParagraphs(question.value?.officialText ?? ""));
-const backTo = computed(() => ({ path: "/questions", query: { state: state.value, source: source.value } }));
+const backTo = computed(() => ({
+	path: "/questions",
+	query: { state: state.value, source: source.value }
+}));
 const documentUrl = computed(() => ballotQuestionDocument(data.value?.source, question.value));
-usePageSeo(() => ({ title: heading.value.title, description: notice.value ? "Official election notice and source." : "Official ballot question wording and source.", path: route.path, robots: "noindex,follow" }));
+usePageSeo(() => ({
+	title: heading.value.title,
+	description: notice.value ? "Official election notice and source." : "Official ballot question wording and source.",
+	path: route.path,
+	robots: "noindex,follow"
+}));
 </script>
 
 <template>

@@ -31,14 +31,30 @@ export function resolveStateRecordCode(value: unknown, states: readonly StateRec
 }
 
 export function readStateRecordQuery(query: Record<string, unknown>, states: readonly StateRecordState[]) {
-	const offset = typeof query.offset === "string" && /^\d+$/u.test(query.offset) ? Number(query.offset) : 0;
+	const offset = typeof query.offset === "string" && /^\d+$/u.test(query.offset)
+		? Number(query.offset)
+		: 0;
 	return {
 		stateCode: resolveStateRecordCode(query.state, states),
-		...(query.source === undefined ? {} : { sourceId: typeof query.source === "string" ? query.source.slice(0, 120) : "" }),
-		search: typeof query.q === "string" ? query.q.slice(0, 120) : "",
-		scope: typeof query.scope === "string" && stateRecordScopes.some(scope => scope.value === query.scope) ? query.scope : "all",
-		status: query.status === "all" ? "all" : "active",
-		offset: Number.isSafeInteger(offset) && offset <= 25_000 ? offset : 0,
+		...(query.source === undefined
+			? {}
+			: {
+					sourceId: typeof query.source === "string"
+						? query.source.slice(0, 120)
+						: ""
+				}),
+		search: typeof query.q === "string"
+			? query.q.slice(0, 120)
+			: "",
+		scope: typeof query.scope === "string" && stateRecordScopes.some(scope => scope.value === query.scope)
+			? query.scope
+			: "all",
+		status: query.status === "all"
+			? "all"
+			: "active",
+		offset: Number.isSafeInteger(offset) && offset <= 25_000
+			? offset
+			: 0,
 	};
 }
 
@@ -46,28 +62,60 @@ export function stateRecordArea(record: PublicStateCandidateRecord) {
 	const office = record.office.toLowerCase();
 	const comparable = (value: string) => value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 	const officeWords = ` ${comparable(record.office)} `;
-	const areas = [record.jurisdiction, record.sourceDistrictLabel, !record.sourceDistrictLabel && record.district && !office.includes(record.district.toLowerCase()) ? `District ${record.district}` : ""];
+	const areas = [
+		record.jurisdiction,
+		record.sourceDistrictLabel,
+		!record.sourceDistrictLabel && record.district && !office.includes(record.district.toLowerCase())
+			? `District ${record.district}`
+			: ""
+	];
 	return areas.find(area => area && !officeWords.includes(` ${comparable(area)} `)) || "";
 }
 
 export function stateRecordSummaryParts(record: PublicStateCandidateRecord) {
 	return [
 		{ label: record.office, isParty: false },
-		{ label: stateRecordArea(record), isParty: false },
+		{
+			label: stateRecordArea(record),
+			isParty: false
+		},
 		{ label: record.party?.trim() ?? "", isParty: true },
-		{ label: stateRecordIncumbency(record), isParty: false },
-		{ label: record.status === "listed" ? "" : stateRecordStatusLabels[record.status], isParty: false },
+		{
+			label: stateRecordIncumbency(record),
+			isParty: false
+		},
+		{
+			label: record.status === "listed"
+				? ""
+				: stateRecordStatusLabels[record.status],
+			isParty: false
+		},
 	].filter(part => part.label);
 }
 
 export function stateRecordIncumbency(record: PublicStateCandidateRecord) {
-	return record.incumbent && !/\bincumbent\b/iu.test(record.office) ? "Incumbent" : "";
+	return record.incumbent && !/\bincumbent\b/iu.test(record.office)
+		? "Incumbent"
+		: "";
 }
 
 export function stateRecordStatusBadges(record: PublicStateCandidateRecord, detail = false) {
-	const candidate = detail && ["listed", "filed", "qualified", "write-in", "unopposed"].includes(record.status);
-	const role = candidate ? record.incumbent ? "Incumbent candidate" : "Candidate" : stateRecordIncumbency(record);
-	return [role, record.status === "listed" ? "" : stateRecordStatusLabels[record.status]].filter(Boolean);
+	const candidate = detail && [
+		"listed",
+		"filed",
+		"qualified",
+		"write-in",
+		"unopposed"
+	].includes(record.status);
+	const role = candidate
+		? record.incumbent ? "Incumbent candidate" : "Candidate"
+		: stateRecordIncumbency(record);
+	return [
+		role,
+		record.status === "listed"
+			? ""
+			: stateRecordStatusLabels[record.status]
+	].filter(Boolean);
 }
 
 export function stateRecordSummary(record: PublicStateCandidateRecord) {

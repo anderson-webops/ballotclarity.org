@@ -14,24 +14,140 @@ import { buildStateRecordPage, parseStateRecordFilters } from "../src/state-reco
 
 const montana = stateBallotSources.find(source => source.stateCode === "MT")!;
 const now = Date.parse("2026-10-21T23:00:00Z");
-const columns = ["Status", "District Type", "District", "Race", "Term Type", "Term Length", "Name", "Mailing Address", "Email/Web Address", "Phone", "Filing Date", "Party Preference", "Ballot Order"];
+const columns = [
+	"Status",
+	"District Type",
+	"District",
+	"Race",
+	"Term Type",
+	"Term Length",
+	"Name",
+	"Mailing Address",
+	"Email/Web Address",
+	"Phone",
+	"Filing Date",
+	"Party Preference",
+	"Ballot Order"
+];
 
 function candidateRows() {
 	const definitions = [
-		["Statewide", "STATE", "UNITED STATES SENATOR", "6", "Senator Example", "REP"],
-		["Supreme Court Justice", "SUPREME COURT JUSTICE", "SUPREME COURT JUSTICE #4", "8", "Justice Example", "NON"],
-		["Supreme Court Justice", "SUPREME COURT JUSTICE", "SUPREME COURT JUSTICE #4", "8", "Other Justice", "NON"],
-		["Congressional", "1ST CONGRESSIONAL", "UNITED STATES REPRESENTATIVE", "2", "First Congress", "REP"],
-		["Congressional", "2ND CONGRESSIONAL", "UNITED STATES REPRESENTATIVE", "2", "Second Congress", "DEM"],
-		["House", "HOUSE DISTRICT 1", "STATE REPRESENTATIVE DISTRICT 1", "2", "House Example", "REP"],
-		["House", "HOUSE DISTRICT 1", "STATE REPRESENTATIVE DISTRICT 1", "2", "Withdrawn Example", "LIB"],
-		["Senate", "SENATE DISTRICT 1", "STATE SENATOR DISTRICT 1", "4", "Senate Example", "DEM"],
-		["Public Service Commission", "PUBLIC SERVICE COMMISSIONER DISTRICT 1", "PUBLIC SERVICE COMMISSIONER, DISTRICT 1", "4", "Commission Example", "DEM"],
-		["Judicial", "JUDICIAL DISTRICT 1", "DISTRICT COURT JUDGE DISTRICT 1, DEPT 1", "6", "*Court Example", "NON"],
-		["Judicial", "JUDICIAL DISTRICT 20", "DISTRICT COURT JUDGE DISTRICT 20, DEPT 2 UNEXPIRED", "6", "*Unexpired Example", "NON"],
-		["House", "HOUSE DISTRICT 22", "STATE REPRESENTATIVE DISTRICT 22", "2", "Nonpartisan Example", "NON"],
+		[
+			"Statewide",
+			"STATE",
+			"UNITED STATES SENATOR",
+			"6",
+			"Senator Example",
+			"REP"
+		],
+		[
+			"Supreme Court Justice",
+			"SUPREME COURT JUSTICE",
+			"SUPREME COURT JUSTICE #4",
+			"8",
+			"Justice Example",
+			"NON"
+		],
+		[
+			"Supreme Court Justice",
+			"SUPREME COURT JUSTICE",
+			"SUPREME COURT JUSTICE #4",
+			"8",
+			"Other Justice",
+			"NON"
+		],
+		[
+			"Congressional",
+			"1ST CONGRESSIONAL",
+			"UNITED STATES REPRESENTATIVE",
+			"2",
+			"First Congress",
+			"REP"
+		],
+		[
+			"Congressional",
+			"2ND CONGRESSIONAL",
+			"UNITED STATES REPRESENTATIVE",
+			"2",
+			"Second Congress",
+			"DEM"
+		],
+		[
+			"House",
+			"HOUSE DISTRICT 1",
+			"STATE REPRESENTATIVE DISTRICT 1",
+			"2",
+			"House Example",
+			"REP"
+		],
+		[
+			"House",
+			"HOUSE DISTRICT 1",
+			"STATE REPRESENTATIVE DISTRICT 1",
+			"2",
+			"Withdrawn Example",
+			"LIB"
+		],
+		[
+			"Senate",
+			"SENATE DISTRICT 1",
+			"STATE SENATOR DISTRICT 1",
+			"4",
+			"Senate Example",
+			"DEM"
+		],
+		[
+			"Public Service Commission",
+			"PUBLIC SERVICE COMMISSIONER DISTRICT 1",
+			"PUBLIC SERVICE COMMISSIONER, DISTRICT 1",
+			"4",
+			"Commission Example",
+			"DEM"
+		],
+		[
+			"Judicial",
+			"JUDICIAL DISTRICT 1",
+			"DISTRICT COURT JUDGE DISTRICT 1, DEPT 1",
+			"6",
+			"*Court Example",
+			"NON"
+		],
+		[
+			"Judicial",
+			"JUDICIAL DISTRICT 20",
+			"DISTRICT COURT JUDGE DISTRICT 20, DEPT 2 UNEXPIRED",
+			"6",
+			"*Unexpired Example",
+			"NON"
+		],
+		[
+			"House",
+			"HOUSE DISTRICT 22",
+			"STATE REPRESENTATIVE DISTRICT 22",
+			"2",
+			"Nonpartisan Example",
+			"NON"
+		],
 	];
-	return definitions.map(([type, district, race, term, name, party]) => [name === "Withdrawn Example" ? "WITHDRAWN" : "FILED", type!, district!, race!, name === "*Unexpired Example" ? "UNEXPIRED" : "REGULAR", term!, name!, "Private residence excluded", "private@example.invalid", "555-0100", "03/01/2026", party!, ""]);
+	return definitions.map(([type, district, race, term, name, party]) => [
+		name === "Withdrawn Example"
+			? "WITHDRAWN"
+			: "FILED",
+		type!,
+		district!,
+		race!,
+		name === "*Unexpired Example"
+			? "UNEXPIRED"
+			: "REGULAR",
+		term!,
+		name!,
+		"Private residence excluded",
+		"private@example.invalid",
+		"555-0100",
+		"03/01/2026",
+		party!,
+		""
+	]);
 }
 
 function sourcePage(total = 12) {
@@ -40,7 +156,10 @@ function sourcePage(total = 12) {
 }
 
 function envelope(rows = candidateRows(), page = sourcePage(rows.length), headers = columns) {
-	return JSON.stringify({ page, records: [headers, ...rows].map(row => row.map(value => JSON.stringify(value)).join(",")).join("\r\n") });
+	return JSON.stringify({
+		page,
+		records: [headers, ...rows].map(row => row.map(value => JSON.stringify(value)).join(",")).join("\r\n")
+	});
 }
 
 test("Montana uses only the published selected general CSV control in two bounded requests", async () => {
@@ -65,7 +184,17 @@ test("Montana uses only the published selected general CSV control in two bounde
 });
 
 test("Montana refuses primary, restricted county, changed date, target, marker or export controls", () => {
-	for (const page of [sourcePage().replaceAll("450002987", "450002928"), sourcePage().replaceAll("FEDERAL GENERAL 2026", "FEDERAL PRIMARY 2026"), sourcePage().replace("11/03/2026", "06/02/2026"), sourcePage().replace("value=\"99\"", "value=\"01\""), sourcePage().replace("* = Incumbent", "* = Unopposed"), sourcePage().replaceAll("ExportToCsvButton", "UnreviewedControl"), sourcePage().replace("action=\"./CandidateList.aspx?e=450002987\"", "action=\"https://other.example/export\""), sourcePage().replace("method=\"post\"", "method=\"get\""), sourcePage().replace("</form>", "<select name=\"extra-filter\"></select></form>")]) assert.throws(() => buildPublicStateExportForm(montana, page), /Montana/u);
+	for (const page of [
+		sourcePage().replaceAll("450002987", "450002928"),
+		sourcePage().replaceAll("FEDERAL GENERAL 2026", "FEDERAL PRIMARY 2026"),
+		sourcePage().replace("11/03/2026", "06/02/2026"),
+		sourcePage().replace("value=\"99\"", "value=\"01\""),
+		sourcePage().replace("* = Incumbent", "* = Unopposed"),
+		sourcePage().replaceAll("ExportToCsvButton", "UnreviewedControl"),
+		sourcePage().replace("action=\"./CandidateList.aspx?e=450002987\"", "action=\"https://other.example/export\""),
+		sourcePage().replace("method=\"post\"", "method=\"get\""),
+		sourcePage().replace("</form>", "<select name=\"extra-filter\"></select></form>")
+	]) assert.throws(() => buildPublicStateExportForm(montana, page), /Montana/u);
 	assert.throws(() => buildPublicStateExportForm({ ...montana, electionDate: "2028-11-07" }, sourcePage()), /Montana/u);
 });
 
@@ -87,8 +216,22 @@ test("Montana retains source status and term facts but excludes personal contact
 
 test("Montana refuses partial, duplicate, malformed and unreviewed status or jurisdiction exports", () => {
 	assert.throws(() => parseStateCandidateRecords(montana, envelope(candidateRows().slice(1), sourcePage(12))), /complete public record count/u);
-	assert.throws(() => parseStateCandidateRecords(montana, envelope([...candidateRows(), candidateRows()[0]!])), /duplicate candidate/u);
-	for (const [index, column, value] of [[0, 0, "ELECTED"], [0, 1, "County"], [0, 5, "4"], [0, 11, "OTHER"], [5, 2, "HOUSE DISTRICT 2"], [5, 3, "STATE REPRESENTATIVE DISTRICT 101"], [9, 11, "REP"], [10, 4, "REGULAR"], [9, 6, "**Court Example"], [0, 6, ""]] as const) {
+	assert.throws(() => parseStateCandidateRecords(montana, envelope([
+		...candidateRows(),
+		candidateRows()[0]!
+	])), /duplicate candidate/u);
+	for (const [index, column, value] of [
+		[0, 0, "ELECTED"],
+		[0, 1, "County"],
+		[0, 5, "4"],
+		[0, 11, "OTHER"],
+		[5, 2, "HOUSE DISTRICT 2"],
+		[5, 3, "STATE REPRESENTATIVE DISTRICT 101"],
+		[9, 11, "REP"],
+		[10, 4, "REGULAR"],
+		[9, 6, "**Court Example"],
+		[0, 6, ""]
+	] as const) {
 		const rows = candidateRows();
 		rows[index]![column] = value;
 		assert.throws(() => parseStateCandidateRecords(montana, envelope(rows)), /Montana|incomplete candidate/u);
@@ -106,10 +249,31 @@ test("Montana incumbency marker changes preserve stable person identities", () =
 });
 
 test("Montana matches only typed congressional and legislative geography and excludes withdrawals", () => {
-	const snapshot = { source: montana, records: parseStateCandidateRecords(montana, envelope()), retrievedAt: new Date(now).toISOString(), sha256: "a".repeat(64) };
-	const preview = (districtType: string, districtCode: string) => buildStateBallotPreview(snapshot, { districtMatches: [{ id: `${districtType}:${districtCode}`, districtType, districtCode, label: districtCode, sourceSystem: "Synthetic typed geography fixture" }] })!;
+	const snapshot = {
+		source: montana,
+		records: parseStateCandidateRecords(montana, envelope()),
+		retrievedAt: new Date(now).toISOString(),
+		sha256: "a".repeat(64)
+	};
+	const preview = (districtType: string, districtCode: string) => buildStateBallotPreview(snapshot, {
+		districtMatches: [
+			{
+				id: `${districtType}:${districtCode}`,
+				districtType,
+				districtCode,
+				label: districtCode,
+				sourceSystem: "Synthetic typed geography fixture"
+			}
+		]
+	})!;
 	for (const type of ["congressional", "state-house", "state-senate"]) assert.equal(preview(type, "1").candidateCount, 4);
-	for (const [type, code] of [["county", "1"], ["ward", "1"], ["congressional", "20"], ["state-house", "20"], ["state-senate", "20"]]) assert.equal(preview(type, code).candidateCount, 3);
+	for (const [type, code] of [
+		["county", "1"],
+		["ward", "1"],
+		["congressional", "20"],
+		["state-house", "20"],
+		["state-senate", "20"]
+	]) assert.equal(preview(type, code).candidateCount, 3);
 	assert.equal(buildStateRecordPage(snapshot, parseStateRecordFilters({})).matched, 11);
 	assert.equal(buildStateRecordPage(snapshot, parseStateRecordFilters({ status: "all" })).matched, 12);
 });
@@ -118,21 +282,34 @@ test("Montana persists validated public facts across restart and refuses a bad r
 	const directory = await mkdtemp(join(tmpdir(), "ballot-montana-automatic-"));
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	let requests = 0;
-	const repository = createStateBallotRepository({ dataDirectory: directory, now: () => now, fetchText: async () => {
-		requests += 1;
-		return envelope();
-	} });
+	const repository = createStateBallotRepository({
+		dataDirectory: directory,
+		now: () => now,
+		fetchText: async () => {
+			requests += 1;
+			return envelope();
+		}
+	});
 	const snapshot = await repository.getSnapshot("MT");
 	assert.equal(snapshot!.records.length, 12);
 	const expected = serializeStateBallotSnapshots([snapshot!]);
-	const restored = await createStateBallotRepository({ dataDirectory: directory, now: () => now + 1, fetchText: async () => {
-		throw new Error("Restart must not download.");
-	} }).getSnapshot("MT");
+	const restored = await createStateBallotRepository({
+		dataDirectory: directory,
+		now: () => now + 1,
+		fetchText: async () => {
+			throw new Error("Restart must not download.");
+		}
+	}).getSnapshot("MT");
 	assert.equal(serializeStateBallotSnapshots([restored!]), expected);
 	assert.equal(requests, 1);
 	const rows = candidateRows();
 	rows[0]![0] = "UNREVIEWED";
-	const refused = await createStateBallotRepository({ dataDirectory: directory, ttlMs: 1, now: () => now + 2, fetchText: async () => envelope(rows) }).getSnapshot("MT");
+	const refused = await createStateBallotRepository({
+		dataDirectory: directory,
+		ttlMs: 1,
+		now: () => now + 2,
+		fetchText: async () => envelope(rows)
+	}).getSnapshot("MT");
 	assert.equal(refused, null);
 	assert.equal(serializeStateBallotSnapshots([(await createStateBallotStorage(directory).read(montana))!]), expected);
 	await assert.rejects(loadBundledStateSnapshot(montana), /No bundled/u);

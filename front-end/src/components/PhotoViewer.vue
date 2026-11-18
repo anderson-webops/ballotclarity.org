@@ -5,7 +5,9 @@ const props = defineProps<{ image: ProfileImage; name: string }>();
 const emit = defineEmits<{ close: [] }>();
 const dialog = ref<HTMLDialogElement | null>(null);
 const closeButton = ref<HTMLButtonElement | null>(null);
-const scrollLocked = useScrollLock(import.meta.client ? document.documentElement : null);
+const scrollLocked = useScrollLock(import.meta.client
+	? document.documentElement
+	: null);
 const { width, height } = useWindowSize();
 const aspectRatio = ref(1);
 const photoWidth = computed(() => Math.max(1, Math.min(width.value - 48, (height.value - 128) * aspectRatio.value)));

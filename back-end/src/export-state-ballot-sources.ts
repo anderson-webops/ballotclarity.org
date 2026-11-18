@@ -6,7 +6,14 @@ import { serializeStateBallotSnapshots } from "./state-ballot-export.js";
 import { createStateBallotRepository, resolveStateBallotConfiguration } from "./state-ballot-repository.js";
 
 async function main() {
-	const { positionals, values } = parseArgs({ options: { "output": { type: "string" }, "source": { type: "string", multiple: true }, "all-sources": { type: "boolean" } }, allowPositionals: true });
+	const { positionals, values } = parseArgs({
+		options: {
+			"output": { type: "string" },
+			"source": { type: "string", multiple: true },
+			"all-sources": { type: "boolean" }
+		},
+		allowPositionals: true
+	});
 	const requested = positionals.map(state => state.toUpperCase());
 	const configuration = resolveStateBallotConfiguration();
 	if (requested.some(state => !configuration.sources.some(source => source.stateCode === state)))
@@ -17,7 +24,9 @@ async function main() {
 	if (requested.some(state => !selected.some(source => source.stateCode === state)))
 		throw new Error("Every requested state must have a selected source.");
 	const exactSources = Boolean(values.source || values["all-sources"]);
-	const sources = exactSources ? selected : selected.filter((source, index) => selected.findIndex(item => item.stateCode === source.stateCode) === index);
+	const sources = exactSources
+		? selected
+		: selected.filter((source, index) => selected.findIndex(item => item.stateCode === source.stateCode) === index);
 	const repository = createStateBallotRepository();
 	const snapshots = [];
 	for (const source of sources) {
@@ -43,6 +52,8 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-	console.error(error instanceof Error ? error.message : "Candidate export failed.");
+	console.error(error instanceof Error
+		? error.message
+		: "Candidate export failed.");
 	process.exitCode = 1;
 });

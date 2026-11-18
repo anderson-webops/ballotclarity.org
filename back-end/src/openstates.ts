@@ -68,7 +68,9 @@ function hasCurrentRole(person: OpenStatesPerson) {
 
 function mapRepresentative(person: OpenStatesPerson): OpenStatesRepresentativeRecord {
 	const officeTitle = person.current_role?.title?.trim()
-		|| (person.current_role?.org_classification === "upper" ? "Senator" : "Representative");
+		|| (person.current_role?.org_classification === "upper"
+			? "Senator"
+			: "Representative");
 	const district = person.current_role?.district?.trim() || "Unknown district";
 	const jurisdictionName = person.jurisdiction?.name?.trim();
 	const profileImages = uniqueProfileImages([
@@ -90,11 +92,15 @@ function mapRepresentative(person: OpenStatesPerson): OpenStatesRepresentativeRe
 		currentRoleClassification: person.current_role?.org_classification?.trim() || undefined,
 		currentRoleDistrict: person.current_role?.district?.trim() || undefined,
 		currentRoleDivisionId: person.current_role?.division_id?.trim() || undefined,
-		districtLabel: jurisdictionName && district === jurisdictionName ? district : `${officeTitle} ${district}`,
+		districtLabel: jurisdictionName && district === jurisdictionName
+			? district
+			: `${officeTitle} ${district}`,
 		id: person.id?.trim() || `${officeTitle}:${person.name?.trim() || "unknown"}`,
 		jurisdictionName,
 		name: person.name?.trim() || "Unknown representative",
-		officialWebsiteUrl: [...(person.links ?? [])]
+		officialWebsiteUrl: [
+			...(person.links ?? [])
+		]
 			.sort((left, right) => Number(right.note?.toLowerCase() === "homepage") - Number(left.note?.toLowerCase() === "homepage"))
 			.map(link => normalizePublicHref(link.url))
 			.find(url => /^https?:\/\//u.test(url)),
@@ -162,7 +168,9 @@ export function createOpenStatesClient({
 		if (!response.ok) {
 			const detail = await readProviderResponseText(response);
 
-			throw new Error(`Open States lookup failed: ${response.status} ${response.statusText}${detail ? ` - ${detail}` : ""}`.slice(0, 500));
+			throw new Error(`Open States lookup failed: ${response.status} ${response.statusText}${detail
+				? ` - ${detail}`
+				: ""}`.slice(0, 500));
 		}
 
 		return await readProviderResponseJson<OpenStatesPersonResponse>(response);
@@ -185,7 +193,9 @@ export function createOpenStatesClient({
 				page: "1",
 				per_page: String(perPage)
 			});
-			const people = [...(firstPage.results ?? [])];
+			const people = [
+				...(firstPage.results ?? [])
+			];
 			const lastPage = Math.min(firstPage.pagination?.max_page ?? 1, maxPages);
 
 			for (let page = 2; page <= lastPage; page += 1) {
@@ -207,7 +217,9 @@ export function createOpenStatesClient({
 				return [];
 
 			const payload = await fetchOpenStates("/people", {
-				...(options.jurisdiction ? { jurisdiction: options.jurisdiction } : {}),
+				...(options.jurisdiction
+					? { jurisdiction: options.jurisdiction }
+					: {}),
 				name: trimmedName,
 				page: "1",
 				per_page: String(Math.min(Math.max(options.perPage ?? 10, 1), 50)),

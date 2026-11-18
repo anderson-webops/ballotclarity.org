@@ -4,7 +4,16 @@ import { adminDatasetCount, adminDatasetStatus } from "~/utils/admin-dataset";
 definePageMeta({ layout: "admin", middleware: "admin" });
 const { data, error, pending, refresh } = await useAdminOperations();
 const search = ref("");
-const groups = computed(() => ["officeholders", "candidates", "measures", "references", "calendars"].map(kind => ({ kind, items: (data.value?.datasets ?? []).filter(item => item.kind === kind && [item.label, item.stateCode, item.id].join(" ").toLowerCase().includes(search.value.trim().toLowerCase())) })).filter(group => group.items.length));
+const groups = computed(() => [
+	"officeholders",
+	"candidates",
+	"measures",
+	"references",
+	"calendars"
+].map(kind => ({
+	kind,
+	items: (data.value?.datasets ?? []).filter(item => item.kind === kind && [item.label, item.stateCode, item.id].join(" ").toLowerCase().includes(search.value.trim().toLowerCase()))
+})).filter(group => group.items.length));
 usePageSeo({ title: "Datasets", path: "/admin/datasets", robots: "noindex,nofollow" });
 </script>
 

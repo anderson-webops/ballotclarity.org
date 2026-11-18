@@ -21,8 +21,12 @@ export function registerStateRecordDetailRoutes(app: Express, repository: StateB
 			return;
 		}
 		try {
-			const preferred = sources.find(source => source.stateCode === stateCode && (sourceId === undefined ? stateBallotSourceIsCurrent(source, now()) : source.id === sourceId));
-			const snapshot = preferred && repository ? await repository.getSnapshot(stateCode, sourceId as string | undefined) : null;
+			const preferred = sources.find(source => source.stateCode === stateCode && (sourceId === undefined
+				? stateBallotSourceIsCurrent(source, now())
+				: source.id === sourceId));
+			const snapshot = preferred && repository
+				? await repository.getSnapshot(stateCode, sourceId as string | undefined)
+				: null;
 			if (!snapshot) {
 				response.status(404).json({ message: "The candidate record is unavailable." });
 				return;
@@ -38,12 +42,30 @@ export function registerStateRecordDetailRoutes(app: Express, repository: StateB
 			if (portraits) publicRecord = (await portraits(stateCode, [publicRecord]))[0]!;
 			const payload: StateRecordDetailResponse = {
 				record: publicRecord,
-				source: { stateCode, stateName: state[1], configured: true, id: selected.id, label: selected.label, url: selected.pageUrl, electionDate: selected.electionDate, scopeNotice: selected.scopeNotice, retrievedAt: snapshot.retrievedAt, sourceAsOfDate: snapshot.sourceAsOfDate, documentLinks: stateRecordDocumentLinks(selected, snapshot) },
+				source: {
+					stateCode,
+					stateName: state[1],
+					configured: true,
+					id: selected.id,
+					label: selected.label,
+					url: selected.pageUrl,
+					electionDate: selected.electionDate,
+					scopeNotice: selected.scopeNotice,
+					retrievedAt: snapshot.retrievedAt,
+					sourceAsOfDate: snapshot.sourceAsOfDate,
+					documentLinks: stateRecordDocumentLinks(selected, snapshot)
+				},
 				references: [],
 			};
 			try {
-				const selection = sourceId === undefined ? undefined : { electionDate: selected.electionDate };
-				const retained = references?.getSnapshots ? await references.getSnapshots(stateCode, selection) : references ? [await references.getSnapshot(stateCode, selection)].filter(item => item !== null) : [];
+				const selection = sourceId === undefined
+					? undefined
+					: { electionDate: selected.electionDate };
+				const retained = references?.getSnapshots
+					? await references.getSnapshots(stateCode, selection)
+					: references
+						? [await references.getSnapshot(stateCode, selection)].filter(item => item !== null)
+						: [];
 				payload.references = matchingCandidateReferences(snapshot, record, retained, await references?.getSources?.(stateCode));
 			}
 			catch { payload.referencesUnavailable = true; }

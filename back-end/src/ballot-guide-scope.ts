@@ -12,8 +12,23 @@ export function includeStatewideMeasures(election: Election, jurisdictions: Juri
 	const baseElection: PublicBallotElection = { ...election };
 	delete baseElection.includedStatewideElectionSlugs;
 	const jurisdiction = jurisdictions.find(item => item.slug === election.jurisdictionSlug);
-	const localKinds = ["county", "parish", "borough", "city", "town", "township", "village", "school-district", "intermediate-school-district", "special-district", "municipality", "independent-city"];
-	const code = jurisdiction ? stateCode(jurisdiction.state) : null;
+	const localKinds = [
+		"county",
+		"parish",
+		"borough",
+		"city",
+		"town",
+		"township",
+		"village",
+		"school-district",
+		"intermediate-school-district",
+		"special-district",
+		"municipality",
+		"independent-city"
+	];
+	const code = jurisdiction
+		? stateCode(jurisdiction.state)
+		: null;
 	if (!jurisdiction || !code || !localKinds.includes(jurisdiction.jurisdictionType.trim().toLowerCase()) || !election.contests.length
 		|| !/^\d{4}-\d{2}-\d{2}$/u.test(election.date) || !Number.isFinite(Date.parse(election.date)) || new Date(election.date).toISOString().slice(0, 10) !== election.date) {
 		return baseElection;
@@ -30,13 +45,23 @@ export function includeStatewideMeasures(election: Election, jurisdictions: Juri
 				throw new Error("Published guide composition contains conflicting contest or measure identities.");
 			contestSlugs.add(contest.slug);
 			for (const measure of contest.measures!) measureSlugs.add(measure.slug);
-			return { ...contest, measures: contest.measures!.map(measure => ({ ...measure, electionDate: parent.date, electionSlug: parent.slug })) };
+			return {
+				...contest,
+				measures: contest.measures!.map(measure => ({ ...measure, electionDate: parent.date, electionSlug: parent.slug }))
+			};
 		});
 		if (contests.length) included.push(parent.slug);
 		return contests;
 	});
 	if (!statewideContests.length) return baseElection;
-	return { ...baseElection, contests: [...statewideContests, ...election.contests], includedStatewideElectionSlugs: included };
+	return {
+		...baseElection,
+		contests: [
+			...statewideContests,
+			...election.contests
+		],
+		includedStatewideElectionSlugs: included
+	};
 }
 
 export function hasStatewideMeasureRollup(election: PublicBallotElection | null | undefined) {

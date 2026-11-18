@@ -64,7 +64,9 @@ test("Postgres preserves workflow invariants and rolls back unaudited mutations"
 	await adminPool.query(`CREATE SCHEMA ${schema}`);
 	scopedUrl.searchParams.set("options", `-c search_path=${schema}`);
 
-	const inspector = new Pool({ connectionString: scopedUrl.toString() });
+	const inspector = new Pool({
+		connectionString: scopedUrl.toString()
+	});
 
 	try {
 		const repository = await createPostgresAdminRepository({

@@ -7,9 +7,13 @@ const year = new Date().getFullYear();
 const civicStore = useCivicStore();
 const { hasGuideShellContext, hasNationwideResultContext, hasVerifiedGuideContext } = useGuideEntryGate();
 const { compareList, isHydrated } = storeToRefs(civicStore);
-const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
+const effectiveCompareList = computed(() => isHydrated.value
+	? compareList.value
+	: []);
 const selectedElection = computed(() => civicStore.selectedElection);
-const electionOverviewPath = computed(() => selectedElection.value?.slug ? `/elections/${selectedElection.value.slug}` : "/coverage");
+const electionOverviewPath = computed(() => selectedElection.value?.slug
+	? `/elections/${selectedElection.value.slug}`
+	: "/coverage");
 const primarySectionLabel = computed(() => hasVerifiedGuideContext.value || hasGuideShellContext.value || hasNationwideResultContext.value
 	? "Your guide"
 	: "Get started");
@@ -32,8 +36,12 @@ const guideLinks = computed(() => hasVerifiedGuideContext.value
 			]
 		: [
 				...(hasNationwideResultContext.value
-					? [{ label: "Results", to: "/results" }]
-					: [{ label: "Location lookup", to: "/" }]),
+					? [
+							{ label: "Results", to: "/results" }
+						]
+					: [
+							{ label: "Location lookup", to: "/" }
+						]),
 				{ label: "District pages", to: "/districts" },
 				{ label: "Representatives", to: "/representatives" },
 				{ label: "Search", to: "/search" },

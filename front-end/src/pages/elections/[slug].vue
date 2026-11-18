@@ -13,15 +13,32 @@ const electionSlug = useRouteStringParam("slug");
 const { data, error, pending } = await useBallot(electionSlug);
 const jurisdictionSlug = computed(() => data.value?.election.jurisdictionSlug);
 const { data: jurisdiction } = await useJurisdiction(jurisdictionSlug);
-const officialResources = computed(() => [...new Map([...(data.value?.election.officialResources ?? []), ...(jurisdiction.value?.officialResources ?? [])].map(resource => [resource.url || resource.label, resource])).values()]);
+const officialResources = computed(() => [
+	...new Map([
+		...(data.value?.election.officialResources ?? []),
+		...(jurisdiction.value?.officialResources ?? [])
+	].map(resource => [resource.url || resource.label, resource])).values()
+]);
 const candidateSections = ref<ElectionSectionLink[]>([]);
 const questionSections = ref<ElectionSectionLink[]>([]);
 const sectionLinks = computed<ElectionSectionLink[]>(() => [
-	...(data.value?.candidateRecordSource ? candidateSections.value.slice(0, 1) : []),
+	...(data.value?.candidateRecordSource
+		? candidateSections.value.slice(0, 1)
+		: []),
 	...questionSections.value,
-	...(data.value?.candidateRecordSource ? candidateSections.value.slice(1) : []),
-	...(data.value?.guideContent?.verifiedContestPackage && data.value.election.contests.length ? [{ href: "#ballot-items", label: "Ballot items" }] : []),
-	...(officialResources.value.length || jurisdiction.value?.officialOffice.phone ? [{ href: "#voting-info", label: "Voting info" }] : [])
+	...(data.value?.candidateRecordSource
+		? candidateSections.value.slice(1)
+		: []),
+	...(data.value?.guideContent?.verifiedContestPackage && data.value.election.contests.length
+		? [
+				{ href: "#ballot-items", label: "Ballot items" }
+			]
+		: []),
+	...(officialResources.value.length || jurisdiction.value?.officialOffice.phone
+		? [
+				{ href: "#voting-info", label: "Voting info" }
+			]
+		: [])
 ]);
 watch(() => [data.value?.candidateRecordSource?.stateCode, data.value?.candidateRecordSource?.sourceId, data.value?.election.date], () => {
 	candidateSections.value = [];
@@ -37,12 +54,16 @@ const guideStatusNote = computed(() => data.value?.candidateRecordSource || juri
 const clock = useElectionClock();
 const now = computed(() => new Date(clock.value));
 const timeZone = computed(() => electionTimeZone(data.value?.election, displayTimeZone.value));
-const keyDateTimeline = computed(() => data.value ? buildKeyDateTimeline(data.value.election.keyDates, now.value, timeZone.value) : []);
+const keyDateTimeline = computed(() => data.value
+	? buildKeyDateTimeline(data.value.election.keyDates, now.value, timeZone.value)
+	: []);
 const upcomingKeyDates = computed(() => keyDateTimeline.value.filter(entry => entry.status !== "passed").slice(0, 3));
 const electionDayLabel = computed(() => {
 	if (!data.value?.election.date) return "";
 	const daysAway = calendarDaysUntil(data.value.election.date, now.value, timeZone.value);
-	return daysAway < 0 ? "" : describeDaysAway(daysAway);
+	return daysAway < 0
+		? ""
+		: describeDaysAway(daysAway);
 });
 
 watch(data, (value) => {

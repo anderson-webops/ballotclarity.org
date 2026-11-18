@@ -27,7 +27,29 @@ import { unionCandidateHash as hash, unionCandidateOrigin, unionCandidatePolicyH
 import { prepareUnionAutomatedMeasureGuides } from "../src/union-measure-automation.js";
 import { prepareUnionMeasureGuideFiles } from "../src/union-measure-guides.js";
 
-const municipalities = ["Berkeley Heights", "Clark", "Cranford", "Elizabeth", "Fanwood", "Garwood", "Hillside", "Kenilworth", "Linden", "Mountainside", "New Providence", "Plainfield", "Rahway", "Roselle", "Roselle Park", "Scotch Plains", "Springfield", "Summit", "Union", "Westfield", "Winfield"];
+const municipalities = [
+	"Berkeley Heights",
+	"Clark",
+	"Cranford",
+	"Elizabeth",
+	"Fanwood",
+	"Garwood",
+	"Hillside",
+	"Kenilworth",
+	"Linden",
+	"Mountainside",
+	"New Providence",
+	"Plainfield",
+	"Rahway",
+	"Roselle",
+	"Roselle Park",
+	"Scotch Plains",
+	"Springfield",
+	"Summit",
+	"Union",
+	"Westfield",
+	"Winfield"
+];
 const privacyLink = `<a href="${unionCandidatePolicyUrls[1]}">Privacy Policy</a>`;
 const countyLink = `<a href="${unionCountyPolicyUrls[2]}">Privacy Statement</a>`;
 const unionRobots = "User-agent: *\nCrawl-delay: 30\n";
@@ -37,9 +59,16 @@ const countyPrivacy = `<div class="entry-content">September 20, 2006 Section A. 
 const landing = `<div class="entry-content"><h4>Current</h4><p><a href="${unionCandidateOrigin}/sample-ballots-for-the-november-5-2030-general-election/">Sample Ballots for the November 5, 2030 General Election</a></p><h4>Past</h4><p>Earlier editions</p></div>${privacyLink}`;
 const edition = readUnionSampleEdition(landing);
 const documentUrl = (form: number) => `https://ucnj.org/wp-content/uploads/2030/09/2030-UNION-GEN-samples-FORM-${form}.pdf`;
-const editionBody = `<h1>Sample Ballots for the November 5, 2030 General Election</h1><div class="entry-content">${municipalities.map((municipality, index) => `<div><h4>${municipality}</h4><ul>${municipality === "Clark" ? `<li>Ward 1<ul><li><a href="${documentUrl(index + 1)}">District 1</a></li><li><a href="${documentUrl(22)}">District 2</a></li></ul></li>` : `<li><a href="${documentUrl(index + 1)}">All Districts</a></li>`}</ul></div>`).join("")}</div>${privacyLink}`;
+const editionBody = `<h1>Sample Ballots for the November 5, 2030 General Election</h1><div class="entry-content">${municipalities.map((municipality, index) => `<div><h4>${municipality}</h4><ul>${municipality === "Clark"
+	? `<li>Ward 1<ul><li><a href="${documentUrl(index + 1)}">District 1</a></li><li><a href="${documentUrl(22)}">District 2</a></li></ul></li>`
+	: `<li><a href="${documentUrl(index + 1)}">All Districts</a></li>`}</ul></div>`).join("")}</div>${privacyLink}`;
 const catalog = readUnionSampleCatalog(editionBody, edition);
-const review = { unionRobots: unionCandidatePolicyHash(unionRobots, "robots"), unionPrivacy: unionCandidatePolicyHash(unionPrivacy, "privacy"), countyRobots: unionCountyPolicyHash(countyRobots, "robots"), countyPrivacy: unionCountyPolicyHash(countyPrivacy, "privacy") };
+const review = {
+	unionRobots: unionCandidatePolicyHash(unionRobots, "robots"),
+	unionPrivacy: unionCandidatePolicyHash(unionPrivacy, "privacy"),
+	countyRobots: unionCountyPolicyHash(countyRobots, "robots"),
+	countyPrivacy: unionCountyPolicyHash(countyPrivacy, "privacy")
+};
 
 function network(change?: (url: string) => { body?: string; status?: number; contentType?: string } | undefined) {
 	let now = Date.parse("2030-10-01T00:00:00Z");
@@ -56,8 +85,29 @@ function network(change?: (url: string) => { body?: string; status?: number; con
 			requests.push({ url, requestedAt, completedAt: now });
 			const form = /FORM-(\d+)\.pdf$/u.exec(url)?.[1];
 			const altered = change?.(url);
-			const original = url === unionCandidatePolicyUrls[0] ? unionRobots : url === unionCandidatePolicyUrls[1] ? unionPrivacy : url === unionCountyPolicyUrls[0] ? countyRobots : url === unionCountyPolicyUrls[1] ? countyLink : url === unionCountyPolicyUrls[2] ? countyPrivacy : url === unionSampleLandingUrl ? landing : url === edition.url ? editionBody : form ? `%PDF-form-${form}` : altered?.body ?? assert.fail("Unexpected source URL");
-			return { status: altered?.status ?? 200, body: Buffer.from(altered?.body ?? original), contentType: altered?.contentType ?? (form ? "application/pdf" : "text/html"), etag: undefined };
+			const original = url === unionCandidatePolicyUrls[0]
+				? unionRobots
+				: url === unionCandidatePolicyUrls[1]
+					? unionPrivacy
+					: url === unionCountyPolicyUrls[0]
+						? countyRobots
+						: url === unionCountyPolicyUrls[1]
+							? countyLink
+							: url === unionCountyPolicyUrls[2]
+								? countyPrivacy
+								: url === unionSampleLandingUrl
+									? landing
+									: url === edition.url
+										? editionBody
+										: form
+											? `%PDF-form-${form}`
+											: altered?.body ?? assert.fail("Unexpected source URL");
+			return {
+				status: altered?.status ?? 200,
+				body: Buffer.from(altered?.body ?? original),
+				contentType: altered?.contentType ?? (form ? "application/pdf" : "text/html"),
+				etag: undefined
+			};
 		},
 	};
 	return { options, requests };
@@ -73,23 +123,89 @@ function document(form: number, change: (words: Word[]) => Word[] = words => wor
 		{ value: "UNION COUNTY, NEW JERSEY", left: 300, top: 160 },
 		{ value: municipality, left: 300, top: 190 },
 		{ value: `FORM ${form}`, left: 300, top: 210 },
-		{ value: "Cory", left: 430, top: 309, size: 12.5 },
-		{ value: "BOOKER", left: 430, top: 319, size: 18.75 },
-		{ value: "1A", left: 530, top: 320, size: 21.5 },
+		{
+			value: "Cory",
+			left: 430,
+			top: 309,
+			size: 12.5
+		},
+		{
+			value: "BOOKER",
+			left: 430,
+			top: 319,
+			size: 18.75
+		},
+		{
+			value: "1A",
+			left: 530,
+			top: 320,
+			size: 21.5
+		},
 		...(municipality === "Roselle"
 			? [
-					{ value: "Antoinette", left: 430, top: 951, size: 12.5 },
-					{ value: "BOWERS", left: 430, top: 960, size: 18.75 },
-					{ value: "1-2", left: 530, top: 960, size: 21.5 },
-					{ value: "Joseph", left: 430, top: 985, size: 12.5 },
-					{ value: "LECONTE", left: 430, top: 995, size: 18.75 },
-					{ value: "1-3", left: 530, top: 994, size: 21.5 },
+					{
+						value: "Antoinette",
+						left: 430,
+						top: 951,
+						size: 12.5
+					},
+					{
+						value: "BOWERS",
+						left: 430,
+						top: 960,
+						size: 18.75
+					},
+					{
+						value: "1-2",
+						left: 530,
+						top: 960,
+						size: 21.5
+					},
+					{
+						value: "Joseph",
+						left: 430,
+						top: 985,
+						size: 12.5
+					},
+					{
+						value: "LECONTE",
+						left: 430,
+						top: 995,
+						size: 18.75
+					},
+					{
+						value: "1-3",
+						left: 530,
+						top: 994,
+						size: 21.5
+					},
 				]
 			: [
-					{ value: "Anne", left: 430, top: 919, size: 12.5, width: 24 },
-					{ value: "Marie", left: 460, top: 919, size: 12.5 },
-					{ value: "WEISS", left: 430, top: 930, size: 18.75 },
-					{ value: "1-1", left: 530, top: 924, size: 21.5 },
+					{
+						value: "Anne",
+						left: 430,
+						top: 919,
+						size: 12.5,
+						width: 24
+					},
+					{
+						value: "Marie",
+						left: 460,
+						top: 919,
+						size: 12.5
+					},
+					{
+						value: "WEISS",
+						left: 430,
+						top: 930,
+						size: 18.75
+					},
+					{
+						value: "1-1",
+						left: 530,
+						top: 924,
+						size: 21.5
+					},
 				]),
 	]);
 	return { layout: `${words.map(word => word.value).join("\n")}\f`, bbox: `<doc><page width="1824" height="1284">${words.map(word => `<line xmin="${word.left}" xmax="${word.left + (word.width ?? 50)}" ymin="${word.top}" ymax="${word.top + (word.size ?? 10)}"><word xmin="${word.left}" xmax="${word.left + (word.width ?? 50)}" ymin="${word.top}" ymax="${word.top + (word.size ?? 10)}">${escape(word.value)}</word></line>`).join("")}</page></doc>` };
@@ -97,23 +213,100 @@ function document(form: number, change: (words: Word[]) => Word[] = words => wor
 
 function questionFields(): Word[] {
 	return [
-		{ value: "PUBLIC QUESTION TO BE VOTED UPON", left: 220, top: 805, width: 320, size: 20 },
-		{ value: "PREGUNTA PÚBLICA PARA VOTACIÓN", left: 237, top: 823, width: 285, size: 19 },
-		{ value: "QUESTION:", left: 350, top: 847, width: 65, size: 17 },
-		{ value: "Shall the annual municipal rent increase be capped at twenty dollars?", left: 128, top: 865, width: 440, size: 14.88 },
-		{ value: "YES/SÍ", left: 589, top: 850, width: 46, size: 17 },
-		{ value: "NO", left: 601, top: 888, width: 23, size: 17 },
-		{ value: "INTERPRETIVE STATEMENT:", left: 300, top: 921, width: 160, size: 17 },
-		{ value: "Approval restores the annual increase cap; rejection retains the ordinance.", left: 128, top: 940, width: 500, size: 14.88 },
-		{ value: "PREGUNTA:", left: 348, top: 1010, width: 68, size: 17 },
-		{ value: "¿Debe limitarse el aumento anual del alquiler municipal a veinte dólares?", left: 128, top: 1030, width: 500, size: 14.88 },
-		{ value: "DECLARACIÓN INTERPRETATIVA:", left: 286, top: 1099, width: 190, size: 17 },
-		{ value: "La aprobación restablece el límite anual; el rechazo conserva la ordenanza.", left: 128, top: 1120, width: 500, size: 14.88 },
+		{
+			value: "PUBLIC QUESTION TO BE VOTED UPON",
+			left: 220,
+			top: 805,
+			width: 320,
+			size: 20
+		},
+		{
+			value: "PREGUNTA PÚBLICA PARA VOTACIÓN",
+			left: 237,
+			top: 823,
+			width: 285,
+			size: 19
+		},
+		{
+			value: "QUESTION:",
+			left: 350,
+			top: 847,
+			width: 65,
+			size: 17
+		},
+		{
+			value: "Shall the annual municipal rent increase be capped at twenty dollars?",
+			left: 128,
+			top: 865,
+			width: 440,
+			size: 14.88
+		},
+		{
+			value: "YES/SÍ",
+			left: 589,
+			top: 850,
+			width: 46,
+			size: 17
+		},
+		{
+			value: "NO",
+			left: 601,
+			top: 888,
+			width: 23,
+			size: 17
+		},
+		{
+			value: "INTERPRETIVE STATEMENT:",
+			left: 300,
+			top: 921,
+			width: 160,
+			size: 17
+		},
+		{
+			value: "Approval restores the annual increase cap; rejection retains the ordinance.",
+			left: 128,
+			top: 940,
+			width: 500,
+			size: 14.88
+		},
+		{
+			value: "PREGUNTA:",
+			left: 348,
+			top: 1010,
+			width: 68,
+			size: 17
+		},
+		{
+			value: "¿Debe limitarse el aumento anual del alquiler municipal a veinte dólares?",
+			left: 128,
+			top: 1030,
+			width: 500,
+			size: 14.88
+		},
+		{
+			value: "DECLARACIÓN INTERPRETATIVA:",
+			left: 286,
+			top: 1099,
+			width: 190,
+			size: 17
+		},
+		{
+			value: "La aprobación restablece el límite anual; el rechazo conserva la ordenanza.",
+			left: 128,
+			top: 1120,
+			width: 500,
+			size: 14.88
+		},
 	];
 }
 
 function questionDocument(form: number, change: (words: Word[]) => Word[] = words => words) {
-	return document(form, words => [...words.map(word => word.top > 750 ? { ...word, left: word.left + 700 } : word), ...change(questionFields())]);
+	return document(form, words => [
+		...words.map(word => word.top > 750
+			? { ...word, left: word.left + 700 }
+			: word),
+		...change(questionFields())
+	]);
 }
 
 function contextDocument(form: number, change: (words: Word[]) => Word[] = words => words) {
@@ -121,61 +314,315 @@ function contextDocument(form: number, change: (words: Word[]) => Word[] = words
 	const nonpartisan = municipality === "Hillside";
 	const shift = nonpartisan ? 329 : 0;
 	const fields: Word[] = [
-		{ value: "7th Congressional District - November 5, 2030", left: 617, top: 230, width: 590, size: 30 },
-		...[["A", 692, "Democrat"], ["B", 834, "Republican"], ["C", 976, "Nomination by Petition"]].flatMap(([letter, center, label]) => [
-			{ value: String(letter), left: Number(center) - 12, top: 285, width: 24, size: 40 },
-			{ value: String(label), left: Number(center) - (label === "Nomination by Petition" ? 63 : 27), top: 320, width: label === "Nomination by Petition" ? 126 : 54, size: 12.9 },
+		{
+			value: "7th Congressional District - November 5, 2030",
+			left: 617,
+			top: 230,
+			width: 590,
+			size: 30
+		},
+		...[
+			["A", 692, "Democrat"],
+			["B", 834, "Republican"],
+			["C", 976, "Nomination by Petition"]
+		].flatMap(([letter, center, label]) => [
+			{
+				value: String(letter),
+				left: Number(center) - 12,
+				top: 285,
+				width: 24,
+				size: 40
+			},
+			{
+				value: String(label),
+				left: Number(center) - (label === "Nomination by Petition"
+					? 63
+					: 27),
+				top: 320,
+				width: label === "Nomination by Petition"
+					? 126
+					: 54,
+				size: 12.9
+			},
 		]),
-		{ value: "United States Senator", left: 382, top: 356, width: 97, size: 10.692 },
-		{ value: "6 Year Term - Vote for One", left: 385, top: 367, width: 90, size: 8.379 },
-		{ value: "Member of House", left: 394, top: 386, width: 74, size: 10.692 },
-		{ value: "of Representatives", left: 393, top: 396, width: 76, size: 10.692 },
-		{ value: "2 Year Term - Vote for One", left: 385, top: 409, width: 90, size: 8.379 },
-		{ value: "Sheriff", left: 417, top: 426, width: 27, size: 10.692 },
-		{ value: "3 Year Term - Vote for One", left: 385, top: 438, width: 90, size: 8.379 },
-		{ value: "County Clerk", left: 404, top: 461, width: 53, size: 10.692 },
-		{ value: "5 Year Term - Vote for One", left: 385, top: 473, width: 90, size: 8.379 },
-		{ value: "Members of", left: 405, top: 519, width: 50, size: 10.692 },
-		{ value: "Board of County", left: 397, top: 529, width: 67, size: 10.692 },
-		{ value: "Commissioners", left: 398, top: 539, width: 64, size: 10.692 },
-		{ value: "3 Year Term - Vote for Three", left: 383, top: 554, width: 95, size: 8.379 },
+		{
+			value: "United States Senator",
+			left: 382,
+			top: 356,
+			width: 97,
+			size: 10.692
+		},
+		{
+			value: "6 Year Term - Vote for One",
+			left: 385,
+			top: 367,
+			width: 90,
+			size: 8.379
+		},
+		{
+			value: "Member of House",
+			left: 394,
+			top: 386,
+			width: 74,
+			size: 10.692
+		},
+		{
+			value: "of Representatives",
+			left: 393,
+			top: 396,
+			width: 76,
+			size: 10.692
+		},
+		{
+			value: "2 Year Term - Vote for One",
+			left: 385,
+			top: 409,
+			width: 90,
+			size: 8.379
+		},
+		{
+			value: "Sheriff",
+			left: 417,
+			top: 426,
+			width: 27,
+			size: 10.692
+		},
+		{
+			value: "3 Year Term - Vote for One",
+			left: 385,
+			top: 438,
+			width: 90,
+			size: 8.379
+		},
+		{
+			value: "County Clerk",
+			left: 404,
+			top: 461,
+			width: 53,
+			size: 10.692
+		},
+		{
+			value: "5 Year Term - Vote for One",
+			left: 385,
+			top: 473,
+			width: 90,
+			size: 8.379
+		},
+		{
+			value: "Members of",
+			left: 405,
+			top: 519,
+			width: 50,
+			size: 10.692
+		},
+		{
+			value: "Board of County",
+			left: 397,
+			top: 529,
+			width: 67,
+			size: 10.692
+		},
+		{
+			value: "Commissioners",
+			left: 398,
+			top: 539,
+			width: 64,
+			size: 10.692
+		},
+		{
+			value: "3 Year Term - Vote for Three",
+			left: 383,
+			top: 554,
+			width: 95,
+			size: 8.379
+		},
 		...Array.from({ length: 7 }, (_, index) => index + 1).flatMap(row => [
-			{ value: String(row === 1 ? "Cory" : `Person${row}`), left: 650, top: 346 + (row - 1) * 35, width: 70, size: 12.5 },
-			{ value: String(row === 1 ? "BOOKER" : "EXAMPLE"), left: 650, top: 356 + (row - 1) * 35, width: 70, size: 18.75 },
-			{ value: `${row}A`, left: 739, top: 355 + (row - 1) * 35, width: 13, size: 21.1 },
+			{
+				value: String(row === 1
+					? "Cory"
+					: `Person${row}`),
+				left: 650,
+				top: 346 + (row - 1) * 35,
+				width: 70,
+				size: 12.5
+			},
+			{
+				value: String(row === 1
+					? "BOOKER"
+					: "EXAMPLE"),
+				left: 650,
+				top: 356 + (row - 1) * 35,
+				width: 70,
+				size: 18.75
+			},
+			{
+				value: `${row}A`,
+				left: 739,
+				top: 355 + (row - 1) * 35,
+				width: 13,
+				size: 21.1
+			},
 		]),
-		{ value: "Veronica", left: 940, top: 346, width: 75, size: 12.5 },
-		{ value: "FERNANDEZ", left: 940, top: 356, width: 80, size: 18.75 },
-		{ value: "1C", left: 1024, top: 355, width: 13, size: 21.1 },
-		{ value: `OFFICIAL SCHOOL ELECTION BALLOT - ${municipality.toUpperCase()}`, left: nonpartisan ? 1006 : 407, top: 809, width: nonpartisan ? 468 : 1034, size: 23 },
-		{ value: "OFFICE TITLE", left: 639 + shift, top: 858, width: 118, size: 21 },
-		{ value: "Members of", left: 613 + shift, top: 933, width: 50, size: 10.8426 },
-		{ value: "Board of Education", left: 599 + shift, top: 945, width: 80, size: 10.8426 },
-		{ value: "3 Year Term - Vote for Three", left: 594 + shift, top: 961, width: 90, size: 8.28 },
-		{ value: "Anne Marie", left: 850 + shift, top: 919, width: 80, size: 12.5 },
-		{ value: "WEISS", left: 850 + shift, top: 930, width: 80, size: 18.75 },
-		{ value: nonpartisan ? "1E" : "1-1", left: 948 + shift, top: 924, width: 14, size: 21.5 },
-		{ value: "NO PETITION FILED", left: 1030 + shift, top: 975, width: 100, size: 12.5 },
-		{ value: "2-1", left: 1140 + shift, top: 975, width: 14, size: 21.5 },
+		{
+			value: "Veronica",
+			left: 940,
+			top: 346,
+			width: 75,
+			size: 12.5
+		},
+		{
+			value: "FERNANDEZ",
+			left: 940,
+			top: 356,
+			width: 80,
+			size: 18.75
+		},
+		{
+			value: "1C",
+			left: 1024,
+			top: 355,
+			width: 13,
+			size: 21.1
+		},
+		{
+			value: `OFFICIAL SCHOOL ELECTION BALLOT - ${municipality.toUpperCase()}`,
+			left: nonpartisan ? 1006 : 407,
+			top: 809,
+			width: nonpartisan ? 468 : 1034,
+			size: 23
+		},
+		{
+			value: "OFFICE TITLE",
+			left: 639 + shift,
+			top: 858,
+			width: 118,
+			size: 21
+		},
+		{
+			value: "Members of",
+			left: 613 + shift,
+			top: 933,
+			width: 50,
+			size: 10.8426
+		},
+		{
+			value: "Board of Education",
+			left: 599 + shift,
+			top: 945,
+			width: 80,
+			size: 10.8426
+		},
+		{
+			value: "3 Year Term - Vote for Three",
+			left: 594 + shift,
+			top: 961,
+			width: 90,
+			size: 8.28
+		},
+		{
+			value: "Anne Marie",
+			left: 850 + shift,
+			top: 919,
+			width: 80,
+			size: 12.5
+		},
+		{
+			value: "WEISS",
+			left: 850 + shift,
+			top: 930,
+			width: 80,
+			size: 18.75
+		},
+		{
+			value: nonpartisan ? "1E" : "1-1",
+			left: 948 + shift,
+			top: 924,
+			width: 14,
+			size: 21.5
+		},
+		{
+			value: "NO PETITION FILED",
+			left: 1030 + shift,
+			top: 975,
+			width: 100,
+			size: 12.5
+		},
+		{
+			value: "2-1",
+			left: 1140 + shift,
+			top: 975,
+			width: 14,
+			size: 21.5
+		},
 		...(nonpartisan
 			? [
-					{ value: "OFFICIAL MUNICIPAL NON-PARTISAN ELECTION BALLOT - HILLSIDE", left: 155, top: 786, width: 682, size: 23 },
-					{ value: "OFFICE TITLE", left: 236, top: 858, width: 118, size: 21 },
-					{ value: "1st Ward Council Member", left: 168, top: 925, width: 109, size: 10.8426 },
-					{ value: "Unexpired Term - Vote for One", left: 174, top: 937, width: 97, size: 8.28 },
-					{ value: "Local", left: 450, top: 915, width: 60, size: 12.5 },
-					{ value: "CITIZEN", left: 450, top: 925, width: 60, size: 18.75 },
-					{ value: "1C", left: 540, top: 924, width: 14, size: 21.5 },
+					{
+						value: "OFFICIAL MUNICIPAL NON-PARTISAN ELECTION BALLOT - HILLSIDE",
+						left: 155,
+						top: 786,
+						width: 682,
+						size: 23
+					},
+					{
+						value: "OFFICE TITLE",
+						left: 236,
+						top: 858,
+						width: 118,
+						size: 21
+					},
+					{
+						value: "1st Ward Council Member",
+						left: 168,
+						top: 925,
+						width: 109,
+						size: 10.8426
+					},
+					{
+						value: "Unexpired Term - Vote for One",
+						left: 174,
+						top: 937,
+						width: 97,
+						size: 8.28
+					},
+					{
+						value: "Local",
+						left: 450,
+						top: 915,
+						width: 60,
+						size: 12.5
+					},
+					{
+						value: "CITIZEN",
+						left: 450,
+						top: 925,
+						width: 60,
+						size: 18.75
+					},
+					{
+						value: "1C",
+						left: 540,
+						top: 924,
+						width: 14,
+						size: 21.5
+					},
 				]
 			: []),
 	];
-	return document(form, words => [...words.filter(word => word.top <= 210), ...change(fields)]);
+	return document(form, words => [
+		...words.filter(word => word.top <= 210),
+		...change(fields)
+	]);
 }
 
 function candidateSamples() {
 	return catalog.documents.map((source) => {
 		const input = contextDocument(source.form);
-		return { document: source, sha256: hash(`sample-${source.form}`), capturedAt: "2030-10-01T00:00:00.000Z", cells: readUnionChoiceContext(input.bbox, input.layout, source, edition.electionDate) };
+		return {
+			document: source,
+			sha256: hash(`sample-${source.form}`),
+			capturedAt: "2030-10-01T00:00:00.000Z",
+			cells: readUnionChoiceContext(input.bbox, input.layout, source, edition.electionDate)
+		};
 	});
 }
 
@@ -183,11 +630,19 @@ async function automationFixture(root: string) {
 	const path = join(await realpath(root), "automation.json");
 	const directory = join(await realpath(root), "automation");
 	await mkdir(directory, { mode: 0o700 });
-	await writeFile(path, JSON.stringify({ schemaVersion: 1, type: "union-ballot-automation", directory, accessReview: review, intervalMs: 21600000 }), { mode: 0o600 });
+	await writeFile(path, JSON.stringify({
+		schemaVersion: 1,
+		type: "union-ballot-automation",
+		directory,
+		accessReview: review,
+		intervalMs: 21600000
+	}), { mode: 0o600 });
 	const extract = async (body: Buffer, format: "layout" | "bbox-layout") => {
 		const form = Number(/form-(\d+)/u.exec(body.toString("utf8"))?.[1]);
 		const input = contextDocument(form);
-		return format === "layout" ? input.layout : input.bbox;
+		return format === "layout"
+			? input.layout
+			: input.bbox;
 	};
 	return { path, directory, extract };
 }
@@ -200,23 +655,60 @@ async function automatedQuestionFixture(root: string) {
 	const later = (value: string) => value.replaceAll("2030", "2034").replaceAll("november-5", "november-7").replaceAll("November 5", "November 7").replaceAll("NOVEMBER 5", "NOVEMBER 7");
 	const net = network((url) => {
 		if (denied && url === documentUrl(1)) return { status: 403 };
-		if (future && url === unionSampleLandingUrl) return { body: later(landing) };
-		if (future && url === later(edition.url)) return { body: later(editionBody) };
-		return questionChanged && /FORM-(?:2|22)\.pdf$/u.test(url) ? { body: `%PDF-form-${/FORM-(\d+)/u.exec(url)![1]}-changed` } : undefined;
+		if (future && url === unionSampleLandingUrl) {
+			return {
+				body: later(landing)
+			};
+		}
+		if (future && url === later(edition.url)) {
+			return {
+				body: later(editionBody)
+			};
+		}
+		return questionChanged && /FORM-(?:2|22)\.pdf$/u.test(url)
+			? { body: `%PDF-form-${/FORM-(\d+)/u.exec(url)![1]}-changed` }
+			: undefined;
 	});
 	const extract = async (body: Buffer, format: "layout" | "bbox-layout") => {
 		const form = Number(/form-(\d+)/u.exec(body.toString())?.[1]);
 		const parsed = contextDocument(form, fields => [
-			...fields.map(word => [2, 22].includes(form) && word.top > 750 ? { ...word, left: word.value.startsWith("OFFICIAL SCHOOL") ? 700 : word.left + 150 } : word),
-			...([2, 22].includes(form) ? questionFields().map(word => ({ ...word, value: word.value.replace("twenty dollars?", questionChanged ? "thirty dollars?" : "twenty dollars?") })) : []),
+			...fields.map(word => [2, 22].includes(form) && word.top > 750
+				? {
+						...word,
+						left: word.value.startsWith("OFFICIAL SCHOOL")
+							? 700
+							: word.left + 150
+					}
+				: word),
+			...([2, 22].includes(form)
+				? questionFields().map(word => ({
+						...word,
+						value: word.value.replace("twenty dollars?", questionChanged ? "thirty dollars?" : "twenty dollars?")
+					}))
+				: []),
 		]);
-		const bodyText = format === "layout" ? parsed.layout : parsed.bbox;
-		return future ? later(bodyText) : bodyText;
+		const bodyText = format === "layout"
+			? parsed.layout
+			: parsed.bbox;
+		return future
+			? later(bodyText)
+			: bodyText;
 	};
-	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract };
+	const options = {
+		now: net.options.now,
+		pause: net.options.sleep,
+		collection: net.options,
+		extract
+	};
 	const prepared = await runUnionBallotAutomation(fixture.path, options);
 	const policyPath = join(await realpath(root), "guide-policy.json");
-	const policy = { schemaVersion: 1, type: "union-measure-automation-policy", profileSha256: hash(await readFile(fixture.path)), reviews: [] as { path: string; sha256: string }[], baseSnapshot: null as { path: string; sha256: string } | null };
+	const policy = {
+		schemaVersion: 1,
+		type: "union-measure-automation-policy",
+		profileSha256: hash(await readFile(fixture.path)),
+		reviews: [] as { path: string; sha256: string }[],
+		baseSnapshot: null as { path: string; sha256: string } | null
+	};
 	await writeFile(policyPath, JSON.stringify(policy), { mode: 0o600 });
 	function changeQuestion() {
 		questionChanged = true;
@@ -227,7 +719,17 @@ async function automatedQuestionFixture(root: string) {
 	function denyPublisher(value: boolean) {
 		denied = value;
 	}
-	return { ...fixture, net, options, prepared, policyPath, policy, changeQuestion, useFutureEdition, denyPublisher };
+	return {
+		...fixture,
+		net,
+		options,
+		prepared,
+		policyPath,
+		policy,
+		changeQuestion,
+		useFutureEdition,
+		denyPublisher
+	};
 }
 
 async function approvedAutomatedQuestionFixture(root: string) {
@@ -235,14 +737,33 @@ async function approvedAutomatedQuestionFixture(root: string) {
 	const pending = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, fixture.options);
 	const file = pending.lastAttempt!.files.find(file => file.path.endsWith("/review-template.json"))!;
 	const template = JSON.parse(await readFile(join(fixture.directory, "question-guides", file.path), "utf8"));
-	const editorial = { ...template, reviewedAt: new Date(fixture.net.options.now()).toISOString(), questions: template.questions.map((row: object) => ({ ...row, jurisdictionType: "township", title: "Rent increases", summary: "Would change the proposed rent cap.", yesMeaning: "Approve the proposed limit.", noMeaning: "Leave the ordinance unchanged." })) };
+	const editorial = {
+		...template,
+		reviewedAt: new Date(fixture.net.options.now()).toISOString(),
+		questions: template.questions.map((row: object) => ({
+			...row,
+			jurisdictionType: "township",
+			title: "Rent increases",
+			summary: "Would change the proposed rent cap.",
+			yesMeaning: "Approve the proposed limit.",
+			noMeaning: "Leave the ordinance unchanged."
+		}))
+	};
 	const reviewPath = join(await realpath(root), "editorial.json");
 	await writeFile(reviewPath, JSON.stringify(editorial));
-	fixture.policy.reviews.push({ path: reviewPath, sha256: hash(await readFile(reviewPath)) });
+	fixture.policy.reviews.push({
+		path: reviewPath,
+		sha256: hash(await readFile(reviewPath))
+	});
 	await writeFile(fixture.policyPath, JSON.stringify(fixture.policy));
 	const ready = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, fixture.options);
 	assert.equal(ready.status, "prepared-for-review");
-	return { ...fixture, ready, editorial, reviewPath };
+	return {
+		...fixture,
+		ready,
+		editorial,
+		reviewPath
+	};
 }
 
 test("Union scheduled question changes preserve the last complete native guide for review", async (context) => {
@@ -265,13 +786,19 @@ test("Union scheduled guide failures retain ready data, back off and recover wit
 	const fixture = await approvedAutomatedQuestionFixture(root);
 	const basePath = join(root, "base.json");
 	await writeFile(basePath, JSON.stringify(buildFultonOfficialLogisticsOnlySnapshot()));
-	fixture.policy.baseSnapshot = { path: basePath, sha256: hash(await readFile(basePath)) };
+	fixture.policy.baseSnapshot = {
+		path: basePath,
+		sha256: hash(await readFile(basePath))
+	};
 	await writeFile(fixture.policyPath, JSON.stringify(fixture.policy));
 	let conversions = 0;
-	const failedOptions = { now: fixture.net.options.now, extract: async () => {
-		conversions++;
-		throw new Error("Native converter unavailable");
-	} };
+	const failedOptions = {
+		now: fixture.net.options.now,
+		extract: async () => {
+			conversions++;
+			throw new Error("Native converter unavailable");
+		}
+	};
 	await assert.rejects(prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, failedOptions), /converter unavailable/u);
 	const held = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, failedOptions);
 	assert.equal(held.status, "failed");
@@ -295,10 +822,23 @@ test("Union scheduled guide integrity and configuration holds reject work before
 	const fixture = await approvedAutomatedQuestionFixture(root);
 	const statePath = join(fixture.directory, "question-guides", "state.json");
 	const stateBefore = await readFile(statePath);
-	const noConversion = { now: fixture.net.options.now, extract: async () => {
-		throw new Error("Unexpected conversion");
-	} };
-	for (const policy of [{ ...fixture.policy, profileSha256: "0".repeat(64) }, { ...fixture.policy, publicationApproved: true }, { ...fixture.policy, reviews: [...fixture.policy.reviews, fixture.policy.reviews[0]] }]) {
+	const noConversion = {
+		now: fixture.net.options.now,
+		extract: async () => {
+			throw new Error("Unexpected conversion");
+		}
+	};
+	for (const policy of [
+		{
+			...fixture.policy,
+			profileSha256: "0".repeat(64)
+		},
+		{ ...fixture.policy, publicationApproved: true },
+		{
+			...fixture.policy,
+			reviews: [...fixture.policy.reviews, fixture.policy.reviews[0]]
+		}
+	]) {
 		const path = join(root, "bad-policy.json");
 		await writeFile(path, JSON.stringify(policy), { mode: 0o600 });
 		await assert.rejects(prepareUnionAutomatedMeasureGuides(fixture.path, path, noConversion));
@@ -340,10 +880,25 @@ test("Union scheduled future editions reuse the profile and keep prior-cycle edi
 	const template = held.lastAttempt!.files.find(file => file.path.endsWith("/review-template.json"))!;
 	const next = JSON.parse(await readFile(join(fixture.directory, "question-guides", template.path), "utf8"));
 	assert.equal(next.electionDate, "2034-11-07");
-	const reviewed = { ...next, reviewedAt: new Date(fixture.net.options.now()).toISOString(), questions: next.questions.map((row: object) => ({ ...fixture.editorial.questions[0], ...row, jurisdictionType: "township", title: "Rent increases", summary: "Would change the later proposed rent cap.", yesMeaning: "Approve the proposed limit.", noMeaning: "Leave the ordinance unchanged." })) };
+	const reviewed = {
+		...next,
+		reviewedAt: new Date(fixture.net.options.now()).toISOString(),
+		questions: next.questions.map((row: object) => ({
+			...fixture.editorial.questions[0],
+			...row,
+			jurisdictionType: "township",
+			title: "Rent increases",
+			summary: "Would change the later proposed rent cap.",
+			yesMeaning: "Approve the proposed limit.",
+			noMeaning: "Leave the ordinance unchanged."
+		}))
+	};
 	const path = join(root, "future-editorial.json");
 	await writeFile(path, JSON.stringify(reviewed));
-	fixture.policy.reviews.push({ path, sha256: hash(await readFile(path)) });
+	fixture.policy.reviews.push({
+		path,
+		sha256: hash(await readFile(path))
+	});
 	await writeFile(fixture.policyPath, JSON.stringify(fixture.policy));
 	const prepared = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, fixture.options);
 	assert.equal(prepared.status, "prepared-for-review");
@@ -381,9 +936,12 @@ test("Union scheduled guide preparation rejects capture-plan drift before native
 	const plan = JSON.parse(await readFile(path, "utf8"));
 	plan.ballotCaptures[0].sha256 = "0".repeat(64);
 	await writeFile(path, JSON.stringify(plan));
-	await assert.rejects(prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, { now: fixture.net.options.now, extract: async () => {
-		throw new Error("Unexpected conversion");
-	} }), /capture pins differ/u);
+	await assert.rejects(prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, {
+		now: fixture.net.options.now,
+		extract: async () => {
+			throw new Error("Unexpected conversion");
+		}
+	}), /capture pins differ/u);
 	const state = JSON.parse(await readFile(join(fixture.directory, "question-guides", "state.json"), "utf8"));
 	assert.equal(state.lastAttempt.status, "failed");
 	assert.equal(state.latestReady, null);
@@ -400,17 +958,34 @@ test("Union scheduled question guides derive capture plans and reuse unchanged r
 	assert.equal(first.latestReady, null);
 	const statePath = join(fixture.directory, "question-guides", "state.json");
 	const stateBefore = await readFile(statePath);
-	const repeat = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, { now: fixture.net.options.now, extract: async () => {
-		throw new Error("Cached guides must not invoke converters");
-	} });
+	const repeat = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, {
+		now: fixture.net.options.now,
+		extract: async () => {
+			throw new Error("Cached guides must not invoke converters");
+		}
+	});
 	assert.equal(repeat.skipped, true);
 	assert.deepEqual(await readFile(statePath), stateBefore);
 	const templatePath = first.lastAttempt!.files.find(file => file.path.endsWith("/review-template.json"))!.path;
 	const template = JSON.parse(await readFile(join(fixture.directory, "question-guides", templatePath), "utf8"));
-	const reviewed = { ...template, reviewedAt: new Date(fixture.net.options.now()).toISOString(), questions: template.questions.map((row: object) => ({ ...row, jurisdictionType: "township", title: "Rent increases", summary: "Would change the proposed rent cap.", yesMeaning: "Approve the proposed limit.", noMeaning: "Leave the ordinance unchanged." })) };
+	const reviewed = {
+		...template,
+		reviewedAt: new Date(fixture.net.options.now()).toISOString(),
+		questions: template.questions.map((row: object) => ({
+			...row,
+			jurisdictionType: "township",
+			title: "Rent increases",
+			summary: "Would change the proposed rent cap.",
+			yesMeaning: "Approve the proposed limit.",
+			noMeaning: "Leave the ordinance unchanged."
+		}))
+	};
 	const reviewPath = join(root, "editorial.json");
 	await writeFile(reviewPath, JSON.stringify(reviewed));
-	fixture.policy.reviews.push({ path: reviewPath, sha256: hash(await readFile(reviewPath)) });
+	fixture.policy.reviews.push({
+		path: reviewPath,
+		sha256: hash(await readFile(reviewPath))
+	});
 	await writeFile(fixture.policyPath, JSON.stringify(fixture.policy));
 	const ready = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, fixture.options);
 	assert.equal(ready.lastAttempt!.status, "prepared-for-review");
@@ -424,9 +999,12 @@ test("Union scheduled question guides derive capture plans and reuse unchanged r
 	assert.equal(guide.jurisdiction.jurisdictionType, "township");
 	assert.deepEqual((await inspectUnionBallotAutomation(fixture.path, fixture.net.options.now())).state!.latestPrepared, fixture.prepared.latestPrepared);
 	assert.equal(fixture.net.requests.length, requests);
-	const cachedReady = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, { now: fixture.net.options.now, extract: async () => {
-		throw new Error("Cached guides must not invoke converters");
-	} });
+	const cachedReady = await prepareUnionAutomatedMeasureGuides(fixture.path, fixture.policyPath, {
+		now: fixture.net.options.now,
+		extract: async () => {
+			throw new Error("Cached guides must not invoke converters");
+		}
+	});
 	assert.equal(cachedReady.skipped, true);
 	assert.deepEqual(cachedReady.latestReady, ready.latestReady);
 });
@@ -436,30 +1014,80 @@ test("Union native questions assemble reviewed municipal measures while preservi
 	context.after(() => rm(root, { recursive: true, force: true }));
 	const networkFixture = network();
 	const collectionPlan = join(root, "collect.json");
-	await writeFile(collectionPlan, JSON.stringify({ schemaVersion: 1, type: "union-sample-ballot-collection", outputRoot: join(root, "captures"), forms: catalog.documents.map(source => source.form), accessReview: review, catalogSha256: catalog.sha256 }));
-	const collected = await collectUnionBallotEvidence(collectionPlan, { collect: async (forms, access, expected, options) => collectUnionSampleBatch(forms, access, expected, { ...networkFixture.options, onCapture: options!.onCapture }) });
+	await writeFile(collectionPlan, JSON.stringify({
+		schemaVersion: 1,
+		type: "union-sample-ballot-collection",
+		outputRoot: join(root, "captures"),
+		forms: catalog.documents.map(source => source.form),
+		accessReview: review,
+		catalogSha256: catalog.sha256
+	}));
+	const collected = await collectUnionBallotEvidence(collectionPlan, {
+		collect: async (forms, access, expected, options) => collectUnionSampleBatch(forms, access, expected, { ...networkFixture.options, onCapture: options!.onCapture })
+	});
 	const capturePath = join(collected.outputDirectory, "capture.json");
 	const captureBytes = await readFile(capturePath);
 	const base = buildFultonOfficialLogisticsOnlySnapshot();
 	const basePath = join(root, "base.json");
 	await writeFile(basePath, JSON.stringify(base));
 	const baseBytes = await readFile(basePath);
-	const plan = { schemaVersion: 1, type: "union-measure-guide-preparation", ballotCaptures: [{ path: capturePath, sha256: hash(captureBytes) }], review: null as { path: string; sha256: string } | null, baseSnapshot: { path: basePath, sha256: hash(baseBytes) }, outputDirectory: join(root, "pending"), outputName: "union-example" };
+	const plan = {
+		schemaVersion: 1,
+		type: "union-measure-guide-preparation",
+		ballotCaptures: [
+			{
+				path: capturePath,
+				sha256: hash(captureBytes)
+			}
+		],
+		review: null as { path: string; sha256: string } | null,
+		baseSnapshot: {
+			path: basePath,
+			sha256: hash(baseBytes)
+		},
+		outputDirectory: join(root, "pending"),
+		outputName: "union-example"
+	};
 	const planPath = join(root, "plan.json");
 	await writeFile(planPath, JSON.stringify(plan));
-	const options = { now: () => Date.parse("2030-10-02T00:00:00.000Z"), extract: async (body: Buffer, format: "layout" | "bbox-layout") => {
-		const form = Number(/form-(\d+)$/u.exec(body.toString())?.[1]);
-		const parsed = [2, 22].includes(form) ? questionDocument(form) : document(form);
-		return format === "layout" ? parsed.layout : parsed.bbox;
-	} };
+	const options = {
+		now: () => Date.parse("2030-10-02T00:00:00.000Z"),
+		extract: async (body: Buffer, format: "layout" | "bbox-layout") => {
+			const form = Number(/form-(\d+)$/u.exec(body.toString())?.[1]);
+			const parsed = [2, 22].includes(form)
+				? questionDocument(form)
+				: document(form);
+			return format === "layout"
+				? parsed.layout
+				: parsed.bbox;
+		}
+	};
 	const pending = await prepareUnionMeasureGuideFiles(planPath, options);
 	assert.equal(pending.status, "editorial-review-required");
 	assert.equal(pending.preparedGuides, 0);
 	const template = JSON.parse(await readFile(join(pending.outputDirectory, "review-template.json"), "utf8"));
-	const reviewed = { ...template, reviewedAt: "2030-10-02T00:00:00.000Z", questions: template.questions.map((row: object) => ({ ...row, jurisdictionType: "township", title: "Rent increases", summary: "Would limit the rent increase described in the question.", yesMeaning: "Approve the proposed rent limit.", noMeaning: "Leave the ordinance unchanged." })) };
+	const reviewed = {
+		...template,
+		reviewedAt: "2030-10-02T00:00:00.000Z",
+		questions: template.questions.map((row: object) => ({
+			...row,
+			jurisdictionType: "township",
+			title: "Rent increases",
+			summary: "Would limit the rent increase described in the question.",
+			yesMeaning: "Approve the proposed rent limit.",
+			noMeaning: "Leave the ordinance unchanged."
+		}))
+	};
 	const reviewPath = join(root, "review.json");
 	await writeFile(reviewPath, JSON.stringify(reviewed));
-	await writeFile(planPath, JSON.stringify({ ...plan, review: { path: reviewPath, sha256: hash(await readFile(reviewPath)) }, outputDirectory: join(root, "reviewed") }));
+	await writeFile(planPath, JSON.stringify({
+		...plan,
+		review: {
+			path: reviewPath,
+			sha256: hash(await readFile(reviewPath))
+		},
+		outputDirectory: join(root, "reviewed")
+	}));
 	const prepared = await prepareUnionMeasureGuideFiles(planPath, options);
 	assert.equal(prepared.status, "prepared-for-review");
 	assert.equal(prepared.questions, 1);
@@ -486,7 +1114,15 @@ async function importFixture(root: string, fixture: Awaited<ReturnType<typeof au
 	const directory = join(await realpath(root), "snapshots");
 	await mkdir(directory, { mode: 0o700 });
 	const path = join(await realpath(root), "import-policy.json");
-	const value = { schemaVersion: 1, type: "union-ballot-import-policy", profileSha256: hash(await readFile(fixture.path)), baselineSnapshotSha256: snapshotSha256, dataDirectory: directory, catalogPath: join(directory, "union-cycles.json"), allowFutureElections };
+	const value = {
+		schemaVersion: 1,
+		type: "union-ballot-import-policy",
+		profileSha256: hash(await readFile(fixture.path)),
+		baselineSnapshotSha256: snapshotSha256,
+		dataDirectory: directory,
+		catalogPath: join(directory, "union-cycles.json"),
+		allowFutureElections
+	};
 	await writeFile(path, JSON.stringify(value), { mode: 0o600 });
 	return { path, value, directory };
 }
@@ -496,7 +1132,12 @@ test("Union reviewed enrollment imports complete candidate data and repeated syn
 	context.after(() => rm(root, { recursive: true, force: true }));
 	const fixture = await automationFixture(root);
 	const net = network();
-	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const options = {
+		now: net.options.now,
+		pause: net.options.sleep,
+		collection: net.options,
+		extract: fixture.extract
+	};
 	const prepared = (await runUnionBallotAutomation(fixture.path, options)).latestPrepared!;
 	const approval = await importFixture(root, fixture, prepared.files[0]!.sha256);
 	const before = net.requests.length;
@@ -527,8 +1168,21 @@ test("Union enrolled imports discover later elections with unchanged approvals a
 	const fixture = await automationFixture(root);
 	const later = (value: string) => value.replaceAll("2030", "2034").replaceAll("november-5", "november-7").replaceAll("November 5", "November 7").replaceAll("NOVEMBER 5", "NOVEMBER 7");
 	let future = false;
-	const net = network(url => future && url === unionSampleLandingUrl ? { body: later(landing) } : future && url === later(edition.url) ? { body: later(editionBody) } : undefined);
-	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const net = network(url => future && url === unionSampleLandingUrl
+		? {
+				body: later(landing)
+			}
+		: future && url === later(edition.url)
+			? {
+					body: later(editionBody)
+				}
+			: undefined);
+	const options = {
+		now: net.options.now,
+		pause: net.options.sleep,
+		collection: net.options,
+		extract: fixture.extract
+	};
 	const first = (await runUnionBallotAutomation(fixture.path, options)).latestPrepared!;
 	const approval = await importFixture(root, fixture, first.files[0]!.sha256);
 	await enrollUnionBallotImport(fixture.path, approval.path, options.now);
@@ -536,18 +1190,31 @@ test("Union enrolled imports discover later elections with unchanged approvals a
 	const profileBefore = await readFile(fixture.path);
 	await net.options.sleep(Date.parse("2034-10-01T00:00:00Z") - options.now());
 	future = true;
-	const imported = await syncUnionBallotImport(fixture.path, approval.path, { ...options, extract: async (body, format) => later(await fixture.extract(body, format)) });
+	const imported = await syncUnionBallotImport(fixture.path, approval.path, {
+		...options,
+		extract: async (body, format) => later(await fixture.extract(body, format))
+	});
 	assert.equal(imported.electionDate, "2034-11-07");
 	assert.equal(imported.imported, true);
 	assert.deepEqual(await readFile(approval.path), policyBefore);
 	assert.deepEqual(await readFile(fixture.path), profileBefore);
 	const catalog = readStateBallotCycleCatalog(approval.value.catalogPath, options.now())!;
 	assert.deepEqual(catalog.elections.map(item => item.electionDate), ["2030-11-05", "2034-11-07"]);
-	const configuration = resolveStateBallotConfiguration({ STATE_BALLOT_DATA_DIR: approval.directory, STATE_BALLOT_ENABLED_STATES: "NJ", STATE_BALLOT_ENABLED_SOURCES: unionSampleSource().id, STATE_BALLOT_ENABLED_FAMILIES: unionSampleSource().id, STATE_BALLOT_CYCLE_CATALOGS: JSON.stringify({ [unionSampleSource().id]: approval.value.catalogPath }) }, options.now());
+	const configuration = resolveStateBallotConfiguration({
+		STATE_BALLOT_DATA_DIR: approval.directory,
+		STATE_BALLOT_ENABLED_STATES: "NJ",
+		STATE_BALLOT_ENABLED_SOURCES: unionSampleSource().id,
+		STATE_BALLOT_ENABLED_FAMILIES: unionSampleSource().id,
+		STATE_BALLOT_CYCLE_CATALOGS: JSON.stringify({ [unionSampleSource().id]: approval.value.catalogPath })
+	}, options.now());
 	assert.ok(configuration.sources.some(source => source.id === imported.sourceId));
-	const repository = createStateBallotRepository({ ...configuration, now: options.now, fetchText: async () => {
-		throw new Error("Public reads stay offline.");
-	} });
+	const repository = createStateBallotRepository({
+		...configuration,
+		now: options.now,
+		fetchText: async () => {
+			throw new Error("Public reads stay offline.");
+		}
+	});
 	assert.equal((await repository.getSnapshot("NJ"))!.source.id, imported.sourceId);
 	assert.equal((await repository.getSnapshot("NJ", "nj-union-2030-11-05"))!.records.length, first.candidates);
 	await net.options.sleep(Date.parse("2034-11-10T00:00:00Z") - options.now());
@@ -560,20 +1227,36 @@ test("Union recurring candidate disappearance preserves accepted data, catalog a
 	context.after(() => rm(root, { recursive: true, force: true }));
 	const fixture = await automationFixture(root);
 	let changed = false;
-	const net = network(url => changed && /FORM-\d+\.pdf$/u.test(url) ? { body: `%PDF-form-${/FORM-(\d+)/u.exec(url)![1]}-changed` } : undefined);
-	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const net = network(url => changed && /FORM-\d+\.pdf$/u.test(url)
+		? { body: `%PDF-form-${/FORM-(\d+)/u.exec(url)![1]}-changed` }
+		: undefined);
+	const options = {
+		now: net.options.now,
+		pause: net.options.sleep,
+		collection: net.options,
+		extract: fixture.extract
+	};
 	const first = (await runUnionBallotAutomation(fixture.path, options)).latestPrepared!;
 	const approval = await importFixture(root, fixture, first.files[0]!.sha256);
 	const accepted = await enrollUnionBallotImport(fixture.path, approval.path, options.now);
-	const paths = [join(approval.directory, `${accepted.sourceId}.json`), approval.value.catalogPath, join(fixture.directory, "accepted-import.json")];
+	const paths = [
+		join(approval.directory, `${accepted.sourceId}.json`),
+		approval.value.catalogPath,
+		join(fixture.directory, "accepted-import.json")
+	];
 	const before = await Promise.all(paths.map(path => readFile(path)));
 	changed = true;
 	await net.options.sleep(21600001);
-	await assert.rejects(syncUnionBallotImport(fixture.path, approval.path, { ...options, extract: async (body, format) => {
-		const form = Number(/form-(\d+)/u.exec(body.toString("utf8"))?.[1]);
-		const input = contextDocument(form, words => words.filter(word => !["Veronica", "FERNANDEZ"].includes(word.value)));
-		return format === "layout" ? input.layout : input.bbox;
-	} }), /candidate disappeared or changed/u);
+	await assert.rejects(syncUnionBallotImport(fixture.path, approval.path, {
+		...options,
+		extract: async (body, format) => {
+			const form = Number(/form-(\d+)/u.exec(body.toString("utf8"))?.[1]);
+			const input = contextDocument(form, words => words.filter(word => !["Veronica", "FERNANDEZ"].includes(word.value)));
+			return format === "layout"
+				? input.layout
+				: input.bbox;
+		}
+	}), /candidate disappeared or changed/u);
 	assert.deepEqual(await Promise.all(paths.map(path => readFile(path))), before);
 	assert.ok((await inspectUnionBallotAutomation(fixture.path, options.now())).state!.issues.includes("candidate-removed"));
 	const changedPrepared = (await inspectUnionBallotAutomation(fixture.path, options.now())).state!.latestPrepared!;
@@ -588,7 +1271,12 @@ test("Union approvals reject changed profiles, baselines and enrollment without 
 	context.after(() => rm(root, { recursive: true, force: true }));
 	const fixture = await automationFixture(root);
 	const net = network();
-	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const options = {
+		now: net.options.now,
+		pause: net.options.sleep,
+		collection: net.options,
+		extract: fixture.extract
+	};
 	const prepared = (await runUnionBallotAutomation(fixture.path, options)).latestPrepared!;
 	const approval = await importFixture(root, fixture, "0".repeat(64));
 	const count = net.requests.length;
@@ -607,13 +1295,36 @@ test("Union future catalogs retain source allowlists and reject cross-host, dupl
 	context.after(() => rm(root, { recursive: true, force: true }));
 	const fixture = await automationFixture(root);
 	const net = network();
-	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const options = {
+		now: net.options.now,
+		pause: net.options.sleep,
+		collection: net.options,
+		extract: fixture.extract
+	};
 	const prepared = (await runUnionBallotAutomation(fixture.path, options)).latestPrepared!;
 	const approval = await importFixture(root, fixture, prepared.files[0]!.sha256);
 	await enrollUnionBallotImport(fixture.path, approval.path, options.now);
 	const catalog = readStateBallotCycleCatalog(approval.value.catalogPath, options.now())!;
-	for (const elections of [[...catalog.elections, ...catalog.elections], [{ ...catalog.elections[0], unionDocuments: ["https://example.com/ballot.pdf"] }], [{ ...catalog.elections[0], electionDate: "2026-11-03" }]]) assert.throws(() => parseStateBallotCycleCatalog({ ...catalog, elections }, options.now()));
-	const exactOnly = resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "NJ", STATE_BALLOT_ENABLED_SOURCES: "nj-doe-2026-federal", STATE_BALLOT_CYCLE_CATALOGS: JSON.stringify({ [unionSampleSource().id]: approval.value.catalogPath }) }, options.now());
+	for (const elections of [
+		[
+			...catalog.elections,
+			...catalog.elections
+		],
+		[
+			{
+				...catalog.elections[0],
+				unionDocuments: ["https://example.com/ballot.pdf"]
+			}
+		],
+		[
+			{ ...catalog.elections[0], electionDate: "2026-11-03" }
+		]
+	]) assert.throws(() => parseStateBallotCycleCatalog({ ...catalog, elections }, options.now()));
+	const exactOnly = resolveStateBallotConfiguration({
+		STATE_BALLOT_ENABLED_STATES: "NJ",
+		STATE_BALLOT_ENABLED_SOURCES: "nj-doe-2026-federal",
+		STATE_BALLOT_CYCLE_CATALOGS: JSON.stringify({ [unionSampleSource().id]: approval.value.catalogPath })
+	}, options.now());
 	assert.deepEqual(exactOnly.sources.map(source => source.id), ["nj-doe-2026-federal"]);
 	await assert.rejects(fetchStateBallotCycleDiscovery(async () => {
 		throw new Error("No publisher request is authorized.");
@@ -627,16 +1338,36 @@ test("Union cycle-specific approval holds later offered editions without changin
 	const fixture = await automationFixture(root);
 	const later = (value: string) => value.replaceAll("2030", "2034").replaceAll("november-5", "november-7").replaceAll("November 5", "November 7").replaceAll("NOVEMBER 5", "NOVEMBER 7");
 	let future = false;
-	const net = network(url => future && url === unionSampleLandingUrl ? { body: later(landing) } : future && url === later(edition.url) ? { body: later(editionBody) } : undefined);
-	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const net = network(url => future && url === unionSampleLandingUrl
+		? {
+				body: later(landing)
+			}
+		: future && url === later(edition.url)
+			? {
+					body: later(editionBody)
+				}
+			: undefined);
+	const options = {
+		now: net.options.now,
+		pause: net.options.sleep,
+		collection: net.options,
+		extract: fixture.extract
+	};
 	const prepared = (await runUnionBallotAutomation(fixture.path, options)).latestPrepared!;
 	const approval = await importFixture(root, fixture, prepared.files[0]!.sha256, false);
 	const accepted = await enrollUnionBallotImport(fixture.path, approval.path, options.now);
-	const paths = [join(approval.directory, `${accepted.sourceId}.json`), approval.value.catalogPath, join(fixture.directory, "accepted-import.json")];
+	const paths = [
+		join(approval.directory, `${accepted.sourceId}.json`),
+		approval.value.catalogPath,
+		join(fixture.directory, "accepted-import.json")
+	];
 	const before = await Promise.all(paths.map(path => readFile(path)));
 	await net.options.sleep(Date.parse("2034-10-01T00:00:00Z") - options.now());
 	future = true;
-	await assert.rejects(syncUnionBallotImport(fixture.path, approval.path, { ...options, extract: async (body, format) => later(await fixture.extract(body, format)) }), /outside this import approval/u);
+	await assert.rejects(syncUnionBallotImport(fixture.path, approval.path, {
+		...options,
+		extract: async (body, format) => later(await fixture.extract(body, format))
+	}), /outside this import approval/u);
 	assert.deepEqual(await Promise.all(paths.map(path => readFile(path))), before);
 });
 
@@ -645,12 +1376,23 @@ test("Union source outages preserve accepted imports and recover through the sam
 	context.after(() => rm(root, { recursive: true, force: true }));
 	const fixture = await automationFixture(root);
 	let denied = false;
-	const net = network(url => denied && url === documentUrl(1) ? { status: 403 } : undefined);
-	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const net = network(url => denied && url === documentUrl(1)
+		? { status: 403 }
+		: undefined);
+	const options = {
+		now: net.options.now,
+		pause: net.options.sleep,
+		collection: net.options,
+		extract: fixture.extract
+	};
 	const prepared = (await runUnionBallotAutomation(fixture.path, options)).latestPrepared!;
 	const approval = await importFixture(root, fixture, prepared.files[0]!.sha256);
 	const first = await enrollUnionBallotImport(fixture.path, approval.path, options.now);
-	const paths = [join(approval.directory, `${first.sourceId}.json`), approval.value.catalogPath, join(fixture.directory, "accepted-import.json")];
+	const paths = [
+		join(approval.directory, `${first.sourceId}.json`),
+		approval.value.catalogPath,
+		join(fixture.directory, "accepted-import.json")
+	];
 	const before = await Promise.all(paths.map(path => readFile(path)));
 	denied = true;
 	await net.options.sleep(21600001);
@@ -669,7 +1411,12 @@ test("Union importer respects both process-held owners and detects altered prepa
 	context.after(() => rm(root, { recursive: true, force: true }));
 	const fixture = await automationFixture(root);
 	const net = network();
-	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const options = {
+		now: net.options.now,
+		pause: net.options.sleep,
+		collection: net.options,
+		extract: fixture.extract
+	};
 	const prepared = (await runUnionBallotAutomation(fixture.path, options)).latestPrepared!;
 	const approval = await importFixture(root, fixture, prepared.files[0]!.sha256);
 	for (const directory of [fixture.directory, approval.directory]) {
@@ -687,17 +1434,24 @@ test("Union importer respects both process-held owners and detects altered prepa
 test("Union discovery windows collect every offered form in batches of at most twenty-five", async () => {
 	const extra = Array.from({ length: 5 }, (_, index) => `<li><a href="${documentUrl(index + 23)}">District ${index + 3}</a></li>`).join("");
 	const large = editionBody.replace(`<li><a href="${documentUrl(22)}">District 2</a></li>`, `<li><a href="${documentUrl(22)}">District 2</a></li>${extra}`);
-	const net = network(url => url === edition.url ? { body: large } : undefined);
+	const net = network(url => url === edition.url
+		? { body: large }
+		: undefined);
 	const first = await collectUnionSampleWindow(0, review, null, net.options);
 	const second = await collectUnionSampleWindow(25, review, first.catalog.sha256, net.options);
 	assert.equal(first.catalog.documents.length, 27);
 	assert.equal(first.selected.length, 25);
 	assert.deepEqual(second.selected.map(document => document.form), [26, 27]);
-	assert.equal(new Set([...first.selected, ...second.selected].map(document => document.form)).size, 27);
+	assert.equal(new Set([
+		...first.selected,
+		...second.selected
+	].map(document => document.form)).size, 27);
 	const lastCompleted = new Map<string, number>();
 	for (const request of net.requests) {
 		const host = new URL(request.url).hostname;
-		assert.ok(request.requestedAt - (lastCompleted.get(host) ?? -Infinity) >= (host === "unioncountyvotes.com" ? 30000 : 1000));
+		assert.ok(request.requestedAt - (lastCompleted.get(host) ?? -Infinity) >= (host === "unioncountyvotes.com"
+			? 30000
+			: 1000));
 		lastCompleted.set(host, request.completedAt);
 	}
 	for (const offset of [-1, 1, 99, 100]) await assert.rejects(collectUnionSampleWindow(offset, review, null, net.options));
@@ -709,7 +1463,12 @@ test("Union recurring preparation discovers its edition, persists both outputs a
 	context.after(() => rm(root, { recursive: true, force: true }));
 	const fixture = await automationFixture(root);
 	const net = network();
-	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const options = {
+		now: net.options.now,
+		pause: net.options.sleep,
+		collection: net.options,
+		extract: fixture.extract
+	};
 	assert.equal((await inspectUnionBallotAutomation(fixture.path, net.options.now())).state, null);
 	const first = await runUnionBallotAutomation(fixture.path, options);
 	assert.equal(first.status, "prepared-review-required");
@@ -745,8 +1504,19 @@ test("Union publisher denial, policy changes and native failures preserve the pr
 	context.after(() => rm(root, { recursive: true, force: true }));
 	const fixture = await automationFixture(root);
 	let mode = "normal";
-	const net = network(url => mode === "denied" && url === documentUrl(1) ? { status: 403 } : mode === "policy" && url === unionCandidatePolicyUrls[0] ? { body: "User-agent: * Disallow: /" } : mode === "native" && /FORM-\d+\.pdf$/u.test(url) ? { body: `%PDF-form-${/FORM-(\d+)/u.exec(url)![1]}-changed` } : undefined);
-	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const net = network(url => mode === "denied" && url === documentUrl(1)
+		? { status: 403 }
+		: mode === "policy" && url === unionCandidatePolicyUrls[0]
+			? { body: "User-agent: * Disallow: /" }
+			: mode === "native" && /FORM-\d+\.pdf$/u.test(url)
+				? { body: `%PDF-form-${/FORM-(\d+)/u.exec(url)![1]}-changed` }
+				: undefined);
+	const options = {
+		now: net.options.now,
+		pause: net.options.sleep,
+		collection: net.options,
+		extract: fixture.extract
+	};
 	const first = await runUnionBallotAutomation(fixture.path, options);
 	const invalidExtract = async () => {
 		throw new Error("Changed native layout.");
@@ -755,10 +1525,14 @@ test("Union publisher denial, policy changes and native failures preserve the pr
 		mode = failure;
 		await net.options.sleep(21600001);
 		const before = net.requests.length;
-		await assert.rejects(runUnionBallotAutomation(fixture.path, failure === "native" ? { ...options, extract: invalidExtract } : options));
+		await assert.rejects(runUnionBallotAutomation(fixture.path, failure === "native"
+			? { ...options, extract: invalidExtract }
+			: options));
 		const inspected = await inspectUnionBallotAutomation(fixture.path, net.options.now());
 		assert.equal(inspected.state!.status, "failed");
-		assert.equal(inspected.state!.failure, failure === "native" ? "preparation" : "collection");
+		assert.equal(inspected.state!.failure, failure === "native"
+			? "preparation"
+			: "collection");
 		assert.deepEqual(inspected.state!.latestPrepared, first.latestPrepared);
 		assert.equal(inspected.publicationApproved, false);
 		if (failure === "policy") assert.equal(net.requests.length - before, 1);
@@ -771,7 +1545,12 @@ test("Union recurring ownership and prepared-file integrity reject work before n
 	context.after(() => rm(root, { recursive: true, force: true }));
 	const fixture = await automationFixture(root);
 	const net = network();
-	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const options = {
+		now: net.options.now,
+		pause: net.options.sleep,
+		collection: net.options,
+		extract: fixture.extract
+	};
 	const held = await acquireStateBallotAutomationLock(fixture.directory);
 	await assert.rejects(runUnionBallotAutomation(fixture.path, options), /already running/u);
 	assert.equal(net.requests.length, 0);
@@ -793,7 +1572,12 @@ test("Union recurring recovery keeps prior outputs and applies an interrupted-re
 	context.after(() => rm(root, { recursive: true, force: true }));
 	const fixture = await automationFixture(root);
 	const net = network();
-	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const options = {
+		now: net.options.now,
+		pause: net.options.sleep,
+		collection: net.options,
+		extract: fixture.extract
+	};
 	const first = await runUnionBallotAutomation(fixture.path, options);
 	const path = join(fixture.directory, "state.json");
 	const state = JSON.parse(await readFile(path, "utf8"));
@@ -812,16 +1596,28 @@ test("Union source changes queue candidate disappearance without importing or er
 	context.after(() => rm(root, { recursive: true, force: true }));
 	const fixture = await automationFixture(root);
 	let changed = false;
-	const net = network(url => changed && /FORM-\d+\.pdf$/u.test(url) ? { body: `%PDF-form-${/FORM-(\d+)/u.exec(url)![1]}-changed` } : undefined);
-	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const net = network(url => changed && /FORM-\d+\.pdf$/u.test(url)
+		? { body: `%PDF-form-${/FORM-(\d+)/u.exec(url)![1]}-changed` }
+		: undefined);
+	const options = {
+		now: net.options.now,
+		pause: net.options.sleep,
+		collection: net.options,
+		extract: fixture.extract
+	};
 	const first = await runUnionBallotAutomation(fixture.path, options);
 	changed = true;
 	await net.options.sleep(21600001);
-	const next = await runUnionBallotAutomation(fixture.path, { ...options, extract: async (body, format) => {
-		const form = Number(/form-(\d+)/u.exec(body.toString("utf8"))?.[1]);
-		const input = contextDocument(form, words => words.filter(word => !["Veronica", "FERNANDEZ"].includes(word.value)));
-		return format === "layout" ? input.layout : input.bbox;
-	} });
+	const next = await runUnionBallotAutomation(fixture.path, {
+		...options,
+		extract: async (body, format) => {
+			const form = Number(/form-(\d+)/u.exec(body.toString("utf8"))?.[1]);
+			const input = contextDocument(form, words => words.filter(word => !["Veronica", "FERNANDEZ"].includes(word.value)));
+			return format === "layout"
+				? input.layout
+				: input.bbox;
+		}
+	});
 	assert.equal(next.status, "prepared-review-required");
 	assert.ok(next.issues.includes("candidate-removed"));
 	assert.deepEqual(next.previousPrepared, first.latestPrepared);
@@ -836,7 +1632,18 @@ test("Union recurring profiles use bounded external storage and explicit policy 
 	const fixture = await automationFixture(root);
 	const valid = JSON.parse(await readFile(fixture.path, "utf8"));
 	assert.equal((await readUnionBallotAutomationPlan(fixture.path)).intervalMs, 21600000);
-	for (const changed of [{ ...valid, intervalMs: 1 }, { ...valid, forms: [1] }, { ...valid, directory: "relative" }, { ...valid, accessReview: { ...review, unionPrivacy: "invalid" } }]) {
+	for (const changed of [
+		{ ...valid, intervalMs: 1 },
+		{
+			...valid,
+			forms: [1]
+		},
+		{ ...valid, directory: "relative" },
+		{
+			...valid,
+			accessReview: { ...review, unionPrivacy: "invalid" }
+		}
+	]) {
 		await writeFile(fixture.path, JSON.stringify(changed));
 		await assert.rejects(readUnionBallotAutomationPlan(fixture.path));
 	}
@@ -863,13 +1670,29 @@ test("Union recurring discovery follows a later offered election without annual 
 	const fixture = await automationFixture(root);
 	const later = (value: string) => value.replaceAll("2030", "2034").replaceAll("november-5", "november-7").replaceAll("November 5", "November 7").replaceAll("NOVEMBER 5", "NOVEMBER 7");
 	let future = false;
-	const net = network(url => future && url === unionSampleLandingUrl ? { body: later(landing) } : future && url === later(edition.url) ? { body: later(editionBody) } : undefined);
-	const options = { now: net.options.now, pause: net.options.sleep, collection: net.options, extract: fixture.extract };
+	const net = network(url => future && url === unionSampleLandingUrl
+		? {
+				body: later(landing)
+			}
+		: future && url === later(edition.url)
+			? {
+					body: later(editionBody)
+				}
+			: undefined);
+	const options = {
+		now: net.options.now,
+		pause: net.options.sleep,
+		collection: net.options,
+		extract: fixture.extract
+	};
 	const first = await runUnionBallotAutomation(fixture.path, options);
 	const planBefore = await readFile(fixture.path);
 	await net.options.sleep(Date.parse("2034-10-01T00:00:00Z") - net.options.now());
 	future = true;
-	const laterRun = await runUnionBallotAutomation(fixture.path, { ...options, extract: async (body, format) => later(await fixture.extract(body, format)) });
+	const laterRun = await runUnionBallotAutomation(fixture.path, {
+		...options,
+		extract: async (body, format) => later(await fixture.extract(body, format))
+	});
 	assert.equal(laterRun.latestPrepared!.electionDate, "2034-11-07");
 	assert.equal(laterRun.latestPrepared!.candidates, first.latestPrepared!.candidates);
 	assert.ok(laterRun.issues.includes("new-election-review-required"));
@@ -889,9 +1712,20 @@ test("Union sample directory source preserves historical scope and leaves existi
 	assert.equal(source.retrievalPolicy, "manual-snapshot");
 	assert.equal(source.defaultPriority, -20);
 	assert.equal(unionSampleSource(catalog).electionDate, "2030-11-05");
-	assert.throws(() => unionSampleSource({ ...catalog, edition: { ...edition, electionDate: "2030-11-06" } }));
-	assert.throws(() => unionSampleSource({ ...catalog, documents: [...catalog.documents, catalog.documents[0]!] }));
-	assert.throws(() => unionSampleSource({ ...catalog, documents: catalog.documents.map((source, index) => index ? source : { ...source, url: "https://elsewhere.example/ballot.pdf" }) }));
+	assert.throws(() => unionSampleSource({
+		...catalog,
+		edition: { ...edition, electionDate: "2030-11-06" }
+	}));
+	assert.throws(() => unionSampleSource({
+		...catalog,
+		documents: [...catalog.documents, catalog.documents[0]!]
+	}));
+	assert.throws(() => unionSampleSource({
+		...catalog,
+		documents: catalog.documents.map((source, index) => index
+			? source
+			: { ...source, url: "https://elsewhere.example/ballot.pdf" })
+	}));
 });
 
 test("Union directory snapshots deduplicate repeated sample choices and retain every source witness", () => {
@@ -921,7 +1755,10 @@ test("Union directory snapshots deduplicate repeated sample choices and retain e
 test("Union candidate snapshots hold incomplete, repeated, conflicting and altered sample evidence", () => {
 	const samples = candidateSamples();
 	assert.throws(() => buildUnionCandidateSnapshot(catalog, samples.slice(1)));
-	assert.throws(() => buildUnionCandidateSnapshot(catalog, [samples[0]!, ...samples.slice(0, -1)]));
+	assert.throws(() => buildUnionCandidateSnapshot(catalog, [
+		samples[0]!,
+		...samples.slice(0, -1)
+	]));
 	for (const mutate of [
 		(sample: typeof samples[number]) => { sample.sha256 = "invalid"; },
 		(sample: typeof samples[number]) => { sample.document = { ...sample.document, url: "https://elsewhere.example/ballot.pdf" }; },
@@ -940,65 +1777,161 @@ test("Union candidate CLI preparation emits replayable import data with separate
 	const root = await mkdtemp(join(tmpdir(), "union-candidate-snapshot-"));
 	try {
 		const collectionPath = join(root, "collect.json");
-		await writeFile(collectionPath, JSON.stringify({ schemaVersion: 1, type: "union-sample-ballot-collection", outputRoot: join(root, "intakes"), forms: catalog.documents.map(source => source.form), accessReview: review, catalogSha256: catalog.sha256 }));
-		const collect: typeof collectUnionSampleBatch = async (forms, access, expected, options) => collectUnionSampleBatch(forms, access, expected, { ...network().options, onCapture: options!.onCapture });
+		await writeFile(collectionPath, JSON.stringify({
+			schemaVersion: 1,
+			type: "union-sample-ballot-collection",
+			outputRoot: join(root, "intakes"),
+			forms: catalog.documents.map(source => source.form),
+			accessReview: review,
+			catalogSha256: catalog.sha256
+		}));
+		const collect: typeof collectUnionSampleBatch = async (forms, access, expected, options) => collectUnionSampleBatch(forms, access, expected, {
+			...network().options,
+			onCapture: options!.onCapture
+		});
 		const intake = await collectUnionBallotEvidence(collectionPath, { collect });
 		const capturePath = join(intake.outputDirectory, "capture.json");
 		const original = await readFile(capturePath);
 		const path = join(root, "plan.json");
-		const plan = { schemaVersion: 1, type: "union-candidate-snapshot-preparation", ballotCaptures: [{ path: capturePath, sha256: hash(original) }], outputRoot: join(root, "prepared") };
+		const plan = {
+			schemaVersion: 1,
+			type: "union-candidate-snapshot-preparation",
+			ballotCaptures: [
+				{
+					path: capturePath,
+					sha256: hash(original)
+				}
+			],
+			outputRoot: join(root, "prepared")
+		};
 		await writeFile(path, JSON.stringify(plan));
-		const options = { now: () => Date.parse("2030-10-02T00:00:00Z"), extract: async (body: Buffer, format: "layout" | "bbox-layout") => {
-			const form = Number(body.toString("utf8").split("-").at(-1));
-			const input = contextDocument(form);
-			return format === "layout" ? input.layout : input.bbox;
-		} };
+		const options = {
+			now: () => Date.parse("2030-10-02T00:00:00Z"),
+			extract: async (body: Buffer, format: "layout" | "bbox-layout") => {
+				const form = Number(body.toString("utf8").split("-").at(-1));
+				const input = contextDocument(form);
+				return format === "layout"
+					? input.layout
+					: input.bbox;
+			}
+		};
 		const first = await prepareUnionCandidateSnapshot(path, options);
 		const repeated = await prepareUnionCandidateSnapshot(path, options);
 		assert.equal(repeated.sha256, first.sha256);
-		for (const name of [`${first.sourceId}.json`, "source.json", "candidate-evidence.csv", "review.json"]) assert.deepEqual(await readFile(join(first.outputDirectory, name)), await readFile(join(repeated.outputDirectory, name)));
+		for (const name of [
+			`${first.sourceId}.json`,
+			"source.json",
+			"candidate-evidence.csv",
+			"review.json"
+		]) assert.deepEqual(await readFile(join(first.outputDirectory, name)), await readFile(join(repeated.outputDirectory, name)));
 		const report = JSON.parse(await readFile(join(first.outputDirectory, "review.json"), "utf8"));
 		assert.equal(report.publisherRequests, 0);
 		assert.equal(report.identitiesMergedWithEarlierLists, false);
-		for (const key of ["qualificationVerified", "voterApplicabilityVerified", "imported", "publicationApproved", "automaticImportApproved"]) assert.equal(report[key], false);
+		for (const key of [
+			"qualificationVerified",
+			"voterApplicabilityVerified",
+			"imported",
+			"publicationApproved",
+			"automaticImportApproved"
+		]) assert.equal(report[key], false);
 		assert.equal(report.evidence.length, first.sourceOccurrences);
 		assert.deepEqual(await readFile(capturePath), original);
-		await writeFile(path, JSON.stringify({ ...plan, ballotCaptures: [{ path: capturePath, sha256: "0".repeat(64) }] }));
+		await writeFile(path, JSON.stringify({
+			...plan,
+			ballotCaptures: [
+				{
+					path: capturePath,
+					sha256: "0".repeat(64)
+				}
+			]
+		}));
 		await assert.rejects(prepareUnionCandidateSnapshot(path, options));
 	}
 	finally { await rm(root, { recursive: true, force: true }); }
 });
 
 function reference(name: string, position: string, municipality: string, kind: "general" | "school" = "school") {
-	return { stateCode: "NJ", publicationCounty: "Union County", kind, electionDate: edition.electionDate, page: 1, name, position, office: kind === "school" ? "School Board" : "United States Senator", jurisdictionLabel: municipality === "UNION COUNTY" ? municipality : `TOWNSHIP OF ${municipality.toUpperCase()}`, partyCode: kind === "school" ? "" : "Dem", termLabel: "3 Yrs", sourceAsOfDate: "2030-08-12", sourceUrl: `${unionCandidateOrigin}/wp-content/uploads/2030/08/SCHOOL.pdf`, sourceSha256: "a".repeat(64), capturedAt: "2030-09-30T00:00:00.000Z" };
+	return {
+		stateCode: "NJ",
+		publicationCounty: "Union County",
+		kind,
+		electionDate: edition.electionDate,
+		page: 1,
+		name,
+		position,
+		office: kind === "school"
+			? "School Board"
+			: "United States Senator",
+		jurisdictionLabel: municipality === "UNION COUNTY"
+			? municipality
+			: `TOWNSHIP OF ${municipality.toUpperCase()}`,
+		partyCode: kind === "school"
+			? ""
+			: "Dem",
+		termLabel: "3 Yrs",
+		sourceAsOfDate: "2030-08-12",
+		sourceUrl: `${unionCandidateOrigin}/wp-content/uploads/2030/08/SCHOOL.pdf`,
+		sourceSha256: "a".repeat(64),
+		capturedAt: "2030-09-30T00:00:00.000Z"
+	};
 }
-const references = [reference("Cory Booker", "1A", "UNION COUNTY", "general"), reference("Antoinette Bowers", "1-2", "Roselle"), reference("Ann Marie Weiss", "1-1", "Winfield")];
+const references = [
+	reference("Cory Booker", "1A", "UNION COUNTY", "general"),
+	reference("Antoinette Bowers", "1-2", "Roselle"),
+	reference("Ann Marie Weiss", "1-1", "Winfield")
+];
 async function extract(bytes: Buffer, format: "layout" | "bbox-layout") {
 	const form = Number(/form-(\d+)$/u.exec(bytes.toString())?.[1]);
 	const parsed = document(form);
-	return format === "layout" ? parsed.layout : parsed.bbox;
+	return format === "layout"
+		? parsed.layout
+		: parsed.bbox;
 }
 
 test("Union samples follow explicitly offered future general editions and preserve nested geographic labels", () => {
 	assert.equal(edition.electionDate, "2030-11-05");
 	assert.equal(catalog.documents.length, 22);
-	assert.deepEqual(catalog.documents.find(item => item.form === 22)!.claims, [{ municipality: "Clark", labels: ["Ward 1", "District 2"] }]);
+	assert.deepEqual(catalog.documents.find(item => item.form === 22)!.claims, [
+		{
+			municipality: "Clark",
+			labels: ["Ward 1", "District 2"]
+		}
+	]);
 	const shared = readUnionSampleCatalog(editionBody.replace(documentUrl(22), documentUrl(2)), edition);
 	assert.equal(shared.documents.length, 21);
 	assert.equal(shared.documents.find(item => item.form === 2)!.claims.length, 2);
 	const later = landing.replaceAll("2030", "2034").replaceAll("November 5", "November 7").replaceAll("november-5", "november-7");
 	assert.equal(readUnionSampleEdition(later).electionDate, "2034-11-07");
-	for (const body of [landing.replace("General Election</a>", "Primary Election</a>"), landing.replace("<h4>Current</h4>", ""), landing.replaceAll("November 5", "November 4"), landing.replace("<h4>Past</h4>", `<a href="/another">Another</a><h4>Past</h4>`), `${landing}<a href="/terms">Terms</a>`]) assert.throws(() => readUnionSampleEdition(body));
+	for (const body of [
+		landing.replace("General Election</a>", "Primary Election</a>"),
+		landing.replace("<h4>Current</h4>", ""),
+		landing.replaceAll("November 5", "November 4"),
+		landing.replace("<h4>Past</h4>", `<a href="/another">Another</a><h4>Past</h4>`),
+		`${landing}<a href="/terms">Terms</a>`
+	]) assert.throws(() => readUnionSampleEdition(body));
 });
 
 test("Union sample inventories reject missing municipalities, duplicated claims and unreviewed document hosts", () => {
-	for (const body of [editionBody.replace("<h4>Winfield</h4>", "<h4>Other</h4>"), editionBody.replace(documentUrl(21), documentUrl(20)), editionBody.replace(documentUrl(22), `${documentUrl(22)}?download=1`), editionBody.replace(documentUrl(22), documentUrl(22).replace("https:", "http:")), editionBody.replace(documentUrl(22), documentUrl(22).replace("ucnj.org", "other.example")), editionBody.replace(documentUrl(22), documentUrl(22).replace("2030/09", "2029/09")), editionBody.replace("District 2</a>", "District 1</a>"), `${editionBody}<a href="/license">License</a>`]) assert.throws(() => readUnionSampleCatalog(body, edition));
+	for (const body of [
+		editionBody.replace("<h4>Winfield</h4>", "<h4>Other</h4>"),
+		editionBody.replace(documentUrl(21), documentUrl(20)),
+		editionBody.replace(documentUrl(22), `${documentUrl(22)}?download=1`),
+		editionBody.replace(documentUrl(22), documentUrl(22).replace("https:", "http:")),
+		editionBody.replace(documentUrl(22), documentUrl(22).replace("ucnj.org", "other.example")),
+		editionBody.replace(documentUrl(22), documentUrl(22).replace("2030/09", "2029/09")),
+		editionBody.replace("District 2</a>", "District 1</a>"),
+		`${editionBody}<a href="/license">License</a>`
+	]) assert.throws(() => readUnionSampleCatalog(body, edition));
 	assert.throws(() => readUnionSampleCatalog(editionBody.replace("</div><a", "<a href=\"https://ucnj.org/extra.pdf\">Extra</a></div><a"), edition));
 });
 
 test("Union's two publisher policies retain exact robots directives and substantive privacy text", () => {
 	assert.equal(unionCountyPolicyHash(`${countyRobots}\n`, "robots"), review.countyRobots);
-	for (const body of [countyRobots.replace("/wp-admin/", "/"), `${countyRobots}User-agent: GPTBot\nDisallow: /`, `${countyRobots}Crawl-delay: 60`]) assert.throws(() => unionCountyPolicyHash(body, "robots"));
+	for (const body of [
+		countyRobots.replace("/wp-admin/", "/"),
+		`${countyRobots}User-agent: GPTBot\nDisallow: /`,
+		`${countyRobots}Crawl-delay: 60`
+	]) assert.throws(() => unionCountyPolicyHash(body, "robots"));
 	assert.notEqual(unionCountyPolicyHash(countyPrivacy.replace("Reviewed county", "Updated county"), "privacy"), review.countyPrivacy);
 	assert.throws(() => unionCountyPolicyHash(`${countyPrivacy}<a href="/terms">Terms</a>`, "privacy"));
 	assert.throws(() => unionCountyPolicyHash(countyPrivacy.replace("Section G. Contact Information", ""), "privacy"));
@@ -1007,9 +1940,12 @@ test("Union's two publisher policies retain exact robots directives and substant
 test("Union sample acquisition paces each host from response completion and persists evidence before continuing", async () => {
 	const native = network();
 	const retained: string[] = [];
-	const result = await collectUnionSampleBatch([1, 2], review, catalog.sha256, { ...native.options, onCapture: async (capture) => {
-		retained.push(capture.role);
-	} });
+	const result = await collectUnionSampleBatch([1, 2], review, catalog.sha256, {
+		...native.options,
+		onCapture: async (capture) => {
+			retained.push(capture.role);
+		}
+	});
 	assert.equal(result.captures.length, 9);
 	assert.deepEqual(retained, result.captures.map(capture => capture.role));
 	assert.equal(result.imported, false);
@@ -1018,7 +1954,9 @@ test("Union sample acquisition paces each host from response completion and pers
 	const completed = new Map<string, number>();
 	for (const [index, request] of native.requests.entries()) {
 		const host = new URL(request.url).hostname;
-		assert.ok(request.requestedAt - (completed.get(host) ?? -Infinity) >= (host === "ucnj.org" ? 1100 : 31000));
+		assert.ok(request.requestedAt - (completed.get(host) ?? -Infinity) >= (host === "ucnj.org"
+			? 1100
+			: 31000));
 		completed.set(host, request.completedAt);
 		assert.equal(result.captures[index]!.capturedAt, new Date(request.completedAt).toISOString());
 		assert.equal(result.captures[index]!.sha256, hash(result.captures[index]!.body));
@@ -1026,40 +1964,95 @@ test("Union sample acquisition paces each host from response completion and pers
 });
 
 test("Union collection holds publisher denials, redirects, policy drift, invalid bounds and changed catalogs", async () => {
-	for (const [target, change] of [[unionCandidatePolicyUrls[0], { body: unionRobots.replace("30", "1") }], [unionCandidatePolicyUrls[1], { body: unionPrivacy.replace("Reviewed public", "New public") }], [unionCountyPolicyUrls[0], { body: `${countyRobots}Disallow: /wp-content/` }], [unionCountyPolicyUrls[2], { body: countyPrivacy.replace("Reviewed county", "New county") }], [documentUrl(1), { status: 403 }], [documentUrl(1), { status: 302 }], [documentUrl(1), { body: "<html>challenge</html>" }], [documentUrl(1), { contentType: "text/html" }]] as const) {
-		const native = network(url => url === target ? change : undefined);
+	for (const [target, change] of [
+		[
+			unionCandidatePolicyUrls[0],
+			{
+				body: unionRobots.replace("30", "1")
+			}
+		],
+		[
+			unionCandidatePolicyUrls[1],
+			{
+				body: unionPrivacy.replace("Reviewed public", "New public")
+			}
+		],
+		[
+			unionCountyPolicyUrls[0],
+			{ body: `${countyRobots}Disallow: /wp-content/` }
+		],
+		[
+			unionCountyPolicyUrls[2],
+			{
+				body: countyPrivacy.replace("Reviewed county", "New county")
+			}
+		],
+		[
+			documentUrl(1),
+			{ status: 403 }
+		],
+		[
+			documentUrl(1),
+			{ status: 302 }
+		],
+		[
+			documentUrl(1),
+			{ body: "<html>challenge</html>" }
+		],
+		[
+			documentUrl(1),
+			{ contentType: "text/html" }
+		]
+	] as const) {
+		const native = network(url => url === target
+			? change
+			: undefined);
 		await assert.rejects(collectUnionSampleBatch([1, 2], review, catalog.sha256, native.options));
 		assert.equal(native.requests.at(-1)!.url, target);
 		assert.ok(!native.requests.some(request => request.url === documentUrl(2)));
 	}
-	for (const forms of [[], [1, 1], [0], [100], Array.from({ length: 26 }, (_, index) => index + 1)]) await assert.rejects(collectUnionSampleBatch(forms, review, null, network().options));
+	for (const forms of [
+		[],
+		[1, 1],
+		[0],
+		[100],
+		Array.from({ length: 26 }, (_, index) => index + 1)
+	]) await assert.rejects(collectUnionSampleBatch(forms, review, null, network().options));
 	const changed = network();
 	await assert.rejects(collectUnionSampleBatch([1], review, "0".repeat(64), changed.options));
 	assert.equal(changed.requests.at(-1)!.url, edition.url);
 	const persistence = network();
-	await assert.rejects(collectUnionSampleBatch([1], review, null, { ...persistence.options, onCapture: async () => {
-		throw new Error("Storage unavailable");
-	} }));
+	await assert.rejects(collectUnionSampleBatch([1], review, null, {
+		...persistence.options,
+		onCapture: async () => {
+			throw new Error("Storage unavailable");
+		}
+	}));
 	assert.equal(persistence.requests.length, 1);
 });
 
 test("Union pacing waits again when a timer wakes before the target interval", async () => {
 	const native = network();
 	let earlyWakeups = 0;
-	await collectUnionSampleBatch([1, 2], review, catalog.sha256, { ...native.options, sleep: async (delay) => {
-		if (delay > 1) {
-			earlyWakeups++;
-			await native.options.sleep(delay - 1);
+	await collectUnionSampleBatch([1, 2], review, catalog.sha256, {
+		...native.options,
+		sleep: async (delay) => {
+			if (delay > 1) {
+				earlyWakeups++;
+				await native.options.sleep(delay - 1);
+			}
+			else {
+				await native.options.sleep(delay);
+			}
 		}
-		else {
-			await native.options.sleep(delay);
-		}
-	} });
+	});
 	assert.ok(earlyWakeups > 1);
 	const completed = new Map<string, number>();
 	for (const request of native.requests) {
 		const host = new URL(request.url).hostname;
-		assert.ok(request.requestedAt - (completed.get(host) ?? -Infinity) >= (host === "ucnj.org" ? 1100 : 31000));
+		assert.ok(request.requestedAt - (completed.get(host) ?? -Infinity) >= (host === "ucnj.org"
+			? 1100
+			: 31000));
 		completed.set(host, request.completedAt);
 	}
 });
@@ -1068,11 +2061,22 @@ test("Union native sample cells separate adjacent rows and preserve literal name
 	const roselle = catalog.documents.find(item => item.claims[0]!.municipality === "Roselle")!;
 	const input = document(roselle.form);
 	const cells = readUnionBallotCells(input.bbox, input.layout, roselle, edition.electionDate);
-	assert.deepEqual(cells.find(cell => cell.position === "1-2"), { page: 1, position: "1-2", observedName: "Antoinette BOWERS", nameWordCount: 2 });
+	assert.deepEqual(cells.find(cell => cell.position === "1-2"), {
+		page: 1,
+		position: "1-2",
+		observedName: "Antoinette BOWERS",
+		nameWordCount: 2
+	});
 	assert.equal(cells.find(cell => cell.position === "1-3")!.observedName, "Joseph LECONTE");
 	const samples = catalog.documents.map((source) => {
 		const native = document(source.form);
-		return { form: source.form, cells: readUnionBallotCells(native.bbox, native.layout, source, edition.electionDate), sourceUrl: source.url, sourceSha256: "b".repeat(64), capturedAt: "2030-10-01T00:00:00.000Z" };
+		return {
+			form: source.form,
+			cells: readUnionBallotCells(native.bbox, native.layout, source, edition.electionDate),
+			sourceUrl: source.url,
+			sourceSha256: "b".repeat(64),
+			capturedAt: "2030-10-01T00:00:00.000Z"
+		};
 	});
 	const rows = reconcileUnionBallotReferences(references, catalog, samples);
 	assert.deepEqual(rows.map(row => row.status), ["name-and-position-corroborated", "name-and-position-corroborated", "review-required"]);
@@ -1087,7 +2091,37 @@ test("Union native sample cells separate adjacent rows and preserve literal name
 test("Union sample native identity requires matching form, election, municipality and single-page dimensions", () => {
 	const source = catalog.documents[0]!;
 	const input = document(source.form);
-	for (const [bbox, layout] of [[input.bbox.replace("1824", "1800"), input.layout], [input.bbox, input.layout.replace("FORM 1", "FORM 2")], [input.bbox, input.layout.replace("NOVEMBER 5", "NOVEMBER 6")], [input.bbox.replace("USED ON NOVEMBER 5", "USED ON NOVEMBER 6"), input.layout], [input.bbox, input.layout.replace("SAMPLE BALLOT", "PRIMARY BALLOT")], [input.bbox, input.layout.replace("Berkeley Heights", "Other")], [input.bbox, `${input.layout}${input.layout}`], [input.bbox.replaceAll("xmin=\"430\"", "xmin=\"-1\""), input.layout]]) assert.throws(() => readUnionBallotCells(bbox!, layout!, source, edition.electionDate));
+	for (const [bbox, layout] of [
+		[
+			input.bbox.replace("1824", "1800"),
+			input.layout
+		],
+		[
+			input.bbox,
+			input.layout.replace("FORM 1", "FORM 2")
+		],
+		[
+			input.bbox,
+			input.layout.replace("NOVEMBER 5", "NOVEMBER 6")
+		],
+		[
+			input.bbox.replace("USED ON NOVEMBER 5", "USED ON NOVEMBER 6"),
+			input.layout
+		],
+		[
+			input.bbox,
+			input.layout.replace("SAMPLE BALLOT", "PRIMARY BALLOT")
+		],
+		[
+			input.bbox,
+			input.layout.replace("Berkeley Heights", "Other")
+		],
+		[input.bbox, `${input.layout}${input.layout}`],
+		[
+			input.bbox.replaceAll("xmin=\"430\"", "xmin=\"-1\""),
+			input.layout
+		]
+	]) assert.throws(() => readUnionBallotCells(bbox!, layout!, source, edition.electionDate));
 	const noName = document(source.form, words => words.filter(word => !["Cory", "BOOKER"].includes(word.value)));
 	assert.equal(readUnionBallotCells(noName.bbox, noName.layout, source, edition.electionDate).find(cell => cell.position === "1A")!.observedName, "");
 });
@@ -1096,20 +2130,53 @@ test("Union persistent sample custody and pinned offline preparation replay exac
 	const root = await mkdtemp(join(tmpdir(), "union-ballot-evidence-"));
 	try {
 		const collectionPath = join(root, "collect.json");
-		await writeFile(collectionPath, JSON.stringify({ schemaVersion: 1, type: "union-sample-ballot-collection", outputRoot: join(root, "intakes"), forms: catalog.documents.map(source => source.form), accessReview: review, catalogSha256: catalog.sha256 }));
-		const collect: typeof collectUnionSampleBatch = async (forms, access, expected, options) => collectUnionSampleBatch(forms, access, expected, { ...network().options, onCapture: options!.onCapture });
+		await writeFile(collectionPath, JSON.stringify({
+			schemaVersion: 1,
+			type: "union-sample-ballot-collection",
+			outputRoot: join(root, "intakes"),
+			forms: catalog.documents.map(source => source.form),
+			accessReview: review,
+			catalogSha256: catalog.sha256
+		}));
+		const collect: typeof collectUnionSampleBatch = async (forms, access, expected, options) => collectUnionSampleBatch(forms, access, expected, {
+			...network().options,
+			onCapture: options!.onCapture
+		});
 		const first = await collectUnionBallotEvidence(collectionPath, { collect });
 		const second = await collectUnionBallotEvidence(collectionPath, { collect });
 		assert.notEqual(first.outputDirectory, second.outputDirectory);
 		const capturePath = join(first.outputDirectory, "capture.json");
 		const original = await readFile(capturePath);
 		const candidatePath = join(root, "candidate-preparation.json");
-		const candidateBody = JSON.stringify({ schemaVersion: 1, type: "union-candidate-research-preparation", references, publicationApproved: false, qualificationVerified: false });
+		const candidateBody = JSON.stringify({
+			schemaVersion: 1,
+			type: "union-candidate-research-preparation",
+			references,
+			publicationApproved: false,
+			qualificationVerified: false
+		});
 		await writeFile(candidatePath, candidateBody);
-		const plan = { schemaVersion: 1, type: "union-ballot-corroboration", candidatePreparation: { path: candidatePath, sha256: hash(candidateBody) }, ballotCaptures: [{ path: capturePath, sha256: hash(original) }], outputRoot: join(root, "prepared") };
+		const plan = {
+			schemaVersion: 1,
+			type: "union-ballot-corroboration",
+			candidatePreparation: {
+				path: candidatePath,
+				sha256: hash(candidateBody)
+			},
+			ballotCaptures: [
+				{
+					path: capturePath,
+					sha256: hash(original)
+				}
+			],
+			outputRoot: join(root, "prepared")
+		};
 		const path = join(root, "prepare.json");
 		await writeFile(path, JSON.stringify(plan));
-		const options = { extract, now: () => Date.parse("2030-10-02T00:00:00Z") };
+		const options = {
+			extract,
+			now: () => Date.parse("2030-10-02T00:00:00Z")
+		};
 		const prepared = await prepareUnionBallotCorroboration(path, options);
 		const repeated = await prepareUnionBallotCorroboration(path, options);
 		assert.equal(prepared.sha256, repeated.sha256);
@@ -1121,15 +2188,47 @@ test("Union persistent sample custody and pinned offline preparation replay exac
 		assert.deepEqual(await readFile(capturePath), original);
 		const inventory = JSON.parse(original.toString());
 		const before = await readdir(plan.outputRoot);
-		for (const altered of [{ ...plan, extra: true }, { ...plan, candidatePreparation: { ...plan.candidatePreparation, sha256: "0".repeat(64) } }, { ...plan, ballotCaptures: [...plan.ballotCaptures, ...plan.ballotCaptures] }]) {
+		for (const altered of [
+			{ ...plan, extra: true },
+			{
+				...plan,
+				candidatePreparation: {
+					...plan.candidatePreparation,
+					sha256: "0".repeat(64)
+				}
+			},
+			{
+				...plan,
+				ballotCaptures: [
+					...plan.ballotCaptures,
+					...plan.ballotCaptures
+				]
+			}
+		]) {
 			await writeFile(path, JSON.stringify(altered));
 			await assert.rejects(prepareUnionBallotCorroboration(path, options));
 		}
 		await writeFile(path, JSON.stringify(plan));
-		await assert.rejects(prepareUnionBallotCorroboration(path, { ...options, now: () => Date.parse("2029-10-02T00:00:00Z") }));
-		const altered = { ...inventory, inputs: inventory.inputs.map((input: { role: string; requestedAt: string }) => input.role === "sample-landing" ? { ...input, requestedAt: inventory.inputs[4].capturedAt } : input) };
+		await assert.rejects(prepareUnionBallotCorroboration(path, {
+			...options,
+			now: () => Date.parse("2029-10-02T00:00:00Z")
+		}));
+		const altered = {
+			...inventory,
+			inputs: inventory.inputs.map((input: { role: string; requestedAt: string }) => input.role === "sample-landing"
+				? { ...input, requestedAt: inventory.inputs[4].capturedAt }
+				: input)
+		};
 		await writeFile(capturePath, JSON.stringify(altered));
-		await writeFile(path, JSON.stringify({ ...plan, ballotCaptures: [{ path: capturePath, sha256: hash(JSON.stringify(altered)) }] }));
+		await writeFile(path, JSON.stringify({
+			...plan,
+			ballotCaptures: [
+				{
+					path: capturePath,
+					sha256: hash(JSON.stringify(altered))
+				}
+			]
+		}));
 		await assert.rejects(prepareUnionBallotCorroboration(path, options), /spacing/u);
 		await writeFile(capturePath, original);
 		await writeFile(path, JSON.stringify(plan));
@@ -1148,8 +2247,20 @@ test("Union incomplete sample acquisition retains originals and metadata without
 	try {
 		const path = join(root, "plan.json");
 		const outputRoot = join(root, "intakes");
-		await writeFile(path, JSON.stringify({ schemaVersion: 1, type: "union-sample-ballot-collection", outputRoot, forms: [1, 2], accessReview: review, catalogSha256: catalog.sha256 }));
-		const collect: typeof collectUnionSampleBatch = async (forms, access, expected, options) => collectUnionSampleBatch(forms, access, expected, { ...network(url => url === documentUrl(2) ? { status: 503 } : undefined).options, onCapture: options!.onCapture });
+		await writeFile(path, JSON.stringify({
+			schemaVersion: 1,
+			type: "union-sample-ballot-collection",
+			outputRoot,
+			forms: [1, 2],
+			accessReview: review,
+			catalogSha256: catalog.sha256
+		}));
+		const collect: typeof collectUnionSampleBatch = async (forms, access, expected, options) => collectUnionSampleBatch(forms, access, expected, {
+			...network(url => url === documentUrl(2)
+				? { status: 503 }
+				: undefined).options,
+			onCapture: options!.onCapture
+		});
 		await assert.rejects(collectUnionBallotEvidence(path, { collect }));
 		const intake = (await readdir(outputRoot)).find(name => name.startsWith("intake-"))!;
 		const files = await readdir(join(outputRoot, intake));
@@ -1181,13 +2292,42 @@ test("Union question layouts hold missing translations, unknown headings, clippe
 	const source = catalog.documents[0]!;
 	const changes: ((words: Word[]) => Word[])[] = [
 		words => words.filter(word => word.value !== "PREGUNTA:"),
-		words => [...words, words.find(word => word.value === "QUESTION:")!],
-		words => words.map(word => word.value === "QUESTION:" ? { ...word, value: "QUESTION ONE:" } : word),
-		words => words.map(word => word.value === "NO" ? { ...word, value: "MAYBE" } : word),
-		words => words.map(word => word.value.startsWith("Shall") ? { ...word, width: 600 } : word),
-		words => words.map(word => word.value.startsWith("Shall") ? { ...word, left: 110 } : word),
-		words => [...words, { value: "Unreviewed continuation beyond the panel", left: 128, top: 1201, width: 480, size: 14.88 }],
-		words => [...words, { value: "Additional unexplained panel heading", left: 200, top: 1000, width: 400, size: 20 }],
+		words => [
+			...words,
+			words.find(word => word.value === "QUESTION:")!
+		],
+		words => words.map(word => word.value === "QUESTION:"
+			? { ...word, value: "QUESTION ONE:" }
+			: word),
+		words => words.map(word => word.value === "NO"
+			? { ...word, value: "MAYBE" }
+			: word),
+		words => words.map(word => word.value.startsWith("Shall")
+			? { ...word, width: 600 }
+			: word),
+		words => words.map(word => word.value.startsWith("Shall")
+			? { ...word, left: 110 }
+			: word),
+		words => [
+			...words,
+			{
+				value: "Unreviewed continuation beyond the panel",
+				left: 128,
+				top: 1201,
+				width: 480,
+				size: 14.88
+			}
+		],
+		words => [
+			...words,
+			{
+				value: "Additional unexplained panel heading",
+				left: 200,
+				top: 1000,
+				width: 400,
+				size: 20
+			}
+		],
 	];
 	for (const change of changes) {
 		const native = questionDocument(source.form, change);
@@ -1201,20 +2341,52 @@ test("Union complete pinned question preparation is repeatable and rejects confl
 	const root = await mkdtemp(join(tmpdir(), "union-public-questions-"));
 	try {
 		const collectPath = join(root, "collect.json");
-		await writeFile(collectPath, JSON.stringify({ schemaVersion: 1, type: "union-sample-ballot-collection", outputRoot: join(root, "intakes"), forms: catalog.documents.map(source => source.form), accessReview: review, catalogSha256: catalog.sha256 }));
-		const collect: typeof collectUnionSampleBatch = async (forms, access, expected, options) => collectUnionSampleBatch(forms, access, expected, { ...network().options, onCapture: options!.onCapture });
+		await writeFile(collectPath, JSON.stringify({
+			schemaVersion: 1,
+			type: "union-sample-ballot-collection",
+			outputRoot: join(root, "intakes"),
+			forms: catalog.documents.map(source => source.form),
+			accessReview: review,
+			catalogSha256: catalog.sha256
+		}));
+		const collect: typeof collectUnionSampleBatch = async (forms, access, expected, options) => collectUnionSampleBatch(forms, access, expected, {
+			...network().options,
+			onCapture: options!.onCapture
+		});
 		const intake = await collectUnionBallotEvidence(collectPath, { collect });
 		const capturePath = join(intake.outputDirectory, "capture.json");
 		const original = await readFile(capturePath);
-		const plan = { schemaVersion: 1, type: "union-ballot-question-preparation", ballotCaptures: [{ path: capturePath, sha256: hash(original) }], outputRoot: join(root, "prepared") };
+		const plan = {
+			schemaVersion: 1,
+			type: "union-ballot-question-preparation",
+			ballotCaptures: [
+				{
+					path: capturePath,
+					sha256: hash(original)
+				}
+			],
+			outputRoot: join(root, "prepared")
+		};
 		const path = join(root, "questions.json");
 		await writeFile(path, JSON.stringify(plan));
 		const extraction = (changed = false) => async (body: Buffer, format: "layout" | "bbox-layout") => {
 			const form = Number(/form-(\d+)$/u.exec(body.toString())?.[1]);
-			const parsed = [2, 22].includes(form) ? questionDocument(form, words => words.map(word => changed && form === 22 && word.value.startsWith("Shall") ? { ...word, value: word.value.replace("twenty", "thirty") } : word)) : document(form);
-			return format === "layout" ? parsed.layout : parsed.bbox;
+			const parsed = [2, 22].includes(form)
+				? questionDocument(form, words => words.map(word => changed && form === 22 && word.value.startsWith("Shall")
+						? {
+								...word,
+								value: word.value.replace("twenty", "thirty")
+							}
+						: word))
+				: document(form);
+			return format === "layout"
+				? parsed.layout
+				: parsed.bbox;
 		};
-		const options = { extract: extraction(), now: () => Date.parse("2030-10-02T00:00:00Z") };
+		const options = {
+			extract: extraction(),
+			now: () => Date.parse("2030-10-02T00:00:00Z")
+		};
 		const first = await prepareUnionBallotQuestions(path, options);
 		const second = await prepareUnionBallotQuestions(path, options);
 		assert.equal(first.sha256, second.sha256);
@@ -1226,11 +2398,34 @@ test("Union complete pinned question preparation is repeatable and rejects confl
 		assert.equal(report.questions[0].sources.length, 2);
 		assert.equal(report.questions[0].question.municipality, "Clark");
 		assert.equal(report.questions[0].sources[0].capturedAt, JSON.parse(original.toString()).inputs.find((input: { role: string }) => input.role === "form-2").capturedAt);
-		for (const field of ["translationEquivalenceVerified", "currentLawIndependentlyVerified", "voterApplicabilityVerified", "substantiveReviewComplete", "imported", "publicationApproved", "automaticImportApproved"]) assert.equal(report[field], false);
+		for (const field of [
+			"translationEquivalenceVerified",
+			"currentLawIndependentlyVerified",
+			"voterApplicabilityVerified",
+			"substantiveReviewComplete",
+			"imported",
+			"publicationApproved",
+			"automaticImportApproved"
+		]) assert.equal(report[field], false);
 		assert.deepEqual(await readFile(join(first.outputDirectory, "questions.csv")), await readFile(join(second.outputDirectory, "questions.csv")));
 		const before = await readdir(plan.outputRoot);
-		await assert.rejects(prepareUnionBallotQuestions(path, { ...options, extract: extraction(true) }), /conflicting/u);
-		for (const altered of [{ ...plan, extra: true }, { ...plan, ballotCaptures: [] }, { ...plan, ballotCaptures: [{ path: capturePath, sha256: "0".repeat(64) }] }]) {
+		await assert.rejects(prepareUnionBallotQuestions(path, {
+			...options,
+			extract: extraction(true)
+		}), /conflicting/u);
+		for (const altered of [
+			{ ...plan, extra: true },
+			{ ...plan, ballotCaptures: [] },
+			{
+				...plan,
+				ballotCaptures: [
+					{
+						path: capturePath,
+						sha256: "0".repeat(64)
+					}
+				]
+			}
+		]) {
 			await writeFile(path, JSON.stringify(altered));
 			await assert.rejects(prepareUnionBallotQuestions(path, options));
 		}
@@ -1238,7 +2433,15 @@ test("Union complete pinned question preparation is repeatable and rejects confl
 		partial.selected.pop();
 		partial.inputs.pop();
 		await writeFile(capturePath, JSON.stringify(partial));
-		await writeFile(path, JSON.stringify({ ...plan, ballotCaptures: [{ path: capturePath, sha256: hash(JSON.stringify(partial)) }] }));
+		await writeFile(path, JSON.stringify({
+			...plan,
+			ballotCaptures: [
+				{
+					path: capturePath,
+					sha256: hash(JSON.stringify(partial))
+				}
+			]
+		}));
 		await assert.rejects(prepareUnionBallotQuestions(path, options), /complete/u);
 		assert.deepEqual(await readdir(plan.outputRoot), before);
 		await writeFile(capturePath, original);
@@ -1259,7 +2462,9 @@ test("Union choice evidence binds printed offices, multi-seat rows, Congress dis
 	assert.ok(unionOfficeCorroborated("MEMBER OF HOUSE OF REPRESENTATIVES (7 th CONGRESSIONAL DISTRICT)", house));
 	assert.ok(!unionOfficeCorroborated("MEMBER OF HOUSE OF REPRESENTATIVES (8 th CONGRESSIONAL DISTRICT)", house));
 	assert.ok(unionOfficeCorroborated("School Board", cells.find(cell => cell.position === "1-1")!));
-	const swapped = contextDocument(source.form, words => words.map(word => word.value === "Democrat" ? { ...word, value: "Republican" } : word));
+	const swapped = contextDocument(source.form, words => words.map(word => word.value === "Democrat"
+		? { ...word, value: "Republican" }
+		: word));
 	assert.equal(readUnionChoiceContext(swapped.bbox, swapped.layout, source, edition.electionDate).find(cell => cell.position === "1A")!.printedPartyOrColumn, "Republican");
 });
 
@@ -1276,12 +2481,52 @@ test("Union lower nonpartisan and school panels preserve distinct office and par
 	assert.equal(school.printedPartyOrColumn, "");
 	assert.ok(unionOfficeCorroborated("1 st Ward Council Member", municipal));
 	assert.ok(!unionOfficeCorroborated("2 nd Ward Council Member", municipal));
-	assert.ok(!unionOfficeCorroborated("Member of Council - unexpired", { ...municipal, printedSelections: ["3 Year Term - Vote for One"] }));
+	assert.ok(!unionOfficeCorroborated("Member of Council - unexpired", {
+		...municipal,
+		printedSelections: ["3 Year Term - Vote for One"]
+	}));
 });
 
 test("Union office word boundaries separate merged bilingual lines and preserve long publication footers", () => {
 	const source = catalog.documents[0]!;
-	const input = contextDocument(source.form, words => [...words, { value: "10th Ward Council Member", left: 375, top: 600, width: 113, size: 10.692 }, { value: "3 Year Term - Vote for One", left: 385, top: 612, width: 90, size: 8.379 }, { value: "Town", left: 650, top: 591, width: 70, size: 12.5 }, { value: "PERSON", left: 650, top: 601, width: 70, size: 18.75 }, { value: "8A", left: 739, top: 600, width: 13, size: 21.1 },]);
+	const input = contextDocument(source.form, words => [
+		...words,
+		{
+			value: "10th Ward Council Member",
+			left: 375,
+			top: 600,
+			width: 113,
+			size: 10.692
+		},
+		{
+			value: "3 Year Term - Vote for One",
+			left: 385,
+			top: 612,
+			width: 90,
+			size: 8.379
+		},
+		{
+			value: "Town",
+			left: 650,
+			top: 591,
+			width: 70,
+			size: 12.5
+		},
+		{
+			value: "PERSON",
+			left: 650,
+			top: 601,
+			width: 70,
+			size: 18.75
+		},
+		{
+			value: "8A",
+			left: 739,
+			top: 600,
+			width: 13,
+			size: 21.1
+		},
+	]);
 	const spanish = "<word xmin=\"492\" xmax=\"620\" ymin=\"600\" ymax=\"610.692\">Miembro del Consejo Barrio 10</word>";
 	const merged = input.bbox.replace(/(<line xmin="375" xmax=")488(" ymin="600"[^>]*>)(.*?)(<\/line>)/u, (_match, prefix, suffix, content, closing) => `${prefix}620${suffix}${content}${spanish}${closing}`);
 	assert.notEqual(merged, input.bbox);
@@ -1295,12 +2540,20 @@ test("Union office word boundaries separate merged bilingual lines and preserve 
 test("Union office evidence rejects changed row counts, clipped columns, unknown parties and missing lower headers", () => {
 	const source = catalog.documents[0]!;
 	for (const change of [
-		(words: Word[]) => words.map(word => word.value === "3 Year Term - Vote for Three" && word.top < 700 ? { ...word, value: "3 Year Term - Vote for Two" } : word),
-		(words: Word[]) => words.map(word => word.value === "Democrat" ? { ...word, value: "Unreviewed Party" } : word),
+		(words: Word[]) => words.map(word => word.value === "3 Year Term - Vote for Three" && word.top < 700
+			? { ...word, value: "3 Year Term - Vote for Two" }
+			: word),
+		(words: Word[]) => words.map(word => word.value === "Democrat"
+			? { ...word, value: "Unreviewed Party" }
+			: word),
 		(words: Word[]) => words.filter(word => !word.value.startsWith("OFFICIAL SCHOOL")),
-		(words: Word[]) => words.map(word => word.value === "Sheriff" ? { ...word, width: 100 } : word),
+		(words: Word[]) => words.map(word => word.value === "Sheriff"
+			? { ...word, width: 100 }
+			: word),
 		(words: Word[]) => words.filter(word => word.value !== "7A"),
-		(words: Word[]) => words.map(word => word.value.startsWith("7th Congressional") ? { ...word, value: "7th Congressional District - November 6, 2030" } : word),
+		(words: Word[]) => words.map(word => word.value.startsWith("7th Congressional")
+			? { ...word, value: "7th Congressional District - November 6, 2030" }
+			: word),
 	]) {
 		const input = contextDocument(source.form, change);
 		assert.throws(() => readUnionChoiceContext(input.bbox, input.layout, source, edition.electionDate));
@@ -1313,30 +2566,81 @@ test("Union office/party review preserves parent facts and clocks across exact r
 	const root = await mkdtemp(join(tmpdir(), "union-choice-context-"));
 	try {
 		const collectionPath = join(root, "collect.json");
-		await writeFile(collectionPath, JSON.stringify({ schemaVersion: 1, type: "union-sample-ballot-collection", outputRoot: join(root, "intakes"), forms: catalog.documents.map(document => document.form), accessReview: review, catalogSha256: catalog.sha256 }));
-		const collect: typeof collectUnionSampleBatch = async (forms, access, expected, options) => collectUnionSampleBatch(forms, access, expected, { ...network().options, onCapture: options!.onCapture });
+		await writeFile(collectionPath, JSON.stringify({
+			schemaVersion: 1,
+			type: "union-sample-ballot-collection",
+			outputRoot: join(root, "intakes"),
+			forms: catalog.documents.map(document => document.form),
+			accessReview: review,
+			catalogSha256: catalog.sha256
+		}));
+		const collect: typeof collectUnionSampleBatch = async (forms, access, expected, options) => collectUnionSampleBatch(forms, access, expected, {
+			...network().options,
+			onCapture: options!.onCapture
+		});
 		const intake = await collectUnionBallotEvidence(collectionPath, { collect });
 		const capturePath = join(intake.outputDirectory, "capture.json");
 		const captured = await readFile(capturePath);
 		const local = reference("Local Citizen", "1C", "Hillside", "general");
-		const parentReferences = [references[0]!, { ...reference("Veronica Fernandez", "1C", "UNION COUNTY", "general"), partyCode: "Ind" }, reference("Anne Marie Weiss", "1-1", "Winfield"), reference("Ann Marie Weiss", "1-1", "Winfield"), { ...local, office: "1st Ward Council Member", partyCode: "" }];
-		const parentBody = JSON.stringify({ schemaVersion: 1, type: "union-ballot-corroboration-review", publicationApproved: false, qualificationVerified: false, catalog, references: parentReferences.map(reference => ({ reference })) });
+		const parentReferences = [
+			references[0]!,
+			{
+				...reference("Veronica Fernandez", "1C", "UNION COUNTY", "general"),
+				partyCode: "Ind"
+			},
+			reference("Anne Marie Weiss", "1-1", "Winfield"),
+			reference("Ann Marie Weiss", "1-1", "Winfield"),
+			{ ...local, office: "1st Ward Council Member", partyCode: "" }
+		];
+		const parentBody = JSON.stringify({
+			schemaVersion: 1,
+			type: "union-ballot-corroboration-review",
+			publicationApproved: false,
+			qualificationVerified: false,
+			catalog,
+			references: parentReferences.map(reference => ({ reference }))
+		});
 		const parentPath = join(root, "parent.json");
 		await writeFile(parentPath, parentBody);
-		const plan = { schemaVersion: 1, type: "union-choice-context-review", candidateCorroboration: { path: parentPath, sha256: hash(parentBody) }, ballotCaptures: [{ path: capturePath, sha256: hash(captured) }], outputRoot: join(root, "prepared") };
+		const plan = {
+			schemaVersion: 1,
+			type: "union-choice-context-review",
+			candidateCorroboration: {
+				path: parentPath,
+				sha256: hash(parentBody)
+			},
+			ballotCaptures: [
+				{
+					path: capturePath,
+					sha256: hash(captured)
+				}
+			],
+			outputRoot: join(root, "prepared")
+		};
 		const path = join(root, "prepare.json");
 		await writeFile(path, JSON.stringify(plan));
-		const options = { now: () => Date.parse("2030-10-02T00:00:00Z"), extract: async (body: Buffer, format: "layout" | "bbox-layout") => {
-			const form = Number(/form-(\d+)$/u.exec(body.toString())?.[1]);
-			const input = contextDocument(form);
-			return format === "layout" ? input.layout : input.bbox;
-		} };
+		const options = {
+			now: () => Date.parse("2030-10-02T00:00:00Z"),
+			extract: async (body: Buffer, format: "layout" | "bbox-layout") => {
+				const form = Number(/form-(\d+)$/u.exec(body.toString())?.[1]);
+				const input = contextDocument(form);
+				return format === "layout"
+					? input.layout
+					: input.bbox;
+			}
+		};
 		const first = await prepareUnionChoiceReview(path, options);
 		const second = await prepareUnionChoiceReview(path, options);
 		assert.equal(first.sha256, second.sha256);
 		assert.equal(first.officesCorroborated, 4);
 		assert.equal(first.partiesCorroborated, 1);
-		assert.deepEqual(first.partyStatusCounts, { "corroborated": 1, "petition-column-only": 1, "blank-retained": 1, "no-name-match": 1, "explicit-nonpartisan": 1 });
+		assert.deepEqual(first.partyStatusCounts, {
+			"corroborated": 1,
+			"petition-column-only": 1,
+			"blank-retained": 1,
+			"no-name-match": 1,
+			"explicit-nonpartisan": 1
+		});
 		const report = JSON.parse(await readFile(join(first.outputDirectory, "choice-context.json"), "utf8"));
 		assert.deepEqual(report.references.map((row: { reference: unknown }) => row.reference), parentReferences);
 		assert.equal(report.publisherRequests, 0);
@@ -1348,13 +2652,26 @@ test("Union office/party review preserves parent facts and clocks across exact r
 		assert.equal(report.excludedPositionCells.length, 22);
 		assert.ok(report.unlinkedSampleChoices.some((cell: { observedName: string }) => cell.observedName === "Person2 EXAMPLE"));
 		assert.ok(report.unlinkedSampleChoices.every((cell: { observedName: string }) => cell.observedName !== "NO PETITION FILED" && cell.observedName !== "Ann Marie Weiss"));
-		const changed = await prepareUnionChoiceReview(path, { ...options, extract: async (body, format) => (await options.extract(body, format)).replaceAll("Democrat", "Republican") });
+		const changed = await prepareUnionChoiceReview(path, {
+			...options,
+			extract: async (body, format) => (await options.extract(body, format)).replaceAll("Democrat", "Republican")
+		});
 		const changedReport = JSON.parse(await readFile(join(changed.outputDirectory, "choice-context.json"), "utf8"));
 		assert.equal(changedReport.references[0].reference.partyCode, "Dem");
 		assert.equal(changedReport.references[0].partyStatus, "review-required");
 		assert.equal(changedReport.references[0].partyCorroborated, false);
 		const before = await readdir(plan.outputRoot);
-		for (const altered of [{ ...plan, extra: true }, { ...plan, candidateCorroboration: { path: parentPath, sha256: "0".repeat(64) } }, { ...plan, ballotCaptures: [] }]) {
+		for (const altered of [
+			{ ...plan, extra: true },
+			{
+				...plan,
+				candidateCorroboration: {
+					path: parentPath,
+					sha256: "0".repeat(64)
+				}
+			},
+			{ ...plan, ballotCaptures: [] }
+		]) {
 			await writeFile(path, JSON.stringify(altered));
 			await assert.rejects(prepareUnionChoiceReview(path, options));
 		}

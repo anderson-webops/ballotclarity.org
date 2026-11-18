@@ -46,7 +46,9 @@ export function normalizeLookupResponseForDisplay(
 		ballotContentPreviews: response.ballotContentPreviews ?? [],
 		detectedFromIp: Boolean(response.detectedFromIp),
 		districtMatches: response.districtMatches ?? [],
-		election: election && election.slug === response.electionSlug ? election : null,
+		election: election && election.slug === response.electionSlug
+			? election
+			: null,
 		electionLogistics: response.electionLogistics ?? null,
 		guideContent: response.guideContent ?? null,
 		electionSlug: response.electionSlug,
@@ -83,8 +85,12 @@ export function deriveCivicLookupStateUpdate(
 
 	return {
 		lookupContext: buildLookupContextState(response),
-		nationwideLookupResult: response.result === "resolved" ? normalizeLookupResponseForDisplay(response, election) : null,
-		selectedLocation: canOpenPublishedGuideSurface ? response.location ?? null : null
+		nationwideLookupResult: response.result === "resolved"
+			? normalizeLookupResponseForDisplay(response, election)
+			: null,
+		selectedLocation: canOpenPublishedGuideSurface
+			? response.location ?? null
+			: null
 	};
 }
 

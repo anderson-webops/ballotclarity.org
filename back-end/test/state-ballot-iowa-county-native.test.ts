@@ -201,17 +201,32 @@ test("multi-style reconciliation keeps shared choices and every style-specific c
 
 test("contradictory parties or vote limits for a shared choice stop reconciliation", () => {
 	const fixture = iowaCountyNativeFixture();
-	const second = { ...fixture.document, url: fixture.document.url.replace("style_1", "style_2") };
+	const second = {
+		...fixture.document,
+		url: fixture.document.url.replace("style_1", "style_2")
+	};
 	assert.throws(() =>
 		readIowaCountySamples(
-			[fixture.document, { ...second, bbox: second.bbox.replace("Avery Example REP", "Avery Example DEM") }],
+			[
+				fixture.document,
+				{
+					...second,
+					bbox: second.bbox.replace("Avery Example REP", "Avery Example DEM")
+				}
+			],
 			fixture.context,
 			now
 		)
 	);
 	assert.throws(() =>
 		readIowaCountySamples(
-			[fixture.document, { ...second, bbox: second.bbox.replace("no more than Two", "no more than Three") }],
+			[
+				fixture.document,
+				{
+					...second,
+					bbox: second.bbox.replace("no more than Two", "no more than Three")
+				}
+			],
 			fixture.context,
 			now
 		)
@@ -221,15 +236,25 @@ test("contradictory parties or vote limits for a shared choice stop reconciliati
 test("document identity, original clocks, hashes and collection bounds require review", () => {
 	const fixture = iowaCountyNativeFixture();
 	for (const altered of [
-		{ url: fixture.document.url.replace("mononacountyiowa.gov", "example.com") },
+		{
+			url: fixture.document.url.replace("mononacountyiowa.gov", "example.com")
+		},
 		{ url: `${fixture.document.url}?token=example` },
 		{ url: `${fixture.document.url}#page=1` },
-		{ url: fixture.document.url.replace("sample_ballots", "private") },
+		{
+			url: fixture.document.url.replace("sample_ballots", "private")
+		},
 		{ sha256: "invalid" },
 		{ retrievedAt: "2026-11-08T20:00:00.000Z" },
 		{ retrievedAt: "2026-11-06T20:00:00Z" }
-	])
-		assert.throws(() => readIowaCountySamples([{ ...fixture.document, ...altered }], fixture.context, now));
+	]) {
+		assert.throws(() => readIowaCountySamples([
+			{
+				...fixture.document,
+				...altered
+			}
+		], fixture.context, now));
+	}
 	assert.throws(() => readIowaCountySamples([], fixture.context, now));
 	assert.throws(() => readIowaCountySamples([fixture.document, fixture.document], fixture.context, now));
 	assert.throws(() =>

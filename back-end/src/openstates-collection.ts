@@ -64,16 +64,30 @@ interface CollectionObservation {
 }
 
 function policyNodes(node: HtmlNode): HtmlNode[] {
-	const children = "childNodes" in node ? node.childNodes : [];
+	const children = "childNodes" in node
+		? node.childNodes
+		: [];
 	if ("tagName" in node && node.tagName === "section" && children.some(child => "tagName" in child && child.tagName === "h1" && ["Terms of Service", "Privacy Policy"].includes(nodeText(child).trim()))) return [node];
 	return children.flatMap(policyNodes);
 }
 
 function nodeText(node: HtmlNode): string {
 	if (node.nodeName === "#text") return (node as DefaultTreeAdapterMap["textNode"]).value;
-	if ("tagName" in node && ["script", "style", "nav", "footer", "header"].includes(node.tagName)) return "";
-	const link = "tagName" in node && node.tagName === "a" ? ` ${node.attrs.find(attribute => attribute.name === "href")?.value ?? ""} ` : "";
-	return link + ("childNodes" in node ? node.childNodes.map(nodeText).join(" ") : "");
+	if ("tagName" in node && [
+		"script",
+		"style",
+		"nav",
+		"footer",
+		"header"
+	].includes(node.tagName)) {
+		return "";
+	}
+	const link = "tagName" in node && node.tagName === "a"
+		? ` ${node.attrs.find(attribute => attribute.name === "href")?.value ?? ""} `
+		: "";
+	return link + ("childNodes" in node
+		? node.childNodes.map(nodeText).join(" ")
+		: "");
 }
 
 export function openStatesPolicyFingerprint(body: string) {
@@ -153,7 +167,11 @@ async function withCollectionLock<T>(cache: string, action: () => Promise<T>) {
 		throw error;
 	});
 	const outcome = await (async () => {
-		await handle.writeFile(JSON.stringify({ ownerId, pid: process.pid, startedAt: new Date().toISOString() }));
+		await handle.writeFile(JSON.stringify({
+			ownerId,
+			pid: process.pid,
+			startedAt: new Date().toISOString()
+		}));
 		return await action();
 	})().then(value => ({ value }), (error: unknown) => ({ error }));
 	await handle.close();
@@ -170,7 +188,18 @@ async function withCollectionLock<T>(cache: string, action: () => Promise<T>) {
 async function cacheCapture(cache: string, source: ElectionReferenceSource, now: number): Promise<(Capture & { body: string; path: string }) | null> {
 	const metadata = await readOptional(join(cache, `${source.id}.json`)) as Capture | null;
 	if (!metadata) return null;
-	if (Object.keys(metadata).some(key => !["schemaVersion", "sourceId", "sourceConfigurationSha256", "capturedAt", "checkedAt", "sha256", "etag", "lastModified"].includes(key)) || metadata.schemaVersion !== 1 || metadata.sourceId !== source.id || metadata.sourceConfigurationSha256 !== hash(JSON.stringify(source)) || !validHash(metadata.sha256) || !dateValue(metadata.capturedAt, now) || !dateValue(metadata.checkedAt, now) || Date.parse(metadata.checkedAt) < Date.parse(metadata.capturedAt) || [metadata.etag, metadata.lastModified].some(value => value !== undefined && (typeof value !== "string" || value.length > 512 || /[^\x20-\x7E]/u.test(value)))) throw new Error("Open States cached capture provenance is invalid.");
+	if (Object.keys(metadata).some(key => ![
+		"schemaVersion",
+		"sourceId",
+		"sourceConfigurationSha256",
+		"capturedAt",
+		"checkedAt",
+		"sha256",
+		"etag",
+		"lastModified"
+	].includes(key)) || metadata.schemaVersion !== 1 || metadata.sourceId !== source.id || metadata.sourceConfigurationSha256 !== hash(JSON.stringify(source)) || !validHash(metadata.sha256) || !dateValue(metadata.capturedAt, now) || !dateValue(metadata.checkedAt, now) || Date.parse(metadata.checkedAt) < Date.parse(metadata.capturedAt) || [metadata.etag, metadata.lastModified].some(value => value !== undefined && (typeof value !== "string" || value.length > 512 || /[^\x20-\x7E]/u.test(value)))) {
+		throw new Error("Open States cached capture provenance is invalid.");
+	}
 	const path = join(cache, "bodies", `${metadata.sha256}.csv`);
 	const body = await readBoundedStateData(path);
 	if (hash(body) !== metadata.sha256) throw new Error("Open States cached data does not match its fingerprint.");
@@ -188,12 +217,23 @@ export async function seedOpenStatesCollection(plan: OpenStatesCollectionPlan, i
 	return withCollectionLock(cache, async () => {
 		if (await readOptional(join(cache, "policy.json")) || await readOptional(join(cache, "hold.json")) || (await Promise.all(sources.map(source => readOptional(join(cache, `${source.id}.json`))))).some(Boolean)) throw new Error("Reviewed seeds never overwrite an existing collection cache or hold.");
 		const policy = await contentFile(cache, input.policy.body, "html");
-		await atomicJson(join(cache, "policy.json"), { schemaVersion: 1, sha256: policy.sha256, capturedAt: input.policy.capturedAt, checkedAt: input.policy.capturedAt });
+		await atomicJson(join(cache, "policy.json"), {
+			schemaVersion: 1,
+			sha256: policy.sha256,
+			capturedAt: input.policy.capturedAt,
+			checkedAt: input.policy.capturedAt
+		});
 		for (const download of input.downloads) {
 			const source = sources.find(source => source.id === download.sourceId)!;
 			const content = await contentFile(cache, download.body, "csv");
 			const { body, ...metadata } = download;
-			await atomicJson(join(cache, `${source.id}.json`), { schemaVersion: 1, ...metadata, sourceConfigurationSha256: hash(JSON.stringify(source)), sha256: content.sha256, checkedAt: download.capturedAt });
+			await atomicJson(join(cache, `${source.id}.json`), {
+				schemaVersion: 1,
+				...metadata,
+				sourceConfigurationSha256: hash(JSON.stringify(source)),
+				sha256: content.sha256,
+				checkedAt: download.capturedAt
+			});
 		}
 		return { seeded: sources.length, publisherRequests: 0 };
 	});
@@ -208,7 +248,12 @@ export async function collectOpenStates(plan: OpenStatesCollectionPlan, options:
 		if (await readOptional(join(cache, "hold.json"))) throw new Error("Open States publisher access is on hold; a new review is required before any request.");
 		let publisherRequests = 0;
 		async function hold(reason: string, sourceId: string, status?: number): Promise<never> {
-			await atomicJson(join(cache, "hold.json"), { reason, sourceId, status, at: new Date(now()).toISOString() });
+			await atomicJson(join(cache, "hold.json"), {
+				reason,
+				sourceId,
+				status,
+				at: new Date(now()).toISOString()
+			});
 			throw new Error(`Open States collection stopped for review: ${reason}.`);
 		}
 		async function request(url: string, sourceId: string, headers: Record<string, string>) {
@@ -217,11 +262,18 @@ export async function collectOpenStates(plan: OpenStatesCollectionPlan, options:
 			if (previous && !dateValue(previous.at, now())) throw new Error("Open States request-attempt provenance is invalid.");
 			if (previous && now() - Date.parse(previous.at) < interval) throw new SourceUnavailableError("cooldown");
 			await sleep(1000);
-			await atomicJson(attemptPath, { at: new Date(now()).toISOString() });
+			await atomicJson(attemptPath, {
+				at: new Date(now()).toISOString()
+			});
 			publisherRequests++;
 			let response: Response;
 			try {
-				response = await fetchImpl(url, { headers: { "User-Agent": "BallotClarity-source-review/1.0 (+https://ballotclarity.org)", ...headers }, redirect: "manual", credentials: "omit", signal: AbortSignal.timeout(15_000) });
+				response = await fetchImpl(url, {
+					headers: { "User-Agent": "BallotClarity-source-review/1.0 (+https://ballotclarity.org)", ...headers },
+					redirect: "manual",
+					credentials: "omit",
+					signal: AbortSignal.timeout(15_000)
+				});
 			}
 			catch { throw new SourceUnavailableError("transport"); }
 			if (response.redirected || [301, 302, 303, 307, 308, 401, 403, 429].includes(response.status)) {
@@ -255,7 +307,12 @@ export async function collectOpenStates(plan: OpenStatesCollectionPlan, options:
 			catch { return hold("policy-unavailable", "policy"); }
 			if (fingerprint !== plan.accessReview.termsTextSha256) return hold("policy-changed", "policy");
 			const content = await contentFile(cache, body, "html");
-			policy = { schemaVersion: 1, sha256: content.sha256, capturedAt: new Date(now()).toISOString(), checkedAt: new Date(now()).toISOString() };
+			policy = {
+				schemaVersion: 1,
+				sha256: content.sha256,
+				capturedAt: new Date(now()).toISOString(),
+				checkedAt: new Date(now()).toISOString()
+			};
 			await atomicJson(join(cache, "policy.json"), policy);
 		}
 		const downloads = [];
@@ -273,7 +330,10 @@ export async function collectOpenStates(plan: OpenStatesCollectionPlan, options:
 					if (status === 304) {
 						if (!cached || (!headers["If-None-Match"] && !headers["If-Modified-Since"])) return hold("unexpected-not-modified", source.id, status);
 						const { body, path, ...metadata } = cached;
-						await atomicJson(join(cache, `${source.id}.json`), { ...metadata, checkedAt: new Date(now()).toISOString() });
+						await atomicJson(join(cache, `${source.id}.json`), {
+							...metadata,
+							checkedAt: new Date(now()).toISOString()
+						});
 					}
 					else {
 						if (!/^(?:text\/csv|application\/csv|text\/plain)(?:;|$)/iu.test(response.headers.get("content-type") ?? "")) {
@@ -289,27 +349,69 @@ export async function collectOpenStates(plan: OpenStatesCollectionPlan, options:
 						const content = await contentFile(cache, body, "csv");
 						const validators = { etag: response.headers.get("etag") ?? undefined, lastModified: response.headers.get("last-modified") ?? undefined };
 						if (Object.values(validators).some(value => value !== undefined && (value.length > 512 || /[^\x20-\x7E]/u.test(value)))) return hold("invalid-response-validator", source.id, status);
-						await atomicJson(join(cache, `${source.id}.json`), { schemaVersion: 1, sourceId: source.id, sourceConfigurationSha256: hash(JSON.stringify(source)), capturedAt: new Date(now()).toISOString(), checkedAt: new Date(now()).toISOString(), sha256: content.sha256, ...validators });
+						await atomicJson(join(cache, `${source.id}.json`), {
+							schemaVersion: 1,
+							sourceId: source.id,
+							sourceConfigurationSha256: hash(JSON.stringify(source)),
+							capturedAt: new Date(now()).toISOString(),
+							checkedAt: new Date(now()).toISOString(),
+							sha256: content.sha256,
+							...validators
+						});
 					}
 					cached = await cacheCapture(cache, source, now());
 				}
 				if (!cached) throw new Error("Open States capture was not persisted.");
-				downloads.push({ stateCode: source.stateCode, path: cached.path, url: source.documents[0]!.url, capturedAt: cached.capturedAt, sha256: cached.sha256 });
-				observations.push({ sourceId: source.id, status, capturedAt: cached.capturedAt, checkedAt: cached.checkedAt, sha256: cached.sha256 });
+				downloads.push({
+					stateCode: source.stateCode,
+					path: cached.path,
+					url: source.documents[0]!.url,
+					capturedAt: cached.capturedAt,
+					sha256: cached.sha256
+				});
+				observations.push({
+					sourceId: source.id,
+					status,
+					capturedAt: cached.capturedAt,
+					checkedAt: cached.checkedAt,
+					sha256: cached.sha256
+				});
 			}
 			catch (error) {
 				if (!(error instanceof SourceUnavailableError)) throw error;
-				observations.push({ sourceId: source.id, status: "unavailable", reason: error.reason, httpStatus: error.status });
+				observations.push({
+					sourceId: source.id,
+					status: "unavailable",
+					reason: error.reason,
+					httpStatus: error.status
+				});
 			}
 		}
 		if (!downloads.length) throw new Error("No Open States source is available for preparation; accepted data is unchanged.");
 		const run = join(outputRoot, `openstates-${now()}-${randomUUID()}`);
 		await mkdir(run);
-		const preparationPlan = { schemaVersion: 1, type: "openstates-reference-preparation", downloads, candidateFiles: plan.candidateFiles, allowedCandidateSourceIds: plan.allowedCandidateSourceIds, outputDirectory: join(run, "prepared") };
+		const preparationPlan = {
+			schemaVersion: 1,
+			type: "openstates-reference-preparation",
+			downloads,
+			candidateFiles: plan.candidateFiles,
+			allowedCandidateSourceIds: plan.allowedCandidateSourceIds,
+			outputDirectory: join(run, "prepared")
+		};
 		const planPath = join(run, "preparation-plan.json");
 		await writeFile(planPath, `${JSON.stringify(preparationPlan, null, 2)}\n`, { flag: "wx" });
 		const prepared = await prepareOpenStatesReferenceFiles(planPath, now());
-		const receipt = { schemaVersion: 1, type: "openstates-collection-result", preparationPlan: planPath, outputDirectory: preparationPlan.outputDirectory, publisherRequests, complete: downloads.length === sources.length, observations, prepared, imported: false };
+		const receipt = {
+			schemaVersion: 1,
+			type: "openstates-collection-result",
+			preparationPlan: planPath,
+			outputDirectory: preparationPlan.outputDirectory,
+			publisherRequests,
+			complete: downloads.length === sources.length,
+			observations,
+			prepared,
+			imported: false
+		};
 		await writeFile(join(run, "collection-result.json"), `${JSON.stringify(receipt, null, 2)}\n`, { flag: "wx" });
 		return receipt;
 	});

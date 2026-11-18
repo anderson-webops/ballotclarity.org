@@ -46,7 +46,10 @@ test("inherited measure links bind an explicit ballot context without changing c
 });
 
 test("long printed binary labels remain intact while navigation uses a short operational heading", () => {
-	const measure = { ...fixture(), ballotOptions: { yes: "For general obligation bonds", no: "Against general obligation bonds" } };
+	const measure = {
+		...fixture(),
+		ballotOptions: { yes: "For general obligation bonds", no: "Against general obligation bonds" }
+	};
 	assert.equal(hasLongMeasureOptions(measure), true);
 	assert.equal(hasLongMeasureOptions(fixture()), false);
 	assert.deepEqual(measureBallotOptions(measure), measure.ballotOptions);
@@ -55,8 +58,17 @@ test("long printed binary labels remain intact while navigation uses a short ope
 });
 
 test("Maryland's full printed labels stay readable without collapsing their vote qualifiers", () => {
-	for (const subject of ["the Constitutional Amendment", "Charter Amendment", "the Charter Amendment", "Bond Issue", "the Referred Law"]) {
-		const measure = { ...fixture(), ballotOptions: { yes: `For ${subject}`, no: `Against ${subject}` } };
+	for (const subject of [
+		"the Constitutional Amendment",
+		"Charter Amendment",
+		"the Charter Amendment",
+		"Bond Issue",
+		"the Referred Law"
+	]) {
+		const measure = {
+			...fixture(),
+			ballotOptions: { yes: `For ${subject}`, no: `Against ${subject}` }
+		};
 		assert.deepEqual(measureBallotOptions(measure), measure.ballotOptions);
 		assert.equal(measureDecisionLabel(measure, "no"), `Marked Against ${subject}`);
 		assert.equal(hasLongMeasureOptions(measure), true);
@@ -73,7 +85,10 @@ test("Florida's reviewed qualifiers remain visible in choices and saved decision
 		{ yes: "Yes - For Bonds", no: "No - Against Bonds", long: true },
 	];
 	for (const pair of pairs) {
-		const measure = { ...fixture(), ballotOptions: { yes: pair.yes, no: pair.no } };
+		const measure = {
+			...fixture(),
+			ballotOptions: { yes: pair.yes, no: pair.no }
+		};
 		assert.deepEqual(measureBallotOptions(measure), measure.ballotOptions);
 		assert.equal(hasLongMeasureOptions(measure), pair.long);
 		assert.equal(measureDecisionLabel(measure, "yes"), `Marked ${pair.yes}`);
@@ -111,15 +126,31 @@ function fixture(): Measure {
 		whatWeDoNotKnow: [],
 		sources: [],
 		updatedAt: "2026-10-23T00:00:00Z",
-		freshness: { contentLastVerifiedAt: "2026-10-23T00:00:00Z", nextReviewAt: "2026-10-24T00:00:00Z", status: "incomplete", statusLabel: "Partial record", statusNote: "" },
+		freshness: {
+			contentLastVerifiedAt: "2026-10-23T00:00:00Z",
+			nextReviewAt: "2026-10-24T00:00:00Z",
+			status: "incomplete",
+			statusLabel: "Partial record",
+			statusNote: ""
+		},
 	};
 }
 
 test("printed ballot labels drive navigation and saved-choice labels", () => {
-	for (const ballotOptions of [{ yes: "For", no: "Against" }, { yes: "Approve", no: "Reject" }, { yes: "YES/FOR", no: "NO/AGAINST" }, { yes: "For the Measure", no: "Against the Measure" }]) {
-		const measure = { ...fixture(), ballotOptions };
+	for (const ballotOptions of [
+		{ yes: "For", no: "Against" },
+		{ yes: "Approve", no: "Reject" },
+		{ yes: "YES/FOR", no: "NO/AGAINST" },
+		{ yes: "For the Measure", no: "Against the Measure" }
+	]) {
+		const measure = {
+			...fixture(),
+			ballotOptions
+		};
 		assert.deepEqual(measureBallotOptions(measure), ballotOptions);
-		assert.equal(measureContent(measure).sections.find(section => section.href === "#outcomes")?.label, ballotOptions.yes === "For the Measure" ? "Vote options" : `${ballotOptions.yes} / ${ballotOptions.no}`);
+		assert.equal(measureContent(measure).sections.find(section => section.href === "#outcomes")?.label, ballotOptions.yes === "For the Measure"
+			? "Vote options"
+			: `${ballotOptions.yes} / ${ballotOptions.no}`);
 		assert.equal(measureDecisionLabel(measure, "yes"), `Marked ${ballotOptions.yes}`);
 		assert.equal(measureDecisionLabel(measure, "no"), `Marked ${ballotOptions.no}`);
 		assert.equal(measureDecisionLabel(measure, "review"), "Marked for review");
@@ -138,7 +169,13 @@ test("measure guide links use explicit parent context rather than a saved locati
 });
 
 test("legacy or missing measure parent context leaves the existing fallback available", () => {
-	for (const measure of [undefined, null, {}, { electionSlug: "" }, { electionSlug: "  " }]) assert.equal(measureGuideLink(measure), null);
+	for (const measure of [
+		undefined,
+		null,
+		{},
+		{ electionSlug: "" },
+		{ electionSlug: "  " }
+	]) assert.equal(measureGuideLink(measure), null);
 });
 
 test("measure parent paths encode the slug without modifying the source record", () => {
@@ -160,17 +197,25 @@ test("repeated summaries are omitted while distinct substantive text is preserve
 	const measure = fixture();
 	measure.ballotSummary = " A SOURCED   proposal! ";
 	measure.plainLanguageExplanation = "A different, sourced explanation.";
-	assert.deepEqual(measureContent(measure).summaries, [{ title: "Explanation", text: measure.plainLanguageExplanation }]);
+	assert.deepEqual(measureContent(measure).summaries, [
+		{ title: "Explanation", text: measure.plainLanguageExplanation }
+	]);
 	measure.ballotSummary = "Official question text.";
 	measure.plainLanguageExplanation = "Official question text";
-	assert.deepEqual(measureContent(measure).summaries, [{ title: "Official ballot summary", text: measure.ballotSummary }]);
+	assert.deepEqual(measureContent(measure).summaries, [
+		{ title: "Official ballot summary", text: measure.ballotSummary }
+	]);
 });
 
 test("baseline labels reflect available current-law and proposal content", () => {
 	const measure = fixture();
-	measure.proposedChanges = [{ id: "change", text: "Sourced change.", sources: [] }];
+	measure.proposedChanges = [
+		{ id: "change", text: "Sourced change.", sources: [] }
+	];
 	assert.equal(measureContent(measure).sections.find(section => section.href === "#baseline")?.label, "Proposed changes");
-	measure.currentPractice = [{ id: "baseline", text: "Sourced current rule.", sources: [] }];
+	measure.currentPractice = [
+		{ id: "baseline", text: "Sourced current rule.", sources: [] }
+	];
 	assert.equal(measureContent(measure).sections.find(section => section.href === "#baseline")?.label, "Current law and changes");
 	measure.proposedChanges = [];
 	assert.equal(measureContent(measure).sections.find(section => section.href === "#baseline")?.label, "Current law");
@@ -178,41 +223,190 @@ test("baseline labels reflect available current-law and proposal content", () =>
 
 test("one-sided sourced arguments remain explicitly partial without invented opposition", () => {
 	const measure = fixture();
-	measure.supportArguments = [{ id: "support", title: "Attributed view", summary: "A sourced argument.", attribution: "Proponent", sources: [] }];
+	measure.supportArguments = [
+		{
+			id: "support",
+			title: "Attributed view",
+			summary: "A sourced argument.",
+			attribution: "Proponent",
+			sources: []
+		}
+	];
 	assert.ok(measureContent(measure).sections.some(section => section.href === "#arguments"));
 	assert.deepEqual(measure.opposeArguments, []);
 });
 
 test("section links follow the visible limitations, outcomes and explanation order", () => {
 	const measure = fixture();
-	measure.whatWeDoNotKnow = [{ id: "limit", text: "A material source conflict.", sources: [] }];
+	measure.whatWeDoNotKnow = [
+		{ id: "limit", text: "A material source conflict.", sources: [] }
+	];
 	measure.plainLanguageExplanation = "Distinct explanation.";
-	assert.deepEqual(measureContent(measure).sections.map(section => section.href), ["#limitations", "#outcomes", "#at-a-glance", "#sources"]);
+	assert.deepEqual(measureContent(measure).sections.map(section => section.href), [
+		"#limitations",
+		"#outcomes",
+		"#at-a-glance",
+		"#sources"
+	]);
 });
 
 test("fiscal estimates precede their limitations and longer explanatory sections", () => {
 	const measure = fixture();
-	measure.fiscalSummary = [{ id: "cost", label: "Projection", value: "A range", scope: "State", horizon: "Two years", note: "", sources: [] }];
-	measure.whatWeDoNotKnow = [{ id: "scope", text: "A limited projection, not a net total.", sources: [] }];
+	measure.fiscalSummary = [
+		{
+			id: "cost",
+			label: "Projection",
+			value: "A range",
+			scope: "State",
+			horizon: "Two years",
+			note: "",
+			sources: []
+		}
+	];
+	measure.whatWeDoNotKnow = [
+		{ id: "scope", text: "A limited projection, not a net total.", sources: [] }
+	];
 	measure.plainLanguageExplanation = "Distinct explanation.";
-	assert.deepEqual(measureContent(measure).sections.map(section => section.href), ["#fiscal", "#limitations", "#outcomes", "#at-a-glance", "#sources"]);
+	assert.deepEqual(measureContent(measure).sections.map(section => section.href), [
+		"#fiscal",
+		"#limitations",
+		"#outcomes",
+		"#at-a-glance",
+		"#sources"
+	]);
 });
 
 test("all nested citations remain accessible in one deduplicated source list", () => {
 	const measure = fixture();
-	const source = (id: string): Source => ({ id, title: id, publisher: "Official publisher", authority: "official-government", sourceSystem: "Test", type: "official record", date: "", url: `https://www.sos.nd.gov/${id}` });
-	measure.sources = [source("top")];
-	measure.currentPractice = [{ id: "baseline", text: "Baseline.", sources: [source("baseline"), source("top")] }];
-	measure.proposedChanges = [{ id: "proposal", text: "Change.", sources: [source("proposal")] }];
-	measure.implementationTimeline = [{ id: "start", label: "Start", timing: "Relative date", summary: "", sources: [source("timeline")] }];
-	measure.fiscalSummary = [{ id: "cost", label: "Cost", value: "Estimate", scope: "State", horizon: "Two years", note: "", sources: [source("fiscal")] }];
-	measure.potentialImpacts = [{ id: "impact", title: "Effect", summary: "Effect.", sources: [source("impact")] }];
-	measure.supportArguments = [{ id: "support", title: "For", summary: "Attributed argument.", attribution: "Proponent", sources: [source("support")] }];
-	measure.opposeArguments = [{ id: "oppose", title: "Against", summary: "Attributed argument.", attribution: "Opponent", sources: [source("oppose")] }];
-	measure.argumentsAndConsiderations = [{ id: "consideration", title: "Consideration", summary: "Consideration.", sources: [source("consideration")] }];
-	measure.whatWeKnow = [{ id: "known", text: "Evidence.", sources: [source("known")] }];
-	measure.whatWeDoNotKnow = [{ id: "unknown", text: "Source disagreement.", sources: [source("unknown")] }];
-	assert.deepEqual(measureContent(measure).sources.map(item => item.id), ["top", "baseline", "proposal", "timeline", "fiscal", "impact", "support", "oppose", "consideration", "known", "unknown"]);
+	const source = (id: string): Source => ({
+		id,
+		title: id,
+		publisher: "Official publisher",
+		authority: "official-government",
+		sourceSystem: "Test",
+		type: "official record",
+		date: "",
+		url: `https://www.sos.nd.gov/${id}`
+	});
+	measure.sources = [
+		source("top")
+	];
+	measure.currentPractice = [
+		{
+			id: "baseline",
+			text: "Baseline.",
+			sources: [
+				source("baseline"),
+				source("top")
+			]
+		}
+	];
+	measure.proposedChanges = [
+		{
+			id: "proposal",
+			text: "Change.",
+			sources: [
+				source("proposal")
+			]
+		}
+	];
+	measure.implementationTimeline = [
+		{
+			id: "start",
+			label: "Start",
+			timing: "Relative date",
+			summary: "",
+			sources: [
+				source("timeline")
+			]
+		}
+	];
+	measure.fiscalSummary = [
+		{
+			id: "cost",
+			label: "Cost",
+			value: "Estimate",
+			scope: "State",
+			horizon: "Two years",
+			note: "",
+			sources: [
+				source("fiscal")
+			]
+		}
+	];
+	measure.potentialImpacts = [
+		{
+			id: "impact",
+			title: "Effect",
+			summary: "Effect.",
+			sources: [
+				source("impact")
+			]
+		}
+	];
+	measure.supportArguments = [
+		{
+			id: "support",
+			title: "For",
+			summary: "Attributed argument.",
+			attribution: "Proponent",
+			sources: [
+				source("support")
+			]
+		}
+	];
+	measure.opposeArguments = [
+		{
+			id: "oppose",
+			title: "Against",
+			summary: "Attributed argument.",
+			attribution: "Opponent",
+			sources: [
+				source("oppose")
+			]
+		}
+	];
+	measure.argumentsAndConsiderations = [
+		{
+			id: "consideration",
+			title: "Consideration",
+			summary: "Consideration.",
+			sources: [
+				source("consideration")
+			]
+		}
+	];
+	measure.whatWeKnow = [
+		{
+			id: "known",
+			text: "Evidence.",
+			sources: [
+				source("known")
+			]
+		}
+	];
+	measure.whatWeDoNotKnow = [
+		{
+			id: "unknown",
+			text: "Source disagreement.",
+			sources: [
+				source("unknown")
+			]
+		}
+	];
+	assert.deepEqual(measureContent(measure).sources.map(item => item.id), [
+		"top",
+		"baseline",
+		"proposal",
+		"timeline",
+		"fiscal",
+		"impact",
+		"support",
+		"oppose",
+		"consideration",
+		"known",
+		"unknown"
+	]);
 	assert.ok(measureContent(measure).sections.some(section => section.href === "#limitations"));
 	assert.ok(measureContent(measure).sections.some(section => section.href === "#arguments"));
 });

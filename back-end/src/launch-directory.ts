@@ -137,7 +137,9 @@ async function fetchUpcomingElections(
 		items,
 		status: {
 			detail: items.length
-				? `Google Civic returned ${items.length} Georgia election record${items.length === 1 ? "" : "s"} for the launch snapshot.`
+				? `Google Civic returned ${items.length} Georgia election record${items.length === 1
+					? ""
+					: "s"} for the launch snapshot.`
 				: "Google Civic returned no Georgia election records for the launch snapshot.",
 			recordCount: items.length,
 			status: "configured" as const,
@@ -174,7 +176,9 @@ async function fetchOpenStatesLaunchData(
 	}
 	catch (error) {
 		degraded = true;
-		notes.push(`Statewide Open States listing did not complete: ${error instanceof Error ? error.message : String(error)}.`);
+		notes.push(`Statewide Open States listing did not complete: ${error instanceof Error
+			? error.message
+			: String(error)}.`);
 	}
 
 	try {
@@ -190,7 +194,9 @@ async function fetchOpenStatesLaunchData(
 	}
 	catch (error) {
 		degraded = true;
-		notes.push(`Launch-area Open States geo matching did not complete: ${error instanceof Error ? error.message : String(error)}.`);
+		notes.push(`Launch-area Open States geo matching did not complete: ${error instanceof Error
+			? error.message
+			: String(error)}.`);
 	}
 
 	return {
@@ -240,7 +246,9 @@ export async function buildLaunchDirectorySnapshot({
 		providerStatus: {
 			congress: congressClient
 				? {
-						detail: `Congress.gov returned ${federalRepresentatives.length} Georgia member record${federalRepresentatives.length === 1 ? "" : "s"}.`,
+						detail: `Congress.gov returned ${federalRepresentatives.length} Georgia member record${federalRepresentatives.length === 1
+							? ""
+							: "s"}.`,
 						recordCount: federalRepresentatives.length,
 						status: "configured",
 						updatedAt
@@ -250,13 +258,17 @@ export async function buildLaunchDirectorySnapshot({
 			lda: {
 				detail: "LDA.gov is configured for diagnostics, but public influence pages still need a curated candidate-to-filing crosswalk before this source should flow into public page models.",
 				recordCount: 0,
-				status: process.env.LDA_API_KEY?.trim() ? "pending-crosswalk" : "skipped",
+				status: process.env.LDA_API_KEY?.trim()
+					? "pending-crosswalk"
+					: "skipped",
 				updatedAt
 			},
 			openfec: {
 				detail: "OpenFEC is configured for diagnostics, but public funding pages still need a curated candidate-to-committee crosswalk before this source should replace editorial summaries.",
 				recordCount: 0,
-				status: (process.env.OPENFEC_API_KEY?.trim() || process.env.DATA_API_KEY?.trim()) ? "pending-crosswalk" : "skipped",
+				status: (process.env.OPENFEC_API_KEY?.trim() || process.env.DATA_API_KEY?.trim())
+					? "pending-crosswalk"
+					: "skipped",
 				updatedAt
 			},
 			openstates: openStates.status

@@ -8,17 +8,33 @@ const { data, error, pending } = await useAsyncData<CourtDirectoryResponse>(
 	() => api<CourtDirectoryResponse>(`/courts/${encodeURIComponent(slug.value)}`)
 );
 const groups = computed(() => {
-	const judges = [...(data.value?.judges ?? [])];
+	const judges = [
+		...(data.value?.judges ?? [])
+	];
 	if (data.value?.slug === "fulton-magistrate") {
 		const chief = judges.filter(judge => judge.role === "Chief Magistrate Judge");
 		const members = judges.filter(judge => judge.role === "Judge");
 		return [
-			...(chief.length ? [{ title: "Chief magistrate", label: "Chief magistrate", judges: chief }] : []),
-			...Array.from({ length: Math.ceil(members.length / 6) }, (_, index) => ({ title: index === 0 ? "Judges" : "", label: `Judges, group ${index + 1}`, judges: members.slice(index * 6, (index + 1) * 6) }))
+			...(chief.length
+				? [
+						{ title: "Chief magistrate", label: "Chief magistrate", judges: chief }
+					]
+				: []),
+			...Array.from({
+				length: Math.ceil(members.length / 6)
+			}, (_, index) => ({
+				title: index === 0
+					? "Judges"
+					: "",
+				label: `Judges, group ${index + 1}`,
+				judges: members.slice(index * 6, (index + 1) * 6)
+			}))
 		];
 	}
 	judges.sort((first, second) => (first.division ?? "").localeCompare(second.division ?? ""));
-	return Array.from({ length: Math.ceil(judges.length / 6) }, (_, index) => {
+	return Array.from({
+		length: Math.ceil(judges.length / 6)
+	}, (_, index) => {
 		const members = judges.slice(index * 6, (index + 1) * 6);
 		const title = `Divisions ${members[0]?.division} to ${members.at(-1)?.division}`;
 		return { title, label: title, judges: members };

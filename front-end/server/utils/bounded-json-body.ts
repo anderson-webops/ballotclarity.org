@@ -6,7 +6,9 @@ export const adminRequestBodyMaxBytes = 64 * 1024;
 
 function getContentType(event: H3Event) {
 	const value = event.node.req.headers["content-type"];
-	return (Array.isArray(value) ? value[0] : value)?.split(";", 1)[0]?.trim().toLowerCase() ?? "";
+	return (Array.isArray(value)
+		? value[0]
+		: value)?.split(";", 1)[0]?.trim().toLowerCase() ?? "";
 }
 
 function isJsonContentType(value: string) {
@@ -23,7 +25,9 @@ function payloadTooLargeError() {
 async function readBoundedRequestBody(event: H3Event) {
 	const request = event.node.req;
 	const rawContentLength = request.headers["content-length"];
-	const contentLength = Number(Array.isArray(rawContentLength) ? rawContentLength[0] : rawContentLength);
+	const contentLength = Number(Array.isArray(rawContentLength)
+		? rawContentLength[0]
+		: rawContentLength);
 
 	if (Number.isFinite(contentLength) && contentLength > adminRequestBodyMaxBytes)
 		throw payloadTooLargeError();
@@ -58,7 +62,9 @@ async function readBoundedRequestBody(event: H3Event) {
 		}
 
 		function onData(rawChunk: Buffer | string) {
-			const chunk = Buffer.isBuffer(rawChunk) ? rawChunk : Buffer.from(rawChunk);
+			const chunk = Buffer.isBuffer(rawChunk)
+				? rawChunk
+				: Buffer.from(rawChunk);
 			totalBytes += chunk.length;
 
 			if (totalBytes > adminRequestBodyMaxBytes) {

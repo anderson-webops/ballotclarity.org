@@ -7,7 +7,13 @@ import { createHash } from "node:crypto";
 import { parseStateHtml, stateHtmlAttribute, stateHtmlText } from "./state-ballot-html.js";
 import { containsControlCharacters } from "./text-validation.js";
 
-export const washingtonStatementFields = ["Elected Experience", "Legal/Judicial Experience", "Other Professional Experience", "Education", "Community Service"] as const;
+export const washingtonStatementFields = [
+	"Elected Experience",
+	"Legal/Judicial Experience",
+	"Other Professional Experience",
+	"Education",
+	"Community Service"
+] as const;
 export type WashingtonStatementField = typeof washingtonStatementFields[number];
 
 export interface ReviewedWashingtonFact {
@@ -37,7 +43,9 @@ export function parseWashingtonStatementSections(html: string) {
 	let active: WashingtonStatementField | undefined;
 	let finished = false;
 	const tree = parseStateHtml(html);
-	const pending = [{ node: tree, depth: 0 }];
+	const pending = [
+		{ node: tree, depth: 0 }
+	];
 	let visited = 0;
 	while (pending.length) {
 		const { node, depth } = pending.pop()!;
@@ -45,8 +53,30 @@ export function parseWashingtonStatementSections(html: string) {
 		for (const child of node.childNodes ?? []) pending.push({ node: child, depth: depth + 1 });
 	}
 	function visit(node: StateHtmlNode) {
-		if (finished || ["script", "style", "noscript", "template", "form", "button", "input", "textarea", "svg", "img"].includes(node.nodeName) || node.attrs?.some(attribute => attribute.name === "hidden") || stateHtmlAttribute(node, "aria-hidden") === "true") return;
-		if (["b", "strong", "h1", "h2", "h3", "h4", "h5", "h6"].includes(node.nodeName)) {
+		if (finished || [
+			"script",
+			"style",
+			"noscript",
+			"template",
+			"form",
+			"button",
+			"input",
+			"textarea",
+			"svg",
+			"img"
+		].includes(node.nodeName) || node.attrs?.some(attribute => attribute.name === "hidden") || stateHtmlAttribute(node, "aria-hidden") === "true") {
+			return;
+		}
+		if ([
+			"b",
+			"strong",
+			"h1",
+			"h2",
+			"h3",
+			"h4",
+			"h5",
+			"h6"
+		].includes(node.nodeName)) {
 			const heading = headingName(stateHtmlText(node));
 			if (heading === "statement") {
 				finished = true;
@@ -76,9 +106,15 @@ export function parseWashingtonStatementSections(html: string) {
 
 function documentIdentity(address: string) {
 	const url = new URL(address);
-	if (url.origin !== "https://voter.votewa.gov" || url.username || url.password || url.pathname !== "/elections/candidate.ashx" || url.hash || [...url.searchParams.keys()].sort().join(",") !== "b,c,e,la,r" || url.searchParams.get("b") !== "0" || url.searchParams.get("c") !== "" || url.searchParams.get("la") !== "en" || !/^\d{1,10}$/u.test(url.searchParams.get("e") ?? "") || !/^\d{1,10}$/u.test(url.searchParams.get("r") ?? ""))
+	if (url.origin !== "https://voter.votewa.gov" || url.username || url.password || url.pathname !== "/elections/candidate.ashx" || url.hash || [
+		...url.searchParams.keys()
+	].sort().join(",") !== "b,c,e,la,r" || url.searchParams.get("b") !== "0" || url.searchParams.get("c") !== "" || url.searchParams.get("la") !== "en" || !/^\d{1,10}$/u.test(url.searchParams.get("e") ?? "") || !/^\d{1,10}$/u.test(url.searchParams.get("r") ?? "")) {
 		throw new Error("Washington preparation requires a configured normal public statement URL.");
-	return { electionId: url.searchParams.get("e")!, raceId: url.searchParams.get("r")! };
+	}
+	return {
+		electionId: url.searchParams.get("e")!,
+		raceId: url.searchParams.get("r")!
+	};
 }
 
 export function prepareWashingtonStatements(options: { source: ElectionReferenceSource; candidates: StateBallotSnapshot; previous: readonly ElectionReferenceSnapshot[]; documents: readonly WashingtonStatementCapture[]; facts: readonly ReviewedWashingtonFact[]; now?: number }) {
@@ -142,24 +178,82 @@ export function prepareWashingtonStatements(options: { source: ElectionReference
 				holds.push({ sourceCandidateId: candidateId, reason: "No factual paraphrases were explicitly reviewed." });
 				continue;
 			}
-			if (!statement || typeof statement.Statement !== "string" || !statement.Statement.trim() || String(statement.ElectionID) !== identity.electionId || String(statement.RaceID) !== identity.raceId || statement.BallotName !== candidate.name || statement.CountyCode !== "" || typeof statement.RaceJurisdictionName !== "string" || (candidate.scope === "local" ? !locality : Boolean(locality) || statement.RaceJurisdictionName.toUpperCase() !== candidate.sourceDistrictLabel?.toUpperCase()) || !["listed", "filed", "qualified", "write-in", "unopposed"].includes(candidate.status))
+			if (!statement || typeof statement.Statement !== "string" || !statement.Statement.trim() || String(statement.ElectionID) !== identity.electionId || String(statement.RaceID) !== identity.raceId || statement.BallotName !== candidate.name || statement.CountyCode !== "" || typeof statement.RaceJurisdictionName !== "string" || (candidate.scope === "local"
+				? !locality
+				: Boolean(locality) || statement.RaceJurisdictionName.toUpperCase() !== candidate.sourceDistrictLabel?.toUpperCase()) || ![
+				"listed",
+				"filed",
+				"qualified",
+				"write-in",
+				"unopposed"
+			].includes(candidate.status)) {
 				throw new Error("A reviewed Washington statement does not match its exact official identity.");
-			const office = candidate.scope === "statewide" ? `${candidate.sourceDistrictLabel} - ${statement.RaceName}` : statement.RaceName;
+			}
+			const office = candidate.scope === "statewide"
+				? `${candidate.sourceDistrictLabel} - ${statement.RaceName}`
+				: statement.RaceName;
 			if (office !== candidate.office.replace(/ \((?:Short & Full|Unexpired|Initial Full)\)$/u, "")) throw new Error("A reviewed Washington statement does not match its official office.");
-			const jurisdiction = locality ? `${locality.countyDisplay} County` : candidate.scope === "statewide" ? undefined : candidate.sourceDistrictLabel;
+			const jurisdiction = locality
+				? `${locality.countyDisplay} County`
+				: candidate.scope === "statewide"
+					? undefined
+					: candidate.sourceDistrictLabel;
 			if (options.previous.some(snapshot => snapshot.stateCode === "WA" && snapshot.electionDate === source.electionDate && snapshot.records.some(record => record.name === candidate.name && record.office === candidate.office && record.jurisdiction?.toUpperCase() === jurisdiction?.toUpperCase())))
 				throw new Error("A reviewed Washington profile is already present in a preceding collection.");
 			const statementHash = digest(statement.Statement);
 			const sections = parseWashingtonStatementSections(statement.Statement);
 			if (reviewed.some(fact => fact.statementSha256 !== statementHash || !sections[fact.field]?.includes(fact.evidence))) throw new Error("A reviewed Washington fact is not anchored to its captured factual section.");
-			records.push({ id: digest(`${source.id}/${candidate.id}`).slice(0, 24), name: candidate.name, office: candidate.office, scope: candidate.scope, ...(jurisdiction ? { jurisdiction } : {}), facts: reviewed.map(fact => fact.text), sourceDocumentIndex: index });
-			identities.push({ sourceCandidateId: candidateId, officialRecordId: candidate.id, statementSha256: statementHash, reviewedFacts: reviewed.length, ...(locality ? { countyDisplay: locality.countyDisplay, officialJurisdiction: candidate.sourceDistrictLabel, publishedRaceJurisdictionName: statement.RaceJurisdictionName, publishedRaceJurisdictionTypeId: locality.statementJurisdictionType } : {}) });
+			records.push({
+				id: digest(`${source.id}/${candidate.id}`).slice(0, 24),
+				name: candidate.name,
+				office: candidate.office,
+				scope: candidate.scope,
+				...(jurisdiction
+					? { jurisdiction }
+					: {}),
+				facts: reviewed.map(fact => fact.text),
+				sourceDocumentIndex: index
+			});
+			identities.push({
+				sourceCandidateId: candidateId,
+				officialRecordId: candidate.id,
+				statementSha256: statementHash,
+				reviewedFacts: reviewed.length,
+				...(locality
+					? {
+							countyDisplay: locality.countyDisplay,
+							officialJurisdiction: candidate.sourceDistrictLabel,
+							publishedRaceJurisdictionName: statement.RaceJurisdictionName,
+							publishedRaceJurisdictionTypeId: locality.statementJurisdictionType
+						}
+					: {})
+			});
 			matched.add(candidateId);
 			includedRecordCount++;
 		}
-		documents.push({ url: capture.url, sha256: capture.sha256, capturedAt: new Date(capture.capturedAt).toISOString(), includedRecordCount });
+		documents.push({
+			url: capture.url,
+			sha256: capture.sha256,
+			capturedAt: new Date(capture.capturedAt).toISOString(),
+			includedRecordCount
+		});
 	}
-	if (!records.length || [...factsByCandidate.keys()].some(candidateId => !matched.has(candidateId))) throw new Error("Some reviewed Washington facts have no unique accepted identity.");
-	const snapshot: ElectionReferenceSnapshot = { schemaVersion: 1, type: "election-references", stateCode: "WA", sourceId: source.id, electionDate: source.electionDate, retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.capturedAt)))).toISOString(), sourceSha256: digest(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), recordCount: records.length, documents, records };
+	if (!records.length || [
+		...factsByCandidate.keys()
+	].some(candidateId => !matched.has(candidateId))) {
+		throw new Error("Some reviewed Washington facts have no unique accepted identity.");
+	}
+	const snapshot: ElectionReferenceSnapshot = {
+		schemaVersion: 1,
+		type: "election-references",
+		stateCode: "WA",
+		sourceId: source.id,
+		electionDate: source.electionDate,
+		retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.capturedAt)))).toISOString(),
+		sourceSha256: digest(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+		recordCount: records.length,
+		documents,
+		records
+	};
 	return { snapshot, identities, holds };
 }

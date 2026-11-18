@@ -272,7 +272,13 @@ test("runManageCoverageCommand reads flag values from the provided argv", () => 
 			status: "reviewed"
 		}), candidatePath);
 
-		runManageCoverageCommand(["promote", "--from", candidatePath, "--target", activeSnapshotPath]);
+		runManageCoverageCommand([
+			"promote",
+			"--from",
+			candidatePath,
+			"--target",
+			activeSnapshotPath
+		]);
 
 		assert.equal(readCoverageSnapshotMetadata(activeSnapshotPath).status, "reviewed");
 	}

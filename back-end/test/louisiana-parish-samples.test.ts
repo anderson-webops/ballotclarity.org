@@ -18,7 +18,12 @@ const secondDocument = `${parishSampleOrigin}/wp-content/uploads/2030/11/Caddo-S
 const index = `<main class="entry-content"><h1>Older page title November 2028</h1><h1>December 14, 2030 U.S. Representative Runoff &amp; Municipal General</h1><a href="${firstControl}">West Carroll (opens in a new tab)</a><a href="${secondControl}">Caddo</a><a href="${parishSampleOrigin}/?">St Charles</a><h1>Other information</h1><a href="/privacy-policy">Privacy Policy</a><a href="/terms-of-service">Mobile Terms</a></main>`;
 const robot = Buffer.from("User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\nCrawl-delay: 10\nSitemap: https://powercoalition.org/sitemap.xml\n");
 const policy = Buffer.from("<div class=\"entry-content\">Reviewed publisher privacy and mobile service policy, retained for independent source-access assessment.</div>");
-const review = { robots: parishSamplePolicyHash(robot, parishSamplePolicyUrls[0]), privacy: parishSamplePolicyHash(policy, parishSamplePolicyUrls[1]), terms: parishSamplePolicyHash(policy, parishSamplePolicyUrls[2]), secureNavigation: secure as typeof secure };
+const review = {
+	robots: parishSamplePolicyHash(robot, parishSamplePolicyUrls[0]),
+	privacy: parishSamplePolicyHash(policy, parishSamplePolicyUrls[1]),
+	terms: parishSamplePolicyHash(policy, parishSamplePolicyUrls[2]),
+	secureNavigation: secure as typeof secure
+};
 const native = `U.S.Representative Runoff
 U.S.Representative,5th Congressional District
 ■Example Person – Republican, White, Male
@@ -44,16 +49,63 @@ function network(change?: (url: string) => { status: number; body: Buffer; conte
 		requests.push({ url, time });
 		const modified = change?.(url);
 		if (modified) return { ...modified, etag: undefined };
-		if (url === parishSamplePolicyUrls[0]) return { status: 200, body: robot, contentType: "text/plain", etag: undefined };
-		if (parishSamplePolicyUrls.includes(url as typeof parishSamplePolicyUrls[number])) return { status: 200, body: policy, contentType: "text/html", etag: undefined };
-		if (url === parishSampleIndexUrl) return { status: 200, body: Buffer.from(index), contentType: "text/html", contentSecurityPolicy: secure, etag: undefined };
-		if (url === firstControl || url === secondControl) return { status: 302, body: Buffer.alloc(0), contentType: "text/html", location: (url === firstControl ? firstDocument : secondDocument).replace("https:", "http:"), contentSecurityPolicy: secure, etag: undefined };
-		if (url === firstDocument || url === secondDocument) return { status: 200, body: Buffer.from("%PDF-reviewed synthetic sample"), contentType: "application/pdf", etag: undefined };
+		if (url === parishSamplePolicyUrls[0]) {
+			return {
+				status: 200,
+				body: robot,
+				contentType: "text/plain",
+				etag: undefined
+			};
+		}
+		if (parishSamplePolicyUrls.includes(url as typeof parishSamplePolicyUrls[number])) {
+			return {
+				status: 200,
+				body: policy,
+				contentType: "text/html",
+				etag: undefined
+			};
+		}
+		if (url === parishSampleIndexUrl) {
+			return {
+				status: 200,
+				body: Buffer.from(index),
+				contentType: "text/html",
+				contentSecurityPolicy: secure,
+				etag: undefined
+			};
+		}
+		if (url === firstControl || url === secondControl) {
+			return {
+				status: 302,
+				body: Buffer.alloc(0),
+				contentType: "text/html",
+				location: (url === firstControl
+					? firstDocument
+					: secondDocument).replace("https:", "http:"),
+				contentSecurityPolicy: secure,
+				etag: undefined
+			};
+		}
+		if (url === firstDocument || url === secondDocument) {
+			return {
+				status: 200,
+				body: Buffer.from("%PDF-reviewed synthetic sample"),
+				contentType: "application/pdf",
+				etag: undefined
+			};
+		}
 		return assert.fail(`Unexpected publisher request: ${url}`);
 	};
-	return { requests, options: { fetchDocument, now: () => time, sleep: async (delay: number) => {
-		time += delay;
-	} } };
+	return {
+		requests,
+		options: {
+			fetchDocument,
+			now: () => time,
+			sleep: async (delay: number) => {
+				time += delay;
+			}
+		}
+	};
 }
 
 test("parish discovery binds the dated section and retains malformed links as explicit exceptions", () => {
@@ -66,24 +118,61 @@ test("parish discovery binds the dated section and retains malformed links as ex
 });
 
 test("parish discovery holds ambiguous elections, unknown sections, duplicate controls and new policies", () => {
-	for (const body of [index.replace("December 14", "December 32"), index.replace("Municipal General", "Unknown Election"), index.replace("West Carroll (opens in a new tab)", "Unknown Parish"), index.replace(secondControl, firstControl), index.replace("</main>", "<a href=\"/new-terms\">New terms</a></main>"), index.replace("<h1>Other information</h1>", "<h1>December 14, 2030 U.S. Representative Runoff &amp; Municipal General</h1>"), index + index]) assert.throws(() => readParishSampleIndex(body));
-	for (const address of [firstControl.replace("https:", "http:"), firstControl.replace("powercoalition.org", "example.org"), `${firstControl}&extra=1`, `${firstControl}#fragment`, firstControl.replace("1234", "0")]) assert.throws(() => parishSampleDownloadControl(address));
+	for (const body of [
+		index.replace("December 14", "December 32"),
+		index.replace("Municipal General", "Unknown Election"),
+		index.replace("West Carroll (opens in a new tab)", "Unknown Parish"),
+		index.replace(secondControl, firstControl),
+		index.replace("</main>", "<a href=\"/new-terms\">New terms</a></main>"),
+		index.replace("<h1>Other information</h1>", "<h1>December 14, 2030 U.S. Representative Runoff &amp; Municipal General</h1>"),
+		index + index
+	]) assert.throws(() => readParishSampleIndex(body));
+	for (const address of [
+		firstControl.replace("https:", "http:"),
+		firstControl.replace("powercoalition.org", "example.org"),
+		`${firstControl}&extra=1`,
+		`${firstControl}#fragment`,
+		firstControl.replace("1234", "0")
+	]) assert.throws(() => parishSampleDownloadControl(address));
 });
 
 test("parish secure navigation upgrades only the exact same-host document with enforced publisher CSP", () => {
 	assert.equal(resolveParishSampleDocument(firstDocument.replace("https:", "http:"), "2030-12-14", secure, secure), firstDocument);
 	assert.equal(resolveParishSampleDocument(firstDocument, "2030-12-14", undefined, undefined), firstDocument);
 	assert.equal(resolveParishSampleDocument(firstDocument.replace("SampleBallot", "Sample-Ballot"), "2030-12-14", secure, secure), firstDocument.replace("SampleBallot", "Sample-Ballot"));
-	for (const [first, second] of [[undefined, secure], [secure, undefined], ["upgrade-insecure-requests-extra", secure], [secure, "default-src https:"]]) assert.throws(() => resolveParishSampleDocument(firstDocument.replace("https:", "http:"), "2030-12-14", first, second));
-	for (const url of [firstDocument.replace("powercoalition.org", "other.example"), `${firstDocument}?download=1`, `${firstDocument}#page=1`, firstDocument.replace("2030-3", "2028-3"), firstDocument.replace("/uploads/", "/other/"), firstDocument.replace("powercoalition.org", "user:password@powercoalition.org"), firstDocument.replace("powercoalition.org", "powercoalition.org:8080")]) assert.throws(() => resolveParishSampleDocument(url, "2030-12-14", secure, secure));
+	for (const [first, second] of [
+		[undefined, secure],
+		[secure, undefined],
+		["upgrade-insecure-requests-extra", secure],
+		[secure, "default-src https:"]
+	]) assert.throws(() => resolveParishSampleDocument(firstDocument.replace("https:", "http:"), "2030-12-14", first, second));
+	for (const url of [
+		firstDocument.replace("powercoalition.org", "other.example"),
+		`${firstDocument}?download=1`,
+		`${firstDocument}#page=1`,
+		firstDocument.replace("2030-3", "2028-3"),
+		firstDocument.replace("/uploads/", "/other/"),
+		firstDocument.replace("powercoalition.org", "user:password@powercoalition.org"),
+		firstDocument.replace("powercoalition.org", "powercoalition.org:8080")
+	]) assert.throws(() => resolveParishSampleDocument(url, "2030-12-14", secure, secure));
 });
 
 test("parish collection follows offered controls serially with source fingerprints and no insecure request", async () => {
 	const input = network();
-	const result = await collectParishSampleBatch(["West Carroll", "Caddo", "St Charles", "Orleans"], review, input.options);
+	const result = await collectParishSampleBatch([
+		"West Carroll",
+		"Caddo",
+		"St Charles",
+		"Orleans"
+	], review, input.options);
 	assert.equal(result.official, false);
 	assert.equal(result.publicationApproved, false);
-	assert.deepEqual(result.results.map(item => item.status), ["collected", "collected", "held", "held"]);
+	assert.deepEqual(result.results.map(item => item.status), [
+		"collected",
+		"collected",
+		"held",
+		"held"
+	]);
 	assert.equal(result.results[0]!.navigation!.location, firstDocument.replace("https:", "http:"));
 	assert.equal(result.results[0]!.documentUrl, firstDocument);
 	assert.equal(result.captures.length, 6);
@@ -97,12 +186,24 @@ test("parish collection follows offered controls serially with source fingerprin
 });
 
 test("parish publisher access holds stop later requests without replacing prior evidence", async () => {
-	const input = network(url => url === firstControl ? { status: 403, body: Buffer.alloc(0), contentType: "text/html" } : undefined);
+	const input = network(url => url === firstControl
+		? {
+				status: 403,
+				body: Buffer.alloc(0),
+				contentType: "text/html"
+			}
+		: undefined);
 	const result = await collectParishSampleBatch(["West Carroll", "Caddo"], review, input.options);
 	assert.deepEqual(result.results.map(item => item.status), ["held", "held"]);
 	assert.equal(result.results[1]!.reason, "publisher-access-or-capacity-held");
 	assert.equal(input.requests.some(item => item.url === firstDocument || item.url === secondControl), false);
-	const changed = network(url => url === parishSamplePolicyUrls[1] ? { status: 200, body: Buffer.from("<div class=\"entry-content\">Changed publisher policy that requires a separate review before subsequent collection or download requests.</div>"), contentType: "text/html" } : undefined);
+	const changed = network(url => url === parishSamplePolicyUrls[1]
+		? {
+				status: 200,
+				body: Buffer.from("<div class=\"entry-content\">Changed publisher policy that requires a separate review before subsequent collection or download requests.</div>"),
+				contentType: "text/html"
+			}
+		: undefined);
 	await assert.rejects(collectParishSampleBatch(["West Carroll"], review, changed.options), /policy changed/u);
 	assert.equal(changed.requests.some(item => item.url === parishSampleIndexUrl), false);
 });
@@ -110,17 +211,28 @@ test("parish publisher access holds stop later requests without replacing prior 
 test("parish evidence is persisted before subsequent requests and a storage failure ends intake", async () => {
 	const input = network();
 	const retained: string[] = [];
-	await assert.rejects(collectParishSampleBatch(["West Carroll", "Caddo"], review, { ...input.options, onCapture: async (capture) => {
-		if (capture.url === firstDocument) throw new Error("Synthetic storage failure.");
-		retained.push(capture.url);
-	} }), ParishSamplePersistenceError);
+	await assert.rejects(collectParishSampleBatch(["West Carroll", "Caddo"], review, {
+		...input.options,
+		onCapture: async (capture) => {
+			if (capture.url === firstDocument) throw new Error("Synthetic storage failure.");
+			retained.push(capture.url);
+		}
+	}), ParishSamplePersistenceError);
 	assert.deepEqual(retained, [...parishSamplePolicyUrls, parishSampleIndexUrl]);
 	assert.equal(input.requests.some(item => item.url === secondControl), false);
 });
 
 test("parish format holds retain safe redirect evidence without following an unknown document", async () => {
 	const location = firstDocument.replace("-2030-3.pdf", "-2030-final-.pdf").replace("https:", "http:");
-	const input = network(url => url === firstControl ? { status: 302, body: Buffer.alloc(0), contentType: "text/html", contentSecurityPolicy: secure, location } : undefined);
+	const input = network(url => url === firstControl
+		? {
+				status: 302,
+				body: Buffer.alloc(0),
+				contentType: "text/html",
+				contentSecurityPolicy: secure,
+				location
+			}
+		: undefined);
 	const result = await collectParishSampleBatch(["West Carroll"], review, input.options);
 	assert.equal(result.results[0]!.status, "held");
 	assert.equal(result.results[0]!.navigation!.location, location);
@@ -128,8 +240,19 @@ test("parish format holds retain safe redirect evidence without following an unk
 });
 
 test("parish collection requires bounded selection and current enforced secure navigation", async () => {
-	for (const selected of [[], Array.from<string>({ length: 26 }).fill("Caddo"), ["Caddo", "Caddo"], ["Unknown Parish"]]) await assert.rejects(collectParishSampleBatch(selected, review), /at most 25/u);
-	const input = network(url => url === parishSampleIndexUrl ? { status: 200, body: Buffer.from(index), contentType: "text/html" } : undefined);
+	for (const selected of [
+		[],
+		Array.from<string>({ length: 26 }).fill("Caddo"),
+		["Caddo", "Caddo"],
+		["Unknown Parish"]
+	]) await assert.rejects(collectParishSampleBatch(selected, review), /at most 25/u);
+	const input = network(url => url === parishSampleIndexUrl
+		? {
+				status: 200,
+				body: Buffer.from(index),
+				contentType: "text/html"
+			}
+		: undefined);
 	await assert.rejects(collectParishSampleBatch(["West Carroll"], review, input.options), /secure navigation/u);
 	assert.equal(input.requests.some(item => item.url === firstControl), false);
 });
@@ -141,18 +264,42 @@ test("parish preparation preserves source-stated party while excluding race, gen
 	assert.equal(records[2]!.office, "Aldermen,Village of Example");
 	assert.equal(records[2]!.statedParty, "No Party");
 	assert.doesNotMatch(JSON.stringify(records), /White|Black|Female|Male|Shall|Republican leaning/u);
-	for (const record of records) assert.deepEqual(Object.keys(record).sort(), ["id", "name", "office", "sourcePage", "statedParty"]);
-	for (const text of [native.replace("December 14", "December 15"), native.replace("WEST CARROLL", "CADDO"), native.replace("Aldermen,Village of Example", "Unknown office"), native.replace("Republican, White, Male", "Republican or Democrat"), native.replace("■Example Person", "■Example\u0000Person"), native.replace("■Third Person", "■Example Person").replace("No Party", "Republican").replace("Aldermen,Village of Example", "U.S.Representative,5th Congressional District")]) assert.throws(() => readParishCandidateReferences(text, "West Carroll", "2030-12-14"));
+	for (const record of records) {
+		assert.deepEqual(Object.keys(record).sort(), [
+			"id",
+			"name",
+			"office",
+			"sourcePage",
+			"statedParty"
+		]);
+	}
+	for (const text of [
+		native.replace("December 14", "December 15"),
+		native.replace("WEST CARROLL", "CADDO"),
+		native.replace("Aldermen,Village of Example", "Unknown office"),
+		native.replace("Republican, White, Male", "Republican or Democrat"),
+		native.replace("■Example Person", "■Example\u0000Person"),
+		native.replace("■Third Person", "■Example Person").replace("No Party", "Republican").replace("Aldermen,Village of Example", "U.S.Representative,5th Congressional District")
+	]) assert.throws(() => readParishCandidateReferences(text, "West Carroll", "2030-12-14"));
 });
 
 test("parish CLI preserves exact external evidence and release-independent research files", async (context) => {
 	const directory = await realpath(await mkdtemp(join(tmpdir(), "parish-samples-")));
 	context.after(() => rm(directory, { force: true, recursive: true }));
 	const input = network();
-	const plan = { schemaVersion: 1, type: "louisiana-parish-sample-research-collection", outputRoot: join(directory, "captured"), parishes: ["West Carroll", "St Charles"], accessReview: review };
+	const plan = {
+		schemaVersion: 1,
+		type: "louisiana-parish-sample-research-collection",
+		outputRoot: join(directory, "captured"),
+		parishes: ["West Carroll", "St Charles"],
+		accessReview: review
+	};
 	const path = join(directory, "plan.json");
 	await writeFile(path, JSON.stringify(plan));
-	const result = await collectLouisianaParishSamples(path, { collect: (selected, accessReview) => collectParishSampleBatch(selected, accessReview, input.options), extract: async () => native });
+	const result = await collectLouisianaParishSamples(path, {
+		collect: (selected, accessReview) => collectParishSampleBatch(selected, accessReview, input.options),
+		extract: async () => native
+	});
 	assert.equal(result.referenceRecords, 3);
 	assert.equal(result.heldParishes, 1);
 	assert.equal(result.imported, false);
@@ -164,11 +311,21 @@ test("parish CLI preserves exact external evidence and release-independent resea
 	assert.equal(parishSampleHash(await readFile(join(result.outputDirectory, "candidate-references.csv"))), report.csvSha256);
 	for (const document of report.inputs) assert.equal(parishSampleHash(await readFile(join(result.outputDirectory, document.path))), document.sha256);
 	const preparationPath = join(directory, "preparation-plan.json");
-	const preparationPlan = { schemaVersion: 1, type: "louisiana-parish-sample-research-preparation", capturePath: join(result.outputDirectory, "capture.json"), captureSha256: result.captureSha256, outputRoot: join(directory, "prepared") };
+	const preparationPlan = {
+		schemaVersion: 1,
+		type: "louisiana-parish-sample-research-preparation",
+		capturePath: join(result.outputDirectory, "capture.json"),
+		captureSha256: result.captureSha256,
+		outputRoot: join(directory, "prepared")
+	};
 	await writeFile(preparationPath, JSON.stringify(preparationPlan));
 	const requestCount = input.requests.length;
-	const first = await prepareLouisianaParishSamples(preparationPath, { extract: async () => native });
-	const second = await prepareLouisianaParishSamples(preparationPath, { extract: async () => native });
+	const first = await prepareLouisianaParishSamples(preparationPath, {
+		extract: async () => native
+	});
+	const second = await prepareLouisianaParishSamples(preparationPath, {
+		extract: async () => native
+	});
 	assert.equal(first.referenceRecords, 3);
 	assert.equal(first.heldParishes, 1);
 	assert.equal(first.publisherRequests, 0);
@@ -181,10 +338,21 @@ test("parish CLI preserves exact external evidence and release-independent resea
 	assert.equal(prepared.personalApplicabilityVerified, false);
 	assert.equal(prepared.references[0].capturedAt, report.references[0].capturedAt);
 	const referencePlanPath = join(directory, "references-plan.json");
-	const referencePlan = { schemaVersion: 1, type: "louisiana-parish-reference-preparation", captures: [{ path: preparationPlan.capturePath, sha256: result.captureSha256 }], outputRoot: join(directory, "references") };
+	const referencePlan = {
+		schemaVersion: 1,
+		type: "louisiana-parish-reference-preparation",
+		captures: [
+			{ path: preparationPlan.capturePath, sha256: result.captureSha256 }
+		],
+		outputRoot: join(directory, "references")
+	};
 	await writeFile(referencePlanPath, JSON.stringify(referencePlan));
-	const references = await prepareLouisianaParishReferences(referencePlanPath, { extract: async () => native });
-	const repeated = await prepareLouisianaParishReferences(referencePlanPath, { extract: async () => native });
+	const references = await prepareLouisianaParishReferences(referencePlanPath, {
+		extract: async () => native
+	});
+	const repeated = await prepareLouisianaParishReferences(referencePlanPath, {
+		extract: async () => native
+	});
 	assert.equal(references.records, 3);
 	assert.equal(references.collections, 1);
 	assert.equal(references.heldParishes, 1);
@@ -196,11 +364,28 @@ test("parish CLI preserves exact external evidence and release-independent resea
 	assert.equal(referenceReview.automaticImportApproved, false);
 	assert.equal(referenceReview.publicationApproved, false);
 	assert.equal(referenceReview.collections[0].evidence[0].capturedAt, report.references[0].capturedAt);
-	await writeFile(referencePlanPath, JSON.stringify({ ...referencePlan, captures: [...referencePlan.captures, ...referencePlan.captures] }));
+	await writeFile(referencePlanPath, JSON.stringify({
+		...referencePlan,
+		captures: [
+			...referencePlan.captures,
+			...referencePlan.captures
+		]
+	}));
 	await assert.rejects(prepareLouisianaParishReferences(referencePlanPath), /distinct pinned/u);
-	await writeFile(referencePlanPath, JSON.stringify({ ...referencePlan, captures: [{ ...referencePlan.captures[0], sha256: "0".repeat(64) }] }));
+	await writeFile(referencePlanPath, JSON.stringify({
+		...referencePlan,
+		captures: [
+			{
+				...referencePlan.captures[0],
+				sha256: "0".repeat(64)
+			}
+		]
+	}));
 	await assert.rejects(prepareLouisianaParishReferences(referencePlanPath), /manifest hash changed/u);
-	await writeFile(preparationPath, JSON.stringify({ ...preparationPlan, captureSha256: "0".repeat(64) }));
+	await writeFile(preparationPath, JSON.stringify({
+		...preparationPlan,
+		captureSha256: "0".repeat(64)
+	}));
 	await assert.rejects(prepareLouisianaParishSamples(preparationPath), /manifest hash changed/u);
 	await writeFile(preparationPath, JSON.stringify(preparationPlan));
 	const pdf = report.inputs.find((document: { path: string }) => document.path.endsWith(".pdf"));
@@ -216,9 +401,20 @@ test("optional parish questions preserve candidate output, original hashes and o
 	const questionXml = `<pdf2xml producer="poppler"><page number="1"><fontspec id="1" family="ABCDEF+Rockwell" size="18" color="#4a95d7"/><fontspec id="2" family="ABCDEF+NunitoSans" size="15" color="#231f20"/><fontspec id="3" family="ABCDEF+FontAwesome6Pro" size="21" color="#000000"/><fontspec id="4" family="ABCDEF+NunitoSans-SemiBold" size="17" color="#231f20"/><fontspec id="5" family="ABCDEF+Rockwell" size="25" color="#252d69"/><fontspec id="6" family="ABCDEF+Rockwell" size="29" color="#252d69"/><text font="5" top="355" left="58">ELECTION DAY</text><text font="6" top="401" left="58">December 14, 2030</text><text font="1">Parishwide Proposition</text><text font="2">Shall this proposition be adopted?</text><text font="3">■</text><text font="4">Yes</text><text font="3">■</text><text font="4">No</text></page></pdf2xml>`;
 	const input = network();
 	const path = join(directory, "plan.json");
-	const plan = { schemaVersion: 1, type: "louisiana-parish-sample-research-collection", outputRoot: join(directory, "captured"), parishes: ["West Carroll", "St Charles"], accessReview: review, includeQuestions: true };
+	const plan = {
+		schemaVersion: 1,
+		type: "louisiana-parish-sample-research-collection",
+		outputRoot: join(directory, "captured"),
+		parishes: ["West Carroll", "St Charles"],
+		accessReview: review,
+		includeQuestions: true
+	};
 	await writeFile(path, JSON.stringify(plan));
-	const result = await collectLouisianaParishSamples(path, { collect: (selected, accessReview) => collectParishSampleBatch(selected, accessReview, input.options), extract: async () => native, questionXml: async () => questionXml });
+	const result = await collectLouisianaParishSamples(path, {
+		collect: (selected, accessReview) => collectParishSampleBatch(selected, accessReview, input.options),
+		extract: async () => native,
+		questionXml: async () => questionXml
+	});
 	const report = JSON.parse(await readFile(join(result.outputDirectory, "capture.json"), "utf8"));
 	assert.equal(report.references.length, 3);
 	assert.equal(report.questionReferences.length, 1);
@@ -228,22 +424,41 @@ test("optional parish questions preserve candidate output, original hashes and o
 	const csv = await readFile(join(result.outputDirectory, "question-references.csv"));
 	assert.equal(parishSampleHash(csv), report.questionCsvSha256);
 	const preparationPath = join(directory, "prepare.json");
-	const preparation = { schemaVersion: 1, type: "louisiana-parish-sample-research-preparation", capturePath: join(result.outputDirectory, "capture.json"), captureSha256: result.captureSha256, outputRoot: join(directory, "prepared"), includeQuestions: true };
+	const preparation = {
+		schemaVersion: 1,
+		type: "louisiana-parish-sample-research-preparation",
+		capturePath: join(result.outputDirectory, "capture.json"),
+		captureSha256: result.captureSha256,
+		outputRoot: join(directory, "prepared"),
+		includeQuestions: true
+	};
 	await writeFile(preparationPath, JSON.stringify(preparation));
 	const requestCount = input.requests.length;
-	const first = await prepareLouisianaParishSamples(preparationPath, { extract: async () => native, questionXml: async () => questionXml });
-	const second = await prepareLouisianaParishSamples(preparationPath, { extract: async () => native, questionXml: async () => questionXml });
+	const first = await prepareLouisianaParishSamples(preparationPath, {
+		extract: async () => native,
+		questionXml: async () => questionXml
+	});
+	const second = await prepareLouisianaParishSamples(preparationPath, {
+		extract: async () => native,
+		questionXml: async () => questionXml
+	});
 	assert.equal(first.preparedQuestions, 1);
 	assert.equal(first.heldQuestions, 0);
 	assert.equal(first.preparationSha256, second.preparationSha256);
 	assert.deepEqual(await readFile(join(first.outputDirectory, "question-references.csv")), csv);
 	assert.equal(input.requests.length, requestCount);
-	const candidateHeld = await prepareLouisianaParishSamples(preparationPath, { extract: async () => native.replace("Aldermen,Village of Example", "Unknown office"), questionXml: async () => questionXml });
+	const candidateHeld = await prepareLouisianaParishSamples(preparationPath, {
+		extract: async () => native.replace("Aldermen,Village of Example", "Unknown office"),
+		questionXml: async () => questionXml
+	});
 	assert.equal(candidateHeld.referenceRecords, 0);
 	assert.equal(candidateHeld.preparedQuestions, 1);
-	const unavailable = await prepareLouisianaParishSamples(preparationPath, { extract: async () => native, questionXml: async () => {
-		throw new Error("Native XML unavailable.");
-	} });
+	const unavailable = await prepareLouisianaParishSamples(preparationPath, {
+		extract: async () => native,
+		questionXml: async () => {
+			throw new Error("Native XML unavailable.");
+		}
+	});
 	assert.equal(unavailable.referenceRecords, 3);
 	assert.equal(unavailable.preparedQuestions, 0);
 	assert.equal(JSON.parse(await readFile(join(unavailable.outputDirectory, "preparation.json"), "utf8")).questionPreparation[0].reason, "Native XML unavailable.");
@@ -291,14 +506,31 @@ test("parish references support runoff-only guides and a wrapped judicial electi
 });
 
 test("public document metadata exposes only bounded enforced CSP and keeps redirect handling passive", async () => {
-	for (const policyValue of [secure, `${secure}\r\nInjected: value`, "a".repeat(4097), [secure, "default-src none"]]) {
+	for (const policyValue of [
+		secure,
+		`${secure}\r\nInjected: value`,
+		"a".repeat(4097),
+		[secure, "default-src none"]
+	]) {
 		let requests = 0;
-		const result = await fetchRemoteSourceDocument("https://example.com/export", { allowedHosts: ["example.com"], resolveAddresses: async () => [{ address: "93.184.216.34", family: 4 }], transport: async () => {
-			requests++;
-			return { statusCode: 302, headers: { "content-security-policy": policyValue, "location": "http://example.com/document.pdf" }, body: Readable.from([]) };
-		} });
+		const result = await fetchRemoteSourceDocument("https://example.com/export", {
+			allowedHosts: ["example.com"],
+			resolveAddresses: async () => [
+				{ address: "93.184.216.34", family: 4 }
+			],
+			transport: async () => {
+				requests++;
+				return {
+					statusCode: 302,
+					headers: { "content-security-policy": policyValue, "location": "http://example.com/document.pdf" },
+					body: Readable.from([])
+				};
+			}
+		});
 		assert.equal(requests, 1);
 		assert.equal(result.location, "http://example.com/document.pdf");
-		assert.equal(result.contentSecurityPolicy, policyValue === secure ? secure : undefined);
+		assert.equal(result.contentSecurityPolicy, policyValue === secure
+			? secure
+			: undefined);
 	}
 });

@@ -32,7 +32,16 @@ export function johnsonQuestionAudience(title: string, officialText: string) {
 	throw new Error("The Johnson County question's printed jurisdiction requires review.");
 }
 function questionId(source: Pick<StateBallotSource, "id" | "electionDate">, question: Omit<StateBallotQuestion, "id">) {
-	return createHash("sha256").update(JSON.stringify([source.id, source.electionDate, question.audience, question.title, question.officialText, question.choices, question.pages, question.sourceUrl])).digest("hex").slice(0, 24);
+	return createHash("sha256").update(JSON.stringify([
+		source.id,
+		source.electionDate,
+		question.audience,
+		question.title,
+		question.officialText,
+		question.choices,
+		question.pages,
+		question.sourceUrl
+	])).digest("hex").slice(0, 24);
 }
 export function readJohnsonSampleQuestions(source: StateBallotSource, document: JohnsonSampleText, headings: readonly JohnsonQuestionHeading[]) {
 	const style = johnsonSampleStyle(document.url, source.electionDate);
@@ -66,8 +75,20 @@ export function readJohnsonSampleQuestions(source: StateBallotSource, document: 
 			requireValue(wording.startsWith("Shall the following ") && wording.length >= 40 && wording.length <= 24000, "complete printed wording");
 			cursor += 2;
 			const officialText = wording.replace(/(?=Summary:|Full Text:)/gu, "\n\n").trim();
-			const question = { audience: johnsonQuestionAudience(heading.title, officialText), title: heading.title, officialText, choices: ["YES", "NO"] as [string, string], pages: [pageIndex + 1], sourceUrl: document.url, explicitlyAdvisory: /\badvisory\b/iu.test(heading.title), voterApplicabilityVerified: false as const };
-			result.push({ id: questionId(source, question), ...question });
+			const question = {
+				audience: johnsonQuestionAudience(heading.title, officialText),
+				title: heading.title,
+				officialText,
+				choices: ["YES", "NO"] as [string, string],
+				pages: [pageIndex + 1],
+				sourceUrl: document.url,
+				explicitlyAdvisory: /\badvisory\b/iu.test(heading.title),
+				voterApplicabilityVerified: false as const
+			};
+			result.push({
+				id: questionId(source, question),
+				...question
+			});
 		}
 	}
 	requireValue(result.length > 0 || headings.length === 0, "missing advertised public measures");

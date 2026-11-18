@@ -18,14 +18,52 @@ const source = electionReferenceSources.find(source => source.id === "la-senate-
 const future: ElectionReferenceSource = { ...source, id: "la-test-reporting-2028", electionDate: "2028-11-07" };
 const cutoff = Date.parse(`${source.electionDate}T00:00:00Z`) + 2 * 86400000;
 function snapshot(collection = source): ElectionReferenceSnapshot {
-	const documents = collection.documents.map(document => ({ url: document.url, sha256: "a".repeat(64), capturedAt: "2026-10-20T12:00:00.000Z", includedRecordCount: 1 }));
-	return { schemaVersion: 1, type: "election-references", stateCode: "LA", sourceId: collection.id, electionDate: collection.electionDate, retrievedAt: documents[0]!.capturedAt, sourceSha256: electionReferenceDocumentDigest(documents), recordCount: 1, documents, records: [{ id: "b".repeat(24), name: "Example Person", office: "Mayor", jurisdiction: "Example town", scope: "local", facts: ["A dated candidate statement."], sourceDocumentIndex: 0 }] };
+	const documents = collection.documents.map(document => ({
+		url: document.url,
+		sha256: "a".repeat(64),
+		capturedAt: "2026-10-20T12:00:00.000Z",
+		includedRecordCount: 1
+	}));
+	return {
+		schemaVersion: 1,
+		type: "election-references",
+		stateCode: "LA",
+		sourceId: collection.id,
+		electionDate: collection.electionDate,
+		retrievedAt: documents[0]!.capturedAt,
+		sourceSha256: electionReferenceDocumentDigest(documents),
+		recordCount: 1,
+		documents,
+		records: [
+			{
+				id: "b".repeat(24),
+				name: "Example Person",
+				office: "Mayor",
+				jurisdiction: "Example town",
+				scope: "local",
+				facts: ["A dated candidate statement."],
+				sourceDocumentIndex: 0
+			}
+		]
+	};
 }
 
 test("reference selection accepts explicit source/date pins and rejects malformed or repeated values", () => {
 	assert.deepEqual(parseElectionReferenceSelection({}), {});
 	assert.deepEqual(parseElectionReferenceSelection({ source: source.id, electionDate: source.electionDate }), { sourceId: source.id, electionDate: source.electionDate });
-	for (const query of [{ source: "../private" }, { source: [source.id] }, { source: "" }, { electionDate: "2026-02-30" }, { electionDate: "2026-11-03T00:00:00Z" }, { electionDate: "" }, { electionDate: [source.electionDate] }]) assert.throws(() => parseElectionReferenceSelection(query));
+	for (const query of [
+		{ source: "../private" },
+		{
+			source: [source.id]
+		},
+		{ source: "" },
+		{ electionDate: "2026-02-30" },
+		{ electionDate: "2026-11-03T00:00:00Z" },
+		{ electionDate: "" },
+		{
+			electionDate: [source.electionDate]
+		}
+	]) assert.throws(() => parseElectionReferenceSelection(query));
 });
 
 test("default and personal reference selection expires while exact historical selection stays readable", async (context) => {
@@ -34,7 +72,11 @@ test("default and personal reference selection expires while exact historical se
 	const storage = createElectionReferenceStorage(directory);
 	await storage.write(source, snapshot());
 	let clock = cutoff - 1;
-	const repository = createElectionReferenceRepository({ dataDirectory: directory, sources: [source, future], now: () => clock });
+	const repository = createElectionReferenceRepository({
+		dataDirectory: directory,
+		sources: [source, future],
+		now: () => clock
+	});
 	assert.equal((await repository.getSnapshots!("LA")).length, 1);
 	for (const instant of [cutoff, cutoff + 1]) {
 		clock = instant;
@@ -53,7 +95,11 @@ test("actual reference routes preserve expiry, expose only stored dates and bind
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	await createElectionReferenceStorage(directory).write(source, snapshot());
 	let clock = cutoff - 1;
-	const repository = createElectionReferenceRepository({ dataDirectory: directory, sources: [source, future], now: () => clock });
+	const repository = createElectionReferenceRepository({
+		dataDirectory: directory,
+		sources: [source, future],
+		now: () => clock
+	});
 	const app = express();
 	registerElectionReferenceRoutes(app, repository, undefined, undefined, () => clock);
 	const server = app.listen(0, "127.0.0.1");
@@ -77,8 +123,18 @@ test("actual reference routes preserve expiry, expose only stored dates and bind
 			assert.equal(historic.headers.get("cache-control"), "no-store");
 		}
 	}
-	assert.deepEqual(await (await fetch(`${url}/catalog`)).json(), { stateCode: "LA", elections: [source.electionDate] });
-	for (const query of ["?electionDate=2026-02-30", "?electionDate=2019-01-01", "?source=unknown", "?source=la-senate-reporting-2026&source=unknown", `?source=${source.id}&electionDate=${future.electionDate}`, "?includeHistory=true"]) assert.equal((await fetch(url + query)).status, 400);
+	assert.deepEqual(await (await fetch(`${url}/catalog`)).json(), {
+		stateCode: "LA",
+		elections: [source.electionDate]
+	});
+	for (const query of [
+		"?electionDate=2026-02-30",
+		"?electionDate=2019-01-01",
+		"?source=unknown",
+		"?source=la-senate-reporting-2026&source=unknown",
+		`?source=${source.id}&electionDate=${future.electionDate}`,
+		"?includeHistory=true"
+	]) assert.equal((await fetch(url + query)).status, 400);
 	assert.equal((await fetch(`${url}/catalog?source=unknown`)).status, 400);
 	assert.equal((await fetch(`${url.replace("/LA", "/XX")}/catalog`)).status, 400);
 	await writeFile(join(directory, `references-${source.id}.json`), "{}");
@@ -88,7 +144,10 @@ test("actual reference routes preserve expiry, expose only stored dates and bind
 
 test("a repository returning an expired or different collection cannot override current route selection", async (context) => {
 	const app = express();
-	registerElectionReferenceRoutes(app, { getSources: async () => [source, future], getSnapshot: async () => snapshot() }, undefined, undefined, () => cutoff);
+	registerElectionReferenceRoutes(app, {
+		getSources: async () => [source, future],
+		getSnapshot: async () => snapshot()
+	}, undefined, undefined, () => cutoff);
 	const server = app.listen(0, "127.0.0.1");
 	await once(server, "listening");
 	context.after(() => new Promise<void>(resolve => server.close(() => resolve())));
@@ -102,13 +161,31 @@ test("a repository returning an expired or different collection cannot override 
 
 test("historical official record details request only the matching election's background", async (context) => {
 	const official = configuredStateBallotSources.find(source => source.id === "la-st-charles-sample-2026")!;
-	const record = createStateCandidateRecord(official, { name: "Example Person", office: "Mayor", jurisdiction: "Example town", party: "", status: "listed", scope: "local" })!;
+	const record = createStateCandidateRecord(official, {
+		name: "Example Person",
+		office: "Mayor",
+		jurisdiction: "Example town",
+		party: "",
+		status: "listed",
+		scope: "local"
+	})!;
 	const app = express();
 	let requested: unknown;
-	registerStateRecordDetailRoutes(app, { sources: [official], getSnapshot: async () => ({ source: official, records: [record], sha256: "a".repeat(64), retrievedAt: "2026-10-20T12:00:00.000Z" }) }, { getSources: async () => [source], getSnapshot: async (_state, selection) => {
-		requested = selection;
-		return snapshot();
-	} }, undefined, () => cutoff);
+	registerStateRecordDetailRoutes(app, {
+		sources: [official],
+		getSnapshot: async () => ({
+			source: official,
+			records: [record],
+			sha256: "a".repeat(64),
+			retrievedAt: "2026-10-20T12:00:00.000Z"
+		})
+	}, {
+		getSources: async () => [source],
+		getSnapshot: async (_state, selection) => {
+			requested = selection;
+			return snapshot();
+		}
+	}, undefined, () => cutoff);
 	const server = app.listen(0, "127.0.0.1");
 	await once(server, "listening");
 	context.after(() => new Promise<void>(resolve => server.close(() => resolve())));
@@ -130,7 +207,11 @@ test("reference history discovery preserves stored files and rejects symbolic-li
 	await storage.write(source, snapshot());
 	const path = join(directory, `references-${source.id}.json`);
 	const before = await readFile(path);
-	const repository = createElectionReferenceRepository({ dataDirectory: directory, sources: [source], now: () => cutoff });
+	const repository = createElectionReferenceRepository({
+		dataDirectory: directory,
+		sources: [source],
+		now: () => cutoff
+	});
 	assert.deepEqual(await repository.getElections!("LA"), [source.electionDate]);
 	assert.deepEqual(await readFile(path), before);
 	const aliasDirectory = join(directory, "alias");

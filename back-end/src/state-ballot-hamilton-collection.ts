@@ -48,7 +48,10 @@ export function hamiltonNoticeFingerprint(body: string, url: string) {
 	const links = descendants(nodes[0]!, node => node.nodeName === "a").map((node) => {
 		const target = new URL(attribute(node, "href"), url);
 		if (target.pathname === "/cdn-cgi/l/email-protection") target.hash = "";
-		return [stateHtmlText(node).replace(/\s+/gu, " ").trim(), target.href];
+		return [
+			stateHtmlText(node).replace(/\s+/gu, " ").trim(),
+			target.href
+		];
 	});
 	return hash(JSON.stringify({ text, links }));
 }
@@ -63,14 +66,23 @@ export function hamiltonPolicyFingerprint(body: string, url: string) {
 	if (footers.length !== 1)
 		return reject();
 	const text = (node: Parameters<typeof stateHtmlText>[0]) => stateHtmlText(node).replace(/\s+/gu, " ").trim();
-	const legal = descendants(dom, node => node.nodeName === "a" && /privacy|disclaimer|copyright|licen[cs]e|terms|polic(?:y|ies)/iu.test(`${text(node)} ${attribute(node, "href")}`)).map(node => [text(node), new URL(attribute(node, "href"), url).href]);
+	const legal = descendants(dom, node => node.nodeName === "a" && /privacy|disclaimer|copyright|licen[cs]e|terms|polic(?:y|ies)/iu.test(`${text(node)} ${attribute(node, "href")}`)).map(node => [
+		text(node),
+		new URL(attribute(node, "href"), url).href
+	]);
 	const footerLinks = descendants(footers[0]!, node => node.nodeName === "a").map((node) => {
 		const target = new URL(attribute(node, "href"), url);
 		if (target.origin !== origin || target.pathname !== "/login.aspx" || target.searchParams.size !== 1 || !target.searchParams.has("ReturnUrl"))
 			return reject();
 		return target.origin + target.pathname;
 	});
-	return hash(JSON.stringify({ footer: text(footers[0]!), footerLinks, legal: [...new Set(legal.map(pair => JSON.stringify(pair)))].sort() }));
+	return hash(JSON.stringify({
+		footer: text(footers[0]!),
+		footerLinks,
+		legal: [
+			...new Set(legal.map(pair => JSON.stringify(pair)))
+		].sort()
+	}));
 }
 export function validateHamiltonDocumentUrl(value: string) {
 	const url = new URL(value);
@@ -82,7 +94,9 @@ export function readHamiltonOfferedPublication(body: string) {
 		return reject();
 	const dom = parseStateHtml(body);
 	const links = descendants(dom, node => node.nodeName === "a" && /GENERAL ELECTION SAMPLE BALLOT/u.test(stateHtmlText(node).replace(/\s+/gu, " ").trim()));
-	const urls = [...new Set(links.map(node => new URL(attribute(node, "href"), hamiltonDiscoveryUrl).href))];
+	const urls = [
+		...new Set(links.map(node => new URL(attribute(node, "href"), hamiltonDiscoveryUrl).href))
+	];
 	if (urls.length > 1 || links.some(node => stateHtmlText(node).replace(/\s+/gu, " ").trim() !== "📄 GENERIC GENERAL ELECTION SAMPLE BALLOT"))
 		return reject();
 	if (urls[0])
@@ -90,7 +104,22 @@ export function readHamiltonOfferedPublication(body: string) {
 	return urls[0] ?? null;
 }
 export function hamiltonSource(electionDate: string): StateBallotSource {
-	return { stateCode: "TN", id: electionDate === "2026-11-03" ? "tn-hamilton-2026" : `tn-hamilton-general-${electionDate}`, label: "Hamilton County general-election sample", electionDate, url: hamiltonDiscoveryUrl, pageUrl: hamiltonDiscoveryUrl, format: "hamilton-html", snapshotStorage: "external", countyName: "Hamilton County", defaultPriority: -10, withheldDistrictScopes: ["congressional"], scopeNotice: "Hamilton County sample only; precinct eligibility is unverified." };
+	return {
+		stateCode: "TN",
+		id: electionDate === "2026-11-03"
+			? "tn-hamilton-2026"
+			: `tn-hamilton-general-${electionDate}`,
+		label: "Hamilton County general-election sample",
+		electionDate,
+		url: hamiltonDiscoveryUrl,
+		pageUrl: hamiltonDiscoveryUrl,
+		format: "hamilton-html",
+		snapshotStorage: "external",
+		countyName: "Hamilton County",
+		defaultPriority: -10,
+		withheldDistrictScopes: ["congressional"],
+		scopeNotice: "Hamilton County sample only; precinct eligibility is unverified."
+	};
 }
 export function validateHamiltonSource(source: StateBallotSource) {
 	const expected = hamiltonSource(source.electionDate);
@@ -98,8 +127,14 @@ export function validateHamiltonSource(source: StateBallotSource) {
 		return reject();
 }
 export function validateHamiltonElection(value: unknown): asserts value is HamiltonElection {
-	if (!exact(value, ["electionId", "electionDate", "pageUrl", "hamiltonDocuments"]) || value.electionId !== null || typeof value.electionDate !== "string" || value.pageUrl !== hamiltonDiscoveryUrl || !Array.isArray(value.hamiltonDocuments) || value.hamiltonDocuments.length !== 1)
+	if (!exact(value, [
+		"electionId",
+		"electionDate",
+		"pageUrl",
+		"hamiltonDocuments"
+	]) || value.electionId !== null || typeof value.electionDate !== "string" || value.pageUrl !== hamiltonDiscoveryUrl || !Array.isArray(value.hamiltonDocuments) || value.hamiltonDocuments.length !== 1) {
 		return reject();
+	}
 	validateHamiltonSource(hamiltonSource(value.electionDate));
 	const item = value.hamiltonDocuments[0];
 	if (!exact(item, ["url", "sha256"]) || typeof item.url !== "string" || typeof item.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(item.sha256))
@@ -116,8 +151,17 @@ export function readHamiltonCandidateDiscovery(body: string, now = Date.now()) {
 	if (Buffer.byteLength(body) > 8 * 1024 * 1024 || !Number.isFinite(now))
 		return reject();
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "robots", "home", "index", "policies", "publication"]) || value.schemaVersion !== 1 || value.type !== "hamilton-candidate-discovery")
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"robots",
+		"home",
+		"index",
+		"policies",
+		"publication"
+	]) || value.schemaVersion !== 1 || value.type !== "hamilton-candidate-discovery") {
 		return reject();
+	}
 	function page(value: unknown, url: string): Page {
 		if (!exact(value, ["url", "body", "sha256", "retrievedAt"]) || value.url !== url || typeof value.body !== "string" || Buffer.byteLength(value.body) > 2 * 1024 * 1024 || value.sha256 !== hash(value.body) || typeof value.retrievedAt !== "string" || !Number.isFinite(Date.parse(value.retrievedAt)) || new Date(value.retrievedAt).toISOString() !== value.retrievedAt || Date.parse(value.retrievedAt) > now)
 			return reject();
@@ -146,20 +190,43 @@ export function readHamiltonCandidateDiscovery(body: string, now = Date.now()) {
 	const date = readHamiltonPublicationDate(publication.body);
 	const source = hamiltonSource(date);
 	readHamiltonBallotDocument(source, publication.body);
-	const election = { electionId: null, electionDate: date, pageUrl: hamiltonDiscoveryUrl, hamiltonDocuments: [{ url, sha256: publication.sha256 }] };
+	const election = {
+		electionId: null,
+		electionDate: date,
+		pageUrl: hamiltonDiscoveryUrl,
+		hamiltonDocuments: [
+			{ url, sha256: publication.sha256 }
+		]
+	};
 	validateHamiltonElection(election);
-	return { index, elections: [election], publication };
+	return {
+		index,
+		elections: [election],
+		publication
+	};
 }
 export async function fetchHamiltonCandidateDiscovery(options: Options = {}) {
 	const request = options.requestDocument ?? fetchRemoteSourceDocument;
 	const now = options.now ?? Date.now;
 	const sleep = options.sleep ?? (milliseconds => wait(milliseconds));
 	async function capture(url: string): Promise<Page> {
-		const reply = await request(url, { allowedHosts: ["elect.hamiltontn.gov"], maxBytes: 2 * 1024 * 1024, timeoutMs: 30000 });
-		if (reply.status !== 200 || (url.endsWith("robots.txt") ? reply.contentType !== "text/plain" : reply.contentType !== "text/html"))
+		const reply = await request(url, {
+			allowedHosts: ["elect.hamiltontn.gov"],
+			maxBytes: 2 * 1024 * 1024,
+			timeoutMs: 30000
+		});
+		if (reply.status !== 200 || (url.endsWith("robots.txt")
+			? reply.contentType !== "text/plain"
+			: reply.contentType !== "text/html")) {
 			return reject();
+		}
 		const body = new TextDecoder("utf-8", { fatal: true }).decode(reply.body);
-		return { url, body, sha256: hash(body), retrievedAt: new Date(now()).toISOString() };
+		return {
+			url,
+			body,
+			sha256: hash(body),
+			retrievedAt: new Date(now()).toISOString()
+		};
 	}
 	const robots = await capture(`${origin}/robots.txt`);
 	if (robots.sha256 !== hamiltonRobotsSha256)
@@ -183,7 +250,15 @@ export async function fetchHamiltonCandidateDiscovery(options: Options = {}) {
 		await sleep(1000);
 		publication = await capture(url);
 	}
-	const body = JSON.stringify({ schemaVersion: 1, type: "hamilton-candidate-discovery", robots, home, index, policies, publication });
+	const body = JSON.stringify({
+		schemaVersion: 1,
+		type: "hamilton-candidate-discovery",
+		robots,
+		home,
+		index,
+		policies,
+		publication
+	});
 	readHamiltonCandidateDiscovery(body, now());
 	return body;
 }
@@ -193,15 +268,26 @@ export async function fetchHamiltonCandidateCapture(source: StateBallotSource, o
 	const parsed = readHamiltonCandidateDiscovery(discovery, (options.now ?? Date.now)());
 	if (parsed.elections.length && !parsed.elections.some(item => item.electionDate === source.electionDate))
 		return reject();
-	return JSON.stringify({ schemaVersion: 1, type: "hamilton-candidate-capture", electionDate: source.electionDate, discovery: JSON.parse(discovery) });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "hamilton-candidate-capture",
+		electionDate: source.electionDate,
+		discovery: JSON.parse(discovery)
+	});
 }
 export function parseHamiltonCandidateCapture(source: StateBallotSource, body: string, now = Date.now(), previous: readonly StateCandidateRecord[] = [], previousQuestions: readonly StateBallotQuestion[] = []) {
 	validateHamiltonSource(source);
 	if (Buffer.byteLength(body) > 8 * 1024 * 1024)
 		return reject();
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "electionDate", "discovery"]) || value.schemaVersion !== 1 || value.type !== "hamilton-candidate-capture" || value.electionDate !== source.electionDate)
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"electionDate",
+		"discovery"
+	]) || value.schemaVersion !== 1 || value.type !== "hamilton-candidate-capture" || value.electionDate !== source.electionDate) {
 		return reject();
+	}
 	const discovery = readHamiltonCandidateDiscovery(JSON.stringify(value.discovery), now);
 	if (!discovery.publication) {
 		if (previous.length || previousQuestions.length)
@@ -212,8 +298,24 @@ export function parseHamiltonCandidateCapture(source: StateBallotSource, body: s
 		return reject();
 	const parsed = readHamiltonBallotDocument(source, discovery.publication.body);
 	const document = discovery.publication;
-	const sha256 = hamiltonDocumentDigest([{ url: document.url, sha256: document.sha256 }]);
+	const sha256 = hamiltonDocumentDigest([
+		{ url: document.url, sha256: document.sha256 }
+	]);
 	if (previous.some(record => !parsed.records.some(item => item.id === record.id)) || previousQuestions.some(question => !parsed.ballotQuestions.some(item => item.id === question.id)))
 		return reject();
-	return { records: parsed.records, ballotQuestions: parsed.ballotQuestions, retrievedAt: document.retrievedAt, sha256, collectionIndexSha256: sha256, documents: [{ url: document.url, sha256: document.sha256, retrievedAt: document.retrievedAt, includedRecordCount: parsed.records.length }] };
+	return {
+		records: parsed.records,
+		ballotQuestions: parsed.ballotQuestions,
+		retrievedAt: document.retrievedAt,
+		sha256,
+		collectionIndexSha256: sha256,
+		documents: [
+			{
+				url: document.url,
+				sha256: document.sha256,
+				retrievedAt: document.retrievedAt,
+				includedRecordCount: parsed.records.length
+			}
+		]
+	};
 }

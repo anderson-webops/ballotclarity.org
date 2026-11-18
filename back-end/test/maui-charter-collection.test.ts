@@ -24,9 +24,26 @@ function fixture() {
 	const bodies = new Map([
 		[`${origin}/robots.txt`, robots],
 		[`${origin}/charter-amendments`, `<h1>2028 Charter Amendments</h1>${[1, 2].map(identifier => `<h4>Maui: Procedure ${identifier}</h4><a href="https://img1.wsimg.com/blobby/go/d625d658-8582-4d35-b9fe-7702a7c85585/downloads/00000000-0000-0000-0000-00000000000${identifier}/Reso%2028-${identifier}.pdf?ver=1789162285624">Reso 28-${identifier}</a>`).join("")}`],
-		[`${origin}/sitemap.xml`, xml([`${origin}/sitemap.blog.xml`], "sitemapindex")],
-		[`${origin}/sitemap.blog.xml`, xml([articleUrl])],
-		[articleUrl, `<script>window._BLOG_DATA=${JSON.stringify({ head: { canonicalUrl: articleUrl }, post: { publishedDate: "2028-09-18T18:43:35.465Z", fullContent: JSON.stringify({ blocks: [{ text: "WAILUKU, Hawaii (Sept. 17, 2028), Councilmember reports that the Nov. 7 general election ballot will include two proposed amendments to the Maui County Charter." }, ...[1, 2].map(identifier => ({ text: `Resolution 28-${identifier}: “Shall the Charter be amended to establish procedure ${identifier}?”` }))] }) } })}</script>`]
+		[
+			`${origin}/sitemap.xml`,
+			xml([`${origin}/sitemap.blog.xml`], "sitemapindex")
+		],
+		[
+			`${origin}/sitemap.blog.xml`,
+			xml([articleUrl])
+		],
+		[articleUrl, `<script>window._BLOG_DATA=${JSON.stringify({
+			head: { canonicalUrl: articleUrl },
+			post: {
+				publishedDate: "2028-09-18T18:43:35.465Z",
+				fullContent: JSON.stringify({
+					blocks: [
+						{ text: "WAILUKU, Hawaii (Sept. 17, 2028), Councilmember reports that the Nov. 7 general election ballot will include two proposed amendments to the Maui County Charter." },
+						...[1, 2].map(identifier => ({ text: `Resolution 28-${identifier}: “Shall the Charter be amended to establish procedure ${identifier}?”` }))
+					]
+				})
+			}
+		})}</script>`]
 	]);
 	const request: typeof fetchRemoteSourceDocument = async (url, options) => {
 		requests++;
@@ -34,14 +51,33 @@ function fixture() {
 		assert.equal(options.maxBytes, 2 * 1024 * 1024);
 		assert.equal(options.timeoutMs, 20_000);
 		assert.ok(bodies.has(url));
-		const body = url === articleUrl && replacement ? replacement : bodies.get(url)!;
-		return { status: rejected ? 403 : 200, body: Buffer.from(rejected ? "" : body), contentType: url.endsWith(".txt") ? "text/plain" : url.endsWith(".xml") ? "application/xml" : "text/html", etag: undefined };
+		const body = url === articleUrl && replacement
+			? replacement
+			: bodies.get(url)!;
+		return {
+			status: rejected ? 403 : 200,
+			body: Buffer.from(rejected ? "" : body),
+			contentType: url.endsWith(".txt")
+				? "text/plain"
+				: url.endsWith(".xml")
+					? "application/xml"
+					: "text/html",
+			etag: undefined
+		};
 	};
 	return {
-		options: { accessReview: { reviewedAt: new Date(initialClock).toISOString(), robotsSha256: hash(robots) }, now: () => clock, request, pause: async (milliseconds: number) => {
-			assert.ok(milliseconds >= 11_000);
-			clock += milliseconds;
-		} },
+		options: {
+			accessReview: {
+				reviewedAt: new Date(initialClock).toISOString(),
+				robotsSha256: hash(robots)
+			},
+			now: () => clock,
+			request,
+			pause: async (milliseconds: number) => {
+				assert.ok(milliseconds >= 11_000);
+				clock += milliseconds;
+			}
+		},
 		requests: () => requests,
 		advance: (milliseconds = mauiCharterRefreshIntervalMs) => { clock += milliseconds; },
 		deny: (value = true) => { rejected = value; },
@@ -83,7 +119,11 @@ test("Maui scheduled collection saves original evidence and queues unpublished n
 	assert.equal(result.published, false);
 	assert.equal(hash(await readFile(result.path)), result.sha256);
 	const review = JSON.parse(await readFile(join(directory, result.review!), "utf8"));
-	assert.deepEqual(review.changes, { added: ["28-1", "28-2"], changed: [], removed: [] });
+	assert.deepEqual(review.changes, {
+		added: ["28-1", "28-2"],
+		changed: [],
+		removed: []
+	});
 	assert.equal(review.publicationApproved, false);
 	assert.equal(review.automaticImportApproved, false);
 	assert.equal(review.inventory.resultsInferred, false);
@@ -121,7 +161,11 @@ test("Maui changed questions create a separate review without deleting the earli
 	assert.equal(updated.changed, true);
 	assert.notEqual(updated.path, first.path);
 	const review = JSON.parse(await readFile(join(directory, updated.review!), "utf8"));
-	assert.deepEqual(review.changes, { added: [], changed: ["28-2"], removed: [] });
+	assert.deepEqual(review.changes, {
+		added: [],
+		changed: ["28-2"],
+		removed: []
+	});
 	assert.deepEqual(await readFile(first.path), original);
 	assert.equal((await readdir(directory)).filter(name => name.startsWith("maui-review-")).length, 2);
 }));
@@ -129,7 +173,13 @@ test("Maui changed questions create a separate review without deleting the earli
 test("Maui discovers a controlled future cycle without relabeling historical capture or transferring editorial approval", async () => isolated(async (directory, source) => {
 	const first = await collectMauiCharterMeasures({ directory, ...source.options });
 	source.future();
-	const options = { ...source.options, accessReview: { ...source.options.accessReview, reviewedAt: new Date(source.options.now()).toISOString() } };
+	const options = {
+		...source.options,
+		accessReview: {
+			...source.options.accessReview,
+			reviewedAt: new Date(source.options.now()).toISOString()
+		}
+	};
 	const next = await collectMauiCharterMeasures({ directory, ...options });
 	assert.equal(next.electionDate, "2030-11-05");
 	assert.equal(next.changed, true);
@@ -137,7 +187,11 @@ test("Maui discovers a controlled future cycle without relabeling historical cap
 	const original = JSON.parse(await readFile(first.path, "utf8"));
 	assert.equal(readMauiCharterCapture(original.capture, source.options.now()).electionDate, "2028-11-07");
 	const review = JSON.parse(await readFile(join(directory, next.review!), "utf8"));
-	assert.deepEqual(review.changes, { added: ["30-1", "30-2"], changed: [], removed: [] });
+	assert.deepEqual(review.changes, {
+		added: ["30-1", "30-2"],
+		changed: [],
+		removed: []
+	});
 }));
 
 test("Maui publisher outage records failure, preserves accepted custody and limits retries until recovery", async () => isolated(async (directory, source) => {
@@ -196,7 +250,12 @@ test("Maui collection ownership excludes an overlapping collector and a saved in
 	resume();
 	await running;
 	const record = (await readMauiCharterCollectionRun(directory, source.options.now()))!;
-	await writeFile(join(directory, "maui-collection-run.json"), JSON.stringify({ ...record, startedAt: new Date(source.options.now()).toISOString(), status: "running", finishedAt: null }));
+	await writeFile(join(directory, "maui-collection-run.json"), JSON.stringify({
+		...record,
+		startedAt: new Date(source.options.now()).toISOString(),
+		status: "running",
+		finishedAt: null
+	}));
 	await assert.rejects(collectMauiCharterMeasures({ directory, ...source.options }), /next permitted/u);
 	source.advance();
 	assert.equal((await collectMauiCharterMeasures({ directory, ...source.options })).status, "succeeded");
@@ -234,7 +293,14 @@ test("Maui rejects changed access terms and disappeared question text while reta
 	await assert.rejects(collectMauiCharterMeasures({ directory, ...source.options }), /question/u);
 	assert.equal((await readMauiCharterCollectionRun(directory, source.options.now()))?.latest?.sha256, first.sha256);
 	source.advance();
-	await assert.rejects(collectMauiCharterMeasures({ directory, ...source.options, accessReview: { ...source.options.accessReview, robotsSha256: "0".repeat(64) } }), /access review/u);
+	await assert.rejects(collectMauiCharterMeasures({
+		directory,
+		...source.options,
+		accessReview: {
+			...source.options.accessReview,
+			robotsSha256: "0".repeat(64)
+		}
+	}), /access review/u);
 	assert.equal((await readMauiCharterCollectionRun(directory, source.options.now()))?.latest?.sha256, first.sha256);
 }));
 
@@ -244,7 +310,11 @@ test("Maui consistent source removals are queued with pinned earlier evidence in
 	source.removeSecond();
 	const updated = await collectMauiCharterMeasures({ directory, ...source.options });
 	const review = JSON.parse(await readFile(join(directory, updated.review!), "utf8"));
-	assert.deepEqual(review.changes, { added: [], changed: [], removed: ["28-2"] });
+	assert.deepEqual(review.changes, {
+		added: [],
+		changed: [],
+		removed: ["28-2"]
+	});
 	assert.equal(review.previousCapture.sha256, first.sha256);
 	assert.equal(review.publicationApproved, false);
 	assert.equal(JSON.parse(await readFile(first.path, "utf8")).inventory.questions.length, 2);

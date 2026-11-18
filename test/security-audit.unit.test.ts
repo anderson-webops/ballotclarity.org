@@ -3,7 +3,8 @@ import test from "node:test";
 
 import {
 	evaluateAuditReport,
-	formatAuditEvaluation
+	formatAuditEvaluation,
+	readNpmAuditReport
 } from "../scripts/security-audit.mjs";
 
 test("security audit policy passes only a clean audit report", () => {
@@ -14,6 +15,23 @@ test("security audit policy passes only a clean audit report", () => {
 	assert.deepEqual(evaluation.allowed, []);
 	assert.deepEqual(evaluation.unexpected, []);
 	assert.match(formatAuditEvaluation(evaluation), /no vulnerabilities/);
+});
+
+test("audit errors and incomplete results remain blocking", () => {
+	for (const report of [undefined, {}, { error: { code: "EAUDIT" } }, { vulnerabilities: null }, { vulnerabilities: [] }]) {
+		const evaluation = evaluateAuditReport(report);
+		assert.equal(evaluation.ok, false);
+		assert.equal(evaluation.unexpected[0].name, "audit-unavailable");
+	}
+});
+
+test("the full audit includes root tools and both workspaces", () => {
+	const report = readNpmAuditReport((command: string, argumentsList: string[]) => {
+		assert.equal(command, "npm");
+		assert.deepEqual(argumentsList, ["audit", "--workspaces", "--include-workspace-root", "--json"]);
+		return JSON.stringify({ vulnerabilities: {} });
+	});
+	assert.equal(evaluateAuditReport(report).ok, true);
 });
 
 test("security audit policy fails every reported package finding", () => {

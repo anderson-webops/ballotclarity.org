@@ -18,7 +18,9 @@ const mobileMenuTrigger = shallowRef<HTMLButtonElement | null>(null);
 const mobileNavigationId = `mobile-navigation-${useId()}`;
 
 const { ballotPlanCount, compareCount, compareList, isHydrated, selectedElection, selectedLocation } = storeToRefs(civicStore);
-const electionOverviewPath = computed(() => selectedElection.value?.slug ? `/elections/${selectedElection.value.slug}` : "/coverage");
+const electionOverviewPath = computed(() => selectedElection.value?.slug
+	? `/elections/${selectedElection.value.slug}`
+	: "/coverage");
 
 // Task links stay visible in the header; their first entry follows the voter's progress through the guide.
 const taskLinks = computed<HeaderLink[]>(() => {
@@ -37,18 +39,31 @@ const taskLinks = computed<HeaderLink[]>(() => {
 		];
 	}
 
-	if (hasGuideShellContext.value)
-		return [{ label: "Election overview", to: electionOverviewPath.value }, ...shared];
+	if (hasGuideShellContext.value) {
+		return [
+			{ label: "Election overview", to: electionOverviewPath.value },
+			...shared
+		];
+	}
 
-	if (hasNationwideResultContext.value)
-		return [{ label: "Your results", to: "/results" }, ...shared];
+	if (hasNationwideResultContext.value) {
+		return [
+			{ label: "Your results", to: "/results" },
+			...shared
+		];
+	}
 
-	return [{ label: "Look up", to: "/" }, ...shared];
+	return [
+		{ label: "Look up", to: "/" },
+		...shared
+	];
 });
 
 const effectiveBallotPlanCount = computed(() => isHydrated.value ? ballotPlanCount.value : 0);
 const effectiveCompareCount = computed(() => isHydrated.value ? compareCount.value : 0);
-const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
+const effectiveCompareList = computed(() => isHydrated.value
+	? compareList.value
+	: []);
 const effectiveSelectedLocation = computed(() => {
 	if (!isHydrated.value)
 		return null;

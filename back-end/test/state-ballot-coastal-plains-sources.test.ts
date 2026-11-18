@@ -10,18 +10,71 @@ import { loadBundledStateSnapshot, parseBundledStateSnapshot } from "../src/stat
 import { stateBallotSources } from "../src/state-ballot-sources.js";
 import { createStateBallotStorage } from "../src/state-ballot-storage.js";
 
-for (const [code, sourceId, documentCount] of [["RI", "ri-east-greenwich-2026", 5], ["OK", "ok-woodward-2026", 3], ["ME", "me-local-samples-2026", 5]] as const) {
+for (const [code, sourceId, documentCount] of [
+	["RI", "ri-east-greenwich-2026", 5],
+	["OK", "ok-woodward-2026", 3],
+	["ME", "me-local-samples-2026", 5]
+] as const) {
 	const source = stateBallotSources.find(item => item.stateCode === code)!;
 	const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 	const retrievedAt = "2026-10-21T12:00:00.000Z";
 	const records = [
-		{ id: "a".repeat(24), name: "State Example", office: "Governor", district: "", scope: "statewide", status: "listed" },
-		{ id: "b".repeat(24), name: "District Example", office: "State Representative", district: "24", scope: "state-house", status: "listed" },
-		{ id: "c".repeat(24), name: "Retention Example", office: "Court District 24 - Office 1", district: "", scope: "local", status: "listed", ballotDesignation: "Judicial retention; Yes / No" },
-		{ id: "d".repeat(24), name: "Municipal Example", office: "School Board - remainder of term", district: "", scope: "local", status: "listed", jurisdiction: "Sample town" },
+		{
+			id: "a".repeat(24),
+			name: "State Example",
+			office: "Governor",
+			district: "",
+			scope: "statewide",
+			status: "listed"
+		},
+		{
+			id: "b".repeat(24),
+			name: "District Example",
+			office: "State Representative",
+			district: "24",
+			scope: "state-house",
+			status: "listed"
+		},
+		{
+			id: "c".repeat(24),
+			name: "Retention Example",
+			office: "Court District 24 - Office 1",
+			district: "",
+			scope: "local",
+			status: "listed",
+			ballotDesignation: "Judicial retention; Yes / No"
+		},
+		{
+			id: "d".repeat(24),
+			name: "Municipal Example",
+			office: "School Board - remainder of term",
+			district: "",
+			scope: "local",
+			status: "listed",
+			jurisdiction: "Sample town"
+		},
 	];
-	const documents = source.documentUrls!.map((url, index) => ({ url, sha256: hash(url), retrievedAt, includedRecordCount: index === 0 ? records.length : 0 }));
-	const payload = { schemaVersion: 1, stateCode: code, sourceId, sourceUrl: source.pageUrl, electionDate: "2026-11-03", retrievalPolicy: "manual-snapshot", retrievedAt, sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), recordCount: records.length, records, documents };
+	const documents = source.documentUrls!.map((url, index) => ({
+		url,
+		sha256: hash(url),
+		retrievedAt,
+		includedRecordCount: index === 0
+			? records.length
+			: 0
+	}));
+	const payload = {
+		schemaVersion: 1,
+		stateCode: code,
+		sourceId,
+		sourceUrl: source.pageUrl,
+		electionDate: "2026-11-03",
+		retrievalPolicy: "manual-snapshot",
+		retrievedAt,
+		sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+		recordCount: records.length,
+		records,
+		documents
+	};
 
 	test(`${code} requires its full externally reviewed document set without automatic requests`, async () => {
 		assert.equal(source.id, sourceId);
@@ -39,7 +92,11 @@ for (const [code, sourceId, documentCount] of [["RI", "ri-east-greenwich-2026", 
 			throw new Error("No publisher request permitted.");
 		};
 		await assert.rejects(fetchStateBallotSourceText(source, fetchText), /manually supplied/u);
-		assert.equal(await createStateBallotRepository({ sources: [source], dataDirectory: null, fetchText }).getSnapshot(code), null);
+		assert.equal(await createStateBallotRepository({
+			sources: [source],
+			dataDirectory: null,
+			fetchText
+		}).getSnapshot(code), null);
 		assert.equal(requests, 0);
 	});
 
@@ -47,9 +104,17 @@ for (const [code, sourceId, documentCount] of [["RI", "ri-east-greenwich-2026", 
 		const parsed = parseBundledStateSnapshot(source, JSON.stringify(payload));
 		assert.equal(parsed.documents!.length, documentCount);
 		assert.equal(parsed.documents![1]!.includedRecordCount, 0);
-		assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify({ ...payload, documents: documents.slice(1) })), /document set/u);
+		assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify({
+			...payload,
+			documents: documents.slice(1)
+		})), /document set/u);
 		assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify({ ...payload, electionDate: "2028-11-07" })), /configured source/u);
-		assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify({ ...payload, documents: documents.map((document, index) => index === 0 ? { ...document, includedRecordCount: records.length + 1 } : document) })), /captured provenance/u);
+		assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify({
+			...payload,
+			documents: documents.map((document, index) => index === 0
+				? { ...document, includedRecordCount: records.length + 1 }
+				: document)
+		})), /captured provenance/u);
 		if (code === "ME") assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify({ ...payload, sourceId: "me-bangor-2026" })), /configured source/u);
 	});
 
@@ -71,9 +136,31 @@ for (const [code, sourceId, documentCount] of [["RI", "ri-east-greenwich-2026", 
 		const loaded = await repository.getSnapshot(code);
 		assert.deepEqual(loaded, original);
 		assert.equal(buildStateBallotPreview(loaded!, { districtMatches: [] })!.candidateCount, 1);
-		const matching = buildStateBallotPreview(loaded!, { districtMatches: [{ id: "house:24", label: "24", districtType: "state-house", districtCode: "24", sourceSystem: "Synthetic typed geography" }] })!;
+		const matching = buildStateBallotPreview(loaded!, {
+			districtMatches: [
+				{
+					id: "house:24",
+					label: "24",
+					districtType: "state-house",
+					districtCode: "24",
+					sourceSystem: "Synthetic typed geography"
+				}
+			]
+		})!;
 		assert.equal(matching.candidateCount, 2);
-		for (const type of ["judicial", "county", "ward", "school"]) assert.equal(buildStateBallotPreview(loaded!, { districtMatches: [{ id: `${type}:24`, label: "24", districtType: type, districtCode: "24", sourceSystem: "Synthetic nonlegislative geography" }] })!.candidateCount, 1);
+		for (const type of ["judicial", "county", "ward", "school"]) {
+			assert.equal(buildStateBallotPreview(loaded!, {
+				districtMatches: [
+					{
+						id: `${type}:24`,
+						label: "24",
+						districtType: type,
+						districtCode: "24",
+						sourceSystem: "Synthetic nonlegislative geography"
+					}
+				]
+			})!.candidateCount, 1);
+		}
 		assert.equal(requests, 0);
 	});
 }

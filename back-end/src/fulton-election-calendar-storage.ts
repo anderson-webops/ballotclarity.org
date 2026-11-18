@@ -39,11 +39,23 @@ export async function readFultonCalendarEnvelope(directory: string, now = Date.n
 	assertExternalStateDataDirectory(canonical);
 	const body = await readBoundedStateDataBytes(join(canonical, "fulton-calendar.json"), maximumFultonCalendarCaptureBytes);
 	const value: unknown = JSON.parse(body.toString("utf8"));
-	if (!exact(value, ["schemaVersion", "sourceConfigurationSha256", "storedAt", "acquisition", "capture"]) || value.schemaVersion !== 1 || value.sourceConfigurationSha256 !== fultonCalendarConfigurationSha256 || !clock(value.storedAt, now) || !["prepared", "collected"].includes(String(value.acquisition))) throw new Error("The Fulton calendar storage envelope requires review.");
+	if (!exact(value, [
+		"schemaVersion",
+		"sourceConfigurationSha256",
+		"storedAt",
+		"acquisition",
+		"capture"
+	]) || value.schemaVersion !== 1 || value.sourceConfigurationSha256 !== fultonCalendarConfigurationSha256 || !clock(value.storedAt, now) || !["prepared", "collected"].includes(String(value.acquisition))) {
+		throw new Error("The Fulton calendar storage envelope requires review.");
+	}
 	const envelope = value as unknown as FultonCalendarEnvelope;
 	const inventory = readFultonCalendarCapture(envelope.capture, now);
 	if (envelope.storedAt < inventory.retrievedAt) throw new Error("The Fulton calendar storage clock precedes its source.");
-	return { envelope, inventory, body: body.toString("utf8") };
+	return {
+		envelope,
+		inventory,
+		body: body.toString("utf8")
+	};
 }
 
 export function compareFultonCalendarInventories(previous: FultonCalendarInventory, next: FultonCalendarInventory, now: number) {
@@ -115,7 +127,13 @@ export async function writeFultonCalendarCapture(directory: string, capture: Ful
 		if (JSON.stringify(previous.envelope.capture) === JSON.stringify(capture)) return { inventory: previous.inventory, storedAt: previous.envelope.storedAt, changed: false };
 	}
 	const captureBody = `${JSON.stringify(capture)}\n`;
-	const envelope: FultonCalendarEnvelope = { schemaVersion: 1, sourceConfigurationSha256: fultonCalendarConfigurationSha256, storedAt: new Date(now).toISOString(), acquisition, capture };
+	const envelope: FultonCalendarEnvelope = {
+		schemaVersion: 1,
+		sourceConfigurationSha256: fultonCalendarConfigurationSha256,
+		storedAt: new Date(now).toISOString(),
+		acquisition,
+		capture
+	};
 	const body = `${JSON.stringify(envelope)}\n`;
 	if (Buffer.byteLength(body) > maximumFultonCalendarCaptureBytes) throw new Error("The Fulton calendar capture exceeds its storage bounds.");
 	const captures = join(directory, "calendar-captures");
@@ -150,6 +168,17 @@ export async function readFultonCalendarRun(directory: string, now = Date.now())
 		if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
 		throw error;
 	}
-	if (!exact(value, ["schemaVersion", "type", "status", "startedAt", "finishedAt", "lastSuccessAt", "publisherRequests", "reason"]) || value.schemaVersion !== 1 || value.type !== "fulton-calendar-collection-run" || !["running", "succeeded", "failed"].includes(String(value.status)) || !clock(value.startedAt, now) || (value.finishedAt !== null && (!clock(value.finishedAt, now) || value.finishedAt < value.startedAt)) || (value.lastSuccessAt !== null && !clock(value.lastSuccessAt, now)) || !Number.isSafeInteger(value.publisherRequests) || Number(value.publisherRequests) < 0 || Number(value.publisherRequests) > 4 || (value.status === "running") !== (value.finishedAt === null) || ![null, "collection-failed", "persistence-failed"].includes(value.reason as null) || (value.status === "failed") !== (value.reason !== null)) throw new Error("The Fulton calendar collection journal requires review.");
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"status",
+		"startedAt",
+		"finishedAt",
+		"lastSuccessAt",
+		"publisherRequests",
+		"reason"
+	]) || value.schemaVersion !== 1 || value.type !== "fulton-calendar-collection-run" || !["running", "succeeded", "failed"].includes(String(value.status)) || !clock(value.startedAt, now) || (value.finishedAt !== null && (!clock(value.finishedAt, now) || value.finishedAt < value.startedAt)) || (value.lastSuccessAt !== null && !clock(value.lastSuccessAt, now)) || !Number.isSafeInteger(value.publisherRequests) || Number(value.publisherRequests) < 0 || Number(value.publisherRequests) > 4 || (value.status === "running") !== (value.finishedAt === null) || ![null, "collection-failed", "persistence-failed"].includes(value.reason as null) || (value.status === "failed") !== (value.reason !== null)) {
+		throw new Error("The Fulton calendar collection journal requires review.");
+	}
 	return value as unknown as FultonCalendarRun;
 }

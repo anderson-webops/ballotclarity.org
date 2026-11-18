@@ -12,7 +12,14 @@ const props = withDefaults(defineProps<{
 	title: "Your current officials"
 });
 
-const levelOrder = ["Federal", "State", "County", "City", "Local", "Other"] as const;
+const levelOrder = [
+	"Federal",
+	"State",
+	"County",
+	"City",
+	"Local",
+	"Other"
+] as const;
 const federalRepresentativePattern = /u\.s\.|united states|congress|senate|house of representatives/;
 const stateRepresentativePattern = /state|general assembly|house district|senate district|legislature/;
 const localRepresentativePattern = /county|city|school|commission|board|council|mayor|parish|town/;
@@ -41,23 +48,34 @@ const groupedCards = computed(() => {
 
 	for (const card of props.cards) {
 		const level = resolveLevel(card);
-		groups.set(level, [...(groups.get(level) ?? []), card]);
+		groups.set(level, [
+			...(groups.get(level) ?? []),
+			card
+		]);
 	}
 
-	return [...groups.entries()]
+	return [
+		...groups.entries()
+	]
 		.sort(([left], [right]) => levelIndex(left) - levelIndex(right))
 		.map(([level, items]) => ({ items, level }));
 });
 
 function levelIndex(level: string) {
 	const index = levelOrder.indexOf(level as typeof levelOrder[number]);
-	return index === -1 ? levelOrder.length : index;
+	return index === -1
+		? levelOrder.length
+		: index;
 }
 
 const levelSegments = computed(() => groupedCards.value.map(group => ({
 	id: group.level,
 	label: group.level,
-	tone: group.level === "Federal" ? "accent" as const : group.level === "State" ? "warning" as const : "neutral" as const,
+	tone: group.level === "Federal"
+		? "accent" as const
+		: group.level === "State"
+			? "warning" as const
+			: "neutral" as const,
 	value: group.items.length
 })));
 </script>

@@ -17,7 +17,7 @@ test("lookup form leaves privacy disclosures to the policy linked in the footer"
 
 test("lookup input retains result and error descriptions without a removed privacy reference", () => {
 	assert.match(addressLookupForm, /:aria-describedby="inputDescribedBy"/);
-	assert.match(addressLookupForm, /lookupResult\.value && shouldShowInlineResults\.value \? actionsId : ""/);
+	assert.match(addressLookupForm, /lookupResult\.value\s*&&\s*shouldShowInlineResults\.value\s*\?\s*actionsId\s*:\s*""/);
 	assert.match(addressLookupForm, /errorMessage\.value \? errorId : ""/);
 	assert.match(addressLookupForm, /\]\.filter\(Boolean\)\.join\(" "\) \|\| undefined/);
 });

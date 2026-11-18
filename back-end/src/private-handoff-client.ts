@@ -62,7 +62,12 @@ export async function initializeHandoffClient(directory: string, audience: strin
 	);
 	await writePrivateHandoffFile(
 		join(canonical, "profile.json"),
-		`${JSON.stringify({ schemaVersion: 1, audience, endpoint: null, privateKeyPath }, null, 2)}\n`
+		`${JSON.stringify({
+			schemaVersion: 1,
+			audience,
+			endpoint: null,
+			privateKeyPath
+		}, null, 2)}\n`
 	);
 	return {
 		profile: join(canonical, "profile.json"),
@@ -76,7 +81,7 @@ export function handoffEndpoint(value: unknown): string {
 	if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === "0")
 		throw new Error("Private handoff delivery requires certificate verification.");
 	if (typeof value !== "string")
-		throw new Error("The handoff endpoint is not configured; finish server enrollment first.");
+		throw new TypeError("The handoff endpoint is not configured; finish server enrollment first.");
 	const url = new URL(value);
 	if (
 		url.protocol !== "https:"
@@ -124,10 +129,21 @@ export async function buildHandoff(directory: string, audience: string, release:
 	const files = [];
 	for (const name of names) {
 		const body = await readHandoffFile(join(directory, name), maximumHandoffFileBytes);
-		files.push({ name, bytes: body.length, sha256: handoffHash(body), contentBase64: body.toString("base64") });
+		files.push({
+			name,
+			bytes: body.length,
+			sha256: handoffHash(body),
+			contentBase64: body.toString("base64")
+		});
 	}
 	const body = Buffer.from(
-		JSON.stringify({ schemaVersion: 1, type: "ballot-private-release-handoff", audience, release, files })
+		JSON.stringify({
+			schemaVersion: 1,
+			type: "ballot-private-release-handoff",
+			audience,
+			release,
+			files
+		})
 	);
 	const envelope = validateHandoff(body, audience);
 	for (const file of files) {
@@ -230,7 +246,14 @@ export async function deliverHandoffWithReceipt(
 	}
 	catch (error) {
 		if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-		request = { schemaVersion: 1, id: randomUUID(), endpoint, audience: options.audience, keyId, payloadSha256 };
+		request = {
+			schemaVersion: 1,
+			id: randomUUID(),
+			endpoint,
+			audience: options.audience,
+			keyId,
+			payloadSha256
+		};
 		try {
 			await writePrivateHandoffFile(requestFile, `${JSON.stringify(request)}\n`);
 			await syncDirectory(directory);

@@ -23,7 +23,12 @@ test("An added earlier sample style preserves each accepted question's identity 
 	const fixture = johnsonBallotFixture();
 	const headings = readIowaJohnsonCandidatePage(fixture.source, fixture.discovery.pages[0]!.body, createStateCandidateRecord).questions;
 	const first = fixture.ballots.documents[0]!;
-	const second = { ...first, url: first.url.replace("Style01", "Style02"), raw: first.raw.replace("Ballot Style 1", "Ballot Style 2"), layout: first.layout.replace("Ballot Style 1", "Ballot Style 2") };
+	const second = {
+		...first,
+		url: first.url.replace("Style01", "Style02"),
+		raw: first.raw.replace("Ballot Style 1", "Ballot Style 2"),
+		layout: first.layout.replace("Ballot Style 1", "Ballot Style 2")
+	};
 	const previous = buildJohnsonBallotQuestions(fixture.source, [second], headings);
 	assert.deepEqual(buildJohnsonBallotQuestions(fixture.source, [first, second], headings, previous), previous);
 	assert.deepEqual(buildJohnsonBallotQuestions(fixture.source, [second, first], headings, previous), previous);
@@ -33,10 +38,18 @@ test("An accepted question's removed or altered citation requires review even wh
 	const fixture = johnsonBallotFixture();
 	const headings = readIowaJohnsonCandidatePage(fixture.source, fixture.discovery.pages[0]!.body, createStateCandidateRecord).questions;
 	const first = fixture.ballots.documents[0]!;
-	const second = { ...first, url: first.url.replace("Style01", "Style02"), raw: first.raw.replace("Ballot Style 1", "Ballot Style 2"), layout: first.layout.replace("Ballot Style 1", "Ballot Style 2") };
+	const second = {
+		...first,
+		url: first.url.replace("Style01", "Style02"),
+		raw: first.raw.replace("Ballot Style 1", "Ballot Style 2"),
+		layout: first.layout.replace("Ballot Style 1", "Ballot Style 2")
+	};
 	const previous = buildJohnsonBallotQuestions(fixture.source, [second], headings);
 	assert.throws(() => buildJohnsonBallotQuestions(fixture.source, [first], headings, previous), /accepted question source changed or disappeared/u);
-	assert.throws(() => buildJohnsonBallotQuestions(fixture.source, [first, second], headings, previous.map(question => ({ ...question, id: "0".repeat(24) }))), /accepted question source changed or disappeared/u);
+	assert.throws(() => buildJohnsonBallotQuestions(fixture.source, [first, second], headings, previous.map(question => ({
+		...question,
+		id: "0".repeat(24)
+	}))), /accepted question source changed or disappeared/u);
 });
 
 function resourceBody(fixture: ReturnType<typeof johnsonBallotFixture>, index: number, change: (body: string) => string) {
@@ -45,18 +58,36 @@ function resourceBody(fixture: ReturnType<typeof johnsonBallotFixture>, index: n
 	resource.sha256 = johnsonBallotHash(resource.body);
 }
 function collectionOptions(fixture: ReturnType<typeof johnsonBallotFixture>, directory: string, requests: string[] = []): JohnsonCollectionOptions {
-	return { scratchDirectory: directory, now: () => fixture.now, wait: async (milliseconds) => {
-		assert.ok(milliseconds >= 11000);
-	}, extract: async () => fixture.raw, requestDocument: async (url, options) => {
-		requests.push(url);
-		assert.deepEqual(options.allowedHosts, [new URL(url).hostname]);
-		assert.equal(options.timeoutMs, 25000);
-		assert.ok(options.maxBytes! <= 12 * 1024 * 1024);
-		if (url === fixture.sampleUrl) return { status: 200, body: fixture.bytes, contentType: "application/pdf", etag: undefined };
-		const resource = fixture.ballots.resources.find(item => item.url === url);
-		assert.ok(resource, `Only actual offered resources may be requested: ${url}`);
-		return { status: resource.status, body: Buffer.from(resource.body), contentType: "text/html", etag: undefined };
-	} };
+	return {
+		scratchDirectory: directory,
+		now: () => fixture.now,
+		wait: async (milliseconds) => {
+			assert.ok(milliseconds >= 11000);
+		},
+		extract: async () => fixture.raw,
+		requestDocument: async (url, options) => {
+			requests.push(url);
+			assert.deepEqual(options.allowedHosts, [new URL(url).hostname]);
+			assert.equal(options.timeoutMs, 25000);
+			assert.ok(options.maxBytes! <= 12 * 1024 * 1024);
+			if (url === fixture.sampleUrl) {
+				return {
+					status: 200,
+					body: fixture.bytes,
+					contentType: "application/pdf",
+					etag: undefined
+				};
+			}
+			const resource = fixture.ballots.resources.find(item => item.url === url);
+			assert.ok(resource, `Only actual offered resources may be requested: ${url}`);
+			return {
+				status: resource.status,
+				body: Buffer.from(resource.body),
+				contentType: "text/html",
+				etag: undefined
+			};
+		}
+	};
 }
 
 test("Johnson native capture retains six literal questions, independent scopes and all 102 earlier candidate fields", () => {
@@ -65,7 +96,14 @@ test("Johnson native capture retains six literal questions, independent scopes a
 	assert.deepEqual(result.records, readIowaJohnsonCandidatePage(fixture.source, fixture.discovery.pages[0]!.body, createStateCandidateRecord).records);
 	assert.equal(result.records.length, 102);
 	assert.equal(result.ballotQuestions?.length, 6);
-	assert.deepEqual(result.ballotQuestions?.map(question => question.audience), ["Iowa", "Johnson County", "Hills", "Lone Tree Community School District", "Mid-Prairie Community School District", "Kirkwood Community College (Merged Area X)"]);
+	assert.deepEqual(result.ballotQuestions?.map(question => question.audience), [
+		"Iowa",
+		"Johnson County",
+		"Hills",
+		"Lone Tree Community School District",
+		"Mid-Prairie Community School District",
+		"Kirkwood Community College (Merged Area X)"
+	]);
 	assert.ok(result.ballotQuestions?.every(question => question.choices.join("|") === "YES|NO" && question.pages.join("|") === "2" && !question.voterApplicabilityVerified && question.sourceUrl === fixture.sampleUrl));
 	assert.equal(result.documents.length, 10);
 	assert.equal(result.documents[0]!.includedRecordCount, 102);
@@ -97,7 +135,10 @@ test("Complete printed style and election identities reject prefix matches and f
 });
 
 test("Incomplete vote choices, unknown codes and independent native disagreement hold a capture", () => {
-	for (const change of [(body: string) => body.replace("\nLY\n", "\nZZ\n"), (body: string) => body.replace("bonds for a synthetic facility?\nYES\nNO", "bonds for a synthetic facility?\nYES\nMAYBE")]) {
+	for (const change of [
+		(body: string) => body.replace("\nLY\n", "\nZZ\n"),
+		(body: string) => body.replace("bonds for a synthetic facility?\nYES\nNO", "bonds for a synthetic facility?\nYES\nMAYBE")
+	]) {
 		const fixture = johnsonBallotFixture();
 		fixture.ballots.documents[0]!.raw = change(fixture.raw);
 		fixture.ballots.documents[0]!.layout = fixture.ballots.documents[0]!.raw;
@@ -121,13 +162,17 @@ test("Literal sample URL normalization retains raw attributes and rejects embedd
 });
 
 test("A partial GIS table, duplicated IDs, extra personal fields and transfer truncation require review", () => {
-	for (const change of [(body: Record<string, unknown>) => {
-		body.features = [];
-	}, (body: Record<string, unknown>) => {
-		body.exceededTransferLimit = true;
-	}, (body: Record<string, unknown>) => {
-		(body.features as { attributes: Record<string, unknown> }[])[0]!.attributes.voterName = "Synthetic private field";
-	}]) {
+	for (const change of [
+		(body: Record<string, unknown>) => {
+			body.features = [];
+		},
+		(body: Record<string, unknown>) => {
+			body.exceededTransferLimit = true;
+		},
+		(body: Record<string, unknown>) => {
+			(body.features as { attributes: Record<string, unknown> }[])[0]!.attributes.voterName = "Synthetic private field";
+		}
+	]) {
 		const fixture = johnsonBallotFixture();
 		resourceBody(fixture, 7, (body) => {
 			const value = JSON.parse(body);
@@ -160,12 +205,29 @@ test("Changed GIS policies, publication copyright or an unoffered layer hold acq
 
 test("Stored metadata validates exact choices, source/page identity, question hashes and the complete publication set", () => {
 	const fixture = johnsonBallotFixture();
-	const snapshot = { source: fixture.source, ...parse(fixture) };
+	const snapshot = {
+		source: fixture.source,
+		...parse(fixture)
+	};
 	const body = serializeStoredStateSnapshot(snapshot);
 	assert.deepEqual(parseBundledStateSnapshot(fixture.source, body, "automatic").ballotQuestions, snapshot.ballotQuestions);
-	for (const field of ["id", "audience", "choices", "pages", "sourceUrl", "voterApplicabilityVerified"]) {
+	for (const field of [
+		"id",
+		"audience",
+		"choices",
+		"pages",
+		"sourceUrl",
+		"voterApplicabilityVerified"
+	]) {
 		const changed = JSON.parse(body);
-		changed.ballotQuestions[0][field] = { id: "0".repeat(24), audience: "Other County", choices: ["Maybe"], pages: [1], sourceUrl: fixture.source.pageUrl, voterApplicabilityVerified: true }[field];
+		changed.ballotQuestions[0][field] = {
+			id: "0".repeat(24),
+			audience: "Other County",
+			choices: ["Maybe"],
+			pages: [1],
+			sourceUrl: fixture.source.pageUrl,
+			voterApplicabilityVerified: true
+		}[field];
 		assert.throws(() => parseBundledStateSnapshot(fixture.source, JSON.stringify(changed), "automatic"), /review/u);
 	}
 	const changed = JSON.parse(body);
@@ -189,13 +251,21 @@ test("The collector follows only offered public resources, retains originals and
 	const fixture = johnsonBallotFixture();
 	const requests: string[] = [];
 	const options = collectionOptions(fixture, directory, requests);
-	const first = await fetchIowaJohnsonCandidateCapture(fixture.source, { ...options, discovery: JSON.stringify(fixture.discovery) });
+	const first = await fetchIowaJohnsonCandidateCapture(fixture.source, {
+		...options,
+		discovery: JSON.stringify(fixture.discovery)
+	});
 	assert.equal(requests.length, 9);
 	assert.equal(parseIowaJohnsonCandidateCapture(fixture.source, first, createStateCandidateRecord, fixture.now).ballotQuestions?.length, 6);
 	assert.ok((await readFile(join(directory, `original-${johnsonBallotHash(fixture.bytes)}.pdf`))).equals(fixture.bytes));
-	const second = await fetchIowaJohnsonCandidateCapture(fixture.source, { ...options, discovery: JSON.stringify(fixture.discovery), now: () => fixture.now + 60000, extract: async () => {
-		throw new Error("Unchanged PDF must reuse stored native text");
-	} });
+	const second = await fetchIowaJohnsonCandidateCapture(fixture.source, {
+		...options,
+		discovery: JSON.stringify(fixture.discovery),
+		now: () => fixture.now + 60000,
+		extract: async () => {
+			throw new Error("Unchanged PDF must reuse stored native text");
+		}
+	});
 	assert.equal(second, first);
 	assert.equal(requests.length, 18);
 	assert.equal((await readdir(directory)).filter(name => name.endsWith(".capture.json")).length, 1);
@@ -206,19 +276,32 @@ test("Publisher failure, changed questions and a stale acquisition lock preserve
 	context.after(() => rm(directory, { recursive: true }));
 	const fixture = johnsonBallotFixture();
 	const options = collectionOptions(fixture, directory);
-	await fetchIowaJohnsonCandidateCapture(fixture.source, { ...options, discovery: JSON.stringify(fixture.discovery) });
+	await fetchIowaJohnsonCandidateCapture(fixture.source, {
+		...options,
+		discovery: JSON.stringify(fixture.discovery)
+	});
 	const pointer = join(directory, `${fixture.source.id}-last-capture.json`);
 	const accepted = await readFile(pointer);
-	await assert.rejects(fetchIowaJohnsonCandidateCapture(fixture.source, { ...options, discovery: JSON.stringify(fixture.discovery), requestDocument: async () => {
-		throw new Error("publisher unavailable");
-	} }), /publisher unavailable/u);
+	await assert.rejects(fetchIowaJohnsonCandidateCapture(fixture.source, {
+		...options,
+		discovery: JSON.stringify(fixture.discovery),
+		requestDocument: async () => {
+			throw new Error("publisher unavailable");
+		}
+	}), /publisher unavailable/u);
 	assert.ok((await readFile(pointer)).equals(accepted));
 	fixture.bytes = Buffer.from("%PDF-changed-synthetic-johnson");
 	fixture.raw = fixture.raw.replace("synthetic facility", "different synthetic facility");
-	await assert.rejects(fetchIowaJohnsonCandidateCapture(fixture.source, { ...options, discovery: JSON.stringify(fixture.discovery) }), /accepted question changed/u);
+	await assert.rejects(fetchIowaJohnsonCandidateCapture(fixture.source, {
+		...options,
+		discovery: JSON.stringify(fixture.discovery)
+	}), /accepted question changed/u);
 	assert.ok((await readFile(pointer)).equals(accepted));
 	await writeFile(join(directory, `${fixture.source.id}.lock`), "review this abandoned lock", { flag: "wx" });
-	await assert.rejects(fetchIowaJohnsonCandidateCapture(fixture.source, { ...options, discovery: JSON.stringify(fixture.discovery) }), /EEXIST/u);
+	await assert.rejects(fetchIowaJohnsonCandidateCapture(fixture.source, {
+		...options,
+		discovery: JSON.stringify(fixture.discovery)
+	}), /EEXIST/u);
 	assert.ok((await readFile(pointer)).equals(accepted));
 });
 
@@ -227,7 +310,10 @@ test("Future candidate records import before current sample PDFs are offered wit
 	context.after(() => rm(directory, { recursive: true }));
 	const fixture = johnsonBallotFixture("2028-11-07", true);
 	resourceBody(fixture, 7, body => body.replaceAll("2028-11Sample", "2026-11Sample"));
-	const capture = await fetchIowaJohnsonCandidateCapture(fixture.source, { ...collectionOptions(fixture, directory), discovery: JSON.stringify(fixture.discovery) });
+	const capture = await fetchIowaJohnsonCandidateCapture(fixture.source, {
+		...collectionOptions(fixture, directory),
+		discovery: JSON.stringify(fixture.discovery)
+	});
 	assert.equal(JSON.parse(capture).schemaVersion, 1);
 	assert.equal(parseIowaJohnsonCandidateCapture(fixture.source, capture, createStateCandidateRecord, fixture.now).ballotQuestions, undefined);
 	assert.ok(!(await readdir(directory)).some(name => name.endsWith(".pdf")));
@@ -239,7 +325,14 @@ test("Same-HTML refresh detects changed PDF bytes after cache expiry and rejecte
 	const fixture = johnsonBallotFixture();
 	let clock = fixture.now;
 	let capture = fixture.body();
-	const options = { sources: [fixture.source], dataDirectory: directory, collectionIndexSha256: { [fixture.source.id]: fixture.discovery.pages[0]!.sha256 }, refreshReviewedLegacy: true, now: () => clock, fetchText: async () => capture };
+	const options = {
+		sources: [fixture.source],
+		dataDirectory: directory,
+		collectionIndexSha256: { [fixture.source.id]: fixture.discovery.pages[0]!.sha256 },
+		refreshReviewedLegacy: true,
+		now: () => clock,
+		fetchText: async () => capture
+	};
 	const repository = createStateBallotRepository(options);
 	const first = await repository.getSnapshot("IA", fixture.source.id);
 	assert.equal(first?.ballotQuestions?.length, 6);
@@ -281,12 +374,18 @@ test("First candidate-only pages remain importable before a sample map is offere
 	assert.equal(parseIowaJohnsonCandidateCapture(fixture.source, legacy, createStateCandidateRecord, fixture.now).records.length, 102);
 	fixture.discovery.pages[0]!.body = complete;
 	fixture.discovery.pages[0]!.sha256 = johnsonBallotHash(complete);
-	await fetchIowaJohnsonCandidateCapture(fixture.source, { ...options, discovery: JSON.stringify(fixture.discovery) });
+	await fetchIowaJohnsonCandidateCapture(fixture.source, {
+		...options,
+		discovery: JSON.stringify(fixture.discovery)
+	});
 	const pointer = join(directory, `${fixture.source.id}-last-capture.json`);
 	const accepted = await readFile(pointer);
 	fixture.discovery.pages[0]!.body = withoutMap;
 	fixture.discovery.pages[0]!.sha256 = johnsonBallotHash(withoutMap);
-	await assert.rejects(fetchIowaJohnsonCandidateCapture(fixture.source, { ...options, discovery: JSON.stringify(fixture.discovery) }), /sample map disappeared/u);
+	await assert.rejects(fetchIowaJohnsonCandidateCapture(fixture.source, {
+		...options,
+		discovery: JSON.stringify(fixture.discovery)
+	}), /sample map disappeared/u);
 	assert.ok((await readFile(pointer)).equals(accepted));
 });
 
@@ -306,8 +405,17 @@ test("An accepted style cannot disappear even when the remaining sample still co
 	await fetchIowaJohnsonCandidateCapture(fixture.source, {
 		...options,
 		discovery: JSON.stringify(fixture.discovery),
-		requestDocument: async (url, transport) => url === secondUrl ? { status: 200, body: secondBytes, contentType: "application/pdf", etag: undefined } : request(url, transport),
-		extract: async bytes => bytes.equals(secondBytes) ? fixture.raw.replace("Ballot Style 1", "Ballot Style 2") : fixture.raw,
+		requestDocument: async (url, transport) => url === secondUrl
+			? {
+					status: 200,
+					body: secondBytes,
+					contentType: "application/pdf",
+					etag: undefined
+				}
+			: request(url, transport),
+		extract: async bytes => bytes.equals(secondBytes)
+			? fixture.raw.replace("Ballot Style 1", "Ballot Style 2")
+			: fixture.raw,
 	});
 	const pointer = join(directory, `${fixture.source.id}-last-capture.json`);
 	const accepted = await readFile(pointer);
@@ -316,7 +424,10 @@ test("An accepted style cannot disappear even when the remaining sample still co
 		value.features[0].attributes.SampleBallotURL2 = null;
 		return JSON.stringify(value);
 	});
-	await assert.rejects(fetchIowaJohnsonCandidateCapture(fixture.source, { ...options, discovery: JSON.stringify(fixture.discovery) }), /sample ballot disappeared/u);
+	await assert.rejects(fetchIowaJohnsonCandidateCapture(fixture.source, {
+		...options,
+		discovery: JSON.stringify(fixture.discovery)
+	}), /sample ballot disappeared/u);
 	assert.ok((await readFile(pointer)).equals(accepted));
 });
 
@@ -325,7 +436,10 @@ test("A failed immutable-capture write preserves the prior pointer and allows a 
 	context.after(() => rm(directory, { recursive: true }));
 	const fixture = johnsonBallotFixture();
 	const options = collectionOptions(fixture, directory);
-	const first = await fetchIowaJohnsonCandidateCapture(fixture.source, { ...options, discovery: JSON.stringify(fixture.discovery) });
+	const first = await fetchIowaJohnsonCandidateCapture(fixture.source, {
+		...options,
+		discovery: JSON.stringify(fixture.discovery)
+	});
 	const pointer = join(directory, `${fixture.source.id}-last-capture.json`);
 	const accepted = await readFile(pointer);
 	fixture.bytes = Buffer.from("%PDF-synthetic-changed-container-identical-native-text");
@@ -333,11 +447,17 @@ test("A failed immutable-capture write preserves the prior pointer and allows a 
 	next.ballots.documents[0].sha256 = johnsonBallotHash(fixture.bytes);
 	const blocker = join(directory, `${johnsonBallotHash(JSON.stringify(next))}.capture.json`);
 	await mkdir(blocker);
-	await assert.rejects(fetchIowaJohnsonCandidateCapture(fixture.source, { ...options, discovery: JSON.stringify(fixture.discovery) }), /EISDIR|ENOTDIR|EEXIST/u);
+	await assert.rejects(fetchIowaJohnsonCandidateCapture(fixture.source, {
+		...options,
+		discovery: JSON.stringify(fixture.discovery)
+	}), /EISDIR|ENOTDIR|EEXIST/u);
 	assert.ok((await readFile(pointer)).equals(accepted));
 	assert.ok(!(await readdir(directory)).some(name => name.endsWith(".lock") || name.endsWith(".tmp")));
 	await rm(blocker, { recursive: true });
-	const retry = await fetchIowaJohnsonCandidateCapture(fixture.source, { ...options, discovery: JSON.stringify(fixture.discovery) });
+	const retry = await fetchIowaJohnsonCandidateCapture(fixture.source, {
+		...options,
+		discovery: JSON.stringify(fixture.discovery)
+	});
 	assert.equal(retry, JSON.stringify(next));
 	assert.equal(parseIowaJohnsonCandidateCapture(fixture.source, retry, createStateCandidateRecord, fixture.now).ballotQuestions?.length, 6);
 });
@@ -346,11 +466,19 @@ test("Public stored reads expose six questions with precise citations and one of
 	const directory = await realpath(await mkdtemp(join(tmpdir(), "johnson-question-api-")));
 	context.after(() => rm(directory, { recursive: true }));
 	const fixture = johnsonBallotFixture();
-	const snapshot = { source: fixture.source, ...parse(fixture) };
+	const snapshot = {
+		source: fixture.source,
+		...parse(fixture)
+	};
 	await createStateBallotStorage(directory).write(snapshot);
-	const repository = createStateBallotRepository({ sources: [fixture.source], dataDirectory: directory, now: () => fixture.now, fetchText: async () => {
-		throw new Error("Public readers never acquire PDFs or GIS data");
-	} });
+	const repository = createStateBallotRepository({
+		sources: [fixture.source],
+		dataDirectory: directory,
+		now: () => fixture.now,
+		fetchText: async () => {
+			throw new Error("Public readers never acquire PDFs or GIS data");
+		}
+	});
 	const app = express();
 	registerStateRecordRoutes(app, repository);
 	const server = app.listen(0, "127.0.0.1");

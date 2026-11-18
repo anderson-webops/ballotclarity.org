@@ -30,7 +30,10 @@ export async function verifyStoredHandoff(
 	const keys = new Map(
 		options.publicKeys.map((key) => {
 			if (key.type !== "public") throw new Error("Use public verification keys only.");
-			return [handoffKeyId(key), key];
+			return [
+				handoffKeyId(key),
+				key
+			];
 		})
 	);
 	if (keys.size !== options.publicKeys.length) throw new Error("Duplicate verification keys.");
@@ -72,7 +75,9 @@ export async function verifyStoredHandoff(
 		"envelope.json",
 		"receipt.json",
 		...envelope.files.map(file => file.name),
-		...(authenticationBody ? ["authentication.json"] : [])
+		...(authenticationBody
+			? ["authentication.json"]
+			: [])
 	].sort();
 	if (names.sort().join("\n") !== expected.join("\n"))
 		throw new Error("The packet inventory is incomplete or unexpected.");

@@ -118,7 +118,14 @@ export function captureHandoffEvidence(headers: IncomingHttpHeaders, now: number
 export function validateHandoffEvidence(value: unknown): HandoffSignedEvidence {
 	if (
 		!record(value)
-		|| !exact(value, ["schemaVersion", "type", "method", "path", "authenticatedAt", "headers"])
+		|| !exact(value, [
+			"schemaVersion",
+			"type",
+			"method",
+			"path",
+			"authenticatedAt",
+			"headers"
+		])
 		|| value.schemaVersion !== 1
 		|| value.type !== "ballot-private-handoff-authentication"
 		|| value.method !== "POST"
@@ -194,7 +201,9 @@ export function validateRelease(value: unknown): asserts value is HandoffRelease
 }
 
 export function handoffKeyId(key: KeyObject) {
-	const publicKey = key.type === "public" ? key : createPublicKey(key);
+	const publicKey = key.type === "public"
+		? key
+		: createPublicKey(key);
 	if (publicKey.asymmetricKeyType !== "ed25519") throw new Error("Handoff keys must use Ed25519.");
 	return handoffHash(publicKey.export({ type: "spki", format: "der" }));
 }
@@ -279,7 +288,11 @@ export function authenticateHandoff(
 	) {
 		throw new HandoffError(401, "unauthorized");
 	}
-	return { id, keyId, payloadSha256: Buffer.from(encodedDigest[1]!, "base64").toString("hex") };
+	return {
+		id,
+		keyId,
+		payloadSha256: Buffer.from(encodedDigest[1]!, "base64").toString("hex")
+	};
 }
 
 export function validateHandoff(body: Buffer, audience: string): HandoffEnvelope {
@@ -293,7 +306,13 @@ export function validateHandoff(body: Buffer, audience: string): HandoffEnvelope
 	}
 	if (
 		!record(value)
-		|| !exact(value, ["schemaVersion", "type", "audience", "release", "files"])
+		|| !exact(value, [
+			"schemaVersion",
+			"type",
+			"audience",
+			"release",
+			"files"
+		])
 		|| value.schemaVersion !== 1
 		|| value.type !== "ballot-private-release-handoff"
 		|| !validAudience(audience)
@@ -310,7 +329,12 @@ export function validateHandoff(body: Buffer, audience: string): HandoffEnvelope
 	for (const file of value.files) {
 		if (
 			!record(file)
-			|| !exact(file, ["name", "bytes", "sha256", "contentBase64"])
+			|| !exact(file, [
+				"name",
+				"bytes",
+				"sha256",
+				"contentBase64"
+			])
 			|| typeof file.name !== "string"
 			|| !(handoffNames as readonly string[]).includes(file.name)
 			|| files.has(file.name)

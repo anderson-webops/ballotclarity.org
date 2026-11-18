@@ -21,7 +21,9 @@ const statusLabel = computed(() => {
 	}
 });
 
-const hasSourceMetrics = computed(() => data.value ? Object.values(data.value.sourceSummary).some(value => value > 0) : false);
+const hasSourceMetrics = computed(() => data.value
+	? Object.values(data.value.sourceSummary).some(value => value > 0)
+	: false);
 const hasPublishedMonitors = computed(() => Boolean(data.value?.sources.length));
 const hasPublicIncidents = computed(() => Boolean(data.value?.incidents.length));
 </script>

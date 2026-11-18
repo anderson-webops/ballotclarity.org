@@ -17,10 +17,16 @@ const sourceAuthoritySegments = computed(() => {
 	for (const source of props.summary.sources)
 		counts.set(source.authority, (counts.get(source.authority) ?? 0) + 1);
 
-	return [...counts.entries()].map(([label, value]) => ({
+	return [
+		...counts.entries()
+	].map(([label, value]) => ({
 		id: label,
 		label: label.replaceAll("-", " "),
-		tone: label === "official-government" ? "accent" as const : label === "candidate-campaign" ? "warning" as const : "neutral" as const,
+		tone: label === "official-government"
+			? "accent" as const
+			: label === "candidate-campaign"
+				? "warning" as const
+				: "neutral" as const,
 		value
 	}));
 });

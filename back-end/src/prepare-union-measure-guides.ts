@@ -8,7 +8,9 @@ if (!plan || extra.length) {
 }
 else {
 	prepareUnionMeasureGuideFiles(plan).then(result => console.log(JSON.stringify(result))).catch((error: unknown) => {
-		console.error(error instanceof Error ? error.message : "Union measure preparation failed.");
+		console.error(error instanceof Error
+			? error.message
+			: "Union measure preparation failed.");
 		process.exitCode = 1;
 	});
 }

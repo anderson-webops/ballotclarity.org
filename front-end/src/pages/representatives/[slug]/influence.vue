@@ -41,7 +41,9 @@ const profileData = computed(() => {
 const person = computed(() => profileData.value?.person ?? null);
 const pagePending = computed(() => pending.value || (!data.value && !fallbackData.value));
 const influence = computed(() => person.value?.influence ?? null);
-const influenceAvailable = computed(() => person.value ? hasPersonInfluence(person.value) : false);
+const influenceAvailable = computed(() => person.value
+	? hasPersonInfluence(person.value)
+	: false);
 const influenceUnavailableSummary = computed(() => person.value
 	? person.value.enrichmentStatus?.influence.summary || "No lobbying or disclosure summary is attached to this officeholder yet."
 	: "");
@@ -56,8 +58,16 @@ function buildLookupAwareTarget(path: string) {
 }
 const breadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
-	{ label: layerBreadcrumbLink.value.label, to: buildLookupAwareTarget(layerBreadcrumbLink.value.to) },
-	{ label: person.value?.name ?? "Representative profile", to: person.value ? buildLookupAwareTarget(`/representatives/${person.value.slug}`) : undefined },
+	{
+		label: layerBreadcrumbLink.value.label,
+		to: buildLookupAwareTarget(layerBreadcrumbLink.value.to)
+	},
+	{
+		label: person.value?.name ?? "Representative profile",
+		to: person.value
+			? buildLookupAwareTarget(`/representatives/${person.value.slug}`)
+			: undefined
+	},
 	{ label: "Influence" }
 ]);
 
@@ -68,7 +78,10 @@ const summaryItems = computed(() => {
 	if (!influenceAvailable.value) {
 		return [
 			{ label: "Current office", value: person.value.officeDisplayLabel || person.value.officeSought },
-			{ label: "Updated", value: formatDateTime(person.value.updatedAt) }
+			{
+				label: "Updated",
+				value: formatDateTime(person.value.updatedAt)
+			}
 		];
 	}
 
@@ -76,15 +89,26 @@ const summaryItems = computed(() => {
 		{ label: "Current office", value: person.value.officeDisplayLabel || person.value.officeSought },
 		{ label: "Reports", note: "Disclosure reports matched to this officeholder.", value: influence.value?.reportCount ?? person.value.lobbyingContext.length },
 		{ label: "Contribution items", note: "Contribution items kept after officeholder matching.", value: influence.value?.contributionCount ?? person.value.publicStatements.length },
-		{ label: "Matched total", note: "Total dollar amount across the attached disclosure context.", value: typeof influence.value?.totalMatched === "number" ? formatCurrency(influence.value.totalMatched) : "Not published" },
-		{ label: "Updated", value: formatDateTime(person.value.updatedAt) }
+		{
+			label: "Matched total",
+			note: "Total dollar amount across the attached disclosure context.",
+			value: typeof influence.value?.totalMatched === "number"
+				? formatCurrency(influence.value.totalMatched)
+				: "Not published"
+		},
+		{
+			label: "Updated",
+			value: formatDateTime(person.value.updatedAt)
+		}
 	];
 });
 
 usePageSeo({
 	description: person.value?.lobbyingContext[0]?.summary ?? "Representative influence page with lobbying context, public statements, and source links.",
 	path: `/representatives/${representativeSlug.value}/influence`,
-	title: person.value ? `${person.value.name} Influence` : "Representative influence"
+	title: person.value
+		? `${person.value.name} Influence`
+		: "Representative influence"
 });
 </script>
 

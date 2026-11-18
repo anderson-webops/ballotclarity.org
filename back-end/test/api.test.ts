@@ -28,7 +28,9 @@ import { createStateBallotRepository } from "../src/state-ballot-repository.js";
 
 function findRepoRoot() {
 	const cwd = process.cwd();
-	return existsSync(join(cwd, "front-end")) ? cwd : join(cwd, "..");
+	return existsSync(join(cwd, "front-end"))
+		? cwd
+		: join(cwd, "..");
 }
 
 test("state candidate records populate lookup and active-cookie routes without promoting guide coverage", async (context) => {
@@ -39,7 +41,15 @@ test("state candidate records populate lookup and active-cookie routes without p
 			async lookupAddress() {
 				return {
 					benchmark: "Public_AR_Current",
-					districtMatches: [{ id: "house:7", label: "House 7", districtCode: "7", districtType: "state-house", sourceSystem: "Fixture" }],
+					districtMatches: [
+						{
+							id: "house:7",
+							label: "House 7",
+							districtCode: "7",
+							districtType: "state-house",
+							sourceSystem: "Fixture"
+						}
+					],
 					fromCache: false,
 					normalizedAddress: "100 CONTROLLED REVIEW ST, RALEIGH, NC, 27601",
 					representativeMatches: [],
@@ -64,18 +74,31 @@ test("state candidate records populate lookup and active-cookie routes without p
 		}),
 		zipLocationService: {
 			async lookupZip(postalCode) {
-				return { postalCode, matches: [{
-					id: "zip:nc:fixture",
-					locality: "Raleigh",
-					stateAbbreviation: "NC",
-					stateName: "North Carolina",
+				return {
 					postalCode,
-					latitude: 35.78,
-					longitude: -78.64,
-					sourceSystem: "Fixture",
-					districtMatches: [{ id: "house:7", label: "House 7", districtCode: "7", districtType: "state-house", sourceSystem: "Fixture" }],
-					representativeMatches: [],
-				}] };
+					matches: [
+						{
+							id: "zip:nc:fixture",
+							locality: "Raleigh",
+							stateAbbreviation: "NC",
+							stateName: "North Carolina",
+							postalCode,
+							latitude: 35.78,
+							longitude: -78.64,
+							sourceSystem: "Fixture",
+							districtMatches: [
+								{
+									id: "house:7",
+									label: "House 7",
+									districtCode: "7",
+									districtType: "state-house",
+									sourceSystem: "Fixture"
+								}
+							],
+							representativeMatches: [],
+						}
+					]
+				};
 			},
 		},
 	});
@@ -84,22 +107,32 @@ test("state candidate records populate lookup and active-cookie routes without p
 	const address = isolatedServer.address() as AddressInfo;
 	const origin = `http://127.0.0.1:${address.port}`;
 	try {
-		const response = await fetch(`${origin}/api/location`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ q: "27601" }) });
+		const response = await fetch(`${origin}/api/location`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ q: "27601" })
+		});
 		assert.equal(response.status, 200);
 		const body = await response.json();
 		assert.equal(body.guideAvailability, "not-published");
 		assert.equal(body.ballotContentPreviews[0].providerId, "official-state-nc");
 		assert.equal(body.ballotContentPreviews[0].candidateCount, 1);
 		assert.equal(body.availability.ballotCandidates.status, "limited");
-		assert.ok(body.actions.some((action: { url: string }) => action.url.includes("eac.gov")));
+		assert.ok(body.actions.some((action: { url: string }) => new URL(action.url).hostname === "www.eac.gov"));
 		const cookie = response.headers.getSetCookie().map(value => value.split(";", 1)[0]).join("; ");
 		assert.ok(cookie.includes("ballot-clarity-nationwide-lookup="));
-		const active = await fetch(`${origin}/api/location/active`, { headers: { cookie } });
+		const active = await fetch(`${origin}/api/location/active`, {
+			headers: { cookie }
+		});
 		const restored = await active.json();
 		assert.equal(restored.ballotContentPreviews[0].candidateCount, 1);
 		assert.equal(restored.ballotContentPreviews[0].contests[0].candidates[0].name, "State Candidate");
 		assert.equal(restored.guideAvailability, "not-published");
-		const addressResponse = await fetch(`${origin}/api/location`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ q: "100 Controlled Review St, Raleigh, NC 27601" }) });
+		const addressResponse = await fetch(`${origin}/api/location`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ q: "100 Controlled Review St, Raleigh, NC 27601" })
+		});
 		assert.equal(addressResponse.status, 200);
 		const addressBody = await addressResponse.json();
 		assert.equal(addressBody.location.state, "North Carolina");
@@ -111,7 +144,9 @@ test("state candidate records populate lookup and active-cookie routes without p
 		const cookiePayload = readActiveNationwideLookupContext(addressCookie, "test-active-lookup-cookie-secret-that-is-long-enough");
 		assert.ok(cookiePayload);
 		assert.doesNotMatch(JSON.stringify(cookiePayload), /100|Controlled|Review/iu);
-		const restoredAddress = await (await fetch(`${origin}/api/location/active`, { headers: { cookie: addressCookie } })).json();
+		const restoredAddress = await (await fetch(`${origin}/api/location/active`, {
+			headers: { cookie: addressCookie }
+		})).json();
 		assert.equal(restoredAddress.inputKind, "address");
 		assert.equal(restoredAddress.location.state, "North Carolina");
 		assert.deepEqual(restoredAddress.ballotContentPreviews, addressBody.ballotContentPreviews);
@@ -119,7 +154,9 @@ test("state candidate records populate lookup and active-cookie routes without p
 		assert.match(active.headers.get("cache-control") ?? "", /no-store/u);
 	}
 	finally {
-		await new Promise<void>((resolve, reject) => isolatedServer.close(error => error ? reject(error) : resolve()));
+		await new Promise<void>((resolve, reject) => isolatedServer.close(error => error
+			? reject(error)
+			: resolve()));
 		await isolatedApp.closeResources();
 	}
 });
@@ -280,10 +317,14 @@ function buildTestCoverageRepository(overrides: Partial<CoverageRepository> = {}
 			return coverageSnapshot.candidates.filter(candidate => requested.has(candidate.slug));
 		},
 		getElectionBySlug(slug) {
-			return coverageSnapshot.election?.slug === slug ? coverageSnapshot.election : null;
+			return coverageSnapshot.election?.slug === slug
+				? coverageSnapshot.election
+				: null;
 		},
 		getJurisdictionBySlug(slug) {
-			return coverageSnapshot.jurisdiction?.slug === slug ? coverageSnapshot.jurisdiction : null;
+			return coverageSnapshot.jurisdiction?.slug === slug
+				? coverageSnapshot.jurisdiction
+				: null;
 		},
 		getMeasureBySlug(slug) {
 			return coverageSnapshot.measures.find(measure => measure.slug === slug) ?? null;
@@ -451,7 +492,17 @@ before(async () => {
 							label: "State Senate District 36",
 							sourceSystem: "U.S. Census Geocoder"
 						},
-						...(/unknown county/iu.test(address) ? [] : [{ districtCode: "121", districtType: "county", id: "county:121", label: "Fulton County", sourceSystem: "U.S. Census Geocoder" }])
+						...(/unknown county/iu.test(address)
+							? []
+							: [
+									{
+										districtCode: "121",
+										districtType: "county",
+										id: "county:121",
+										label: "Fulton County",
+										sourceSystem: "U.S. Census Geocoder"
+									}
+								])
 					],
 					fromCache: false,
 					latitude: 33.7479,
@@ -1320,7 +1371,9 @@ before(async () => {
 after(async () => {
 	if (server) {
 		await new Promise<void>((resolve, reject) => {
-			server.close(error => error ? reject(error) : resolve());
+			server.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 
@@ -1476,7 +1529,9 @@ test("default runtime stays empty instead of auto-seeding coverage and public op
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -1524,7 +1579,9 @@ test("configured missing snapshot path fails readiness without exposing provenan
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 		rmSync(workspace, { force: true, recursive: true });
 
@@ -1618,7 +1675,9 @@ test("GET /api/status suppresses launch-specific source monitors when coverage m
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -1641,7 +1700,9 @@ test("default runtime purges legacy demo public-status records from an existing 
 		await once(seededServer, "listening");
 
 		await new Promise<void>((resolve, reject) => {
-			seededServer?.close(error => error ? reject(error) : resolve());
+			seededServer?.close(error => error
+				? reject(error)
+				: resolve());
 		});
 		seededServer = null;
 
@@ -1671,13 +1732,17 @@ test("default runtime purges legacy demo public-status records from an existing 
 	finally {
 		if (seededServer) {
 			await new Promise<void>((resolve, reject) => {
-				seededServer?.close(error => error ? reject(error) : resolve());
+				seededServer?.close(error => error
+					? reject(error)
+					: resolve());
 			});
 		}
 
 		if (cleanedServer) {
 			await new Promise<void>((resolve, reject) => {
-				cleanedServer?.close(error => error ? reject(error) : resolve());
+				cleanedServer?.close(error => error
+					? reject(error)
+					: resolve());
 			});
 		}
 
@@ -1714,7 +1779,10 @@ test("POST /api/location validates incomplete numeric ZIP fragments", async () =
 });
 
 test("POST /api/location rejects oversized and multi-line provider inputs", async () => {
-	for (const q of ["x".repeat(301), "55 Trinity Ave\nAtlanta"]) {
+	for (const q of [
+		"x".repeat(301),
+		"55 Trinity Ave\nAtlanta"
+	]) {
 		const response = await fetch(`${baseUrl}/api/location`, {
 			body: JSON.stringify({ q }),
 			headers: {
@@ -1816,7 +1884,9 @@ test("POST /api/location records resolved lookups through the ZIP lookup logger 
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -1864,7 +1934,9 @@ test("POST /api/location throttles repeated public lookup requests", async () =>
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -1900,7 +1972,9 @@ test("route lookup query enrichment shares the public lookup throttle", async ()
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -1936,7 +2010,9 @@ test("direct representative provider routes share the public lookup throttle", a
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -2302,7 +2378,9 @@ test("GET /api/location/guess shares the public lookup throttle", async () => {
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -2323,27 +2401,31 @@ test("saved nationwide lookup routes share the public provider throttle", async 
 		zipLocationService: {
 			async lookupZip(zipCode: string) {
 				return {
-					matches: [{
-						countyFips: "049",
-						countyName: "Utah County",
-						districtMatches: [{
-							districtCode: "3",
-							districtType: "congressional",
-							congressionalSession: currentCongress(),
-							id: "congressional:3",
-							label: "Congressional District 3",
-							sourceSystem: "U.S. Census Geocoder"
-						}],
-						id: `zip:${zipCode}:provo-utah`,
-						latitude: 40.2338,
-						locality: "Provo",
-						longitude: -111.6585,
-						postalCode: zipCode,
-						representativeMatches: [],
-						sourceSystem: "Test ZIP provider",
-						stateAbbreviation: "UT",
-						stateName: "Utah"
-					}],
+					matches: [
+						{
+							countyFips: "049",
+							countyName: "Utah County",
+							districtMatches: [
+								{
+									districtCode: "3",
+									districtType: "congressional",
+									congressionalSession: currentCongress(),
+									id: "congressional:3",
+									label: "Congressional District 3",
+									sourceSystem: "U.S. Census Geocoder"
+								}
+							],
+							id: `zip:${zipCode}:provo-utah`,
+							latitude: 40.2338,
+							locality: "Provo",
+							longitude: -111.6585,
+							postalCode: zipCode,
+							representativeMatches: [],
+							sourceSystem: "Test ZIP provider",
+							stateAbbreviation: "UT",
+							stateName: "Utah"
+						}
+					],
 					postalCode: zipCode
 				};
 			}
@@ -2379,7 +2461,9 @@ test("saved nationwide lookup routes share the public provider throttle", async 
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -2398,27 +2482,31 @@ test("matching signed lookup context avoids repeating an external route lookup",
 			async lookupZip(zipCode: string) {
 				lookupCalls += 1;
 				return {
-					matches: [{
-						countyFips: "049",
-						countyName: "Utah County",
-						districtMatches: [{
-							districtCode: "3",
-							districtType: "congressional",
-							congressionalSession: currentCongress(),
-							id: "congressional:3",
-							label: "Congressional District 3",
-							sourceSystem: "U.S. Census Geocoder"
-						}],
-						id: `zip:${zipCode}:provo-utah`,
-						latitude: 40.2338,
-						locality: "Provo",
-						longitude: -111.6585,
-						postalCode: zipCode,
-						representativeMatches: [],
-						sourceSystem: "Test ZIP provider",
-						stateAbbreviation: "UT",
-						stateName: "Utah"
-					}],
+					matches: [
+						{
+							countyFips: "049",
+							countyName: "Utah County",
+							districtMatches: [
+								{
+									districtCode: "3",
+									districtType: "congressional",
+									congressionalSession: currentCongress(),
+									id: "congressional:3",
+									label: "Congressional District 3",
+									sourceSystem: "U.S. Census Geocoder"
+								}
+							],
+							id: `zip:${zipCode}:provo-utah`,
+							latitude: 40.2338,
+							locality: "Provo",
+							longitude: -111.6585,
+							postalCode: zipCode,
+							representativeMatches: [],
+							sourceSystem: "Test ZIP provider",
+							stateAbbreviation: "UT",
+							stateName: "Utah"
+						}
+					],
 					postalCode: zipCode
 				};
 			}
@@ -2449,7 +2537,9 @@ test("matching signed lookup context avoids repeating an external route lookup",
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -2506,7 +2596,9 @@ test("GET /api/location/guess returns 404 when automatic location guessing is di
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -2744,7 +2836,9 @@ test("active nationwide lookup cookie backs /api/districts and /api/districts/:s
 	const [cookieName, cookieValue = ""] = (cookie || "").split("=", 2);
 	const envelopeParts = cookieValue.split(".");
 	const ciphertext = envelopeParts[2] ?? "";
-	envelopeParts[2] = `${ciphertext.startsWith("A") ? "B" : "A"}${ciphertext.slice(1)}`;
+	envelopeParts[2] = `${ciphertext.startsWith("A")
+		? "B"
+		: "A"}${ciphertext.slice(1)}`;
 	const tamperedCookie = `${cookieName}=${envelopeParts.join(".")}`;
 	const tamperedResponse = await fetch(`${baseUrl}/api/location/active`, {
 		headers: {
@@ -3148,7 +3242,10 @@ test("county and city officeholder routes expose normalized office context and p
 		fetch(`${baseUrl}/api/representatives/robb-pitts`),
 		fetch(`${baseUrl}/api/representatives/john-bradberry`),
 	]);
-	const [countyBody, cityBody] = await Promise.all([countyResponse.json(), cityResponse.json()]);
+	const [countyBody, cityBody] = await Promise.all([
+		countyResponse.json(),
+		cityResponse.json()
+	]);
 
 	assert.equal(countyResponse.status, 200);
 	assert.equal(countyBody.person.slug, "robb-pitts");
@@ -3430,7 +3527,9 @@ test("GET /api/admin/review and /api/admin/sources return protected operational 
 
 test("admin operations uses the protected API boundary and returns typed dataset evidence", async () => {
 	assert.equal((await fetch(`${baseUrl}/api/admin/operations`)).status, 401);
-	const response = await fetch(`${baseUrl}/api/admin/operations`, { headers: { "x-admin-api-key": adminApiKey } });
+	const response = await fetch(`${baseUrl}/api/admin/operations`, {
+		headers: { "x-admin-api-key": adminApiKey }
+	});
 	assert.equal(response.status, 200);
 	const body = await response.json();
 	assert.ok(Array.isArray(body.datasets));
@@ -3551,7 +3650,9 @@ test("admin corrections can link to content records and auto-link page submissio
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -3619,7 +3720,9 @@ test("POST /api/feedback throttles repeated public submissions", async () => {
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -3648,7 +3751,10 @@ test("POST /api/feedback rejects unsafe or oversized public input", async () => 
 			{ ...baseline, email: "invalid" },
 			{ ...baseline, pageUrl: "https://attacker.example/impersonated-page" },
 			{ ...baseline, sourceLinks: "javascript:alert(1)" },
-			{ ...baseline, message: "x".repeat(5_001) },
+			{
+				...baseline,
+				message: "x".repeat(5_001)
+			},
 		];
 
 		for (const payload of invalidPayloads) {
@@ -3675,7 +3781,9 @@ test("POST /api/feedback rejects unsafe or oversized public input", async () => 
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -3945,7 +4053,9 @@ test("PATCH /api/admin/content updates public content fields and publish gating"
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -3966,7 +4076,13 @@ test("guide package workflow gates local guide publication from draft through ro
 							label: "Congressional District 7",
 							sourceSystem: "U.S. Census Geocoder"
 						},
-						{ districtCode: "121", districtType: "county", id: "county:121", label: "Fulton County", sourceSystem: "U.S. Census Geocoder" }
+						{
+							districtCode: "121",
+							districtType: "county",
+							id: "county:121",
+							label: "Fulton County",
+							sourceSystem: "U.S. Census Geocoder"
+						}
 					],
 					fromCache: false,
 					latitude: 33.7479,
@@ -4216,7 +4332,9 @@ test("guide package workflow gates local guide publication from draft through ro
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -4316,7 +4434,9 @@ test("POST /api/admin/auth/login authenticates a configured user and throttles r
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -4397,7 +4517,9 @@ test("admin password verification throttles repeated current-password failures",
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -4485,7 +4607,9 @@ test("admin MFA verification throttles repeated current-password failures", asyn
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -4517,7 +4641,9 @@ test("admin API fails closed when session delegation is not configured", async (
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -4894,7 +5020,9 @@ test("admin API requires a current signed session and enforces trusted roles", a
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -5194,7 +5322,9 @@ test("admin MFA setup enforces verification codes and supports disable and reset
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });
@@ -5544,7 +5674,9 @@ test("admin user lifecycle blocks self-administration and invalidates reset cred
 	}
 	finally {
 		await new Promise<void>((resolve, reject) => {
-			isolatedServer.close(error => error ? reject(error) : resolve());
+			isolatedServer.close(error => error
+				? reject(error)
+				: resolve());
 		});
 	}
 });

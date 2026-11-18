@@ -38,7 +38,15 @@ function requiredRecord(source: StateBallotSource, values: StateCandidateValues,
 
 function parseUtah(source: StateBallotSource, body: string, factory: RecordFactory) {
 	const tables = readUtahCandidateTables(source, body);
-	const knownStatuses = ["Election Candidate", "Out in Convention", "Out in Primary", "Withdrew", "Write-In", "Disqualified", "Deceased"];
+	const knownStatuses = [
+		"Election Candidate",
+		"Out in Convention",
+		"Out in Primary",
+		"Withdrew",
+		"Write-In",
+		"Disqualified",
+		"Deceased"
+	];
 	const records = tables.flatMap(({ table, judicial }) => {
 		const rows = stateHtmlTableRows(table);
 		const cells = (row: typeof table) => (row.childNodes ?? []).filter(node => ["td", "th"].includes(node.nodeName)).map(node => clean(stateHtmlText(node)));
@@ -59,10 +67,20 @@ function parseUtah(source: StateBallotSource, body: string, factory: RecordFacto
 				if (!question) throw new Error("The judicial retention question layout has changed.");
 				name = question[1]!;
 				office = question[2]!;
-				scope = /^(?:Judge of the Court of Appeals of Utah|Justice of the Supreme Court of Utah)$/u.test(office) ? "statewide" : "local";
+				scope = /^(?:Judge of the Court of Appeals of Utah|Justice of the Supreme Court of Utah)$/u.test(office)
+					? "statewide"
+					: "local";
 				office = values[0]!;
 			}
-			const record = requiredRecord(source, { name, office, party: judicial ? "" : values[2]!, status: status === "Write-In" ? "write-in" : "listed", scope }, factory);
+			const record = requiredRecord(source, {
+				name,
+				office,
+				party: judicial ? "" : values[2]!,
+				status: status === "Write-In"
+					? "write-in"
+					: "listed",
+				scope
+			}, factory);
 			record.sourceStatus = status;
 			return [record];
 		});
@@ -73,9 +91,20 @@ function parseUtah(source: StateBallotSource, body: string, factory: RecordFacto
 
 function readExport(source: StateBallotSource, body: string) {
 	const envelope = JSON.parse(body) as { page?: unknown; records?: unknown };
-	if (typeof envelope.page !== "string" || typeof envelope.records !== "string") throw new Error("The official export envelope is invalid.");
+	if (typeof envelope.page !== "string" || typeof envelope.records !== "string") throw new TypeError("The official export envelope is invalid.");
 	buildPublicStateExportForm(source, envelope.page);
-	const table = parseCsv(envelope.records, { bom: true, delimiter: source.format === "illinois-tsv" ? "\t" : ",", quote: source.format === "illinois-tsv" ? false : "\"", relax_column_count: source.format === "illinois-tsv", skip_empty_lines: true, max_record_size: 100_000 }) as string[][];
+	const table = parseCsv(envelope.records, {
+		bom: true,
+		delimiter: source.format === "illinois-tsv"
+			? "\t"
+			: ",",
+		quote: source.format === "illinois-tsv"
+			? false
+			: "\"",
+		relax_column_count: source.format === "illinois-tsv",
+		skip_empty_lines: true,
+		max_record_size: 100_000
+	}) as string[][];
 	const headers = table.shift() ?? [];
 	if (source.format === "illinois-tsv") {
 		while (headers.at(-1) === "") headers.pop();
@@ -84,7 +113,10 @@ function readExport(source: StateBallotSource, body: string) {
 		throw new Error("The official export has an unexpected layout.");
 	const rows = table.map((values) => {
 		if (values.length !== headers.length) throw new Error("The official export has an inconsistent row layout.");
-		return Object.fromEntries(headers.map((header, index) => [header, clean(values[index])])) as Record<string, string>;
+		return Object.fromEntries(headers.map((header, index) => [
+			header,
+			clean(values[index])
+		])) as Record<string, string>;
 	});
 	if (["hawaii-csv", "south-dakota-csv", "montana-csv"].includes(source.format)) {
 		const total = clean(stateHtmlText(parseStateHtml(envelope.page))).match(/(\d+) items in \d+ pages/u)?.[1];
@@ -97,11 +129,22 @@ function readExport(source: StateBallotSource, body: string) {
 		const names = tables.flatMap((table) => {
 			const reportRows = stateHtmlTableRows(table);
 			const cells = (row: typeof table) => (row.childNodes ?? []).filter(node => ["td", "th"].includes(node.nodeName));
-			const columns = reportRows[0] ? cells(reportRows[0]).map(node => clean(stateHtmlText(node))) : [];
-			if (!["Name|Party", "Name|Party|District", "Name|District|Place", "Name|District"].includes(columns.join("|"))) throw new Error("The Mississippi public candidate table columns have changed.");
+			const columns = reportRows[0]
+				? cells(reportRows[0]).map(node => clean(stateHtmlText(node)))
+				: [];
+			if (![
+				"Name|Party",
+				"Name|Party|District",
+				"Name|District|Place",
+				"Name|District"
+			].includes(columns.join("|"))) {
+				throw new Error("The Mississippi public candidate table columns have changed.");
+			}
 			return reportRows.slice(1).map((row) => {
 				const values = cells(row);
-				const name = values[0] ? clean(stateHtmlText(values[0])) : "";
+				const name = values[0]
+					? clean(stateHtmlText(values[0]))
+					: "";
 				if (values.length !== columns.length || !name) throw new Error("The Mississippi public candidate table has changed.");
 				return name;
 			});
@@ -124,13 +167,35 @@ function requireColumns(headers: string[], expected: string[]) {
 
 function publishedWebsite(value: string | undefined) {
 	const website = clean(value);
-	return /^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}(?:[/?#]\S*)?$/iu.test(website) ? `https://${website}` : website;
+	return /^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}(?:[/?#]\S*)?$/iu.test(website)
+		? `https://${website}`
+		: website;
 }
 
 function parseMontana(source: StateBallotSource, headers: string[], rows: Record<string, string>[], factory: RecordFactory) {
-	const expected = ["Status", "District Type", "District", "Race", "Term Type", "Term Length", "Name", "Mailing Address", "Email/Web Address", "Phone", "Filing Date", "Party Preference", "Ballot Order"];
+	const expected = [
+		"Status",
+		"District Type",
+		"District",
+		"Race",
+		"Term Type",
+		"Term Length",
+		"Name",
+		"Mailing Address",
+		"Email/Web Address",
+		"Phone",
+		"Filing Date",
+		"Party Preference",
+		"Ballot Order"
+	];
 	if (headers.length !== expected.length || expected.some(column => !headers.includes(column))) throw new Error("The Montana public export columns have changed.");
-	const parties: Record<string, string> = { DEM: "Democratic", REP: "Republican", IND: "Independent", LIB: "Libertarian", NON: "Nonpartisan" };
+	const parties: Record<string, string> = {
+		DEM: "Democratic",
+		REP: "Republican",
+		IND: "Independent",
+		LIB: "Libertarian",
+		NON: "Nonpartisan"
+	};
 	const identifiers = new Set<string>();
 	return rows.map((row) => {
 		if (!["FILED", "WITHDRAWN"].includes(row.Status!) || !["REGULAR", "UNEXPIRED"].includes(row["Term Type"]!))
@@ -159,11 +224,20 @@ function parseMontana(source: StateBallotSource, headers: string[], rows: Record
 		}
 		else if (["Senate", "House"].includes(type)) {
 			const match = label.match(new RegExp(`^${type.toUpperCase()} DISTRICT ([1-9]\\d*)$`, "u"));
-			if (!match || office !== `${type === "Senate" ? "STATE SENATOR" : "STATE REPRESENTATIVE"} DISTRICT ${match[1]}` || Number(match[1]) > (type === "Senate" ? 50 : 100))
+			if (!match || office !== `${type === "Senate"
+				? "STATE SENATOR"
+				: "STATE REPRESENTATIVE"} DISTRICT ${match[1]}` || Number(match[1]) > (type === "Senate"
+				? 50
+				: 100)) {
 				throw new Error("The Montana legislative district or office has changed.");
-			scope = type === "Senate" ? "state-senate" : "state-house";
+			}
+			scope = type === "Senate"
+				? "state-senate"
+				: "state-house";
 			district = match[1]!;
-			expectedTerm = type === "Senate" ? "4" : "2";
+			expectedTerm = type === "Senate"
+				? "4"
+				: "2";
 		}
 		else if (type === "Public Service Commission") {
 			const match = label.match(/^PUBLIC SERVICE COMMISSIONER DISTRICT ([1-5])$/u);
@@ -186,12 +260,28 @@ function parseMontana(source: StateBallotSource, headers: string[], rows: Record
 		}
 		if (row["Term Length"] !== expectedTerm || (row["Term Type"] === "UNEXPIRED" && type !== "Judicial")) throw new Error("The Montana public term has changed.");
 		const incumbent = row.Name!.startsWith("*");
-		const name = incumbent ? row.Name!.slice(1).trim() : row.Name!;
+		const name = incumbent
+			? row.Name!.slice(1).trim()
+			: row.Name!;
 		if (name.includes("*")) throw new Error("The Montana candidate name marker has changed.");
-		const record = requiredRecord(source, { name, office, party, scope, district, jurisdiction, status: row.Status, sourceDistrictLabel: label }, factory);
+		const record = requiredRecord(source, {
+			name,
+			office,
+			party,
+			scope,
+			district,
+			jurisdiction,
+			status: row.Status,
+			sourceDistrictLabel: label
+		}, factory);
 		if (identifiers.has(record.id)) throw new Error("The Montana public export contains duplicate candidate identities.");
 		identifiers.add(record.id);
-		record.ballotDesignation = [incumbent ? "Incumbent" : "", row["Term Type"] === "UNEXPIRED" ? `Unexpired; listed term length: ${expectedTerm} years` : `${expectedTerm}-year term`].filter(Boolean).join("; ");
+		record.ballotDesignation = [
+			incumbent ? "Incumbent" : "",
+			row["Term Type"] === "UNEXPIRED"
+				? `Unexpired; listed term length: ${expectedTerm} years`
+				: `${expectedTerm}-year term`
+		].filter(Boolean).join("; ");
 		return record;
 	});
 }
@@ -215,13 +305,30 @@ function parseIllinois(source: StateBallotSource, rows: Record<string, string>[]
 		let candidateStatus = row.CandidateStatus!;
 		let website = row.WebSiteAddress;
 		let office = row.OfficeName!;
-		let scope: StateContestScope = ["UNITED STATES SENATOR", "GOVERNOR AND LIEUTENANT GOVERNOR", "ATTORNEY GENERAL", "SECRETARY OF STATE", "COMPTROLLER", "TREASURER"].includes(office) ? "statewide" : "local";
+		let scope: StateContestScope = [
+			"UNITED STATES SENATOR",
+			"GOVERNOR AND LIEUTENANT GOVERNOR",
+			"ATTORNEY GENERAL",
+			"SECRETARY OF STATE",
+			"COMPTROLLER",
+			"TREASURER"
+		].includes(office)
+			? "statewide"
+			: "local";
 		let district = "";
 		const numbered = office.match(/^(\d+)(?:ST|ND|RD|TH) (CONGRESS|SENATE|REPRESENTATIVE)$/u);
 		if (numbered) {
 			district = numbered[1]!;
-			scope = numbered[2] === "CONGRESS" ? "congressional" : numbered[2] === "SENATE" ? "state-senate" : "state-house";
-			office = `${scope === "congressional" ? "U.S. House" : scope === "state-senate" ? "State Senate" : "State House"} District ${district}`;
+			scope = numbered[2] === "CONGRESS"
+				? "congressional"
+				: numbered[2] === "SENATE"
+					? "state-senate"
+					: "state-house";
+			office = `${scope === "congressional"
+				? "U.S. House"
+				: scope === "state-senate"
+					? "State Senate"
+					: "State House"} District ${district}`;
 		}
 		if (brackets.has(row.BracketID!) && row.OfficeName === "GOVERNOR AND LIEUTENANT GOVERNOR") {
 			if (seen.has(row.BracketID!)) return [];
@@ -230,11 +337,24 @@ function parseIllinois(source: StateBallotSource, rows: Record<string, string>[]
 			const head = group.find(candidate => candidate.CandidateID === row.BracketID);
 			if (!head || group.length > 2 || group.some(candidate => candidate.PartyName !== head.PartyName) || (group.length !== 2 && group.some(candidate => candidate.CandidateStatus === "Active")))
 				throw new Error("The official joint-ticket layout has changed.");
-			candidateName = [head, ...group.filter(candidate => candidate !== head)].map(name).join(" / ");
-			candidateStatus = group.every(candidate => candidate.CandidateStatus === head.CandidateStatus) ? head.CandidateStatus! : "Removed";
+			candidateName = [
+				head,
+				...group.filter(candidate => candidate !== head)
+			].map(name).join(" / ");
+			candidateStatus = group.every(candidate => candidate.CandidateStatus === head.CandidateStatus)
+				? head.CandidateStatus!
+				: "Removed";
 			website = head.WebSiteAddress;
 		}
-		const record = requiredRecord(source, { name: candidateName, office, party: row.PartyName!, status: candidateStatus, scope, district, candidateUrl: publishedWebsite(website) }, factory);
+		const record = requiredRecord(source, {
+			name: candidateName,
+			office,
+			party: row.PartyName!,
+			status: candidateStatus,
+			scope,
+			district,
+			candidateUrl: publishedWebsite(website)
+		}, factory);
 		return [record];
 	});
 }
@@ -244,12 +364,36 @@ export function parseAdditionalStateRecords(source: StateBallotSource, body: str
 	const { headers, rows } = readExport(source, body);
 	if (source.format === "montana-csv") return parseMontana(source, headers, rows, factory);
 	if (source.format === "illinois-tsv") {
-		requireColumns(headers, ["CandidateID", "BracketID", "FirstName", "LastName", "CandidateStatus", "WebSiteAddress", "ElecDate", "ElectionType", "PartyName", "OfficeName"]);
+		requireColumns(headers, [
+			"CandidateID",
+			"BracketID",
+			"FirstName",
+			"LastName",
+			"CandidateStatus",
+			"WebSiteAddress",
+			"ElecDate",
+			"ElectionType",
+			"PartyName",
+			"OfficeName"
+		]);
 		return parseIllinois(source, rows, factory);
 	}
 	if (source.format === "mississippi-csv") {
-		requireColumns(headers, ["Office", "Candidate Name", "Party", "District", "Place", "General Election", "Election"]);
-		const electionLabel = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${source.electionDate}T00:00:00Z`));
+		requireColumns(headers, [
+			"Office",
+			"Candidate Name",
+			"Party",
+			"District",
+			"Place",
+			"General Election",
+			"Election"
+		]);
+		const electionLabel = new Intl.DateTimeFormat("en-US", {
+			month: "long",
+			day: "numeric",
+			year: "numeric",
+			timeZone: "UTC"
+		}).format(new Date(`${source.electionDate}T00:00:00Z`));
 		return rows.flatMap((row) => {
 			const dates = [row["General Election"], row.Election].filter(Boolean);
 			if (!dates.includes(electionLabel)) return [];
@@ -257,23 +401,66 @@ export function parseAdditionalStateRecords(source: StateBallotSource, body: str
 			let office = row.Office!.replace(/^Candidates for /u, "");
 			if (office.startsWith("State House of Representatives") && /Special Election/u.test(office)) office = "State House of Representatives (Special Election)";
 			if (row.Place) office += `, Place ${row.Place}`;
-			return [requiredRecord(source, { name: row["Candidate Name"]!, office, party: row.Party!, district: row.District, jurisdiction: row.District && /Court|Judge|District Attorney/u.test(office) ? `Judicial District ${row.District}` : undefined, status: "listed" }, factory)];
+			return [
+				requiredRecord(source, {
+					name: row["Candidate Name"]!,
+					office,
+					party: row.Party!,
+					district: row.District,
+					jurisdiction: row.District && /Court|Judge|District Attorney/u.test(office)
+						? `Judicial District ${row.District}`
+						: undefined,
+					status: "listed"
+				}, factory)
+			];
 		});
 	}
 	if (source.format === "hawaii-csv") {
-		requireColumns(headers, ["Contests", "Party", "BallotName", "Status", "Website"]);
+		requireColumns(headers, [
+			"Contests",
+			"Party",
+			"BallotName",
+			"Status",
+			"Website"
+		]);
 		return rows.flatMap((row) => {
-			if (!["Issued", "In General", "In Primary", "Withdrawn", "Void", "Elected After Primary", "Filed"].includes(row.Status!))
+			if (![
+				"Issued",
+				"In General",
+				"In Primary",
+				"Withdrawn",
+				"Void",
+				"Elected After Primary",
+				"Filed"
+			].includes(row.Status!)) {
 				throw new Error("The official candidate status vocabulary has changed.");
+			}
 			if (row.Status !== "In General") return [];
 			const district = row.Contests!.match(/\bDIST\s+(\d+|II|I)$/u)?.[1];
-			const record = requiredRecord(source, { name: row.BallotName!, office: row.Contests!, party: row.Party!, district: district === "I" ? "1" : district === "II" ? "2" : district, candidateUrl: publishedWebsite(row.Website), status: "listed" }, factory);
+			const record = requiredRecord(source, {
+				name: row.BallotName!,
+				office: row.Contests!,
+				party: row.Party!,
+				district: district === "I"
+					? "1"
+					: district === "II"
+						? "2"
+						: district,
+				candidateUrl: publishedWebsite(row.Website),
+				status: "listed"
+			}, factory);
 			record.sourceStatus = row.Status;
 			return [record];
 		});
 	}
 	if (source.format === "south-dakota-csv") {
-		requireColumns(headers, ["Contest", "Name", "Party", "District/County", "Ballot Order"]);
+		requireColumns(headers, [
+			"Contest",
+			"Name",
+			"Party",
+			"District/County",
+			"Ballot Order"
+		]);
 		return rows.map((row) => {
 			const withdrawn = row.Name!.match(/\s*\(Withdrawn (\d{1,2})\/(\d{1,2})\/(20\d{2})(?: 12:00:00 AM)?\)$/u);
 			if (/\(withdrawn/iu.test(row.Name!) && !withdrawn) throw new Error("The official withdrawal marker has changed.");
@@ -282,7 +469,19 @@ export function parseAdditionalStateRecords(source: StateBallotSource, body: str
 				if (!Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0, 10) !== date || date > source.electionDate) throw new Error("The official withdrawal date is invalid or later than its election.");
 			}
 			const district = row["District/County"]!.match(/^District (\d+[A-Z]?)$/u)?.[1];
-			const record = requiredRecord(source, { name: withdrawn ? row.Name!.slice(0, withdrawn.index) : row.Name!, office: row.Contest!, party: row.Party!, district, jurisdiction: row["District/County"], status: withdrawn ? "withdrawn" : "listed", scope: ["Commissioner of School and Public Lands", "Public Utilities Commissioner"].includes(row.Contest!) ? "statewide" : undefined }, factory);
+			const record = requiredRecord(source, {
+				name: withdrawn
+					? row.Name!.slice(0, withdrawn.index)
+					: row.Name!,
+				office: row.Contest!,
+				party: row.Party!,
+				district,
+				jurisdiction: row["District/County"],
+				status: withdrawn ? "withdrawn" : "listed",
+				scope: ["Commissioner of School and Public Lands", "Public Utilities Commissioner"].includes(row.Contest!)
+					? "statewide"
+					: undefined
+			}, factory);
 			if (!withdrawn && record.scope === "local" && !row["Ballot Order"]) {
 				record.sourceStatus = "No ballot order published";
 			}

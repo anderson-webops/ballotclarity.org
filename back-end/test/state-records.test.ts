@@ -23,19 +23,74 @@ const hash = (value: string) => createHash("sha256").update(value).digest("hex")
 
 function snapshot(): StateBallotSnapshot {
 	const definitions = [
-		["City Example", "CITY COUNCIL", "local", "", "listed"],
-		["House Example", "STATE REPRESENTATIVE", "state-house", "8", "qualified"],
-		["Senate Example", "STATE SENATOR", "state-senate", "5", "filed"],
-		["Write-in Example", "SCHOOL COMMITTEE", "local", "", "write-in"],
-		["Withdrawn Example", "CITY COUNCIL", "local", "", "withdrawn"],
-		["Unopposed Example", "CITY COUNCIL", "local", "", "unopposed"],
-		["Defeated Example", "CITY COUNCIL", "local", "", "defeated"],
+		[
+			"City Example",
+			"CITY COUNCIL",
+			"local",
+			"",
+			"listed"
+		],
+		[
+			"House Example",
+			"STATE REPRESENTATIVE",
+			"state-house",
+			"8",
+			"qualified"
+		],
+		[
+			"Senate Example",
+			"STATE SENATOR",
+			"state-senate",
+			"5",
+			"filed"
+		],
+		[
+			"Write-in Example",
+			"SCHOOL COMMITTEE",
+			"local",
+			"",
+			"write-in"
+		],
+		[
+			"Withdrawn Example",
+			"CITY COUNCIL",
+			"local",
+			"",
+			"withdrawn"
+		],
+		[
+			"Unopposed Example",
+			"CITY COUNCIL",
+			"local",
+			"",
+			"unopposed"
+		],
+		[
+			"Defeated Example",
+			"CITY COUNCIL",
+			"local",
+			"",
+			"defeated"
+		],
 	];
 	return {
 		source,
 		retrievedAt: "2026-10-21T15:00:00.000Z",
 		sha256: "a".repeat(64),
-		records: definitions.map(([name, office, scope, district, status]) => ({ id: hash(name!).slice(0, 24), name, office, scope, district, status, jurisdiction: scope === "local" ? "Bangor" : undefined, party: scope === "local" ? undefined : "Example" } as StateCandidateRecord)),
+		records: definitions.map(([name, office, scope, district, status]) => ({
+			id: hash(name!).slice(0, 24),
+			name,
+			office,
+			scope,
+			district,
+			status,
+			jurisdiction: scope === "local"
+				? "Bangor"
+				: undefined,
+			party: scope === "local"
+				? undefined
+				: "Example"
+		} as StateCandidateRecord)),
 	};
 }
 
@@ -46,13 +101,48 @@ async function serve(repository: StateBallotRepository | null, throttle?: Return
 	await once(server, "listening");
 	const address = server.address();
 	assert.ok(address && typeof address === "object");
-	return { origin: `http://127.0.0.1:${address.port}`, close: () => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())) };
+	return {
+		origin: `http://127.0.0.1:${address.port}`,
+		close: () => new Promise<void>((resolve, reject) => server.close(error => error
+			? reject(error)
+			: resolve()))
+	};
 }
 
 test("candidate-record filters reject malformed or unbounded query inputs", () => {
-	assert.deepEqual(parseStateRecordFilters({}), { search: "", scope: "all", status: "active", limit: 50, offset: 0 });
-	assert.equal(parseStateRecordFilters({ q: " ＣＩＴＹ ", scope: "local", status: "all", limit: "100", offset: "25000" }).search, "city");
-	for (const query of [{ q: ["city"] }, { q: "line\nbreak" }, { q: "a".repeat(121) }, { scope: "ward" }, { status: "qualified" }, { limit: "101" }, { limit: "0" }, { limit: "1.5" }, { offset: "-1" }, { offset: "25001" }, { offset: ["0"] }])
+	assert.deepEqual(parseStateRecordFilters({}), {
+		search: "",
+		scope: "all",
+		status: "active",
+		limit: 50,
+		offset: 0
+	});
+	assert.equal(parseStateRecordFilters({
+		q: " ＣＩＴＹ ",
+		scope: "local",
+		status: "all",
+		limit: "100",
+		offset: "25000"
+	}).search, "city");
+	for (const query of [
+		{
+			q: ["city"]
+		},
+		{ q: "line\nbreak" },
+		{
+			q: "a".repeat(121)
+		},
+		{ scope: "ward" },
+		{ status: "qualified" },
+		{ limit: "101" },
+		{ limit: "0" },
+		{ limit: "1.5" },
+		{ offset: "-1" },
+		{ offset: "25001" },
+		{
+			offset: ["0"]
+		}
+	])
 		assert.throws(() => parseStateRecordFilters(query));
 });
 
@@ -68,18 +158,62 @@ test("source browsing exposes local records without assigning a personalized bal
 	assert.equal(buildStateRecordPage(data, parseStateRecordFilters({ status: "all" })).matched, 7);
 	assert.equal(buildStateRecordPage(data, parseStateRecordFilters({ q: "BANGOR" })).matched, 2);
 	assert.equal(buildStateRecordPage(data, parseStateRecordFilters({ q: "nomatch" })).matched, 0);
-	assert.ok(data.records.every(record => isActiveStateCandidateRecord(record) === ["listed", "filed", "qualified", "write-in"].includes(record.status)));
-	assert.equal(buildStateBallotPreview({ ...data, records: data.records.filter(record => record.scope === "local") }, { districtMatches: [] }), null);
+	assert.ok(data.records.every(record => isActiveStateCandidateRecord(record) === [
+		"listed",
+		"filed",
+		"qualified",
+		"write-in"
+	].includes(record.status)));
+	assert.equal(buildStateBallotPreview({
+		...data,
+		records: data.records.filter(record => record.scope === "local")
+	}, { districtMatches: [] }), null);
 });
 
 test("Fulton ballot annotations expose current-seat incumbency in retained snapshots without changing stored records", () => {
 	const data = snapshot();
-	data.source = { ...data.source, id: "ga-fulton-2026", stateCode: "GA", format: "fulton-pdf" };
+	data.source = {
+		...data.source,
+		id: "ga-fulton-2026",
+		stateCode: "GA",
+		format: "fulton-pdf"
+	};
 	data.records = [
-		{ id: "incumbent", name: "Incumbent Example", office: "United States Senate", scope: "statewide", district: "", status: "listed", ballotDesignation: "(Incumbent)" },
-		{ id: "running", name: "Different Office Holder", office: "United States Senate", scope: "statewide", district: "", status: "listed" },
-		{ id: "term", name: "Term Example", office: "County Commissioner", scope: "local", district: "4", status: "listed", ballotDesignation: "(Incumbent); (Unexpired Term)" },
-		{ id: "partial", name: "Printed Annotation", office: "State Senate", scope: "state-senate", district: "56", status: "listed", ballotDesignation: "(Incumbent" },
+		{
+			id: "incumbent",
+			name: "Incumbent Example",
+			office: "United States Senate",
+			scope: "statewide",
+			district: "",
+			status: "listed",
+			ballotDesignation: "(Incumbent)"
+		},
+		{
+			id: "running",
+			name: "Different Office Holder",
+			office: "United States Senate",
+			scope: "statewide",
+			district: "",
+			status: "listed"
+		},
+		{
+			id: "term",
+			name: "Term Example",
+			office: "County Commissioner",
+			scope: "local",
+			district: "4",
+			status: "listed",
+			ballotDesignation: "(Incumbent); (Unexpired Term)"
+		},
+		{
+			id: "partial",
+			name: "Printed Annotation",
+			office: "State Senate",
+			scope: "state-senate",
+			district: "56",
+			status: "listed",
+			ballotDesignation: "(Incumbent"
+		},
 	];
 	const original = JSON.stringify(data.records);
 	const page = buildStateRecordPage(data, parseStateRecordFilters({}));
@@ -107,7 +241,12 @@ test("bounded pagination remains usable after an old offset no longer has record
 
 test("public record serialization excludes private fields and unsafe candidate URLs", () => {
 	const data = snapshot();
-	Object.assign(data.records[0]!, { residentialAddress: "excluded", email: "excluded@example.test", phone: "excluded", candidateUrl: "javascript:alert(1)" });
+	Object.assign(data.records[0]!, {
+		residentialAddress: "excluded",
+		email: "excluded@example.test",
+		phone: "excluded",
+		candidateUrl: "javascript:alert(1)"
+	});
 	const row = buildStateRecordPage(data, parseStateRecordFilters({})).records[0]!;
 	assert.equal(row.candidateUrl, undefined);
 	assert.equal("residentialAddress" in row, false);
@@ -117,11 +256,13 @@ test("public record serialization excludes private fields and unsafe candidate U
 
 test("record routes list states, retain provenance, and validate before requesting data", async (context) => {
 	let reads = 0;
-	const api = await serve({ async getSnapshot(code) {
-		assert.equal(code, "ME");
-		reads += 1;
-		return snapshot();
-	} });
+	const api = await serve({
+		async getSnapshot(code) {
+			assert.equal(code, "ME");
+			reads += 1;
+			return snapshot();
+		}
+	});
 	context.after(api.close);
 	const states = await (await fetch(`${api.origin}/api/state-records`)).json();
 	assert.equal(states.states.length, 51);
@@ -148,9 +289,14 @@ test("missing or mismatched source data fails closed without exposing internal e
 	const unavailable = await (await fetch(`${absent.origin}/api/state-records/ME`)).json();
 	assert.equal(unavailable.available, false);
 	assert.deepEqual(unavailable.records, []);
-	const mismatch = await serve({ async getSnapshot() {
-		return { ...snapshot(), source: { ...source, stateCode: "VT" } };
-	} });
+	const mismatch = await serve({
+		async getSnapshot() {
+			return {
+				...snapshot(),
+				source: { ...source, stateCode: "VT" }
+			};
+		}
+	});
 	context.after(mismatch.close);
 	const response = await fetch(`${mismatch.origin}/api/state-records/ME`);
 	assert.equal(response.status, 503);
@@ -164,17 +310,42 @@ test("source document links match reviewed provenance and reject unsafe or misma
 	assert.equal(stateRecordDocumentLinks({ ...source, documentLinks: undefined }), undefined);
 	assert.equal(stateRecordDocumentLinks(undefined), undefined);
 	assert.throws(() => stateRecordDocumentLinks({ ...configured, documentUrls: [] }), /document links/u);
-	assert.throws(() => stateRecordDocumentLinks({ ...configured, documentLinks: configured.documentLinks!.map(link => ({ ...link, url: "javascript:alert(1)" })) }), /document links/u);
-	assert.throws(() => stateRecordDocumentLinks({ ...configured, documentLinks: configured.documentLinks!.map(link => ({ ...link, label: "\n" })) }), /document links/u);
-	assert.throws(() => stateRecordDocumentLinks({ ...configured, documentLinks: [...configured.documentLinks!].reverse() }), /document links/u);
+	assert.throws(() => stateRecordDocumentLinks({
+		...configured,
+		documentLinks: configured.documentLinks!.map(link => ({ ...link, url: "javascript:alert(1)" }))
+	}), /document links/u);
+	assert.throws(() => stateRecordDocumentLinks({
+		...configured,
+		documentLinks: configured.documentLinks!.map(link => ({ ...link, label: "\n" }))
+	}), /document links/u);
+	assert.throws(() => stateRecordDocumentLinks({
+		...configured,
+		documentLinks: [...configured.documentLinks!].reverse()
+	}), /document links/u);
 });
 test("Cassia question sources expose exact offered general, school and fire PDFs", () => {
 	const cassia = configuredStateBallotSources.find(item => item.id === "id-cassia-2026")!;
 	const legacy = stateBallotSources.find(item => item.id === cassia.id)!;
-	const snapshot: StateBallotSnapshot = { source: cassia, retrievedAt: "2026-10-26T00:00:00.000Z", sha256: "0".repeat(64), records: [], documents: legacy.documentUrls!.map(url => ({ url, sha256: "0".repeat(64), retrievedAt: "2026-10-26T00:00:00.000Z", includedRecordCount: 0 })) };
+	const snapshot: StateBallotSnapshot = {
+		source: cassia,
+		retrievedAt: "2026-10-26T00:00:00.000Z",
+		sha256: "0".repeat(64),
+		records: [],
+		documents: legacy.documentUrls!.map(url => ({
+			url,
+			sha256: "0".repeat(64),
+			retrievedAt: "2026-10-26T00:00:00.000Z",
+			includedRecordCount: 0
+		}))
+	};
 	assert.deepEqual(stateRecordDocumentLinks(cassia, snapshot)?.map(item => item.url), legacy.documentUrls);
 	assert.deepEqual(stateRecordDocumentLinks(cassia, snapshot)?.map(item => item.label), ["Sample ballot", "School ballot", "Fire ballot"]);
-	assert.throws(() => stateRecordDocumentLinks(cassia, { ...snapshot, documents: [{ ...snapshot.documents![0]!, url: "https://other.test/ballot.pdf" }] }), /requires review/u);
+	assert.throws(() => stateRecordDocumentLinks(cassia, {
+		...snapshot,
+		documents: [
+			{ ...snapshot.documents![0]!, url: "https://other.test/ballot.pdf" }
+		]
+	}), /requires review/u);
 	assert.throws(() => stateRecordDocumentLinks(cassia, { ...snapshot, documents: [] }), /require review/u);
 });
 
@@ -191,10 +362,12 @@ test("missing candidate data retains all configured original-source links withou
 
 test("public candidate queries are rate limited before loading the source", async (context) => {
 	let reads = 0;
-	const api = await serve({ async getSnapshot() {
-		reads += 1;
-		return snapshot();
-	} }, createPublicRequestThrottle({ maxRequests: 1, windowMs: 60_000 }));
+	const api = await serve({
+		async getSnapshot() {
+			reads += 1;
+			return snapshot();
+		}
+	}, createPublicRequestThrottle({ maxRequests: 1, windowMs: 60_000 }));
 	context.after(api.close);
 	assert.equal((await fetch(`${api.origin}/api/state-records/ME`)).status, 200);
 	const response = await fetch(`${api.origin}/api/state-records/ME`);
@@ -204,13 +377,38 @@ test("public candidate queries are rate limited before loading the source", asyn
 });
 
 test("reviewed image imports preserve local-only facts and never download or bundle a fallback", async (context) => {
-	const imageSource = { ...source, id: "me-reviewed-image-test", format: "reviewed-image" as const, documentUrls: [source.url], documentLinks: undefined };
+	const imageSource = {
+		...source,
+		id: "me-reviewed-image-test",
+		format: "reviewed-image" as const,
+		documentUrls: [source.url],
+		documentLinks: undefined
+	};
 	const directory = await mkdtemp(join(tmpdir(), "ballot-reviewed-image-"));
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	const data = snapshot();
 	const records = data.records.filter(record => record.scope === "local" && record.status === "listed");
-	const documents = [{ url: source.url, sha256: "a".repeat(64), retrievedAt: data.retrievedAt, includedRecordCount: records.length }];
-	const payload = { schemaVersion: 1, stateCode: "ME", sourceId: imageSource.id, electionDate: imageSource.electionDate, sourceUrl: imageSource.pageUrl, retrievalPolicy: "manual-snapshot", retrievedAt: data.retrievedAt, sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), recordCount: records.length, documents, records };
+	const documents = [
+		{
+			url: source.url,
+			sha256: "a".repeat(64),
+			retrievedAt: data.retrievedAt,
+			includedRecordCount: records.length
+		}
+	];
+	const payload = {
+		schemaVersion: 1,
+		stateCode: "ME",
+		sourceId: imageSource.id,
+		electionDate: imageSource.electionDate,
+		sourceUrl: imageSource.pageUrl,
+		retrievalPolicy: "manual-snapshot",
+		retrievedAt: data.retrievedAt,
+		sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+		recordCount: records.length,
+		documents,
+		records
+	};
 	const accepted = parseBundledStateSnapshot(imageSource, JSON.stringify(payload));
 	await createStateBallotStorage(directory).write(accepted);
 	let requests = 0;
@@ -218,7 +416,12 @@ test("reviewed image imports preserve local-only facts and never download or bun
 		requests += 1;
 		throw new Error("No publisher request permitted.");
 	};
-	const repository = createStateBallotRepository({ sources: [imageSource], dataDirectory: directory, now: () => Date.parse("2026-10-21T20:00:00Z"), fetchText });
+	const repository = createStateBallotRepository({
+		sources: [imageSource],
+		dataDirectory: directory,
+		now: () => Date.parse("2026-10-21T20:00:00Z"),
+		fetchText
+	});
 	assert.deepEqual(await repository.getSnapshot("ME"), accepted);
 	assert.equal(buildStateBallotPreview(accepted, { districtMatches: [] }), null);
 	assert.equal(buildStateRecordPage(accepted, parseStateRecordFilters({})).records.length, 1);

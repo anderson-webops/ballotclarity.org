@@ -9,16 +9,33 @@ const baseLinks = [
 ];
 
 const navLinks = computed(() => {
-	if (session.value?.passwordChangeRequiredAt)
-		return [{ label: "Account", to: "/admin/account" }];
+	if (session.value?.passwordChangeRequiredAt) {
+		return [
+			{ label: "Account", to: "/admin/account" }
+		];
+	}
 
 	return baseLinks;
 });
 
 function isActive(path: string) {
 	if (path === "/admin") return route.path === path || route.path.startsWith("/admin/datasets");
-	if (path === "/admin/settings") return ["settings", "users", "account", "audit", "sources"].some(section => route.path.startsWith(`/admin/${section}`));
-	return ["exceptions", "review", "content", "corrections", "packages"].some(section => route.path.startsWith(`/admin/${section}`));
+	if (path === "/admin/settings") {
+		return [
+			"settings",
+			"users",
+			"account",
+			"audit",
+			"sources"
+		].some(section => route.path.startsWith(`/admin/${section}`));
+	}
+	return [
+		"exceptions",
+		"review",
+		"content",
+		"corrections",
+		"packages"
+	].some(section => route.path.startsWith(`/admin/${section}`));
 }
 
 async function signOut() {

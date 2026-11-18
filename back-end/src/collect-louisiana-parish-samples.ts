@@ -33,33 +33,124 @@ async function prepare(capture: ParishCapture, extract: Extract, questionXml?: E
 			text = await extract(input.body);
 		}
 		catch (error) {
-			const failure = { parish: result.parish, status: "held", reason: error instanceof Error ? error.message : "Parish native extraction requires review." };
+			const failure = {
+				parish: result.parish,
+				status: "held",
+				reason: error instanceof Error
+					? error.message
+					: "Parish native extraction requires review."
+			};
 			preparation.push(failure);
 			if (questionXml) questionPreparation.push(failure);
 			continue;
 		}
 		try {
 			const records = readParishCandidateReferences(text, result.parish, capture.catalog.electionDate);
-			references.push(...records.map(record => ({ parish: result.parish, electionDate: capture.catalog.electionDate, ...record, sourceStatus: "unofficial-reference", sourceUrl: input.url, sourceSha256: input.sha256, capturedAt: input.capturedAt })));
+			references.push(...records.map(record => ({
+				parish: result.parish,
+				electionDate: capture.catalog.electionDate,
+				...record,
+				sourceStatus: "unofficial-reference",
+				sourceUrl: input.url,
+				sourceSha256: input.sha256,
+				capturedAt: input.capturedAt
+			})));
 			preparation.push({ parish: result.parish, status: "prepared", records: records.length });
 		}
-		catch (error) { preparation.push({ parish: result.parish, status: "held", reason: error instanceof Error ? error.message : "Parish native preparation requires review." }); }
+		catch (error) {
+			preparation.push({
+				parish: result.parish,
+				status: "held",
+				reason: error instanceof Error
+					? error.message
+					: "Parish native preparation requires review."
+			});
+		}
 		if (questionXml) {
 			try {
 				const questions = readParishQuestionReferences(text, await questionXml(input.body), result.parish, capture.catalog.electionDate);
-				questionReferences.push(...questions.map(question => ({ parish: result.parish, electionDate: capture.catalog.electionDate, ...question, sourceStatus: "unofficial-reference", sourceUrl: input.url, sourceSha256: input.sha256, capturedAt: input.capturedAt })));
-				questionPreparation.push({ parish: result.parish, status: "prepared", records: questions.length, heldRecords: questions.filter(question => question.reviewStatus === "held").length });
+				questionReferences.push(...questions.map(question => ({
+					parish: result.parish,
+					electionDate: capture.catalog.electionDate,
+					...question,
+					sourceStatus: "unofficial-reference",
+					sourceUrl: input.url,
+					sourceSha256: input.sha256,
+					capturedAt: input.capturedAt
+				})));
+				questionPreparation.push({
+					parish: result.parish,
+					status: "prepared",
+					records: questions.length,
+					heldRecords: questions.filter(question => question.reviewStatus === "held").length
+				});
 			}
-			catch (error) { questionPreparation.push({ parish: result.parish, status: "held", reason: error instanceof Error ? error.message : "Parish question preparation requires review." }); }
+			catch (error) {
+				questionPreparation.push({
+					parish: result.parish,
+					status: "held",
+					reason: error instanceof Error
+						? error.message
+						: "Parish question preparation requires review."
+				});
+			}
 		}
 	}
-	const columns = ["parish", "electionDate", "id", "name", "office", "statedParty", "voteFor", "sourcePage", "sourceStatus", "sourceUrl", "sourceSha256", "capturedAt"] as const;
+	const columns = [
+		"parish",
+		"electionDate",
+		"id",
+		"name",
+		"office",
+		"statedParty",
+		"voteFor",
+		"sourcePage",
+		"sourceStatus",
+		"sourceUrl",
+		"sourceSha256",
+		"capturedAt"
+	] as const;
 	const quote = (value: string | number | undefined) => `"${String(value ?? "").replaceAll("\"", "\"\"")}"`;
-	const csv = `${[columns.join(","), ...references.map(record => columns.map(column => quote(record[column])).join(","))].join("\n")}\n`;
-	if (!questionXml) return { references, preparation, csv, csvSha256: parishSampleHash(csv) };
-	const questionColumns = ["parish", "electionDate", "id", "title", "text", "sourcePage", "reviewStatus", "holdReason", "sourceStatus", "sourceUrl", "sourceSha256", "capturedAt"] as const;
-	const questionCsv = `${[...questionColumns, "choice1", "choice2"].join(",")}\n${questionReferences.map(question => [...questionColumns.map(column => quote(question[column])), ...question.choices.map(quote)].join(",")).join("\n")}${questionReferences.length ? "\n" : ""}`;
-	return { references, preparation, csv, csvSha256: parishSampleHash(csv), questionReferences, questionPreparation, questionCsv, questionCsvSha256: parishSampleHash(questionCsv) };
+	const csv = `${[
+		columns.join(","),
+		...references.map(record => columns.map(column => quote(record[column])).join(","))
+	].join("\n")}\n`;
+	if (!questionXml) {
+		return {
+			references,
+			preparation,
+			csv,
+			csvSha256: parishSampleHash(csv)
+		};
+	}
+	const questionColumns = [
+		"parish",
+		"electionDate",
+		"id",
+		"title",
+		"text",
+		"sourcePage",
+		"reviewStatus",
+		"holdReason",
+		"sourceStatus",
+		"sourceUrl",
+		"sourceSha256",
+		"capturedAt"
+	] as const;
+	const questionCsv = `${[...questionColumns, "choice1", "choice2"].join(",")}\n${questionReferences.map(question => [
+		...questionColumns.map(column => quote(question[column])),
+		...question.choices.map(quote)
+	].join(",")).join("\n")}${questionReferences.length ? "\n" : ""}`;
+	return {
+		references,
+		preparation,
+		csv,
+		csvSha256: parishSampleHash(csv),
+		questionReferences,
+		questionPreparation,
+		questionCsv,
+		questionCsvSha256: parishSampleHash(questionCsv)
+	};
 }
 
 async function persistOutput(directory: string, filename: string, body: string) {
@@ -89,7 +180,13 @@ export async function prepareLouisianaParishSamples(path: string, options: { ext
 		if (bytes > 64 * 1024 * 1024 || captures.some(capture => capture.url === input.url)) throw new Error("Parish captured input inventory exceeds its bounds.");
 		const body = await readBoundedStateDataBytes(join(directory, input.path));
 		if (body.length !== input.bytes || parishSampleHash(body) !== input.sha256 || (input.path.endsWith(".pdf") && body.subarray(0, 5).toString() !== "%PDF-")) throw new Error("Parish captured document bytes changed.");
-		captures.push({ url: input.url, body, sha256: input.sha256, capturedAt: input.capturedAt, contentSecurityPolicy: input.contentSecurityPolicy });
+		captures.push({
+			url: input.url,
+			body,
+			sha256: input.sha256,
+			capturedAt: input.capturedAt,
+			contentSecurityPolicy: input.contentSecurityPolicy
+		});
 	}
 	if (parishSamplePolicyUrls.some(url => !captures.some(capture => capture.url === url))) throw new Error("Parish captured policies are incomplete.");
 	const index = captures.find(capture => capture.url === parishSampleIndexUrl);
@@ -101,17 +198,47 @@ export async function prepareLouisianaParishSamples(path: string, options: { ext
 	}
 	if (parishSampleHash(await readBoundedStateDataBytes(join(directory, "candidate-references.csv"), 4 * 1024 * 1024)) !== report.csvSha256) throw new Error("Parish original CSV hash changed.");
 	if (report.questionCsvSha256 !== undefined && parishSampleHash(await readBoundedStateDataBytes(join(directory, "question-references.csv"), 4 * 1024 * 1024)) !== report.questionCsvSha256) throw new Error("Parish original question CSV hash changed.");
-	const prepared = await prepare({ ...report, captures }, options.extract ?? nativeExtract, plan.includeQuestions ? options.questionXml ?? nativeXml : undefined);
+	const prepared = await prepare({ ...report, captures }, options.extract ?? nativeExtract, plan.includeQuestions
+		? options.questionXml ?? nativeXml
+		: undefined);
 	const lock = await acquireStateBallotAutomationLock(plan.outputRoot);
 	try {
 		const outputDirectory = join(lock.directory, `prepared-${plan.captureSha256.slice(0, 16)}-${randomUUID()}`);
 		await mkdir(outputDirectory, { mode: 0o700 });
 		const { csv, questionCsv, ...facts } = prepared;
-		const body = `${JSON.stringify({ schemaVersion: 1, type: "louisiana-parish-sample-research-preparation", sourceCaptureSha256: plan.captureSha256, publisher: report.publisher, catalog: report.catalog, inputs: report.inputs, results: report.results, ...facts, official: false, personalApplicabilityVerified: false, officialQualificationVerified: false, automaticImportApproved: false, publicationApproved: false, publisherRequestsDuringPreparation: 0 }, null, 2)}\n`;
+		const body = `${JSON.stringify({
+			schemaVersion: 1,
+			type: "louisiana-parish-sample-research-preparation",
+			sourceCaptureSha256: plan.captureSha256,
+			publisher: report.publisher,
+			catalog: report.catalog,
+			inputs: report.inputs,
+			results: report.results,
+			...facts,
+			official: false,
+			personalApplicabilityVerified: false,
+			officialQualificationVerified: false,
+			automaticImportApproved: false,
+			publicationApproved: false,
+			publisherRequestsDuringPreparation: 0
+		}, null, 2)}\n`;
 		await persistOutput(outputDirectory, "candidate-references.csv", csv);
 		if (questionCsv !== undefined) await persistOutput(outputDirectory, "question-references.csv", questionCsv);
 		await persistOutput(outputDirectory, "preparation.json", body);
-		return { status: "research-prepared", outputDirectory, referenceRecords: prepared.references.length, preparedParishes: prepared.preparation.filter(result => result.status === "prepared").length, heldParishes: prepared.preparation.filter(result => result.status !== "prepared").length, ...(prepared.questionReferences ? { questionReferences: prepared.questionReferences.length, preparedQuestions: prepared.questionReferences.filter(question => question.reviewStatus === "prepared").length, heldQuestions: prepared.questionReferences.filter(question => question.reviewStatus === "held").length } : {}), preparationSha256: parishSampleHash(body), publisherRequests: 0, imported: false, publicationApproved: false };
+		return {
+			status: "research-prepared",
+			outputDirectory,
+			referenceRecords: prepared.references.length,
+			preparedParishes: prepared.preparation.filter(result => result.status === "prepared").length,
+			heldParishes: prepared.preparation.filter(result => result.status !== "prepared").length,
+			...(prepared.questionReferences
+				? { questionReferences: prepared.questionReferences.length, preparedQuestions: prepared.questionReferences.filter(question => question.reviewStatus === "prepared").length, heldQuestions: prepared.questionReferences.filter(question => question.reviewStatus === "held").length }
+				: {}),
+			preparationSha256: parishSampleHash(body),
+			publisherRequests: 0,
+			imported: false,
+			publicationApproved: false
+		};
 	}
 	finally { await lock.release(); }
 }
@@ -128,7 +255,9 @@ export async function collectLouisianaParishSamples(path: string, options: { col
 		const written = new Set<string>();
 		async function persist(document: ParishSampleCapture) {
 			if (parishSampleHash(document.body) !== document.sha256) throw new Error("Parish capture hash changed before persistence.");
-			const filename = `${document.sha256}.${document.body.subarray(0, 5).toString() === "%PDF-" ? "pdf" : "txt"}`;
+			const filename = `${document.sha256}.${document.body.subarray(0, 5).toString() === "%PDF-"
+				? "pdf"
+				: "txt"}`;
 			if (!written.has(filename)) {
 				const handle = await open(join(outputDirectory, filename), "wx", 0o600);
 				try {
@@ -149,14 +278,36 @@ export async function collectLouisianaParishSamples(path: string, options: { col
 		}
 		const capture = await (options.collect ?? collectParishSampleBatch)(plan.parishes, plan.accessReview, { onCapture: persist });
 		for (const document of capture.captures) await persist(document);
-		const { references, preparation, csv, csvSha256, questionCsv, ...questionFacts } = await prepare(capture, extract, plan.includeQuestions ? options.questionXml ?? nativeXml : undefined);
+		const { references, preparation, csv, csvSha256, questionCsv, ...questionFacts } = await prepare(capture, extract, plan.includeQuestions
+			? options.questionXml ?? nativeXml
+			: undefined);
 		const { captures, ...metadata } = capture;
 		await persistOutput(outputDirectory, "candidate-references.csv", csv);
 		if (questionCsv !== undefined) await persistOutput(outputDirectory, "question-references.csv", questionCsv);
-		const report = { ...metadata, inputs, preparation, references, csvSha256, ...questionFacts, rightsReview: "factual research only", personalApplicabilityVerified: false, officialQualificationVerified: false };
+		const report = {
+			...metadata,
+			inputs,
+			preparation,
+			references,
+			csvSha256,
+			...questionFacts,
+			rightsReview: "factual research only",
+			personalApplicabilityVerified: false,
+			officialQualificationVerified: false
+		};
 		const reportBody = `${JSON.stringify(report, null, 2)}\n`;
 		await persistOutput(outputDirectory, "capture.json", reportBody);
-		return { status: "research-collected", outputDirectory, capturedParishes: capture.results.filter(result => result.status === "collected").length, heldParishes: capture.results.filter(result => result.status === "held").length, preparedParishes: preparation.filter(result => result.status === "prepared").length, referenceRecords: references.length, captureSha256: parishSampleHash(reportBody), imported: false, publicationApproved: false };
+		return {
+			status: "research-collected",
+			outputDirectory,
+			capturedParishes: capture.results.filter(result => result.status === "collected").length,
+			heldParishes: capture.results.filter(result => result.status === "held").length,
+			preparedParishes: preparation.filter(result => result.status === "prepared").length,
+			referenceRecords: references.length,
+			captureSha256: parishSampleHash(reportBody),
+			imported: false,
+			publicationApproved: false
+		};
 	}
 	finally { await lock.release(); }
 }
@@ -164,14 +315,20 @@ export async function collectLouisianaParishSamples(path: string, options: { col
 if (process.argv[1]?.endsWith("collect-louisiana-parish-samples.ts") || process.argv[1]?.endsWith("collect-louisiana-parish-samples.js")) {
 	const arguments_ = process.argv.slice(2);
 	const preparationMode = arguments_[0] === "prepare";
-	const [path, ...extra] = preparationMode ? arguments_.slice(1) : arguments_;
+	const [path, ...extra] = preparationMode
+		? arguments_.slice(1)
+		: arguments_;
 	if (!path || extra.length) {
 		console.error("Use collect-louisiana-parish-samples [prepare] PLAN.json.");
 		process.exitCode = 1;
 	}
 	else {
-		(preparationMode ? prepareLouisianaParishSamples(path) : collectLouisianaParishSamples(path)).then(result => console.log(JSON.stringify(result))).catch((error: unknown) => {
-			console.error(error instanceof Error ? error.message : "Parish research collection failed.");
+		(preparationMode
+			? prepareLouisianaParishSamples(path)
+			: collectLouisianaParishSamples(path)).then(result => console.log(JSON.stringify(result))).catch((error: unknown) => {
+			console.error(JSON.stringify(error instanceof Error
+				? error.message
+				: "Parish research collection failed."));
 			process.exitCode = 1;
 		});
 	}

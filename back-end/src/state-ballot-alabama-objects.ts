@@ -60,7 +60,9 @@ export function inspectAlabamaObjects(document: unknown): AlabamaObjectProof {
 	const pending: {
 		value: unknown;
 		depth: number;
-	}[] = [{ value: document, depth: 0 }];
+	}[] = [
+		{ value: document, depth: 0 }
+	];
 	let visited = 0;
 	let streamBytes = 0;
 	while (pending.length) {
@@ -126,7 +128,9 @@ export function inspectAlabamaObjects(document: unknown): AlabamaObjectProof {
 			throw new Error("The Alabama marked-content inventory requires review.");
 		for (const [name, reference] of Object.entries(properties)) {
 			const property = resolved(reference);
-			const metadata = plain(property) ? objects[`obj:${property["/Metadata"]}`]?.stream : undefined;
+			const metadata = plain(property)
+				? objects[`obj:${property["/Metadata"]}`]?.stream
+				: undefined;
 			if (
 				!/^\/MC\d{1,2}$/u.test(name)
 				|| !plain(property)
@@ -164,7 +168,12 @@ export function inspectAlabamaObjects(document: unknown): AlabamaObjectProof {
 			|| !Array.isArray(form["/Fields"])
 			|| form["/Fields"].length
 			|| (form["/NeedAppearances"] !== undefined && form["/NeedAppearances"] !== false)
-			|| Object.keys(form).some(key => !["/Fields", "/DA", "/DR", "/NeedAppearances"].includes(key))
+			|| Object.keys(form).some(key => ![
+				"/Fields",
+				"/DA",
+				"/DR",
+				"/NeedAppearances"
+			].includes(key))
 		) {
 			throw new Error("The Alabama empty-form appearance requires review.");
 		}

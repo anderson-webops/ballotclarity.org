@@ -18,7 +18,9 @@ function isValidProxyRange(value: string) {
 		return true;
 
 	const parsedPrefix = Number(prefix);
-	const maximumPrefix = addressFamily === 4 ? 32 : 128;
+	const maximumPrefix = addressFamily === 4
+		? 32
+		: 128;
 	return Number.isInteger(parsedPrefix) && parsedPrefix >= 0 && parsedPrefix <= maximumPrefix;
 }
 

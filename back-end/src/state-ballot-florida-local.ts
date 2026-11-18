@@ -9,12 +9,25 @@ import { buildFloridaCandidateForm, buildFloridaCountyForm, floridaSourceElectio
 export { StateBallotAwaitingRecordsError } from "./state-ballot-source-state.js";
 
 const columns = "AcctNum,VoterID,ElectionID,OfficeCode,OfficeDesc,Juris1num,Juris2num,StatusCode,StatusDesc,PartyCode,PartyDesc,NameLast,NameFirst,NameMiddle,SuppressAddress,Addr1,Addr2,City,State,Zip,County,Phone,TrsNameLast,TrsNameFirst,TrsNameMiddle,Email".split(",");
-const statuses: Record<string, string> = { UNO: "Unopposed", DNQ: "Did Not Qualify", QUA: "Qualified", DEF: "Defeated", WIT: "Withdrew", DEC: "Deceased" };
+const statuses: Record<string, string> = {
+	UNO: "Unopposed",
+	DNQ: "Did Not Qualify",
+	QUA: "Qualified",
+	DEF: "Defeated",
+	WIT: "Withdrew",
+	DEC: "Deceased"
+};
 const clean = (value: string) => value.normalize("NFKC").replace(/\s+/gu, " ").trim();
 const numberLabel = (value: string) => value.replace(/^0+(?=\d)/u, "");
 
 function table(body: string, headers: string[], maximum: number) {
-	const rows = parse(body, { bom: true, delimiter: "\t", quote: false, skip_empty_lines: true, max_record_size: 100_000 }) as string[][];
+	const rows = parse(body, {
+		bom: true,
+		delimiter: "\t",
+		quote: false,
+		skip_empty_lines: true,
+		max_record_size: 100_000
+	}) as string[][];
 	if (JSON.stringify(rows.shift()) !== JSON.stringify(headers) || rows.length > maximum || rows.some(row => row.length !== headers.length)) throw new Error("The Florida local export layout has changed.");
 	return rows;
 }
@@ -49,10 +62,29 @@ export function parseFloridaLocalCandidateRecords(source: StateBallotSource, bod
 		const statusCode = row.StatusCode!;
 		const status = clean(row.StatusDesc!);
 		if (!/^[A-Z]{3}$/u.test(statusCode) || !status || (statuses[statusCode] && statuses[statusCode] !== status)) throw new Error("The Florida local candidate status has changed.");
-		const office = [row.OfficeDesc!, district ? `District ${numberLabel(district)}` : "", seat ? `Group/seat ${numberLabel(seat)}` : ""].filter(Boolean).join(" · ");
+		const office = [
+			row.OfficeDesc!,
+			district
+				? `District ${numberLabel(district)}`
+				: "",
+			seat
+				? `Group/seat ${numberLabel(seat)}`
+				: ""
+		].filter(Boolean).join(" · ");
 		const name = [row.NameFirst!, row.NameMiddle!, row.NameLast!].map(clean).filter(Boolean).join(" ");
 		if ([name, office, row.PartyDesc!, status].some(value => /[\p{Cc}\uFFFD]/u.test(value)) || row.OfficeDesc!.length > 200 || !row.OfficeDesc!.trim() || row.PartyDesc!.length > 100 || status.length > 150) throw new Error("The Florida local candidate facts are invalid.");
-		const record = makeRecord(source, { name, office, party: row.PartyDesc! || row.PartyCode!, status: statuses[statusCode] ? status : "Unrecognized source status", scope: "local", district, sourceCandidateId: identifier, sourceAreaLabel: county ? `${counties.get(county)} County` : undefined });
+		const record = makeRecord(source, {
+			name,
+			office,
+			party: row.PartyDesc! || row.PartyCode!,
+			status: statuses[statusCode] ? status : "Unrecognized source status",
+			scope: "local",
+			district,
+			sourceCandidateId: identifier,
+			sourceAreaLabel: county
+				? `${counties.get(county)} County`
+				: undefined
+		});
 		if (!record) throw new Error("The Florida local candidate row is incomplete.");
 		if (!statuses[statusCode]) record.sourceStatus = `${statusCode}: ${status}`;
 		return record;

@@ -10,27 +10,44 @@ const { formatDate } = useFormatters();
 const { data: stateData, error: stateError, refresh: refreshStates } = await useStateRecordStates();
 const filters = computed(() => readRecoverableStateRecordQuery(route.query, stateData.value?.states ?? [], civicStore.isHydrated ? civicStore.selectedLocation?.state : undefined));
 const referenceElection = computed(() => readReferenceElection(route.query.referenceElection, route.query.source));
-const candidateFilters = computed(() => ({ ...filters.value, stateCode: referenceElection.value === undefined ? filters.value.stateCode : "" }));
+const candidateFilters = computed(() => ({
+	...filters.value,
+	stateCode: referenceElection.value === undefined
+		? filters.value.stateCode
+		: ""
+}));
 const { data, error, pending, refresh } = await useStateRecords(candidateFilters);
 const sourceMismatch = computed(() => stateRecordSourceMismatch(route.query.source, data.value));
-const sampleBallot = computed(() => sourceMismatch.value ? undefined : recordPublications(data.value?.source).find(isSampleBallotDocument));
+const sampleBallot = computed(() => sourceMismatch.value
+	? undefined
+	: recordPublications(data.value?.source).find(isSampleBallotDocument));
 const notice = computed(() => recordSourceNotice(data.value?.source));
 const sourceElection = computed(() => stateData.value?.states.find(state => state.stateCode === filters.value.stateCode)?.sources?.find(source => source.id === filters.value.sourceId)?.electionDate);
-const referenceFilters = computed(() => ({ stateCode: filters.value.stateCode, search: filters.value.search, scope: filters.value.scope, electionDate: referenceElection.value ?? sourceElection.value, offset: readStateRecordQuery({ offset: route.query.referenceOffset }, []).offset }));
+const referenceFilters = computed(() => ({
+	stateCode: filters.value.stateCode,
+	search: filters.value.search,
+	scope: filters.value.scope,
+	electionDate: referenceElection.value ?? sourceElection.value,
+	offset: readStateRecordQuery({ offset: route.query.referenceOffset }, []).offset
+}));
 const { data: referenceCatalog, error: catalogError, refresh: refreshCatalog } = await useElectionReferenceCatalog(() => filters.value.stateCode);
 const { data: referenceData, error: referenceError, pending: referencePending, refresh: refreshReferences } = await useElectionReferences(referenceFilters);
 const selectedState = ref(filters.value.stateCode);
 const selectedSource = ref(referenceElectionControl(filters.value.sourceId, referenceElection.value));
 const selectedStateData = computed(() => stateData.value?.states.find(state => state.stateCode === selectedState.value));
 const sourceOptions = computed(() => selectedStateData.value?.sources ?? []);
-const referenceDates = computed(() => referenceCatalog.value?.stateCode === selectedState.value ? referenceCatalog.value.elections : []);
+const referenceDates = computed(() => referenceCatalog.value?.stateCode === selectedState.value
+	? referenceCatalog.value.elections
+	: []);
 const showSourceSelection = computed(() => stateRecordSourceSelectionRequired(selectedStateData.value) || Boolean(referenceDates.value.length));
 const unavailableSource = computed(() => Boolean(sourceOptions.value.length && filters.value.sourceId && !sourceOptions.value.some(source => source.id === filters.value.sourceId)));
 const searchInput = ref(filters.value.search);
 const selectedScope = ref(filters.value.scope);
 const includeInactive = ref(filters.value.status === "all");
 const invalidState = computed(() => typeof route.query.state === "string" && Boolean(route.query.state) && !filters.value.stateCode);
-const recordRange = computed(() => data.value?.matched ? `${data.value.offset + 1}–${Math.min(data.value.offset + data.value.records.length, data.value.matched)} of ${data.value.matched}` : "0 records");
+const recordRange = computed(() => data.value?.matched
+	? `${data.value.offset + 1}–${Math.min(data.value.offset + data.value.records.length, data.value.matched)} of ${data.value.matched}`
+	: "0 records");
 
 watch([filters, referenceElection], ([value]) => {
 	selectedState.value = value.stateCode;
@@ -47,10 +64,22 @@ async function applyFilters(offset = 0) {
 			type: "candidate",
 			state: selectedState.value,
 			...referenceElectionQuery(selectedSource.value),
-			...(searchInput.value.trim() ? { q: searchInput.value.trim() } : {}),
-			...(selectedScope.value !== "all" ? { scope: selectedScope.value } : {}),
-			...(includeInactive.value ? { status: "all" } : {}),
-			...(offset ? { offset: String(offset) } : {}),
+			...(searchInput.value.trim()
+				? {
+						q: searchInput.value.trim()
+					}
+				: {}),
+			...(selectedScope.value !== "all"
+				? { scope: selectedScope.value }
+				: {}),
+			...(includeInactive.value
+				? { status: "all" }
+				: {}),
+			...(offset
+				? {
+						offset: String(offset)
+					}
+				: {}),
 		},
 	});
 }

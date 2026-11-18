@@ -16,7 +16,12 @@ import { alabamaHash as hash } from "./state-ballot-alabama-types.js";
 
 const clean = (value: string) => value.replace(/\s+/gu, " ").trim();
 function isParty(value: string) {
-	return ["democrat", "republican", "independent", "libertarian"].includes(value.toLowerCase());
+	return [
+		"democrat",
+		"republican",
+		"independent",
+		"libertarian"
+	].includes(value.toLowerCase());
 }
 function proved(span: AlabamaTextSpan, content: AlabamaVisibleContent) {
 	return span.fontProven
@@ -62,16 +67,26 @@ export function officeContext(heading: string, county: string): AlabamaOfficeCon
 		["FOR STATE AUDITOR", "State Auditor"],
 		["FOR COMMISSIONER OF AGRICULTURE AND INDUSTRIES", "Commissioner of Agriculture and Industries"]
 	]);
-	if (named.has(heading)) return { office: named.get(heading)!, district: "", scope: "statewide" };
+	if (named.has(heading)) {
+		return {
+			office: named.get(heading)!,
+			district: "",
+			scope: "statewide"
+		};
+	}
 	let match;
 	match = /^FOR UNITED STATES REPRESENTATIVE,? ([1-9]\d?)(?:ST|ND|RD|TH) CONGRESSIONAL DISTRICT$/u.exec(heading);
 	if (match) return { office: "U.S. Representative", district: match[1], scope: "congressional" };
 	match = /^FOR STATE (SENATOR|REPRESENTATIVE),? DISTRICT NO\. ([1-9]\d{0,2})$/u.exec(heading);
 	if (match) {
 		return {
-			office: match[1] === "SENATOR" ? "State Senator" : "State Representative",
+			office: match[1] === "SENATOR"
+				? "State Senator"
+				: "State Representative",
 			district: match[2],
-			scope: match[1] === "SENATOR" ? "state-senate" : "state-house"
+			scope: match[1] === "SENATOR"
+				? "state-senate"
+				: "state-house"
 		};
 	}
 	match = /^FOR PUBLIC SERVICE COMMISSION, PLACE ?NO\. ([1-9])$/u.exec(heading);
@@ -87,7 +102,9 @@ export function officeContext(heading: string, county: string): AlabamaOfficeCon
 	match = /^FOR COURT OF (CIVIL|CRIMINAL) APPEALS JUDGE, PLACE ([1-9])$/u.exec(heading);
 	if (match) {
 		return {
-			office: `Court of ${match[1] === "CIVIL" ? "Civil" : "Criminal"} Appeals, Place ${match[2]}`,
+			office: `Court of ${match[1] === "CIVIL"
+				? "Civil"
+				: "Criminal"} Appeals, Place ${match[2]}`,
 			district: "",
 			scope: "statewide"
 		};
@@ -104,18 +121,44 @@ export function officeContext(heading: string, county: string): AlabamaOfficeCon
 		};
 	}
 	const prefix = `${county.toUpperCase()} COUNTY`;
-	if (heading === `FOR ${prefix} SHERIFF`)
-		return { office: "Sheriff", district: "", scope: "local", jurisdiction: `${county} County` };
-	if (heading === `FOR ${prefix} REVENUE COMMISSIONER`)
-		return { office: "Revenue Commissioner", district: "", scope: "local", jurisdiction: `${county} County` };
-	if (heading === `FOR ${prefix} CORONER`)
-		return { office: "Coroner", district: "", scope: "local", jurisdiction: `${county} County` };
-	if (heading === `FOR ${prefix} RACING COMMISSIONER`)
-		return { office: "Racing Commissioner", district: "", scope: "local", jurisdiction: `${county} County` };
+	if (heading === `FOR ${prefix} SHERIFF`) {
+		return {
+			office: "Sheriff",
+			district: "",
+			scope: "local",
+			jurisdiction: `${county} County`
+		};
+	}
+	if (heading === `FOR ${prefix} REVENUE COMMISSIONER`) {
+		return {
+			office: "Revenue Commissioner",
+			district: "",
+			scope: "local",
+			jurisdiction: `${county} County`
+		};
+	}
+	if (heading === `FOR ${prefix} CORONER`) {
+		return {
+			office: "Coroner",
+			district: "",
+			scope: "local",
+			jurisdiction: `${county} County`
+		};
+	}
+	if (heading === `FOR ${prefix} RACING COMMISSIONER`) {
+		return {
+			office: "Racing Commissioner",
+			district: "",
+			scope: "local",
+			jurisdiction: `${county} County`
+		};
+	}
 	for (const label of ["TAX ASSESSOR", "TAX COLLECTOR"]) {
 		if (heading === `FOR ${label}, ${prefix}`) {
 			return {
-				office: label === "TAX ASSESSOR" ? "Tax Assessor" : "Tax Collector",
+				office: label === "TAX ASSESSOR"
+					? "Tax Assessor"
+					: "Tax Collector",
 				district: "",
 				scope: "local",
 				jurisdiction: `${county} County`
@@ -160,7 +203,9 @@ export function officeContext(heading: string, county: string): AlabamaOfficeCon
 		match = /^FOR ASSISTANT (TAX ASSESSOR|TAX COLLECTOR),/u.exec(heading);
 		if (match) {
 			return {
-				office: `Assistant ${match[1] === "TAX ASSESSOR" ? "Tax Assessor" : "Tax Collector"}, Bessemer Division`,
+				office: `Assistant ${match[1] === "TAX ASSESSOR"
+					? "Tax Assessor"
+					: "Tax Collector"}, Bessemer Division`,
 				district: "",
 				scope: "local",
 				jurisdiction: `Bessemer Division of ${county} County`
@@ -203,7 +248,9 @@ export function readAlabamaReview(content: AlabamaVisibleContent, input: Alabama
 	assert(/^[a-f\d]{64}$/u.test(sourceSha256), "Original source bytes must be fingerprinted.");
 	const url = new URL(sourceUrl);
 	const prefix = `https://www.sos.alabama.gov/sites/default/files/sample-ballots/${date.getUTCFullYear()}/gen/`;
-	const documentName = sourceUrl.startsWith(prefix) ? sourceUrl.slice(prefix.length) : "";
+	const documentName = sourceUrl.startsWith(prefix)
+		? sourceUrl.slice(prefix.length)
+		: "";
 	const countyDocument = /^([A-Za-z]+(?:[.-][A-Za-z]+)*)[-_]Sample\.pdf$/u.exec(documentName);
 	assert.equal(url.href, sourceUrl);
 	assert(
@@ -401,7 +448,9 @@ export function readAlabamaReview(content: AlabamaVisibleContent, input: Alabama
 					officeRuleOperation: field.vote.operation,
 					terminatorOperation: field.terminator,
 					boundaryMethod: field.boundaryProof?.method ?? "proved-visible-terminator",
-					...(field.boundaryProof ? { boundaryProof: field.boundaryProof } : {}),
+					...(field.boundaryProof
+						? { boundaryProof: field.boundaryProof }
+						: {}),
 					fieldDrawingProof,
 					sourceOperations: [name.operation, party.operation],
 					reviewStatus: "native-draft-awaiting-independent-proof",

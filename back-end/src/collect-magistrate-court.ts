@@ -22,18 +22,47 @@ export async function collectMagistrateCourt({ directory, now = Date.now, reques
 		if (await realpath(runDirectory) !== runDirectory) throw new Error("The Magistrate Court collection journal must not be redirected.");
 		const previous = await readAutomationRun(runDirectory, now());
 		if (previous && ["failed", "running"].includes(previous.status) && Date.parse(previous.startedAt) + magistrateCourtPublication.minimumRefreshIntervalMs > now()) throw new Error("The Magistrate Court collection is awaiting its next permitted retry.");
-		const prior = { schemaVersion: 1 as const, type: "ballot-automation-run" as const, startedAt: new Date(now()).toISOString(), lastImportAt: current?.importedAt ?? null, lastSuccessAt: previous?.lastSuccessAt ?? null, nextRunAt: null };
-		await writeAutomationRun(runDirectory, { ...prior, status: "running", finishedAt: null, results: [] }, now());
+		const prior = {
+			schemaVersion: 1 as const,
+			type: "ballot-automation-run" as const,
+			startedAt: new Date(now()).toISOString(),
+			lastImportAt: current?.importedAt ?? null,
+			lastSuccessAt: previous?.lastSuccessAt ?? null,
+			nextRunAt: null
+		};
+		await writeAutomationRun(runDirectory, {
+			...prior,
+			status: "running",
+			finishedAt: null,
+			results: []
+		}, now());
 		let prepared = false;
 		try {
 			const documents: MagistrateCourtCapture["documents"] = [];
 			const get = async (url: string, profile = false) => {
 				if (documents.length) await pause(magistrateCourtPublication.minimumRequestIntervalMs);
-				const response = await request(url, { allowedHosts: ["www.magistratefulton.org"], maxBytes: magistrateCourtPublication.maximumDocumentBytes, timeoutMs: 15000 });
+				const response = await request(url, {
+					allowedHosts: ["www.magistratefulton.org"],
+					maxBytes: magistrateCourtPublication.maximumDocumentBytes,
+					timeoutMs: 15000
+				});
 				if (response.status !== 200 && !(profile && response.status === 302 && response.location === magistrateProfileRedirect(url))) throw new Error("The Magistrate Court response requires review.");
-				if (response.status === 200 && response.contentType !== (url.endsWith("robots.txt") ? "text/plain" : "text/html")) throw new Error("The Magistrate Court document type requires review.");
+				if (response.status === 200 && response.contentType !== (url.endsWith("robots.txt")
+					? "text/plain"
+					: "text/html")) {
+					throw new Error("The Magistrate Court document type requires review.");
+				}
 				const body = new TextDecoder("utf-8", { fatal: true }).decode(response.body);
-				const entry = { url, status: response.status as 200 | 302, body, capturedAt: new Date(now()).toISOString(), sha256: createHash("sha256").update(response.body).digest("hex"), ...(response.status === 302 ? { location: response.location! } : {}) };
+				const entry = {
+					url,
+					status: response.status as 200 | 302,
+					body,
+					capturedAt: new Date(now()).toISOString(),
+					sha256: createHash("sha256").update(response.body).digest("hex"),
+					...(response.status === 302
+						? { location: response.location! }
+						: {})
+				};
 				documents.push(entry);
 				if (Buffer.byteLength(JSON.stringify(documents)) > magistrateCourtPublication.maximumCaptureBytes) throw new Error("The Magistrate Court capture exceeds its bounds.");
 				return entry;
@@ -55,11 +84,38 @@ export async function collectMagistrateCourt({ directory, now = Date.now, reques
 			await writeFile(join(runDirectory, `capture-${new Date(now()).toISOString().replace(/[:.]/gu, "-")}.json`), `${JSON.stringify(capture)}\n`, { flag: "wx", mode: 0o600 });
 			await writeMagistrateCourt(canonical, snapshot, "collected", now());
 			const finishedAt = new Date(now()).toISOString();
-			await writeAutomationRun(runDirectory, { ...prior, status: "succeeded", finishedAt, lastImportAt: finishedAt, lastSuccessAt: finishedAt, nextRunAt: new Date(now() + magistrateCourtPublication.minimumRefreshIntervalMs).toISOString(), results: [{ sourceId: snapshot.sourceId, status: "imported", records: snapshot.judges.length, reason: null }] }, now());
+			await writeAutomationRun(runDirectory, {
+				...prior,
+				status: "succeeded",
+				finishedAt,
+				lastImportAt: finishedAt,
+				lastSuccessAt: finishedAt,
+				nextRunAt: new Date(now() + magistrateCourtPublication.minimumRefreshIntervalMs).toISOString(),
+				results: [
+					{
+						sourceId: snapshot.sourceId,
+						status: "imported",
+						records: snapshot.judges.length,
+						reason: null
+					}
+				]
+			}, now());
 			return { collected: true, publisherRequests: documents.length, retrievedAt: snapshot.retrievedAt };
 		}
 		catch (error) {
-			await writeAutomationRun(runDirectory, { ...prior, status: "failed", finishedAt: new Date(now()).toISOString(), results: [{ sourceId: magistrateCourtPublication.sourceId, status: "failed", records: 0, reason: prepared ? "persistence-failed" : "source-unavailable" }] }, now());
+			await writeAutomationRun(runDirectory, {
+				...prior,
+				status: "failed",
+				finishedAt: new Date(now()).toISOString(),
+				results: [
+					{
+						sourceId: magistrateCourtPublication.sourceId,
+						status: "failed",
+						records: 0,
+						reason: prepared ? "persistence-failed" : "source-unavailable"
+					}
+				]
+			}, now());
 			throw error;
 		}
 	});

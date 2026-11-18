@@ -9,7 +9,11 @@ const { ballotPlan, isHydrated } = storeToRefs(civicStore);
 const { formatDate } = useFormatters();
 const measureSlug = useRouteStringParam("slug");
 const route = useRoute();
-const electionContext = computed(() => route.query.election === undefined ? undefined : typeof route.query.election === "string" ? route.query.election : "");
+const electionContext = computed(() => route.query.election === undefined
+	? undefined
+	: typeof route.query.election === "string"
+		? route.query.election
+		: "");
 const { data: measure, error, pending } = await useMeasure(measureSlug, electionContext);
 const parentGuideLink = computed(() => measureGuideLink(measure.value));
 const backToLayerLink = computed(() => parentGuideLink.value
@@ -17,7 +21,9 @@ const backToLayerLink = computed(() => parentGuideLink.value
 	: fallbackBackLink.value);
 const content = computed(() => measureContent(measure.value));
 const ballotOptions = computed(() => measureBallotOptions(measure.value));
-const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
+const effectiveBallotPlan = computed(() => isHydrated.value
+	? ballotPlan.value
+	: {});
 const hasSection = (id: string) => content.value.sections.some(section => section.href === `#${id}`);
 const baselineTitle = computed(() => content.value.sections.find(section => section.href === "#baseline")?.label ?? "Current law");
 const measureBreadcrumbs = computed(() => [
@@ -27,12 +33,20 @@ const measureBreadcrumbs = computed(() => [
 ]);
 const reportIssueTo = computed(() => ({
 	path: "/contact",
-	query: { pageUrl: `/measure/${measure.value?.slug ?? measureSlug.value}`, subject: measure.value ? `Ballot Clarity measure review: ${measure.value.title}` : "Ballot Clarity measure review", type: "correction" },
+	query: {
+		pageUrl: `/measure/${measure.value?.slug ?? measureSlug.value}`,
+		subject: measure.value
+			? `Ballot Clarity measure review: ${measure.value.title}`
+			: "Ballot Clarity measure review",
+		type: "correction"
+	},
 }));
 const currentDecision = computed(() => {
 	if (!measure.value) return null;
 	const selection = effectiveBallotPlan.value[measure.value.contestSlug];
-	return selection?.type === "measure" && selection.measureSlug === measure.value.slug ? selection.decision : null;
+	return selection?.type === "measure" && selection.measureSlug === measure.value.slug
+		? selection.decision
+		: null;
 });
 
 usePageSeo({

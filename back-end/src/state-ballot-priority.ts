@@ -18,7 +18,9 @@ export function prioritizeStateBallotWork<Item>(items: readonly Item[], identify
 	const rank = (item: Item) => {
 		const id = identify(item);
 		const position = families.findIndex(family => id === family.source.id || id.startsWith(`${family.prefix}-`));
-		return position < 0 ? families.length : position;
+		return position < 0
+			? families.length
+			: position;
 	};
 	return [...items].sort((first, second) => rank(first) - rank(second));
 }

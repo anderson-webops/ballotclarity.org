@@ -367,7 +367,9 @@ function auditRowWithoutHash(row: AuditRow): Omit<AuditRow, "event_hash"> {
 function normalizeAuditActor(actor: AdminAuditActor | undefined) {
 	const username = actor?.username?.trim().toLowerCase() || null;
 	const displayName = actor?.displayName?.trim() || username || "Admin API";
-	const role = actor?.role === "admin" || actor?.role === "editor" ? actor.role : null;
+	const role = actor?.role === "admin" || actor?.role === "editor"
+		? actor.role
+		: null;
 
 	return {
 		displayName,
@@ -653,7 +655,13 @@ async function seedPostgresDatabase(pool: Pool, options: AdminRepositoryOptions)
 			await pool.query(`
 				INSERT INTO admin_activity (id, label, type, timestamp, summary)
 				VALUES ($1, $2, $3, $4, $5)
-			`, [item.id, item.label, item.type, item.timestamp, item.summary]);
+			`, [
+				item.id,
+				item.label,
+				item.type,
+				item.timestamp,
+				item.summary
+			]);
 		}
 	}
 
@@ -769,7 +777,13 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		await executor.query(`
 			INSERT INTO admin_activity (id, label, type, timestamp, summary)
 			VALUES ($1, $2, $3, $4, $5)
-		`, [`activity-${randomUUID()}`, label, type, timestamp, summary]);
+		`, [
+			`activity-${randomUUID()}`,
+			label,
+			type,
+			timestamp,
+			summary
+		]);
 	}
 
 	async function listActivity(limit = 8) {
@@ -1001,7 +1015,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 
 			const now = new Date().toISOString();
 			const id = `correction-${randomUUID()}`;
-			const reportedBy = submission.name ? `${submission.name} <${email}>` : email;
+			const reportedBy = submission.name
+				? `${submission.name} <${email}>`
+				: email;
 			const summary = submission.sourceLinks
 				? `${message}\n\nSupporting links:\n${submission.sourceLinks}`
 				: message;
@@ -1021,7 +1037,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 					"policy",
 					submission.pageUrl || "General site feedback",
 					"new",
-					submission.submissionType === "correction" ? "high" : "medium",
+					submission.submissionType === "correction"
+						? "high"
+						: "medium",
 					now,
 					reportedBy,
 					summary,
@@ -1035,7 +1053,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 
 				await logActivity(
 					"correction",
-					submission.submissionType === "correction" ? "Received correction submission" : "Received public feedback",
+					submission.submissionType === "correction"
+						? "Received correction submission"
+						: "Received public feedback",
 					`${subject} was submitted through the public contact form.`,
 					client
 				);
@@ -1196,7 +1216,13 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 					UPDATE admin_users
 					SET mfa_secret = $1, mfa_enabled_at = $2, credentials_updated_at = $3, updated_at = $4
 					WHERE id = $5
-				`, [encryptedMfaSecret, nextCredentialsUpdatedAt, nextCredentialsUpdatedAt, nextCredentialsUpdatedAt, row.id]);
+				`, [
+					encryptedMfaSecret,
+					nextCredentialsUpdatedAt,
+					nextCredentialsUpdatedAt,
+					nextCredentialsUpdatedAt,
+					row.id
+				]);
 
 				await logActivity(
 					"review",
@@ -1296,7 +1322,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 				WHERE entity_type = $1 AND entity_slug = $2
 			`, [entityType, entitySlug]);
 
-			return result.rows[0] ? rowToContent(result.rows[0]) : null;
+			return result.rows[0]
+				? rowToContent(result.rows[0])
+				: null;
 		},
 		async getContentHistory(id): Promise<AdminContentHistoryResponse> {
 			if (!await getContentRow(id))
@@ -1318,7 +1346,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		async getGuidePackage(id) {
 			const row = await getGuidePackageRow(id);
 
-			return row ? rowToGuidePackage(row) : null;
+			return row
+				? rowToGuidePackage(row)
+				: null;
 		},
 		async getHealth() {
 			await pool.query("SELECT 1");
@@ -1336,7 +1366,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 			const packageQueue = guidePackages.filter(item => item.status !== "published");
 			const dueChecks = sources.filter(item => new Date(item.nextCheckAt).getTime() <= Date.now());
 			const needsAttention = [
-				...(security.status === "needs_attention" ? [security.summary] : []),
+				...(security.status === "needs_attention"
+					? [security.summary]
+					: []),
 				...openCorrections.filter(item => item.priority === "high").slice(0, 2).map(item => `${item.subject}: ${item.nextStep}`),
 				...packageQueue.slice(0, 2).map(item => `${item.electionSlug}: package is ${item.status.replaceAll("_", " ")}.`),
 				...content.filter(item => item.status === "needs-sources").slice(0, 2).map(item => `${item.title}: ${item.blocker || "Waiting on source coverage."}`),
@@ -1356,14 +1388,20 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 						helpText: "Candidate, measure, election, and guide-package records not yet marked published.",
 						id: "review-queue",
 						label: "Awaiting publish",
-						tone: (reviewQueue.length || packageQueue.length) ? "review" : "healthy",
+						tone: (reviewQueue.length || packageQueue.length)
+							? "review"
+							: "healthy",
 						value: String(reviewQueue.length + packageQueue.length)
 					},
 					{
 						helpText: "Manually recorded editorial notices, not live collector checks.",
 						id: "healthy-sources",
 						label: "Healthy sources",
-						tone: !sources.length ? "attention" : healthySourceCount === sources.length ? "healthy" : "review",
+						tone: !sources.length
+							? "attention"
+							: healthySourceCount === sources.length
+								? "healthy"
+								: "review",
 						value: `${healthySourceCount}/${sources.length}`
 					},
 					{
@@ -1374,7 +1412,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 						value: String(dueChecks.length)
 					}
 				],
-				needsAttention: needsAttention.length ? needsAttention : ["No urgent blockers are currently open."],
+				needsAttention: needsAttention.length
+					? needsAttention
+					: ["No urgent blockers are currently open."],
 				recentActivity: await listActivity(),
 				security
 			};
@@ -1390,7 +1430,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 				ORDER BY published ASC, priority DESC, updated_at DESC
 			`);
 
-			return { items: result.rows.map(rowToContent) };
+			return {
+				items: result.rows.map(rowToContent)
+			};
 		},
 		async listAuditEvents() {
 			return await buildAuditEventResponse();
@@ -1418,7 +1460,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 					ORDER BY CASE c.status WHEN 'new' THEN 0 WHEN 'triaged' THEN 1 WHEN 'researching' THEN 2 ELSE 3 END, c.submitted_at DESC
 				`);
 
-			return { corrections: result.rows.map(rowToCorrection) };
+			return {
+				corrections: result.rows.map(rowToCorrection)
+			};
 		},
 		async listGuidePackages() {
 			const result = await pool.query<GuidePackageRow>(`
@@ -1517,7 +1561,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 				ORDER BY CASE health WHEN 'incident' THEN 0 WHEN 'stale' THEN 1 WHEN 'review-soon' THEN 2 ELSE 3 END, next_check_at ASC
 			`);
 
-			return { sources: result.rows.map(rowToSource) };
+			return {
+				sources: result.rows.map(rowToSource)
+			};
 		},
 		async listUsers() {
 			const result = await pool.query<UserRow>(`
@@ -1526,7 +1572,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 				ORDER BY CASE WHEN disabled_at IS NULL THEN 0 ELSE 1 END, CASE role WHEN 'admin' THEN 0 ELSE 1 END, username
 			`);
 
-			return { users: result.rows.map(rowToUser) };
+			return {
+				users: result.rows.map(rowToUser)
+			};
 		},
 		async updateUser(id, patch) {
 			await runTransaction(async (client) => {
@@ -1569,8 +1617,12 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 					? nextAdminCredentialTimestamp(current.credentials_updated_at || current.created_at)
 					: current.credentials_updated_at || current.created_at;
 				const nextUpdatedAt = shouldRotateCredentials ? nextCredentialsUpdatedAt : now;
-				const nextMfaSecret = patch.mfaReset === true ? null : current.mfa_secret;
-				const nextMfaEnabledAt = patch.mfaReset === true ? null : current.mfa_enabled_at;
+				const nextMfaSecret = patch.mfaReset === true
+					? null
+					: current.mfa_secret;
+				const nextMfaEnabledAt = patch.mfaReset === true
+					? null
+					: current.mfa_enabled_at;
 				const nextPasswordChangeRequiredAt = patch.password === undefined
 					? current.password_change_required_at
 					: patch.passwordChangeMode === "self-service"
@@ -1691,19 +1743,33 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 
 				const now = new Date().toISOString();
 				const nextPublished = patch.published ?? current.published;
-				const nextStatus = patch.status || (nextPublished ? "published" : current.status === "published" ? "in-review" : current.status);
-				const nextPublishedAt = nextPublished ? current.published_at || now : null;
+				const nextStatus = patch.status || (nextPublished
+					? "published"
+					: current.status === "published"
+						? "in-review"
+						: current.status);
+				const nextPublishedAt = nextPublished
+					? current.published_at || now
+					: null;
 				const nextPublishApprovedBy = nextPublished
-					? patch.publishApprovedBy === undefined ? current.publish_approved_by : patch.publishApprovedBy?.trim() || null
+					? patch.publishApprovedBy === undefined
+						? current.publish_approved_by
+						: patch.publishApprovedBy?.trim() || null
 					: null;
 				const nextPublishApprovalNote = nextPublished
-					? patch.publishApprovalNote === undefined ? current.publish_approval_note : patch.publishApprovalNote?.trim() || null
+					? patch.publishApprovalNote === undefined
+						? current.publish_approval_note
+						: patch.publishApprovalNote?.trim() || null
 					: null;
 				const approvalChanged = patch.publishApprovedBy !== undefined || patch.publishApprovalNote !== undefined;
 				const nextPublishApprovedAt = nextPublishApprovedBy
-					? approvalChanged ? now : current.publish_approved_at || now
+					? approvalChanged
+						? now
+						: current.publish_approved_at || now
 					: null;
-				const nextPublicSummary = patch.publicSummary === undefined ? current.public_summary || "" : patch.publicSummary.trim();
+				const nextPublicSummary = patch.publicSummary === undefined
+					? current.public_summary || ""
+					: patch.publicSummary.trim();
 
 				if (!nextPublicSummary)
 					throw new Error("Public page summary is required.");
@@ -1716,7 +1782,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 					: patch.publicBallotSummary?.trim() || null;
 				const nextSnapshot: AdminContentSnapshot = {
 					assignedTo: patch.assignedTo?.trim() || current.assigned_to,
-					blocker: patch.blocker === undefined ? current.blocker || undefined : patch.blocker?.trim() || undefined,
+					blocker: patch.blocker === undefined
+						? current.blocker || undefined
+						: patch.blocker?.trim() || undefined,
 					priority: patch.priority ?? current.priority,
 					publicBallotSummary: nextBallotSummary || undefined,
 					publicSummary: nextPublicSummary,
@@ -1927,23 +1995,37 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 		async updateGuidePackage(id, patch: GuidePackagePatch) {
 			await runTransaction(async (client) => {
 				const currentRow = await getGuidePackageRow(id, client, true);
-				const current = currentRow ? rowToGuidePackage(currentRow) : null;
+				const current = currentRow
+					? rowToGuidePackage(currentRow)
+					: null;
 
 				if (!current)
 					throw new Error("Guide package not found.");
 
 				const now = new Date().toISOString();
 				const nextStatus = patch.status ?? current.status;
-				const nextReviewer = patch.reviewer === undefined ? current.reviewer ?? null : patch.reviewer?.trim() || null;
+				const nextReviewer = patch.reviewer === undefined
+					? current.reviewer ?? null
+					: patch.reviewer?.trim() || null;
 				const nextReviewRecommendation = patch.reviewRecommendation === undefined
 					? current.reviewRecommendation ?? null
 					: patch.reviewRecommendation || null;
-				const nextReviewNotes = patch.reviewNotes === undefined ? current.reviewNotes ?? null : patch.reviewNotes?.trim() || null;
-				const nextCoverageNotes = patch.coverageNotes === undefined ? current.coverageNotes : patch.coverageNotes ?? [];
-				const nextCoverageLimits = patch.coverageLimits === undefined ? current.coverageLimits : patch.coverageLimits ?? [];
+				const nextReviewNotes = patch.reviewNotes === undefined
+					? current.reviewNotes ?? null
+					: patch.reviewNotes?.trim() || null;
+				const nextCoverageNotes = patch.coverageNotes === undefined
+					? current.coverageNotes
+					: patch.coverageNotes ?? [];
+				const nextCoverageLimits = patch.coverageLimits === undefined
+					? current.coverageLimits
+					: patch.coverageLimits ?? [];
 				const nextDraftedAt = patch.draftedAt || current.draftedAt;
-				const nextReviewedAt = patch.reviewedAt === undefined ? current.reviewedAt ?? null : patch.reviewedAt;
-				const nextPublishedAt = patch.publishedAt === undefined ? current.publishedAt ?? null : patch.publishedAt;
+				const nextReviewedAt = patch.reviewedAt === undefined
+					? current.reviewedAt ?? null
+					: patch.reviewedAt;
+				const nextPublishedAt = patch.publishedAt === undefined
+					? current.publishedAt ?? null
+					: patch.publishedAt;
 
 				validateGuidePackagePersistenceState({
 					coverageLimits: nextCoverageLimits,
@@ -1985,7 +2067,9 @@ export async function createPostgresAdminRepository(options: AdminRepositoryOpti
 				]);
 
 				await logActivity(
-					nextStatus === "published" ? "publish" : "review",
+					nextStatus === "published"
+						? "publish"
+						: "review",
 					`Guide package ${current.electionSlug} updated`,
 					`Guide package moved to ${nextStatus.replaceAll("_", " ")}.`,
 					client

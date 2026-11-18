@@ -13,10 +13,30 @@ function requireValue(value: unknown, detail: string): asserts value {
 	if (!value) throw new Error(`The Tuscola ballot question requires review: ${detail}.`);
 }
 function questionId(source: StateBallotSource, question: Omit<StateBallotQuestion, "id">) {
-	return createHash("sha256").update(JSON.stringify([source.id, source.electionDate, question.audience, question.title, question.officialText, question.choices, question.pages, question.sourceUrl])).digest("hex").slice(0, 24);
+	return createHash("sha256").update(JSON.stringify([
+		source.id,
+		source.electionDate,
+		question.audience,
+		question.title,
+		question.officialText,
+		question.choices,
+		question.pages,
+		question.sourceUrl
+	])).digest("hex").slice(0, 24);
 }
 function audienceAt(lines: string[], index: number) {
-	if (["Proposal Section", "State", "County", "Township", "Local School District", "School District", "City", "Village"].includes(lines[index] ?? "")) return undefined;
+	if ([
+		"Proposal Section",
+		"State",
+		"County",
+		"Township",
+		"Local School District",
+		"School District",
+		"City",
+		"Village"
+	].includes(lines[index] ?? "")) {
+		return undefined;
+	}
 	for (let length = 1; length <= 3 && index + length <= lines.length; length++) {
 		const audience = lines.slice(index, index + length).join(" ");
 		if (audienceHeading.test(audience)) return { audience, length };
@@ -40,9 +60,19 @@ export function readTuscolaBallotQuestions(source: StateBallotSource, text: stri
 	requireValue(pages.length > 0 && pages.length <= 200, "page inventory");
 	const questions: StateBallotQuestion[] = [];
 	for (const [pageIndex, page] of pages.entries()) {
-		const lines = page.split(/\r?\n/u).map(clean).filter(line => line && !["VOTE BOTH FRONT AND BACK OF BALLOT", "S A M", "P L E", "S A M P L E", "SAMPLE"].includes(line));
-		const pairs = lines.flatMap((line, index) => line === "Yes" ? [index] : []);
-		const negatives = lines.flatMap((line, index) => line === "No" ? [index] : []);
+		const lines = page.split(/\r?\n/u).map(clean).filter(line => line && ![
+			"VOTE BOTH FRONT AND BACK OF BALLOT",
+			"S A M",
+			"P L E",
+			"S A M P L E",
+			"SAMPLE"
+		].includes(line));
+		const pairs = lines.flatMap((line, index) => line === "Yes"
+			? [index]
+			: []);
+		const negatives = lines.flatMap((line, index) => line === "No"
+			? [index]
+			: []);
 		requireValue(pairs.length === negatives.length && pairs.every((index, position) => negatives[position] === index + 1), "complete literal choice pairs");
 		if (!pairs.length) {
 			requireValue(!lines.includes("Proposal Section"), "proposal section without choices");
@@ -53,12 +83,16 @@ export function readTuscolaBallotQuestions(source: StateBallotSource, text: stri
 		for (const end of pairs) {
 			const section = lines.slice(cursor, end);
 			const state = stateHeading.exec(section[0] ?? "");
-			const scope = state ? { audience: "Michigan", length: 1 } : audienceAt(section, 0);
+			const scope = state
+				? { audience: "Michigan", length: 1 }
+				: audienceAt(section, 0);
 			requireValue(scope && (!state || state[1] === source.electionDate.slice(0, 4)), "printed question audience and cycle");
 			const body = section.findIndex((line, index) => index >= scope.length && operative.test(line));
 			requireValue(body > scope.length && body - scope.length <= 12 && !section.slice(scope.length, body).some(line => stateHeading.test(line) || line.startsWith("Vote for ")), "title and operative wording boundary");
 			const heading = section.slice(scope.length, body).join(" ");
-			const title = state ? `${section[0]}: ${heading}` : heading;
+			const title = state
+				? `${section[0]}: ${heading}`
+				: heading;
 			const officialText = section.slice(body).join("\n");
 			const existing = questions.find(question => question.audience === scope.audience && question.title === title);
 			if (existing) {
@@ -66,7 +100,16 @@ export function readTuscolaBallotQuestions(source: StateBallotSource, text: stri
 				existing.pages.push(pageIndex + 1);
 			}
 			else {
-				const question = { audience: scope.audience, title, officialText, choices: ["Yes", "No"] as [string, string], pages: [pageIndex + 1], sourceUrl, explicitlyAdvisory: false, voterApplicabilityVerified: false as const };
+				const question = {
+					audience: scope.audience,
+					title,
+					officialText,
+					choices: ["Yes", "No"] as [string, string],
+					pages: [pageIndex + 1],
+					sourceUrl,
+					explicitlyAdvisory: false,
+					voterApplicabilityVerified: false as const
+				};
 				questions.push({ id: "", ...question });
 			}
 			cursor = end + 2;
@@ -74,7 +117,14 @@ export function readTuscolaBallotQuestions(source: StateBallotSource, text: stri
 		requireValue(cursor === lines.length, "unassigned trailing proposal text");
 	}
 	for (const question of questions) question.id = questionId(source, question);
-	readTuscolaQuestionMetadata(source, { ballotQuestions: questions, documents: [{ url: "" }, { url: sourceUrl }], retrievalPolicy: "automatic" });
+	readTuscolaQuestionMetadata(source, {
+		ballotQuestions: questions,
+		documents: [
+			{ url: "" },
+			{ url: sourceUrl }
+		],
+		retrievalPolicy: "automatic"
+	});
 	for (const prior of previous) {
 		const current = questions.find(question => question.audience === prior.audience && question.title === prior.title);
 		requireValue(current && current.officialText === prior.officialText && isDeepStrictEqual(current.choices, prior.choices), "accepted question changed or disappeared");

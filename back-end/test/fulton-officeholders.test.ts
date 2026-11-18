@@ -30,35 +30,57 @@ test("Fulton roster refresh discovers a new chair and newly filled seat without 
 
 test("contradictory, incomplete, expanded and duplicated official seat inventories require review", () => {
 	const source = exampleFultonPublications();
-	for (const finder of [source.finder.replace("District 1 - Alex One", "District 1 - Different Name"), source.finder.replace("District 4 - Vacant", "District 4 - Unknown Person"), source.finder.replace("<h3>District 2 - Blair Two</h3>", ""), source.finder.replace("</main>", "<h3>District 7 - New Seat</h3></main>"), source.finder.replace("District 2 - Blair Two", "District 1 - Alex One")]) assert.throws(() => parseFultonBoardSeats(source.roster, finder));
+	for (const finder of [
+		source.finder.replace("District 1 - Alex One", "District 1 - Different Name"),
+		source.finder.replace("District 4 - Vacant", "District 4 - Unknown Person"),
+		source.finder.replace("<h3>District 2 - Blair Two</h3>", ""),
+		source.finder.replace("</main>", "<h3>District 7 - New Seat</h3></main>"),
+		source.finder.replace("District 2 - Blair Two", "District 1 - Alex One")
+	]) assert.throws(() => parseFultonBoardSeats(source.roster, finder));
 	assert.throws(() => parseFultonBoardSeats(source.roster.replace("seven-member", "eight-member"), source.finder));
 	assert.throws(() => parseFultonBoardSeats(source.roster.replace("Chairman</div>", "Council Member</div>"), source.finder));
 });
 
 test("officeholder links, card identity, portrait boundaries and policy-link changes are not silently accepted", () => {
 	const source = exampleFultonPublications();
-	for (const roster of [source.roster.replaceAll("/Commissioners/Alex-One", "https://example.org/person"), source.roster.replaceAll("/Commissioners/Alex-One", "/Commissioners/Alex-One?token=private"), source.roster.replace("/-/media/Commissioners/1.png", "https://example.org/person.png"), source.roster.replace("background-image: url(/-/media/Commissioners/1.png);", "background-image: url(javascript:alert(1));"), source.roster.replaceAll("Alex One", "=FORMULA()"), source.roster.replace("Privacy Statement</a>", "Privacy Statement</a><a href='/other-terms'>Privacy</a>")]) assert.throws(() => parseFultonBoardSeats(roster, source.finder));
+	for (const roster of [
+		source.roster.replaceAll("/Commissioners/Alex-One", "https://example.org/person"),
+		source.roster.replaceAll("/Commissioners/Alex-One", "/Commissioners/Alex-One?token=private"),
+		source.roster.replace("/-/media/Commissioners/1.png", "https://example.org/person.png"),
+		source.roster.replace("background-image: url(/-/media/Commissioners/1.png);", "background-image: url(javascript:alert(1));"),
+		source.roster.replaceAll("Alex One", "=FORMULA()"),
+		source.roster.replace("Privacy Statement</a>", "Privacy Statement</a><a href='/other-terms'>Privacy</a>")
+	]) assert.throws(() => parseFultonBoardSeats(roster, source.finder));
 });
 
 test("stored officeholder fields and provenance reject wrong counties, clocks, identities, links and vacancy people", () => {
 	const original = exampleFultonOfficeholders();
-	for (const change of [(value: typeof original) => {
-		value.countyFips = "invalid" as "13121";
-	}, (value: typeof original) => {
-		value.retrievedAt = "invalid";
-	}, (value: typeof original) => {
-		value.sourceSha256 = "0".repeat(64);
-	}, (value: typeof original) => {
-		value.seats[4]!.person = value.seats[1]!.person;
-	}, (value: typeof original) => {
-		value.seats[1]!.person!.officialWebsiteUrl = "https://example.org/";
-	}, (value: typeof original) => {
-		value.seats[2]!.person!.slug = value.seats[1]!.person!.slug;
-	}, (value: typeof original) => {
-		value.documents[0]!.capturedAt = "2100-01-01T00:00:00.000Z";
-	}, (value: typeof original) => {
-		value.seats[1]!.person!.name = "Unsafe\tName";
-	}]) {
+	for (const change of [
+		(value: typeof original) => {
+			value.countyFips = "invalid" as "13121";
+		},
+		(value: typeof original) => {
+			value.retrievedAt = "invalid";
+		},
+		(value: typeof original) => {
+			value.sourceSha256 = "0".repeat(64);
+		},
+		(value: typeof original) => {
+			value.seats[4]!.person = value.seats[1]!.person;
+		},
+		(value: typeof original) => {
+			value.seats[1]!.person!.officialWebsiteUrl = "https://example.org/";
+		},
+		(value: typeof original) => {
+			value.seats[2]!.person!.slug = value.seats[1]!.person!.slug;
+		},
+		(value: typeof original) => {
+			value.documents[0]!.capturedAt = "2100-01-01T00:00:00.000Z";
+		},
+		(value: typeof original) => {
+			value.seats[1]!.person!.name = "Unsafe\tName";
+		}
+	]) {
 		const value = structuredClone(original);
 		change(value);
 		assert.throws(() => validateFultonOfficeholderSnapshot(value, officeholderTestTime));
@@ -69,7 +91,20 @@ test("stored officeholder fields and provenance reject wrong counties, clocks, i
 });
 
 test("capture preparation verifies publisher policy before parsing roster content", () => {
-	const capture = { schemaVersion: 1 as const, type: "fulton-officeholder-capture" as const, documents: [...fultonOfficeholderPublication.policies.map(policy => policy.url), fultonOfficeholderPublication.rosterUrl, fultonOfficeholderPublication.districtUrl].map(url => ({ url, body: "Changed policy", sha256: officeholderHash("Changed policy"), capturedAt: new Date(officeholderTestTime).toISOString() })) };
+	const capture = {
+		schemaVersion: 1 as const,
+		type: "fulton-officeholder-capture" as const,
+		documents: [
+			...fultonOfficeholderPublication.policies.map(policy => policy.url),
+			fultonOfficeholderPublication.rosterUrl,
+			fultonOfficeholderPublication.districtUrl
+		].map(url => ({
+			url,
+			body: "Changed policy",
+			sha256: officeholderHash("Changed policy"),
+			capturedAt: new Date(officeholderTestTime).toISOString()
+		}))
+	};
 	assert.throws(() => prepareFultonOfficeholders(capture, officeholderTestTime), /policy/u);
 });
 
@@ -86,7 +121,16 @@ test("new officeholder data replaces the old county chair but preserves unrelate
 	assert.equal(records.some(record => record.slug === "robb-pitts"), false);
 	assert.equal(records.filter(record => record.parentDistrictSlug === "fulton-county").length, 5);
 	for (const record of original.filter(record => record.districtSlug !== "fulton-county")) assert.deepEqual(records.find(item => item.slug === record.slug), record);
-	const county = [{ districtType: "county", districtCode: "121", id: "county:121", label: "Fulton County", stateFips: "13", sourceSystem: "U.S. Census Geocoder" }];
+	const county = [
+		{
+			districtType: "county",
+			districtCode: "121",
+			id: "county:121",
+			label: "Fulton County",
+			stateFips: "13",
+			sourceSystem: "U.S. Census Geocoder"
+		}
+	];
 	assert.deepEqual(listSupplementalOfficeholdersForDistrictMatches(county, "GA", records).map(record => record.name), ["Avery Chair"]);
 	assert.deepEqual(listSupplementalOfficeholdersForDistrictMatches(county, "NY", records), []);
 	assert(records.filter(record => record.parentDistrictSlug).every(record => record.party === "" && record.biographySummary === ""));
@@ -111,9 +155,13 @@ test("recent collection is reused without publisher requests or successful-clock
 	context.after(() => rm(directory, { recursive: true }));
 	await importFultonOfficeholders(directory, exampleFultonOfficeholders(), officeholderTestTime);
 	const before = await readFile(join(directory, "fulton-board.json"), "utf8");
-	const result = await collectFultonOfficeholders({ directory, now: () => officeholderTestTime + 1, request: async () => {
-		throw new Error("No publisher request expected");
-	} });
+	const result = await collectFultonOfficeholders({
+		directory,
+		now: () => officeholderTestTime + 1,
+		request: async () => {
+			throw new Error("No publisher request expected");
+		}
+	});
 	assert.equal(result.publisherRequests, 0);
 	assert.equal(result.collected, false);
 	assert.equal(await readFile(join(directory, "fulton-board.json"), "utf8"), before);
@@ -125,10 +173,14 @@ test("blocked refresh retains last-good records and import clocks, records failu
 	await importFultonOfficeholders(directory, exampleFultonOfficeholders(), officeholderTestTime);
 	const before = await readFile(join(directory, "fulton-board.json"), "utf8");
 	let requests = 0;
-	const options = { directory, now: () => officeholderTestTime + fultonOfficeholderPublication.minimumRefreshIntervalMs + 1, request: async () => {
-		requests++;
-		throw new Error("HTTP 403");
-	} };
+	const options = {
+		directory,
+		now: () => officeholderTestTime + fultonOfficeholderPublication.minimumRefreshIntervalMs + 1,
+		request: async () => {
+			requests++;
+			throw new Error("HTTP 403");
+		}
+	};
 	await assert.rejects(() => collectFultonOfficeholders(options), /403/u);
 	assert.equal(requests, 1);
 	assert.equal(await readFile(join(directory, "fulton-board.json"), "utf8"), before);
@@ -148,17 +200,35 @@ test("an interrupted commission collection preserves data and cooldown before th
 	const journal = join(directory, "automation");
 	await mkdir(journal);
 	const startedAt = officeholderTestTime + fultonOfficeholderPublication.minimumRefreshIntervalMs + 1;
-	const receipt = `${JSON.stringify({ schemaVersion: 1, type: "ballot-automation-run", status: "running", startedAt: new Date(startedAt).toISOString(), finishedAt: null, lastImportAt: new Date(officeholderTestTime).toISOString(), lastSuccessAt: null, nextRunAt: null, results: [] })}\n`;
+	const receipt = `${JSON.stringify({
+		schemaVersion: 1,
+		type: "ballot-automation-run",
+		status: "running",
+		startedAt: new Date(startedAt).toISOString(),
+		finishedAt: null,
+		lastImportAt: new Date(officeholderTestTime).toISOString(),
+		lastSuccessAt: null,
+		nextRunAt: null,
+		results: []
+	})}\n`;
 	await writeFile(join(journal, "automation-run.json"), receipt);
 	let requests = 0;
 	const request = async () => {
 		requests++;
 		throw new Error("Fixture publisher outage");
 	};
-	await assert.rejects(collectFultonOfficeholders({ directory, now: () => startedAt + 1, request }), /next permitted retry/u);
+	await assert.rejects(collectFultonOfficeholders({
+		directory,
+		now: () => startedAt + 1,
+		request
+	}), /next permitted retry/u);
 	assert.equal(requests, 0);
 	assert.equal(await readFile(join(journal, "automation-run.json"), "utf8"), receipt);
-	await assert.rejects(collectFultonOfficeholders({ directory, now: () => startedAt + fultonOfficeholderPublication.minimumRefreshIntervalMs, request }), /Fixture publisher outage/u);
+	await assert.rejects(collectFultonOfficeholders({
+		directory,
+		now: () => startedAt + fultonOfficeholderPublication.minimumRefreshIntervalMs,
+		request
+	}), /Fixture publisher outage/u);
 	assert.equal(requests, 1);
 	assert.ok((await readFile(join(directory, "fulton-board.json"))).equals(before));
 });
@@ -167,10 +237,14 @@ test("a changed publisher policy stops before any roster request", async (contex
 	const directory = await mkdtemp(join(tmpdir(), "fulton-officeholders-policy-"));
 	context.after(() => rm(directory, { recursive: true }));
 	const requested: string[] = [];
-	await assert.rejects(() => collectFultonOfficeholders({ directory, now: () => officeholderTestTime, request: async (url) => {
-		requested.push(String(url));
-		return "Changed policy";
-	} }), /policy/u);
+	await assert.rejects(() => collectFultonOfficeholders({
+		directory,
+		now: () => officeholderTestTime,
+		request: async (url) => {
+			requested.push(String(url));
+			return "Changed policy";
+		}
+	}), /policy/u);
 	assert.deepEqual(requested, [fultonOfficeholderPublication.policies[0].url]);
 });
 

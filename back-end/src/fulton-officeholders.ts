@@ -47,7 +47,11 @@ export interface FultonOfficeholderSnapshot {
 const clean = (value: string) => value.replace(/\s+/gu, " ").trim();
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const named = (node: StateHtmlNode, className: string) => stateHtmlAttribute(node, "class").split(/\s+/u).includes(className);
-const urls = [...fultonOfficeholderPublication.policies.map(item => item.url), fultonOfficeholderPublication.rosterUrl, fultonOfficeholderPublication.districtUrl];
+const urls = [
+	...fultonOfficeholderPublication.policies.map(item => item.url),
+	fultonOfficeholderPublication.rosterUrl,
+	fultonOfficeholderPublication.districtUrl
+];
 const validText = (value: unknown): value is string => typeof value === "string" && value === clean(value) && value.length > 1 && value.length <= 200 && !/^[=+@-]/u.test(value) && !containsControlCharacters(value);
 const exact = (value: object, keys: string[]) => Object.keys(value).sort().join(",") === keys.sort().join(",");
 function asMain(body: string) {
@@ -75,7 +79,18 @@ function sourceDigest(documents: FultonOfficeholderSnapshot["documents"]) {
 }
 
 export function validateFultonOfficeholderSnapshot(value: unknown, now = Date.now()): asserts value is FultonOfficeholderSnapshot {
-	if (!value || typeof value !== "object" || Array.isArray(value) || !exact(value, ["schemaVersion", "type", "sourceId", "countyFips", "retrievedAt", "sourceSha256", "documents", "seats"])) throw new Error("The Fulton officeholder snapshot fields are invalid.");
+	if (!value || typeof value !== "object" || Array.isArray(value) || !exact(value, [
+		"schemaVersion",
+		"type",
+		"sourceId",
+		"countyFips",
+		"retrievedAt",
+		"sourceSha256",
+		"documents",
+		"seats"
+	])) {
+		throw new Error("The Fulton officeholder snapshot fields are invalid.");
+	}
 	const snapshot = value as FultonOfficeholderSnapshot;
 	if (snapshot.schemaVersion !== 1 || snapshot.type !== "fulton-officeholders" || snapshot.sourceId !== "ga-fulton-board" || snapshot.countyFips !== "13121" || !Array.isArray(snapshot.documents) || snapshot.documents.length !== urls.length || !Array.isArray(snapshot.seats) || snapshot.seats.length !== 7)
 		throw new Error("The Fulton officeholder snapshot identity is invalid.");
@@ -86,11 +101,24 @@ export function validateFultonOfficeholderSnapshot(value: unknown, now = Date.no
 	if (snapshot.retrievedAt !== new Date(Math.min(...snapshot.documents.map(item => Date.parse(item.capturedAt)))).toISOString() || snapshot.sourceSha256 !== sourceDigest(snapshot.documents)) throw new Error("The Fulton officeholder capture clocks are invalid.");
 	const slugs: string[] = [];
 	for (const [index, seat] of snapshot.seats.entries()) {
-		if (!seat || !exact(seat, seat.status === "occupied" ? ["district", "status", "person"] : ["district", "status"]) || seat.district !== (index === 0 ? null : index) || !["occupied", "vacant"].includes(seat.status)) throw new Error("The Fulton officeholder seats are invalid.");
+		if (!seat || !exact(seat, seat.status === "occupied"
+			? ["district", "status", "person"]
+			: ["district", "status"]) || seat.district !== (index === 0
+			? null
+			: index) || !["occupied", "vacant"].includes(seat.status)) {
+			throw new Error("The Fulton officeholder seats are invalid.");
+		}
 		if (seat.status === "vacant") continue;
 		const person = seat.person;
-		if (!person || !exact(person, ["name", "slug", "officialWebsiteUrl", "portraitUrl", "viceChair"]) || !validText(person.name) || person.name.toLowerCase() === "vacant" || typeof person.viceChair !== "boolean" || (seat.district === null && person.viceChair) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(person.slug) || person.slug !== new URL(publicUrl(person.officialWebsiteUrl)).pathname.split("/").at(-1)!.toLowerCase() || publicUrl(person.officialWebsiteUrl) !== person.officialWebsiteUrl || publicUrl(person.portraitUrl, true) !== person.portraitUrl)
+		if (!person || !exact(person, [
+			"name",
+			"slug",
+			"officialWebsiteUrl",
+			"portraitUrl",
+			"viceChair"
+		]) || !validText(person.name) || person.name.toLowerCase() === "vacant" || typeof person.viceChair !== "boolean" || (seat.district === null && person.viceChair) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(person.slug) || person.slug !== new URL(publicUrl(person.officialWebsiteUrl)).pathname.split("/").at(-1)!.toLowerCase() || publicUrl(person.officialWebsiteUrl) !== person.officialWebsiteUrl || publicUrl(person.portraitUrl, true) !== person.portraitUrl) {
 			throw new Error("The Fulton officeholder identity or public links are invalid.");
+		}
 		slugs.push(person.slug);
 	}
 	if (new Set(slugs).size !== slugs.length || snapshot.seats.filter(seat => seat.person?.viceChair).length > 1) throw new Error("The Fulton officeholder identities are ambiguous.");
@@ -99,7 +127,10 @@ export function validateFultonOfficeholderSnapshot(value: unknown, now = Date.no
 export function parseFultonBoardSeats(rosterBody: string, districtBody: string): FultonBoardSeat[] {
 	const roster = asMain(rosterBody);
 	if (!clean(stateHtmlText(roster)).includes("seven-member Board of Commissioners") || !clean(stateHtmlText(roster)).includes("representing all of Fulton County")) throw new Error("The Fulton board size or at-large scope requires review.");
-	for (const [url, body] of [[fultonOfficeholderPublication.rosterUrl, rosterBody], [fultonOfficeholderPublication.districtUrl, districtBody]]) {
+	for (const [url, body] of [
+		[fultonOfficeholderPublication.rosterUrl, rosterBody],
+		[fultonOfficeholderPublication.districtUrl, districtBody]
+	]) {
 		const policies = stateHtmlDescendants(parseStateHtml(body!), node => node.nodeName === "a" && /privacy/iu.test(stateHtmlText(node))).map(node => new URL(stateHtmlAttribute(node, "href"), url).href);
 		if (policies.length !== 1 || policies[0] !== fultonOfficeholderPublication.policies[1]!.url) throw new Error("The Fulton officeholder policy link inventory requires review.");
 	}
@@ -113,27 +144,50 @@ export function parseFultonBoardSeats(rosterBody: string, districtBody: string):
 		const position = clean(stateHtmlText(oneClass(card, "bio-card__position")));
 		const district = /^District ([1-6])$/u.exec(position);
 		if (!district && !/^(?:Chairman|Chairwoman|Chair)$/u.test(position)) throw new Error("The Fulton officeholder role requires review.");
-		const districtNumber = district ? Number(district[1]) : null;
+		const districtNumber = district
+			? Number(district[1])
+			: null;
 		if (seats.has(districtNumber)) throw new Error("The Fulton officeholder seat is repeated.");
 		if (rawName === "Vacant") {
 			seats.set(districtNumber, { district: districtNumber, status: "vacant" });
 			continue;
 		}
 		const name = rawName.replace(/^Vice Chair /u, "");
-		const links = [...new Set(stateHtmlDescendants(card, node => node.nodeName === "a").map(node => publicUrl(stateHtmlAttribute(node, "href"))))];
+		const links = [
+			...new Set(stateHtmlDescendants(card, node => node.nodeName === "a").map(node => publicUrl(stateHtmlAttribute(node, "href"))))
+		];
 		const photo = /^background-image: url\(([^()]+)\);$/u.exec(stateHtmlAttribute(oneClass(card, "bio-card__frame"), "style"));
 		if (!photo || links.length !== 1 || !validText(name)) throw new Error("The Fulton officeholder card requires review.");
-		seats.set(districtNumber, { district: districtNumber, status: "occupied", person: { name, slug: new URL(links[0]!).pathname.split("/").at(-1)!.toLowerCase(), officialWebsiteUrl: links[0]!, portraitUrl: publicUrl(photo[1]!, true), viceChair: rawName !== name } });
+		seats.set(districtNumber, {
+			district: districtNumber,
+			status: "occupied",
+			person: {
+				name,
+				slug: new URL(links[0]!).pathname.split("/").at(-1)!.toLowerCase(),
+				officialWebsiteUrl: links[0]!,
+				portraitUrl: publicUrl(photo[1]!, true),
+				viceChair: rawName !== name
+			}
+		});
 	}
 	if (!seats.has(null)) throw new Error("The Fulton chair record requires review.");
 	for (const heading of districtHeadings) {
 		const district = Number(heading[1]);
 		const name = heading[2]!;
 		const seat = seats.get(district);
-		if (name === "Vacant" && !seat) seats.set(district, { district, status: "vacant" });
-		else if (!seat || (name === "Vacant" ? seat.status !== "vacant" : seat.status !== "occupied" || seat.person!.name !== name)) throw new Error("The Fulton officeholder publications disagree.");
+		if (name === "Vacant" && !seat) {
+			seats.set(district, { district, status: "vacant" });
+		}
+		else if (!seat || (name === "Vacant"
+			? seat.status !== "vacant"
+			: seat.status !== "occupied" || seat.person!.name !== name)) {
+			throw new Error("The Fulton officeholder publications disagree.");
+		}
 	}
-	return [seats.get(null)!, ...[1, 2, 3, 4, 5, 6].map(district => seats.get(district)!)];
+	return [
+		seats.get(null)!,
+		...[1, 2, 3, 4, 5, 6].map(district => seats.get(district)!)
+	];
 }
 
 export function prepareFultonOfficeholders(capture: FultonOfficeholderCapture, now = Date.now()): FultonOfficeholderSnapshot {
@@ -142,11 +196,24 @@ export function prepareFultonOfficeholders(capture: FultonOfficeholderCapture, n
 		if (!document || !exact(document, ["url", "body", "capturedAt", "sha256"]) || document.url !== urls[index] || typeof document.body !== "string" || Buffer.byteLength(document.body) > fultonOfficeholderPublication.maximumDocumentBytes || digest(document.body) !== document.sha256)
 			throw new Error("The Fulton officeholder capture provenance is invalid.");
 		const policy = fultonOfficeholderPublication.policies[index];
-		if (policy && digest(policy.region === "bytes" ? document.body : clean(stateHtmlText(asMain(document.body)))) !== policy.sha256) throw new Error("The Fulton officeholder publisher policy requires review.");
+		if (policy && digest(policy.region === "bytes"
+			? document.body
+			: clean(stateHtmlText(asMain(document.body)))) !== policy.sha256) {
+			throw new Error("The Fulton officeholder publisher policy requires review.");
+		}
 	}
 	const seats = parseFultonBoardSeats(capture.documents[2]!.body, capture.documents[3]!.body);
 	const documents = capture.documents.map(({ url, capturedAt, sha256 }) => ({ url, capturedAt, sha256 }));
-	const snapshot: FultonOfficeholderSnapshot = { schemaVersion: 1, type: "fulton-officeholders", sourceId: "ga-fulton-board", countyFips: "13121", retrievedAt: new Date(Math.min(...documents.map(item => Date.parse(item.capturedAt)))).toISOString(), sourceSha256: sourceDigest(documents), documents, seats };
+	const snapshot: FultonOfficeholderSnapshot = {
+		schemaVersion: 1,
+		type: "fulton-officeholders",
+		sourceId: "ga-fulton-board",
+		countyFips: "13121",
+		retrievedAt: new Date(Math.min(...documents.map(item => Date.parse(item.capturedAt)))).toISOString(),
+		sourceSha256: sourceDigest(documents),
+		documents,
+		seats
+	};
 	validateFultonOfficeholderSnapshot(snapshot, now);
 	return snapshot;
 }
@@ -154,5 +221,24 @@ export function prepareFultonOfficeholders(capture: FultonOfficeholderCapture, n
 export function fultonOfficeholderCsv(snapshot: FultonOfficeholderSnapshot) {
 	validateFultonOfficeholderSnapshot(snapshot);
 	const quote = (value: string) => `"${value.replace(/"/gu, "\"\"")}"`;
-	return `${[["seat", "status", "name", "officeWebsite", "portraitUrl", "sourceAsOf"], ...snapshot.seats.map(seat => [seat.district === null ? "Chair" : `District ${seat.district}`, seat.status, seat.person?.name ?? "", seat.person?.officialWebsiteUrl ?? "", seat.person?.portraitUrl ?? "", snapshot.retrievedAt])].map(row => row.map(quote).join(",")).join("\n")}\n`;
+	return `${[
+		[
+			"seat",
+			"status",
+			"name",
+			"officeWebsite",
+			"portraitUrl",
+			"sourceAsOf"
+		],
+		...snapshot.seats.map(seat => [
+			seat.district === null
+				? "Chair"
+				: `District ${seat.district}`,
+			seat.status,
+			seat.person?.name ?? "",
+			seat.person?.officialWebsiteUrl ?? "",
+			seat.person?.portraitUrl ?? "",
+			snapshot.retrievedAt
+		])
+	].map(row => row.map(quote).join(",")).join("\n")}\n`;
 }

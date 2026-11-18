@@ -13,10 +13,17 @@ export const handoffNow = Date.parse("2026-10-28T16:00:00.000Z");
 export const handoffAudience = "ballot-test-private-inbox";
 
 export function handoffFixture() {
-	const release = { tag: "v1.14.58", commit: "a".repeat(40), archiveSha256: "b".repeat(64) };
+	const release = {
+		tag: "v1.14.58",
+		commit: "a".repeat(40),
+		archiveSha256: "b".repeat(64)
+	};
 	const values = {
 		"CURRENT-SERVER-HANDOFF.md": "# Private test handoff\n\nCustody only.\n",
-		"DATA-DELTA.json": JSON.stringify({ pendingFileCount: 0, archive: { created: false } }),
+		"DATA-DELTA.json": JSON.stringify({
+			pendingFileCount: 0,
+			archive: { created: false }
+		}),
 		"PENDING-DELIVERY.json": JSON.stringify({
 			pendingContentFiles: 0,
 			currentSourceRelease: {
@@ -31,7 +38,12 @@ export function handoffFixture() {
 	};
 	const files = Object.entries(values).map(([name, text]) => {
 		const body = Buffer.from(text);
-		return { name, bytes: body.length, sha256: handoffHash(body), contentBase64: body.toString("base64") };
+		return {
+			name,
+			bytes: body.length,
+			sha256: handoffHash(body),
+			contentBase64: body.toString("base64")
+		};
 	});
 	const envelope: HandoffEnvelope = {
 		schemaVersion: 1,
@@ -42,12 +54,21 @@ export function handoffFixture() {
 	};
 	const body = Buffer.from(JSON.stringify(envelope));
 	validateHandoff(body, handoffAudience);
-	return { envelope, body, keys: generateKeyPairSync("ed25519") };
+	return {
+		envelope,
+		body,
+		keys: generateKeyPairSync("ed25519")
+	};
 }
 
 export function changeHandoffFile(envelope: HandoffEnvelope, name: string, body: Buffer | string) {
 	const buffer = Buffer.from(body);
-	const next = { name, bytes: buffer.length, sha256: handoffHash(buffer), contentBase64: buffer.toString("base64") };
+	const next = {
+		name,
+		bytes: buffer.length,
+		sha256: handoffHash(buffer),
+		contentBase64: buffer.toString("base64")
+	};
 	const index = envelope.files.findIndex(file => file.name === name);
 	if (index === -1) envelope.files.push(next);
 	else envelope.files[index] = next;

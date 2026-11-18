@@ -22,7 +22,9 @@ const defaultProviderProbeTimeoutMs = 15000;
 
 function providerProbeTimeoutMs() {
 	const value = Number.parseInt(process.env.PROVIDER_TEST_TIMEOUT_MS || "", 10);
-	return Number.isSafeInteger(value) && value > 0 ? value : defaultProviderProbeTimeoutMs;
+	return Number.isSafeInteger(value) && value > 0
+		? value
+		: defaultProviderProbeTimeoutMs;
 }
 
 async function withProviderTimeout<T>(operation: (signal: AbortSignal) => Promise<T>) {
@@ -158,7 +160,9 @@ async function checkGoogleCivic() {
 			} satisfies DiagnosticResult;
 		}
 
-		const electionCount = Array.isArray(payload?.elections) ? payload.elections.length : 0;
+		const electionCount = Array.isArray(payload?.elections)
+			? payload.elections.length
+			: 0;
 		let voterInfoNote = "Sample voterinfo probe was not attempted.";
 
 		try {
@@ -413,7 +417,9 @@ async function checkLda() {
 			} satisfies DiagnosticResult;
 		}
 
-		const count = typeof payload?.count === "number" ? payload.count : 0;
+		const count = typeof payload?.count === "number"
+			? payload.count
+			: 0;
 
 		return {
 			detail: `Filings endpoint accepted the configured credential. Sample filtered result count: ${count}.`,
@@ -446,7 +452,9 @@ async function main() {
 	const failures = results.filter(result => result.status === "fail");
 
 	for (const result of results) {
-		const sourceNote = result.source ? ` [${result.source}]` : "";
+		const sourceNote = result.source
+			? ` [${result.source}]`
+			: "";
 		console.log(`${result.status.toUpperCase()} ${result.label}${sourceNote}: ${result.detail}`);
 	}
 
@@ -459,6 +467,8 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-	console.error(error instanceof Error ? error.message : String(error));
+	console.error(error instanceof Error
+		? error.message
+		: String(error));
 	process.exitCode = 1;
 });

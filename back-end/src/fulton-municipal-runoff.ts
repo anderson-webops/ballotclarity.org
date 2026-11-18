@@ -54,10 +54,20 @@ export function fultonMunicipalNativeFields(body: string): FultonMunicipalNative
 		const font = fonts.get(attribute(node, "font"));
 		assert(font && !descendants(node, child => !["b", "i", "#text"].includes(child.nodeName)).length, "The municipal text markup requires review.");
 		const text = clean(stateHtmlText(node));
-		const geometry = { left: Number(attribute(node, "left")), top: Number(attribute(node, "top")), width: Number(attribute(node, "width")), height: Number(attribute(node, "height")) };
+		const geometry = {
+			left: Number(attribute(node, "left")),
+			top: Number(attribute(node, "top")),
+			width: Number(attribute(node, "width")),
+			height: Number(attribute(node, "height"))
+		};
 		assert(text && text.length <= 2000 && Object.values(geometry).every(Number.isFinite) && geometry.left >= 0 && geometry.top >= 0 && geometry.width > 0 && geometry.height > 0 && geometry.height <= 500, "The municipal text geometry is invalid.");
 		if (!(font.size === 285 && font.family === "Arial" && text === "SAMPLE")) assert(geometry.left + geometry.width <= 919 && geometry.top + geometry.height <= 1513, "The municipal ballot field leaves the page.");
-		return { text, ...geometry, ...font, bold: descendants(node, child => child.nodeName === "b").length === 1 };
+		return {
+			text,
+			...geometry,
+			...font,
+			bold: descendants(node, child => child.nodeName === "b").length === 1
+		};
 	});
 	assert(fields.length >= 30 && fields.length <= 500);
 	return fields;
@@ -75,7 +85,9 @@ export function prepareFultonMunicipalRunoff(body: string, source: FultonMunicip
 	assert.equal(elections.length, 1, "The municipal runoff election must be explicit and unambiguous.");
 	const printedDate = /^Municipal General Runoff Election - (November|December) (0?[1-9]|[12]\d|3[01]), (20\d{2})$/u.exec(elections[0]!.text);
 	assert(printedDate, "The municipal runoff date requires review.");
-	const electionDate = `${printedDate[3]}-${printedDate[1] === "November" ? "11" : "12"}-${printedDate[2]!.padStart(2, "0")}`;
+	const electionDate = `${printedDate[3]}-${printedDate[1] === "November"
+		? "11"
+		: "12"}-${printedDate[2]!.padStart(2, "0")}`;
 	assert(new Date(`${electionDate}T00:00:00Z`).toISOString().slice(0, 10) === electionDate && new Date(`${electionDate}T00:00:00Z`).getUTCDay() === 2, "The printed municipal runoff date is invalid.");
 	const sourceId = `ga-fulton-municipal-runoff-${electionDate}`;
 	const headings = fields.filter(field => field.text === "General Election Runoff");
@@ -97,10 +109,18 @@ export function prepareFultonMunicipalRunoff(body: string, source: FultonMunicip
 		let voted = false;
 		let previousTop = -1;
 		let candidateField: FultonMunicipalNativeField | null = null;
+		const latestCandidate = (): FultonMunicipalContest["candidates"][number] | undefined => contest?.candidates.at(-1);
 		const finish = () => {
 			if (!contest) return;
-			assert(voted && (contest.office === "Mayor" ? !contest.district : /^District [1-9]\d?(?: At Large)?$/u.test(contest.district)) && contest.candidates.length === 2, "The municipal runoff contest is incomplete or unfamiliar.");
-			contest.id = hash(JSON.stringify([sourceId, municipality, contest.office, contest.district])).slice(0, 24);
+			assert(voted && (contest.office === "Mayor"
+				? !contest.district
+				: /^District [1-9]\d?(?: At Large)?$/u.test(contest.district)) && contest.candidates.length === 2, "The municipal runoff contest is incomplete or unfamiliar.");
+			contest.id = hash(JSON.stringify([
+				sourceId,
+				municipality,
+				contest.office,
+				contest.district
+			])).slice(0, 24);
 			for (const candidate of contest.candidates) candidate.id = hash(JSON.stringify([contest.id, candidate.name])).slice(0, 24);
 			assert(new Set(contest.candidates.map(candidate => candidate.name)).size === 2, "The municipal contest repeats a candidate.");
 			contests.push(contest);
@@ -124,7 +144,14 @@ export function prepareFultonMunicipalRunoff(body: string, source: FultonMunicip
 			else if (/^For (?:Mayor|City Council(?: Member)?|Board of Education Member)$/u.test(field.text) && field.bold && field.family === "ArialNarrow" && field.size === 17) {
 				finish();
 				assert(municipality);
-				contest = { id: "", municipality, office: field.text.slice(4), district: "", voteLimit: 1, candidates: [] };
+				contest = {
+					id: "",
+					municipality,
+					office: field.text.slice(4),
+					district: "",
+					voteLimit: 1,
+					candidates: []
+				};
 				voted = false;
 			}
 			else if (/^District [1-9]\d?(?: At Large)?$/u.test(field.text) && field.bold && field.family === "ArialNarrow" && field.size === 17) {
@@ -136,7 +163,7 @@ export function prepareFultonMunicipalRunoff(body: string, source: FultonMunicip
 				voted = true;
 			}
 			else if (field.text === "(Incumbent)" && !field.bold && field.family === "ArialMT" && field.size === 12) {
-				const candidate = contest?.candidates.at(-1);
+				const candidate = latestCandidate();
 				assert(candidate && candidateField && !candidate.incumbent && field.top - candidateField.top <= 24 && Math.abs(field.left - candidateField.left) <= 1);
 				candidate.incumbent = true;
 			}
@@ -151,13 +178,56 @@ export function prepareFultonMunicipalRunoff(body: string, source: FultonMunicip
 		assert(!pendingCity);
 	}
 	assert(contests.length > 0 && contests.length <= 30 && new Set(contests.map(contest => contest.id)).size === contests.length, "The municipal contest inventory is ambiguous.");
-	return { schemaVersion: 1, type: "fulton-municipal-runoff-inventory", sourceId, stateCode: "GA", countyFips: "13121", electionDate, retrievedAt: source.retrievedAt, sourcePublishedAt: null, source: { ...source }, nativeTextSha256: hash(body), publicationApproved: false, voterApplicabilityVerified: false, automaticCollectionConfigured: false, contests };
+	return {
+		schemaVersion: 1,
+		type: "fulton-municipal-runoff-inventory",
+		sourceId,
+		stateCode: "GA",
+		countyFips: "13121",
+		electionDate,
+		retrievedAt: source.retrievedAt,
+		sourcePublishedAt: null,
+		source: { ...source },
+		nativeTextSha256: hash(body),
+		publicationApproved: false,
+		voterApplicabilityVerified: false,
+		automaticCollectionConfigured: false,
+		contests
+	};
 }
 
 export function fultonMunicipalRunoffCsv(inventory: FultonMunicipalRunoffInventory) {
-	const rows: (string | number | boolean)[][] = [["sourceId", "electionDate", "municipality", "office", "district", "voteLimit", "name", "incumbent", "sourceUrl", "page", "retrievedAt"]];
+	const rows: (string | number | boolean)[][] = [
+		[
+			"sourceId",
+			"electionDate",
+			"municipality",
+			"office",
+			"district",
+			"voteLimit",
+			"name",
+			"incumbent",
+			"sourceUrl",
+			"page",
+			"retrievedAt"
+		]
+	];
 	for (const contest of inventory.contests) {
-		for (const candidate of contest.candidates) rows.push([inventory.sourceId, inventory.electionDate, contest.municipality, contest.office, contest.district, contest.voteLimit, candidate.name, candidate.incumbent ?? "", inventory.source.url, 1, inventory.retrievedAt]);
+		for (const candidate of contest.candidates) {
+			rows.push([
+				inventory.sourceId,
+				inventory.electionDate,
+				contest.municipality,
+				contest.office,
+				contest.district,
+				contest.voteLimit,
+				candidate.name,
+				candidate.incumbent ?? "",
+				inventory.source.url,
+				1,
+				inventory.retrievedAt
+			]);
+		}
 	}
 	return `${rows.map(row => row.map(value => `"${String(value).replace(/"/gu, "\"\"")}"`).join(",")).join("\n")}\n`;
 }

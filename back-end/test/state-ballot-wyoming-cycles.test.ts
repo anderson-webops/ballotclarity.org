@@ -34,7 +34,9 @@ ${year} GENERAL ELECTION,GOVERNOR,Republican,Synthetic Withdrawn Candidate,10/01
 
 test("Wyoming discovery binds the explicit official date and both roster links without invented election identifiers", () => {
 	const catalog = discoverStateBallotElectionCycles(discovery(), original.id, now);
-	assert.deepEqual(catalog.elections, [{ electionId: null, electionDate: original.electionDate }]);
+	assert.deepEqual(catalog.elections, [
+		{ electionId: null, electionDate: original.electionDate }
+	]);
 	assert.deepEqual(stateBallotCycleSources(catalog), []);
 	const future = discoverStateBallotElectionCycles(discovery("2028", "7"), original.id, now);
 	const [source] = stateBallotCycleSources(future);
@@ -45,7 +47,12 @@ test("Wyoming discovery binds the explicit official date and both roster links w
 	assert.equal(source!.format, original.format);
 	assert.equal(source!.scopeNotice, original.scopeNotice);
 	assert.equal(original.url, wyomingCandidateRosterUrl(original.electionDate));
-	assert.throws(() => parseStateBallotCycleCatalog({ ...future, elections: [{ electionId: "2028", electionDate: "2028-11-07" }] }, now));
+	assert.throws(() => parseStateBallotCycleCatalog({
+		...future,
+		elections: [
+			{ electionId: "2028", electionDate: "2028-11-07" }
+		]
+	}, now));
 });
 
 test("Wyoming discovery rejects changed pages, ambiguous dates, wrong-year links and primary or external replacements", () => {
@@ -83,7 +90,12 @@ test("Wyoming transport preserves the exact dated HTTPS roster and refuses redir
 		assert.equal(options.maxBytes, 12 * 1024 * 1024);
 		return candidates("2028");
 	}), candidates("2028"));
-	for (const url of [future.url.replace("2028_WY", "2026_WY"), `${future.url}?download=1`, future.url.replace("https:", "http:"), future.url.replace("sos.wyo.gov", "example.org")]) {
+	for (const url of [
+		future.url.replace("2028_WY", "2026_WY"),
+		`${future.url}?download=1`,
+		future.url.replace("https:", "http:"),
+		future.url.replace("sos.wyo.gov", "example.org")
+	]) {
 		await assert.rejects(fetchStateBallotSourceText({ ...future, url }, async () => {
 			assert.fail("Unbound transport must not be requested");
 		}));
@@ -101,8 +113,24 @@ test("future Wyoming CSVs retain explicit parties and districts, exclude contact
 	assert.equal(records[2]!.district, "62");
 	assert.equal(records[3]!.scope, "local");
 	assert.equal(records[4]!.status, "withdrawn");
-	assert.equal(stateRecordMatchesDistricts(records[1]!, [{ id: "sldu-01", label: "Senate District 1", districtType: "state-senate", districtCode: "01", sourceSystem: "census-geocoder" }]), true);
-	assert.equal(stateRecordMatchesDistricts(records[1]!, [{ id: "sldu-02", label: "Senate District 2", districtType: "state-senate", districtCode: "02", sourceSystem: "census-geocoder" }]), false);
+	assert.equal(stateRecordMatchesDistricts(records[1]!, [
+		{
+			id: "sldu-01",
+			label: "Senate District 1",
+			districtType: "state-senate",
+			districtCode: "01",
+			sourceSystem: "census-geocoder"
+		}
+	]), true);
+	assert.equal(stateRecordMatchesDistricts(records[1]!, [
+		{
+			id: "sldu-02",
+			label: "Senate District 2",
+			districtType: "state-senate",
+			districtCode: "02",
+			sourceSystem: "census-geocoder"
+		}
+	]), false);
 	assert.equal(stateRecordMatchesDistricts(records[3]!, []), false);
 	assert.doesNotMatch(JSON.stringify(records), /unused@example|Unused private field/iu);
 	assert.throws(() => parseStateCandidateRecords(future, candidates("2026")));
@@ -119,22 +147,36 @@ test("Wyoming cycle rollover is automatic, idempotent, source-allowlisted and la
 	try {
 		let clock = now;
 		let requests = 0;
-		const options = { familyId: original.id, catalogPath, dataDirectory, now: () => clock, fetchDiscovery: async () => discovery(), fetchCandidates: async () => {
-			requests++;
-			return candidates();
-		} };
+		const options = {
+			familyId: original.id,
+			catalogPath,
+			dataDirectory,
+			now: () => clock,
+			fetchDiscovery: async () => discovery(),
+			fetchCandidates: async () => {
+				requests++;
+				return candidates();
+			}
+		};
 		await syncStateBallotCycles(options);
 		assert.equal(requests, 1);
 		await syncStateBallotCycles(options);
 		assert.equal(requests, 1);
 		const currentBytes = await readFile(catalogPath, "utf8");
-		await assert.rejects(syncStateBallotCycles({ ...options, fetchDiscovery: async () => discovery("2028", "7") }));
+		await assert.rejects(syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => discovery("2028", "7")
+		}));
 		assert.equal(await readFile(catalogPath, "utf8"), currentBytes);
 		clock = Date.parse("2028-10-24T12:00:00.000Z");
-		await syncStateBallotCycles({ ...options, fetchDiscovery: async () => discovery("2028", "7"), fetchCandidates: async () => {
-			requests++;
-			return candidates("2028");
-		} });
+		await syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => discovery("2028", "7"),
+			fetchCandidates: async () => {
+				requests++;
+				return candidates("2028");
+			}
+		});
 		const catalogBytes = await readFile(catalogPath, "utf8");
 		process.env.STATE_BALLOT_CYCLE_CATALOGS = JSON.stringify({ [original.id]: catalogPath });
 		process.env.STATE_BALLOT_DATA_DIR = dataDirectory;
@@ -150,9 +192,12 @@ test("Wyoming cycle rollover is automatic, idempotent, source-allowlisted and la
 		const storage = createStateBallotStorage(dataDirectory);
 		const accepted = await storage.read(future);
 		assert.equal(accepted!.records.length, 5);
-		const repository = createStateBallotRepository({ now: () => clock, fetchText: async () => {
-			assert.fail("Cold reads must use the accepted durable snapshot");
-		} });
+		const repository = createStateBallotRepository({
+			now: () => clock,
+			fetchText: async () => {
+				assert.fail("Cold reads must use the accepted durable snapshot");
+			}
+		});
 		const app = express();
 		registerStateRecordRoutes(app, repository);
 		server = app.listen(0, "127.0.0.1");
@@ -165,13 +210,22 @@ test("Wyoming cycle rollover is automatic, idempotent, source-allowlisted and la
 		assert.equal(body.source.electionDate, future.electionDate);
 		assert.equal(body.total, 5);
 		assert.equal(body.records[1].district, "1");
-		const run = await refreshApprovedCandidateData({ environment: process.env, now: () => clock, fetchDiscovery: async () => discovery("2028", "7"), fetchText: async () => {
-			assert.fail("The automatic worker must reuse a fresh durable snapshot");
-		} });
+		const run = await refreshApprovedCandidateData({
+			environment: process.env,
+			now: () => clock,
+			fetchDiscovery: async () => discovery("2028", "7"),
+			fetchText: async () => {
+				assert.fail("The automatic worker must reuse a fresh durable snapshot");
+			}
+		});
 		assert.equal(run.status, "succeeded");
 		assert.equal(run.results.find(result => result.sourceId === future.id)?.status, "cached");
 		clock += 5 * 3600000;
-		const failed = await syncStateBallotCycles({ ...options, fetchDiscovery: async () => discovery("2028", "7"), fetchCandidates: async () => candidates("2026") });
+		const failed = await syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => discovery("2028", "7"),
+			fetchCandidates: async () => candidates("2026")
+		});
 		assert.equal(failed.results[0]!.status, "unavailable");
 		assert.deepEqual(await storage.read(future), accepted);
 		assert.equal(await readFile(catalogPath, "utf8"), catalogBytes);
@@ -180,7 +234,11 @@ test("Wyoming cycle rollover is automatic, idempotent, source-allowlisted and la
 		assert.equal((await repository.inspectSources!()).find(source => source.id === future.id)?.status, "error");
 	}
 	finally {
-		if (server?.listening) await new Promise<void>((resolve, reject) => server!.close(error => error ? reject(error) : resolve()));
+		if (server?.listening) {
+			await new Promise<void>((resolve, reject) => server!.close(error => error
+				? reject(error)
+				: resolve()));
+		}
 		process.env = environment;
 		await rm(directory, { recursive: true, force: true });
 	}

@@ -17,7 +17,9 @@ function calendarDayKey(instant: Date, timeZone: string | null | undefined) {
 	return new Intl.DateTimeFormat("en-CA", {
 		day: "2-digit",
 		month: "2-digit",
-		...(timeZone ? { timeZone } : {}),
+		...(timeZone
+			? { timeZone }
+			: {}),
 		year: "numeric",
 	}).format(instant);
 }
@@ -32,7 +34,9 @@ function dayKeyToUtc(key: string) {
  * Date-only values (YYYY-MM-DD) are treated as that calendar day everywhere.
  */
 export function calendarDaysUntil(value: string, now: Date, timeZone?: string | null) {
-	const targetKey = isoDatePattern.test(value) ? value : calendarDayKey(parseDateInput(value), timeZone);
+	const targetKey = isoDatePattern.test(value)
+		? value
+		: calendarDayKey(parseDateInput(value), timeZone);
 	return Math.round((dayKeyToUtc(targetKey) - dayKeyToUtc(calendarDayKey(now, timeZone))) / dayMs);
 }
 
@@ -57,7 +61,9 @@ function resolveStatus(value: string, daysAway: number, now: Date): KeyDateStatu
 	if (!isoDatePattern.test(value) && parseDateInput(value).getTime() < now.getTime())
 		return "passed";
 
-	return daysAway === 0 ? "today" : "upcoming";
+	return daysAway === 0
+		? "today"
+		: "upcoming";
 }
 
 /**
@@ -74,9 +80,13 @@ export function buildKeyDateTimeline(keyDates: ElectionKeyDate[], now: Date, tim
 				daysAway,
 				index,
 				isNext: false,
-				relativeLabel: status === "passed" ? "Passed" : describeDaysAway(daysAway),
+				relativeLabel: status === "passed"
+					? "Passed"
+					: describeDaysAway(daysAway),
 				// Same-day entries list all-day windows before timed deadlines.
-				sortTime: isoDatePattern.test(item.date) ? Number.NEGATIVE_INFINITY : parseDateInput(item.date).getTime(),
+				sortTime: isoDatePattern.test(item.date)
+					? Number.NEGATIVE_INFINITY
+					: parseDateInput(item.date).getTime(),
 				status,
 			};
 		})

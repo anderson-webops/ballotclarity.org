@@ -6,9 +6,19 @@ export function useElectionReferences(input: MaybeRefOrGetter<{ stateCode: strin
 	return useAsyncData<ElectionReferencesResponse | null>(
 		() => `election-references:${JSON.stringify(filters.value)}`,
 		() => filters.value.stateCode
-			? api<ElectionReferencesResponse>(`/election-references/${filters.value.stateCode}`, { query: { electionDate: filters.value.electionDate, q: filters.value.search, scope: filters.value.scope, offset: filters.value.offset, limit: 50 } })
+			? api<ElectionReferencesResponse>(`/election-references/${filters.value.stateCode}`, {
+					query: {
+						electionDate: filters.value.electionDate,
+						q: filters.value.search,
+						scope: filters.value.scope,
+						offset: filters.value.offset,
+						limit: 50
+					}
+				})
 			: Promise.resolve(null),
-		{ default: () => null },
+		{
+			default: () => null
+		},
 	);
 }
 
@@ -17,7 +27,11 @@ export function useElectionReferenceCatalog(input: MaybeRefOrGetter<string>) {
 	const stateCode = computed(() => toValue(input));
 	return useAsyncData<{ stateCode: string; elections: string[] } | null>(
 		() => `reference-catalog:${stateCode.value}`,
-		() => stateCode.value ? api(`/election-references/${stateCode.value}/catalog`) : Promise.resolve(null),
-		{ default: () => null },
+		() => stateCode.value
+			? api(`/election-references/${stateCode.value}/catalog`)
+			: Promise.resolve(null),
+		{
+			default: () => null
+		},
 	);
 }

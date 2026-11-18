@@ -36,7 +36,10 @@ export const fultonQuestionnaireDocument: ElectionDocumentSource = {
 	host,
 	indexUrl,
 	dateMarkers: ["Election Central 2026", "Fulton County Chair", "Georgia Senate District 14"],
-	policies: [{ id: "robots", url: `https://${host}/robots.txt`, format: "robots" }, { id: "index-links", url: indexUrl, format: "links" }],
+	policies: [
+		{ id: "robots", url: `https://${host}/robots.txt`, format: "robots" },
+		{ id: "index-links", url: indexUrl, format: "links" }
+	],
 	documentPatterns: publications.map(publication => `^/wp-content/uploads/2026/10/${publication.file.replaceAll(".", "\\.")}$`),
 	minimumDocuments: publications.length,
 	maximumDocuments: publications.length

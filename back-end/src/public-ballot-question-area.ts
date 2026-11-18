@@ -11,7 +11,18 @@ export function publishedBallotQuestionArea(source: Pick<StateBallotSource, "sta
 	const text = clean(question.officialText);
 	const areas: PublicBallotQuestionArea[] = [];
 	const add = (kind: PublicBallotQuestionArea["kind"], name: string, evidence: string, excludedMunicipalities?: string[]) => {
-		if (name.length <= 120) areas.push({ kind, stateCode: "GA", name, basis: "printed-question", evidence, ...(excludedMunicipalities ? { excludedMunicipalities } : {}) });
+		if (name.length <= 120) {
+			areas.push({
+				kind,
+				stateCode: "GA",
+				name,
+				basis: "printed-question",
+				evidence,
+				...(excludedMunicipalities
+					? { excludedMunicipalities }
+					: {})
+			});
+		}
 	};
 	if (/\(House Resolution [1-9]\d{0,5}\)$/u.test(title) && text.includes("Constitution of Georgia")) add("state", "Georgia", "Constitution of Georgia");
 	const exclusion = /in that part of Fulton County, Georgia, outside of the City of (\p{L}[\p{L} .’'-]+), for /u.exec(text);
@@ -21,5 +32,7 @@ export function publishedBallotQuestionArea(source: Pick<StateBallotSource, "sta
 	if (authority && place(authority[1]!) && title.startsWith(`City of ${authority[1]} `)) add("city", authority[1]!, authority[0].trim());
 	const residence = /a resident of (\p{L}[\p{L} .’'-]+), Georgia who own and occupy as a primary residence a home situated in the City of \1 qualify /u.exec(text);
 	if (residence && place(residence[1]!) && title.startsWith(`City of ${residence[1]} `)) add("city", residence[1]!, residence[0].trim());
-	return areas.length === 1 ? areas[0] : undefined;
+	return areas.length === 1
+		? areas[0]
+		: undefined;
 }

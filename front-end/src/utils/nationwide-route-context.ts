@@ -19,10 +19,15 @@ const exactZipPattern = /^\d{5}$/u;
 const selectionIdPattern = /^\w[\w.:-]{0,255}$/u;
 
 function readTrimmedQueryValue(value: unknown) {
-	if (Array.isArray(value))
-		return typeof value[0] === "string" ? value[0].trim() : "";
+	if (Array.isArray(value)) {
+		return typeof value[0] === "string"
+			? value[0].trim()
+			: "";
+	}
 
-	return typeof value === "string" ? value.trim() : "";
+	return typeof value === "string"
+		? value.trim()
+		: "";
 }
 
 export function extractNationwideLookupRouteQuery(query: Record<string, unknown> | null | undefined): NationwideLookupRouteQuery | null {
@@ -76,7 +81,11 @@ export function buildNationwideRouteTarget(
 		searchParams.set("selection", query.selection);
 
 	const serializedQuery = searchParams.toString();
-	return `${pathWithoutHash}${serializedQuery ? `?${serializedQuery}` : ""}${hash ? `#${hash}` : ""}`;
+	return `${pathWithoutHash}${serializedQuery
+		? `?${serializedQuery}`
+		: ""}${hash
+		? `#${hash}`
+		: ""}`;
 }
 
 export function buildLookupDestinationFromResponse(response: Pick<LocationLookupResponse, "lookupQuery" | "selectionId">) {
@@ -129,5 +138,7 @@ export function buildCivicDirectoryApiQuery(
 	const requestedArea = readTrimmedQueryValue(routeQuery.area);
 	if (requestedArea)
 		return { area: requestedArea };
-	return buildNationwideLookupRouteQuery(context) ?? (guideArea ? { area: guideArea } : null);
+	return buildNationwideLookupRouteQuery(context) ?? (guideArea
+		? { area: guideArea }
+		: null);
 }

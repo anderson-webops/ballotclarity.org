@@ -99,7 +99,9 @@ export function getBallotContentProviderOptions(): BallotContentProviderInternal
 				"voting logistics"
 			],
 			configured: ballotReadyConfigured,
-			connectionStatus: hasEnv("BALLOTREADY_API_KEY") && !hasEnv("BALLOTREADY_API_URL") ? "needs_endpoint" : connectionStatus(ballotReadyConfigured, "needs_partner_access"),
+			connectionStatus: hasEnv("BALLOTREADY_API_KEY") && !hasEnv("BALLOTREADY_API_URL")
+				? "needs_endpoint"
+				: connectionStatus(ballotReadyConfigured, "needs_partner_access"),
 			docsUrl: "https://developers.civicengine.com/docs/api/graphql/reference/objects/ballot-event",
 			envVars: ["BALLOTREADY_API_URL", "BALLOTREADY_API_KEY"],
 			id: "ballotready-civicengine",

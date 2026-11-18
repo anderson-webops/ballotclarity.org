@@ -23,7 +23,13 @@ export const maineHouseUrls = {
 } as const;
 export const maineHouseRobotsSha256 = "77b8e93a1e9a3052fa00422f121a650fa2a0c378ff632da0a89dd40ea537e62a";
 export const maineHouseConstitutionSha256 = "2794ee614f106b55d228ab96c2a7968009caa3acd06dbaf8c2314ff1d612835d";
-export const maineHousePolicySha256: Readonly<Record<"home" | "houseHome" | "policyHub" | "disclaimer" | "index", string>> = { home: "7adfdf79aeb77407f8a22a683908082d8324eddc7f80d079de45a8a16b46227e", houseHome: "748fb80ac2bb4dd5db25ba96ae4b55327f38ca0d63a05216fa3501bc6041910d", policyHub: "82c68355521e32080bca6850db2b55336ce9c7d39b86f67f236cfb0cc552c61e", disclaimer: "737b3d0da033f7827df85fc1567b24ea526ea617bfd0ae51dfdd7e1c210d3041", index: "748fb80ac2bb4dd5db25ba96ae4b55327f38ca0d63a05216fa3501bc6041910d" };
+export const maineHousePolicySha256: Readonly<Record<"home" | "houseHome" | "policyHub" | "disclaimer" | "index", string>> = {
+	home: "7adfdf79aeb77407f8a22a683908082d8324eddc7f80d079de45a8a16b46227e",
+	houseHome: "748fb80ac2bb4dd5db25ba96ae4b55327f38ca0d63a05216fa3501bc6041910d",
+	policyHub: "82c68355521e32080bca6850db2b55336ce9c7d39b86f67f236cfb0cc552c61e",
+	disclaimer: "737b3d0da033f7827df85fc1567b24ea526ea617bfd0ae51dfdd7e1c210d3041",
+	index: "748fb80ac2bb4dd5db25ba96ae4b55327f38ca0d63a05216fa3501bc6041910d"
+};
 const hash = (body: string) => createHash("sha256").update(body).digest("hex");
 const exact = (value: unknown, keys: string[]): value is Record<string, unknown> => Boolean(value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).sort().join(",") === [...keys].sort().join(","));
 const text = (node: Parameters<typeof stateHtmlText>[0]) => stateHtmlText(node).replace(/\s+/gu, " ").trim();
@@ -44,7 +50,21 @@ export function maineHouseLegislatureForDate(date: string) {
 }
 export function maineHouseSource(electionDate: string): StateBallotSource {
 	maineHouseLegislatureForDate(electionDate);
-	return { stateCode: "ME", id: electionDate === "2026-11-03" ? "me-house-clerk-2026" : `me-house-clerk-general-${electionDate}`, label: "Maine House Clerk", electionDate, url: maineHouseCandidateUrl, pageUrl: maineHouseCandidateUrl, format: "maine-house-html", snapshotStorage: "external", defaultPriority: -30, ballotPreview: false, scopeNotice: "Unofficial House list." };
+	return {
+		stateCode: "ME",
+		id: electionDate === "2026-11-03"
+			? "me-house-clerk-2026"
+			: `me-house-clerk-general-${electionDate}`,
+		label: "Maine House Clerk",
+		electionDate,
+		url: maineHouseCandidateUrl,
+		pageUrl: maineHouseCandidateUrl,
+		format: "maine-house-html",
+		snapshotStorage: "external",
+		defaultPriority: -30,
+		ballotPreview: false,
+		scopeNotice: "Unofficial House list."
+	};
 }
 export function validateMaineHouseSource(source: StateBallotSource) {
 	const expected = maineHouseSource(source.electionDate);
@@ -60,19 +80,50 @@ export function maineHousePolicyFingerprint(body: string, kind: keyof typeof mai
 	let footers = descendants(dom, node => node.nodeName === "footer");
 	if (!footers.length) footers = descendants(dom, node => attribute(node, "id") === "footer");
 	if (footers.length !== 1) return reject();
-	const legalLinks = descendants(dom, node => node.nodeName === "a" && /privacy|copyright|terms|conditions|disclaimer|accessibility|special-accommodations/iu.test(`${text(node)} ${attribute(node, "href")}`)).map(node => [text(node), new URL(attribute(node, "href"), "https://mainelegislature.org").href]);
-	const contents = ["disclaimer", "policyHub"].includes(kind) ? descendants(dom, node => attribute(node, "id") === "content") : [];
+	const legalLinks = descendants(dom, node => node.nodeName === "a" && /privacy|copyright|terms|conditions|disclaimer|accessibility|special-accommodations/iu.test(`${text(node)} ${attribute(node, "href")}`)).map(node => [
+		text(node),
+		new URL(attribute(node, "href"), "https://mainelegislature.org").href
+	]);
+	const contents = ["disclaimer", "policyHub"].includes(kind)
+		? descendants(dom, node => attribute(node, "id") === "content")
+		: [];
 	if (["disclaimer", "policyHub"].includes(kind) && contents.length !== 1) return reject();
 	const content = contents[0];
-	return hash(JSON.stringify({ footer: normalize(text(footers[0]!)), legalLinks, ...(content ? { content: text(content), images: descendants(content, node => node.nodeName === "img").map(node => [attribute(node, "src"), attribute(node, "alt")]) } : {}) }));
+	return hash(JSON.stringify({
+		footer: normalize(text(footers[0]!)),
+		legalLinks,
+		...(content
+			? {
+					content: text(content),
+					images: descendants(content, node => node.nodeName === "img").map(node => [
+						attribute(node, "src"),
+						attribute(node, "alt")
+					])
+				}
+			: {})
+	}));
 }
 export function validateMaineHouseElection(value: unknown): asserts value is MaineHouseElection {
-	if (!exact(value, ["electionId", "electionDate", "pageUrl", "maineHouseLegislature", "maineHouseContentSha256"]) || value.electionId !== null || value.pageUrl !== maineHouseCandidateUrl || typeof value.electionDate !== "string" || maineHouseLegislatureForDate(value.electionDate) !== value.maineHouseLegislature || typeof value.maineHouseContentSha256 !== "string" || !/^[a-f0-9]{64}$/u.test(value.maineHouseContentSha256)) return reject();
+	if (!exact(value, [
+		"electionId",
+		"electionDate",
+		"pageUrl",
+		"maineHouseLegislature",
+		"maineHouseContentSha256"
+	]) || value.electionId !== null || value.pageUrl !== maineHouseCandidateUrl || typeof value.electionDate !== "string" || maineHouseLegislatureForDate(value.electionDate) !== value.maineHouseLegislature || typeof value.maineHouseContentSha256 !== "string" || !/^[a-f0-9]{64}$/u.test(value.maineHouseContentSha256)) {
+		return reject();
+	}
 }
 export function readMaineHouseDiscovery(body: string, now = Date.now()) {
 	if (Buffer.byteLength(body) > 12 * 1024 * 1024) return reject();
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", ...Object.keys(maineHouseUrls)]) || value.schemaVersion !== 1 || value.type !== "maine-house-discovery") return reject();
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		...Object.keys(maineHouseUrls)
+	]) || value.schemaVersion !== 1 || value.type !== "maine-house-discovery") {
+		return reject();
+	}
 	const pages = {} as Record<keyof typeof maineHouseUrls, Page>;
 	let previousCaptureTime = -Infinity;
 	for (const [key, url] of Object.entries(maineHouseUrls)) {
@@ -89,9 +140,24 @@ export function readMaineHouseDiscovery(body: string, now = Date.now()) {
 	const parsed = readMaineHouseCandidates(pages.index.body);
 	const electionDate = maineHouseScheduledDate(parsed.legislature);
 	const contentSha256 = hash(JSON.stringify(parsed));
-	const elections: MaineHouseElection[] = parsed.records.length ? [{ electionId: null, electionDate, pageUrl: maineHouseCandidateUrl, maineHouseLegislature: parsed.legislature, maineHouseContentSha256: contentSha256 }] : [];
+	const elections: MaineHouseElection[] = parsed.records.length
+		? [
+				{
+					electionId: null,
+					electionDate,
+					pageUrl: maineHouseCandidateUrl,
+					maineHouseLegislature: parsed.legislature,
+					maineHouseContentSha256: contentSha256
+				}
+			]
+		: [];
 	for (const election of elections) validateMaineHouseElection(election);
-	return { pages, parsed, elections, contentSha256 };
+	return {
+		pages,
+		parsed,
+		elections,
+		contentSha256
+	};
 }
 export async function fetchMaineHouseDiscovery(options: Options = {}) {
 	const request = options.requestText ?? fetchRemoteSourceText;
@@ -100,10 +166,20 @@ export async function fetchMaineHouseDiscovery(options: Options = {}) {
 	let size = 0;
 	for (const [key, url] of Object.entries(maineHouseUrls)) {
 		if (size) await (options.sleep ?? wait)(1000);
-		const body = await request(url, { allowedHosts: ["mainelegislature.org"], maxBytes: 2 * 1024 * 1024, maxRedirects: 0, timeoutMs: 30000 });
+		const body = await request(url, {
+			allowedHosts: ["mainelegislature.org"],
+			maxBytes: 2 * 1024 * 1024,
+			maxRedirects: 0,
+			timeoutMs: 30000
+		});
 		size += Buffer.byteLength(body);
 		if (size > 12 * 1024 * 1024) return reject();
-		const page = { url, body, sha256: hash(body), retrievedAt: new Date(now()).toISOString() };
+		const page = {
+			url,
+			body,
+			sha256: hash(body),
+			retrievedAt: new Date(now()).toISOString()
+		};
 		await options.onPage?.(page);
 		if (key === "robots" && page.sha256 !== maineHouseRobotsSha256) return reject();
 		if (key === "constitution" && page.sha256 !== maineHouseConstitutionSha256) return reject();
@@ -118,21 +194,53 @@ export async function fetchMaineHouseCapture(source: StateBallotSource, options:
 	validateMaineHouseSource(source);
 	const discovery = options.discovery ?? await fetchMaineHouseDiscovery(options);
 	readMaineHouseDiscovery(discovery, (options.now ?? Date.now)());
-	return JSON.stringify({ schemaVersion: 1, type: "maine-house-capture", electionDate: source.electionDate, discovery: JSON.parse(discovery) });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "maine-house-capture",
+		electionDate: source.electionDate,
+		discovery: JSON.parse(discovery)
+	});
 }
 export function maineHouseRecord(source: StateBallotSource, input: ReturnType<typeof readMaineHouseCandidates>["records"][number]): StateCandidateRecord {
 	const name = input.name.normalize("NFKC").replace(/\s+/gu, " ").trim();
 	const party = input.party.normalize("NFKC").replace(/\s+/gu, " ").trim();
 	const office = "Maine House of Representatives";
 	const district = String(input.district);
-	const id = hash(JSON.stringify([source.stateCode, source.electionDate, office.toLowerCase(), district, name.toLowerCase(), party.toLowerCase()])).slice(0, 24);
-	return { id, name, office, party, scope: "state-house", district, status: "listed", sourceStatus: "Unofficial", sourceDistrictLabel: `District ${input.district}`, ...(input.incumbent ? { incumbent: true } : {}) };
+	const id = hash(JSON.stringify([
+		source.stateCode,
+		source.electionDate,
+		office.toLowerCase(),
+		district,
+		name.toLowerCase(),
+		party.toLowerCase()
+	])).slice(0, 24);
+	return {
+		id,
+		name,
+		office,
+		party,
+		scope: "state-house",
+		district,
+		status: "listed",
+		sourceStatus: "Unofficial",
+		sourceDistrictLabel: `District ${input.district}`,
+		...(input.incumbent
+			? { incumbent: true }
+			: {})
+	};
 }
 export function parseMaineHouseCapture(source: StateBallotSource, body: string, now = Date.now(), previous?: StateBallotSnapshot) {
 	validateMaineHouseSource(source);
 	if (Buffer.byteLength(body) > 12 * 1024 * 1024) return reject();
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "electionDate", "discovery"]) || value.schemaVersion !== 1 || value.type !== "maine-house-capture" || value.electionDate !== source.electionDate) return reject();
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"electionDate",
+		"discovery"
+	]) || value.schemaVersion !== 1 || value.type !== "maine-house-capture" || value.electionDate !== source.electionDate) {
+		return reject();
+	}
 	const discovery = readMaineHouseDiscovery(JSON.stringify(value.discovery), now);
 	if (maineHouseScheduledDate(discovery.parsed.legislature) !== source.electionDate || !discovery.parsed.records.length) {
 		if (previous?.records.length) return reject();
@@ -140,9 +248,20 @@ export function parseMaineHouseCapture(source: StateBallotSource, body: string, 
 	}
 	const records = discovery.parsed.records.map(input => maineHouseRecord(source, input));
 	if (previous?.records.some(record => !records.some(item => item.id === record.id))) return reject();
-	const documents = [discovery.pages.index, discovery.pages.constitution, discovery.pages.disclaimer].map((page, index) => ({ url: page.url, sha256: page.sha256, retrievedAt: page.retrievedAt, includedRecordCount: index ? 0 : records.length }));
+	const documents = [discovery.pages.index, discovery.pages.constitution, discovery.pages.disclaimer].map((page, index) => ({
+		url: page.url,
+		sha256: page.sha256,
+		retrievedAt: page.retrievedAt,
+		includedRecordCount: index ? 0 : records.length
+	}));
 	if (previous && Math.min(...documents.map(document => Date.parse(document.retrievedAt))) < Date.parse(previous.retrievedAt)) return reject();
-	return { records, documents, retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString(), sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), collectionIndexSha256: discovery.contentSha256 };
+	return {
+		records,
+		documents,
+		retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString(),
+		sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+		collectionIndexSha256: discovery.contentSha256
+	};
 }
 export function validateMaineHouseSnapshot(source: StateBallotSource, data: Record<string, unknown>) {
 	validateMaineHouseSource(source);
@@ -153,8 +272,23 @@ export function validateMaineHouseSnapshot(source: StateBallotSource, data: Reco
 	}
 	if (documents[1]?.sha256 !== maineHouseConstitutionSha256) return reject();
 	for (const input of data.records) {
-		if (!input || typeof input !== "object" || typeof input.name !== "string" || typeof input.district !== "string" || !/^(?:[1-9]|[1-9]\d|1[0-4]\d|15[01])$/u.test(input.district) || !["Democrat", "Republican", "Unenrolled", "Independent", "No Labels"].includes(input.party) || (input.incumbent !== undefined && input.incumbent !== true)) return reject();
-		const expected = maineHouseRecord(source, { id: "", name: input.name, district: Number(input.district), party: input.party, partyCode: "", incumbent: input.incumbent === true });
+		if (!input || typeof input !== "object" || typeof input.name !== "string" || typeof input.district !== "string" || !/^(?:[1-9]|[1-9]\d|1[0-4]\d|15[01])$/u.test(input.district) || ![
+			"Democrat",
+			"Republican",
+			"Unenrolled",
+			"Independent",
+			"No Labels"
+		].includes(input.party) || (input.incumbent !== undefined && input.incumbent !== true)) {
+			return reject();
+		}
+		const expected = maineHouseRecord(source, {
+			id: "",
+			name: input.name,
+			district: Number(input.district),
+			party: input.party,
+			partyCode: "",
+			incumbent: input.incumbent === true
+		});
 		const keys = Object.keys(expected).filter(key => expected[key as keyof StateCandidateRecord] !== undefined).sort();
 		if (Object.keys(input).sort().join(",") !== keys.join(",") || keys.some(key => input[key] !== expected[key as keyof StateCandidateRecord])) return reject();
 	}

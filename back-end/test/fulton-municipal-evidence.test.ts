@@ -27,7 +27,23 @@ test("municipal rendered corroboration accounts for every printed identity, offi
 	}
 });
 
-for (const change of ["native name", "rendered name", "low confidence", "missing crop", "extra crop", "crop bounds", "full page text", "crop page", "inspected page", "rotation", "font", "tool", "extra field", "raster size", "missing OCR page"] as const) {
+for (const change of [
+	"native name",
+	"rendered name",
+	"low confidence",
+	"missing crop",
+	"extra crop",
+	"crop bounds",
+	"full page text",
+	"crop page",
+	"inspected page",
+	"rotation",
+	"font",
+	"tool",
+	"extra field",
+	"raster size",
+	"missing OCR page"
+] as const) {
 	test(`municipal automatic evidence refuses changed ${change}`, () => {
 		const evidence = municipalRenderedFixture();
 		if (change === "native name") evidence.xml = evidence.xml.replace("First Candidate", "Third Candidate");
@@ -62,7 +78,12 @@ test("only a small voting mark beside a verified candidate row can remain outsid
 test("municipal discovery follows only actually offered runoff ballots and keeps an empty current index empty", () => {
 	assert.deepEqual(readFultonMunicipalIndex(index(`<a href="/-/media/elections/general.pdf">General election sample ballot</a>`)), []);
 	assert.deepEqual(readFultonMunicipalIndex(index(`<a href="/-/media/elections/2032-runoff.pdf">Municipal runoff sample ballot</a>`)), ["https://fultoncountyga.gov/-/media/elections/2032-runoff.pdf"]);
-	for (const body of [index().replace("Sample Ballots", "Candidate filings"), index().replace("</footer>", `<a href="/terms">Terms of Use</a></footer>`), index(`<a href="https://example.org/runoff.pdf">Runoff ballot</a>`), index(`<a href="/-/media/elections/runoff.pdf?download=1">Runoff ballot</a>`)]) assert.throws(() => readFultonMunicipalIndex(body));
+	for (const body of [
+		index().replace("Sample Ballots", "Candidate filings"),
+		index().replace("</footer>", `<a href="/terms">Terms of Use</a></footer>`),
+		index(`<a href="https://example.org/runoff.pdf">Runoff ballot</a>`),
+		index(`<a href="/-/media/elections/runoff.pdf?download=1">Runoff ballot</a>`)
+	]) assert.throws(() => readFultonMunicipalIndex(body));
 	for (const url of ["http://fultoncountyga.gov/-/media/runoff.pdf", "https://www.fultoncountyga.gov.evil.example/-/media/runoff.pdf", "https://fultoncountyga.gov/-/media/runoff.pdf#page=1"]) assert.throws(() => fultonMunicipalDocumentUrl(url));
 });
 
@@ -77,38 +98,97 @@ test("municipal source and cycle registration preserve historical access and ind
 	validateFultonMunicipalSource(fultonMunicipalSource("2032-11-30"));
 	assert.throws(() => validateFultonMunicipalSource({ ...source, ballotPreview: undefined }));
 	assert.throws(() => fultonMunicipalSource("2032-12-01"));
-	const election = { electionId: null, electionDate: "2032-11-30", pageUrl: source.pageUrl, municipalDocument: { url: "https://www.fultoncountyga.gov/-/media/elections/runoff.pdf", sha256: "a".repeat(64) } };
+	const election = {
+		electionId: null,
+		electionDate: "2032-11-30",
+		pageUrl: source.pageUrl,
+		municipalDocument: {
+			url: "https://www.fultoncountyga.gov/-/media/elections/runoff.pdf",
+			sha256: "a".repeat(64)
+		}
+	};
 	validateFultonMunicipalElection(election);
-	const catalog = parseStateBallotCycleCatalog({ schemaVersion: 1, type: "state-ballot-cycle-catalog", familyId: source.id, sourceConfigurationSha256: createHash("sha256").update(JSON.stringify(source)).digest("hex"), discovery: { url: source.pageUrl, sha256: "b".repeat(64), retrievedAt: "2026-11-13T21:00:00.000Z" }, elections: [election] }, Date.parse("2026-11-13T21:00:00Z"));
-	assert.deepEqual(stateBallotCycleSources(catalog), [fultonMunicipalSource("2032-11-30")]);
+	const catalog = parseStateBallotCycleCatalog({
+		schemaVersion: 1,
+		type: "state-ballot-cycle-catalog",
+		familyId: source.id,
+		sourceConfigurationSha256: createHash("sha256").update(JSON.stringify(source)).digest("hex"),
+		discovery: {
+			url: source.pageUrl,
+			sha256: "b".repeat(64),
+			retrievedAt: "2026-11-13T21:00:00.000Z"
+		},
+		elections: [election]
+	}, Date.parse("2026-11-13T21:00:00Z"));
+	assert.deepEqual(stateBallotCycleSources(catalog), [
+		fultonMunicipalSource("2032-11-30")
+	]);
 	assert.deepEqual(parseStateBallotCycleCatalog({ ...catalog, elections: [] }).elections, []);
-	assert.throws(() => discoverStateBallotElectionCycles(JSON.stringify({ type: "unreviewed", index: index() }), source.id));
+	assert.throws(() => discoverStateBallotElectionCycles(JSON.stringify({
+		type: "unreviewed",
+		index: index()
+	}), source.id));
 });
 
 test("publisher policy failure stops municipal discovery before index, PDF or native tool work", async () => {
 	let requests = 0;
-	await assert.rejects(fetchFultonMunicipalCycleDiscovery({ requestDocument: async () => {
-		requests++;
-		return { status: 200, body: Buffer.from("User-agent: *\nDisallow: /"), contentType: "text/plain", etag: undefined };
-	}, prepare: async () => { throw new Error("Native tools must stay idle"); } }));
+	await assert.rejects(fetchFultonMunicipalCycleDiscovery({
+		requestDocument: async () => {
+			requests++;
+			return {
+				status: 200,
+				body: Buffer.from("User-agent: *\nDisallow: /"),
+				contentType: "text/plain",
+				etag: undefined
+			};
+		},
+		prepare: async () => { throw new Error("Native tools must stay idle"); }
+	}));
 	assert.equal(requests, 1);
 	assert.throws(() => readFultonMunicipalDiscovery("{}"));
 });
 
 test("municipal stored facts preserve normalized districts, at-large wording and explicit incumbency", () => {
 	const source = fultonMunicipalSource();
-	const record = createStateCandidateRecord(source, { name: "First Candidate", office: "Board of Education Member - District 8 At Large", district: "District 8 At Large", jurisdiction: "City of Atlanta", scope: "local", status: "listed", party: "" })!;
+	const record = createStateCandidateRecord(source, {
+		name: "First Candidate",
+		office: "Board of Education Member - District 8 At Large",
+		district: "District 8 At Large",
+		jurisdiction: "City of Atlanta",
+		scope: "local",
+		status: "listed",
+		party: ""
+	})!;
 	record.voteLimit = 1;
 	record.sourceStatus = "Sample ballot candidate";
 	record.incumbent = true;
-	const document = { url: "https://www.fultoncountyga.gov/-/media/elections/runoff.pdf", sha256: "a".repeat(64), includedRecordCount: 1, retrievedAt: "2026-11-13T20:38:39.838Z" };
+	const document = {
+		url: "https://www.fultoncountyga.gov/-/media/elections/runoff.pdf",
+		sha256: "a".repeat(64),
+		includedRecordCount: 1,
+		retrievedAt: "2026-11-13T20:38:39.838Z"
+	};
 	const digest = fultonMunicipalDocumentDigest(document);
-	const serialized = serializeStoredStateSnapshot({ source, records: [record], documents: [document], sha256: digest, collectionIndexSha256: digest, retrievedAt: document.retrievedAt });
+	const serialized = serializeStoredStateSnapshot({
+		source,
+		records: [record],
+		documents: [document],
+		sha256: digest,
+		collectionIndexSha256: digest,
+		retrievedAt: document.retrievedAt
+	});
 	const restored = parseBundledStateSnapshot(source, serialized, "automatic");
 	assert.equal(restored.records[0]!.district, "DISTRICT 8 AT LARGE");
 	assert.equal(restored.records[0]!.office, "Board of Education Member - District 8 At Large");
 	assert.equal(restored.records[0]!.incumbent, true);
-	for (const change of [{ party: "Invented party" }, { scope: "statewide" }, { district: "District 8" }, { termYears: 4 }, { jurisdiction: "Fulton County" }, { voteLimit: 2 }]) {
+	for (const change of [
+		{ party: "Invented party" },
+		{ scope: "statewide" },
+		{ district: "District 8" },
+		{ termYears: 4 },
+		{ jurisdiction: "Fulton County" },
+		{ voteLimit: 2 }
+	]) {
 		const changed = JSON.parse(serialized);
 		Object.assign(changed.records[0], change);
 		assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify(changed), "automatic"));

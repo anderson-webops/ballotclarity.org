@@ -8,16 +8,18 @@ import process from "node:process";
 import { assertExternalStateDataDirectory, readBoundedStateDataBytes } from "./state-ballot-storage.js";
 import { containsControlCharacters } from "./text-validation.js";
 
-export const judicialEvaluationSources = [{
-	id: "ak-ajc-2026",
-	stateCode: "AK",
-	electionDate: "2026-11-03",
-	issuer: "Alaska Judicial Council",
-	rosterSourceId: "ak-doe-2026",
-	publicationDate: "2026-09-04",
-	documentUrls: ["https://ajc.alaska.gov/retention/current2026.html", "https://ajc.alaska.gov/retention/docs/pr_2026_ret_recommendations_UPDATED.pdf"],
-	maximumPage: 4,
-}] as const;
+export const judicialEvaluationSources = [
+	{
+		id: "ak-ajc-2026",
+		stateCode: "AK",
+		electionDate: "2026-11-03",
+		issuer: "Alaska Judicial Council",
+		rosterSourceId: "ak-doe-2026",
+		publicationDate: "2026-09-04",
+		documentUrls: ["https://ajc.alaska.gov/retention/current2026.html", "https://ajc.alaska.gov/retention/docs/pr_2026_ret_recommendations_UPDATED.pdf"],
+		maximumPage: 4,
+	}
+] as const;
 
 interface JudicialEvaluationRecord {
 	officialRecordId: string;
@@ -67,11 +69,33 @@ export function judicialEvaluationContentSha256(snapshot: JudicialEvaluationSnap
 export function parseJudicialEvaluationSnapshot(body: string, now = Date.now()): JudicialEvaluationSnapshot {
 	if (Buffer.byteLength(body) > 1024 * 1024) throw new Error("Judicial evaluation data exceeds its size limit.");
 	const value: unknown = JSON.parse(body);
-	if (!objectValue(value) || !exactKeys(value, ["schemaVersion", "type", "sourceId", "stateCode", "electionDate", "issuer", "publicationDate", "researchSha256", "roster", "documents", "records", "publicationReview"])) throw new Error("Judicial evaluation fields are invalid.");
+	if (!objectValue(value) || !exactKeys(value, [
+		"schemaVersion",
+		"type",
+		"sourceId",
+		"stateCode",
+		"electionDate",
+		"issuer",
+		"publicationDate",
+		"researchSha256",
+		"roster",
+		"documents",
+		"records",
+		"publicationReview"
+	])) {
+		throw new Error("Judicial evaluation fields are invalid.");
+	}
 	const data = value as unknown as JudicialEvaluationSnapshot;
 	const source = judicialEvaluationSources.find(source => source.id === data.sourceId);
 	if (!source || data.schemaVersion !== 1 || data.type !== "official-judicial-evaluations" || data.stateCode !== source.stateCode || data.electionDate !== source.electionDate || data.issuer !== source.issuer || data.publicationDate !== source.publicationDate || !validHash(data.researchSha256)) throw new Error("Judicial evaluations do not match their configured source and election.");
-	if (!objectValue(data.roster) || !exactKeys(data.roster, ["sourceId", "sha256", "retrievedAt", "recordCount"]) || data.roster.sourceId !== source.rosterSourceId || !validHash(data.roster.sha256) || !validInstant(data.roster.retrievedAt, now) || !Number.isSafeInteger(data.roster.recordCount) || data.roster.recordCount < 1 || data.roster.recordCount > 25_000) throw new Error("Judicial evaluations require an exact official roster binding.");
+	if (!objectValue(data.roster) || !exactKeys(data.roster, [
+		"sourceId",
+		"sha256",
+		"retrievedAt",
+		"recordCount"
+	]) || data.roster.sourceId !== source.rosterSourceId || !validHash(data.roster.sha256) || !validInstant(data.roster.retrievedAt, now) || !Number.isSafeInteger(data.roster.recordCount) || data.roster.recordCount < 1 || data.roster.recordCount > 25_000) {
+		throw new Error("Judicial evaluations require an exact official roster binding.");
+	}
 	if (!Array.isArray(data.documents) || data.documents.length !== source.documentUrls.length) throw new Error("Judicial evaluation documents are invalid.");
 	for (const [index, document] of data.documents.entries()) {
 		if (!objectValue(document) || !exactKeys(document, ["url", "sha256", "capturedAt"]) || document.url !== source.documentUrls[index] || !validHash(document.sha256) || !validInstant(document.capturedAt, now) || Date.parse(document.capturedAt) < Date.parse(source.publicationDate)) throw new Error("Judicial evaluation document provenance is invalid.");
@@ -79,10 +103,23 @@ export function parseJudicialEvaluationSnapshot(body: string, now = Date.now()):
 	if (!Array.isArray(data.records) || !data.records.length || data.records.length > 1000 || data.records.length > data.roster.recordCount) throw new Error("Judicial evaluation records are invalid.");
 	const identities = new Set<string>();
 	for (const record of data.records) {
-		if (!objectValue(record) || !exactKeys(record, ["officialRecordId", "officialName", "officialOffice", "officialScope", "officialSourceDistrictLabel", "councilDisplayName", "courtLabel", "recommendation", "performanceFinding", "criteriaCited", "sourcePage", "councilVote"])
-			|| typeof record.officialRecordId !== "string" || !/^[a-f\d]{24}$/u.test(record.officialRecordId) || identities.has(record.officialRecordId)
-			|| !validText(record.officialName) || !validText(record.officialOffice) || !/Judicial retention/iu.test(record.officialOffice) || !["statewide", "local"].includes(record.officialScope)
-			|| typeof record.officialSourceDistrictLabel !== "string" || record.officialSourceDistrictLabel.length > 300 || containsControlCharacters(record.officialSourceDistrictLabel) || !validText(record.councilDisplayName) || !validText(record.courtLabel)) {
+		if (!objectValue(record) || !exactKeys(record, [
+			"officialRecordId",
+			"officialName",
+			"officialOffice",
+			"officialScope",
+			"officialSourceDistrictLabel",
+			"councilDisplayName",
+			"courtLabel",
+			"recommendation",
+			"performanceFinding",
+			"criteriaCited",
+			"sourcePage",
+			"councilVote"
+		])
+		|| typeof record.officialRecordId !== "string" || !/^[a-f\d]{24}$/u.test(record.officialRecordId) || identities.has(record.officialRecordId)
+		|| !validText(record.officialName) || !validText(record.officialOffice) || !/Judicial retention/iu.test(record.officialOffice) || !["statewide", "local"].includes(record.officialScope)
+		|| typeof record.officialSourceDistrictLabel !== "string" || record.officialSourceDistrictLabel.length > 300 || containsControlCharacters(record.officialSourceDistrictLabel) || !validText(record.councilDisplayName) || !validText(record.courtLabel)) {
 			throw new Error("Judicial evaluation identities are invalid or duplicated.");
 		}
 		const expectedFinding = { "retain": "met-standards", "do-not-retain": "did-not-meet-standards", "not-made": "not-made" }[record.recommendation];
@@ -94,7 +131,14 @@ export function parseJudicialEvaluationSnapshot(body: string, now = Date.now()):
 		identities.add(record.officialRecordId);
 	}
 	const review = data.publicationReview;
-	if (!objectValue(review) || !exactKeys(review, ["status", "reviewer", "reviewedAt", "contentSha256"]) || !validHash(review.contentSha256) || review.contentSha256 !== judicialEvaluationContentSha256(data)) throw new Error("Judicial evaluation review must bind the exact content.");
+	if (!objectValue(review) || !exactKeys(review, [
+		"status",
+		"reviewer",
+		"reviewedAt",
+		"contentSha256"
+	]) || !validHash(review.contentSha256) || review.contentSha256 !== judicialEvaluationContentSha256(data)) {
+		throw new Error("Judicial evaluation review must bind the exact content.");
+	}
 	if (review.status === "unreviewed") {
 		if (review.reviewer !== null || review.reviewedAt !== null) throw new Error("Unreviewed judicial evaluations cannot carry publication approval.");
 	}
@@ -105,32 +149,47 @@ export function parseJudicialEvaluationSnapshot(body: string, now = Date.now()):
 }
 
 export function createJudicialEvaluationRepository(options: { dataDirectory?: string | null; now?: () => number } = {}): JudicialEvaluationRepository {
-	const directory = options.dataDirectory === undefined ? process.env.STATE_BALLOT_DATA_DIR || null : options.dataDirectory;
+	const directory = options.dataDirectory === undefined
+		? process.env.STATE_BALLOT_DATA_DIR || null
+		: options.dataDirectory;
 	if (directory) assertExternalStateDataDirectory(directory);
 	const now = options.now ?? Date.now;
-	return { async getEvaluation(roster, officialRecordId) {
-		const source = judicialEvaluationSources.find(source => source.stateCode === roster.source.stateCode && source.rosterSourceId === roster.source.id && source.electionDate === roster.source.electionDate);
-		if (!directory || !source || now() >= Date.parse(source.electionDate) + 2 * 86400000) return null;
-		let body: string;
-		try {
-			const canonicalDirectory = await realpath(directory);
-			assertExternalStateDataDirectory(canonicalDirectory);
-			body = (await readBoundedStateDataBytes(join(canonicalDirectory, `${source.id}.judicial-evaluations.json`), 1024 * 1024)).toString("utf8");
+	return {
+		async getEvaluation(roster, officialRecordId) {
+			const source = judicialEvaluationSources.find(source => source.stateCode === roster.source.stateCode && source.rosterSourceId === roster.source.id && source.electionDate === roster.source.electionDate);
+			if (!directory || !source || now() >= Date.parse(source.electionDate) + 2 * 86400000) return null;
+			let body: string;
+			try {
+				const canonicalDirectory = await realpath(directory);
+				assertExternalStateDataDirectory(canonicalDirectory);
+				body = (await readBoundedStateDataBytes(join(canonicalDirectory, `${source.id}.judicial-evaluations.json`), 1024 * 1024)).toString("utf8");
+			}
+			catch (error) {
+				if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+				throw error;
+			}
+			const data = parseJudicialEvaluationSnapshot(body, now());
+			if (data.publicationReview.status !== "approved") return null;
+			if (data.sourceId !== source.id || data.roster.sha256 !== roster.sha256 || data.roster.retrievedAt !== roster.retrievedAt || data.roster.recordCount !== roster.records.length) throw new Error("The official judicial roster changed; a new exact identity review is required.");
+			const officialRecords = new Map(roster.records.map(record => [record.id, record]));
+			for (const record of data.records) {
+				const official = officialRecords.get(record.officialRecordId);
+				if (!official || official.name !== record.officialName || official.office !== record.officialOffice || official.scope !== record.officialScope || (official.sourceDistrictLabel ?? "") !== record.officialSourceDistrictLabel) throw new Error("Judicial evaluation identity does not match the exact official record.");
+			}
+			const record = data.records.find(record => record.officialRecordId === officialRecordId);
+			if (!record) return null;
+			return {
+				officialRecordId,
+				stateCode: data.stateCode,
+				electionDate: data.electionDate,
+				issuer: data.issuer,
+				courtLabel: record.courtLabel,
+				recommendation: record.recommendation,
+				performanceFinding: record.performanceFinding,
+				criteriaCited: record.criteriaCited,
+				publicationDate: data.publicationDate,
+				source: { url: `${data.documents[1]!.url}#page=${record.sourcePage}`, capturedAt: data.documents[1]!.capturedAt }
+			};
 		}
-		catch (error) {
-			if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
-			throw error;
-		}
-		const data = parseJudicialEvaluationSnapshot(body, now());
-		if (data.publicationReview.status !== "approved") return null;
-		if (data.sourceId !== source.id || data.roster.sha256 !== roster.sha256 || data.roster.retrievedAt !== roster.retrievedAt || data.roster.recordCount !== roster.records.length) throw new Error("The official judicial roster changed; a new exact identity review is required.");
-		const officialRecords = new Map(roster.records.map(record => [record.id, record]));
-		for (const record of data.records) {
-			const official = officialRecords.get(record.officialRecordId);
-			if (!official || official.name !== record.officialName || official.office !== record.officialOffice || official.scope !== record.officialScope || (official.sourceDistrictLabel ?? "") !== record.officialSourceDistrictLabel) throw new Error("Judicial evaluation identity does not match the exact official record.");
-		}
-		const record = data.records.find(record => record.officialRecordId === officialRecordId);
-		if (!record) return null;
-		return { officialRecordId, stateCode: data.stateCode, electionDate: data.electionDate, issuer: data.issuer, courtLabel: record.courtLabel, recommendation: record.recommendation, performanceFinding: record.performanceFinding, criteriaCited: record.criteriaCited, publicationDate: data.publicationDate, source: { url: `${data.documents[1]!.url}#page=${record.sourcePage}`, capturedAt: data.documents[1]!.capturedAt } };
-	} };
+	};
 }

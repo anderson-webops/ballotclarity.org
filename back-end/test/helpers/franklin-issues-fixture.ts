@@ -12,7 +12,9 @@ export function franklinIssuesFixture(year = 2026) {
 		}
 	};
 	line("CERTIFIED QUESTIONS AND ISSUES", 180, 34);
-	line(`NOVEMBER ${year === 2026 ? 3 : 7}, ${year} GENERAL ELECTION`, 160, 51);
+	line(`NOVEMBER ${year === 2026
+		? 3
+		: 7}, ${year} GENERAL ELECTION`, 160, 51);
 	line(`Revised 9/4/${year}`, 270, 67);
 	for (const [index, label] of ["#", "Subdivision", "Purpose", "Rate"].entries()) line(label, [48, 120, 300, 480][index]!, 79);
 	line("#5", 45, 94);
@@ -29,6 +31,17 @@ export function franklinIssuesFixture(year = 2026) {
 	line("1 mill, continuing", 420, 164);
 	line("Page 1", 36, 741);
 	const rectangle = (left: number, top: number, right: number, bottom: number) => `<path d="M ${left} ${bottom} L ${right} ${bottom} L ${right} ${top} L ${left} ${top} Z M ${left} ${bottom}"/>`;
-	const svg = `<svg viewBox="0 0 612 792">${[30, 72, 247, 414, 586].map(left => rectangle(left - 0.25, 80, left + 0.25, 194)).join("")}${[80, 94, 164, 194].flatMap(top => [[30.25, 71.75], [72.25, 246.75], [247.25, 413.75], [414.25, 585.75]].map(([left, right]) => rectangle(left!, top - 0.25, right!, top + 0.25))).join("")}</svg>`;
-	return { schemaVersion: 1, type: "franklin-certified-issue-grid", bbox: `<html><doc><page width="612.000000" height="792.000000">${words.join("")}</page></doc></html>`, layout: `${printed.join("\n")}\f`, svg: [svg] };
+	const svg = `<svg viewBox="0 0 612 792">${[30, 72, 247, 414, 586].map(left => rectangle(left - 0.25, 80, left + 0.25, 194)).join("")}${[80, 94, 164, 194].flatMap(top => [
+		[30.25, 71.75],
+		[72.25, 246.75],
+		[247.25, 413.75],
+		[414.25, 585.75]
+	].map(([left, right]) => rectangle(left!, top - 0.25, right!, top + 0.25))).join("")}</svg>`;
+	return {
+		schemaVersion: 1,
+		type: "franklin-certified-issue-grid",
+		bbox: `<html><doc><page width="612.000000" height="792.000000">${words.join("")}</page></doc></html>`,
+		layout: `${printed.join("\n")}\f`,
+		svg: [svg]
+	};
 }

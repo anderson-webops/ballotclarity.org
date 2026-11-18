@@ -7,13 +7,42 @@ import { containsControlCharacters } from "./text-validation.js";
 
 interface Word { text: string; left: number; top: number; right: number; bottom: number }
 interface Line { text: string; left: number; top: number }
-const offices = ["Senator in Congress", "Governor", "Lieutenant Governor", "Secretary of State", "Attorney General", "General Treasurer", "Representative in Congress", "Senator in General Assembly", "Representative in General Assembly", "Town Council", "School Committee"];
-const parties = ["REPUBLICAN", "DEMOCRAT", "Independent", "LIBERTARIAN", "GREEN"];
+const offices = [
+	"Senator in Congress",
+	"Governor",
+	"Lieutenant Governor",
+	"Secretary of State",
+	"Attorney General",
+	"General Treasurer",
+	"Representative in Congress",
+	"Senator in General Assembly",
+	"Representative in General Assembly",
+	"Town Council",
+	"School Committee"
+];
+const parties = [
+	"REPUBLICAN",
+	"DEMOCRAT",
+	"Independent",
+	"LIBERTARIAN",
+	"GREEN"
+];
 const clean = (value: string) => value.replace(/\s+/gu, " ").trim();
-const watermarks = [{ text: "SA", left: -33.49, top: 667.797 }, { text: "M", left: 117.435, top: 573.553 }, { text: "PL", left: 211.678, top: 435.187 }, { text: "E", left: 350.045, top: 359.724 }];
+const watermarks = [
+	{ text: "SA", left: -33.49, top: 667.797 },
+	{ text: "M", left: 117.435, top: 573.553 },
+	{ text: "PL", left: 211.678, top: 435.187 },
+	{ text: "E", left: 350.045, top: 359.724 }
+];
 
 function pages(body: string): Word[][] {
-	if (Buffer.byteLength(body) > 4 * 1024 * 1024 || /<!ENTITY|<!DOCTYPE[^>]*\[/iu.test(body) || !body.trimEnd().endsWith("</html>") || [...body.matchAll(/<page\b/gu)].length !== [...body.matchAll(/<\/page>/gu)].length) throw new Error("The East Greenwich PDF is incomplete or exceeds its bounds.");
+	if (Buffer.byteLength(body) > 4 * 1024 * 1024 || /<!ENTITY|<!DOCTYPE[^>]*\[/iu.test(body) || !body.trimEnd().endsWith("</html>") || [
+		...body.matchAll(/<page\b/gu)
+	].length !== [
+		...body.matchAll(/<\/page>/gu)
+	].length) {
+		throw new Error("The East Greenwich PDF is incomplete or exceeds its bounds.");
+	}
 	const nodes = descendants(parseStateHtml(body), node => node.nodeName === "page");
 	if (nodes.length !== 2) throw new Error("The East Greenwich page count requires review.");
 	return nodes.map((page) => {
@@ -29,7 +58,13 @@ function pages(body: string): Word[][] {
 			for (const node of descendants(line, node => node.nodeName === "word")) {
 				visitedWords++;
 				const values = ["xmin", "xmax", "ymin", "ymax"].map(key => Number(attribute(node, key)));
-				const word = { text: stateHtmlText(node), left: values[0]!, right: values[1]!, top: values[2]!, bottom: values[3]! };
+				const word = {
+					text: stateHtmlText(node),
+					left: values[0]!,
+					right: values[1]!,
+					top: values[2]!,
+					bottom: values[3]!
+				};
 				if (values.some(value => !Number.isFinite(value)) || word.left >= word.right || word.top >= word.bottom || word.left < bounds[0]! - 0.02 || word.right > bounds[1]! + 0.02 || word.top < bounds[2]! - 0.02 || word.bottom > bounds[3]! + 0.02 || containsControlCharacters(word.text)) throw new Error("The East Greenwich word and line bounds disagree.");
 				if (word.bottom - word.top >= 20) {
 					const marker = watermarks.find(item => item.text === word.text && Math.abs(item.left - word.left) < 0.02 && Math.abs(item.top - word.top) < 0.02);
@@ -53,25 +88,79 @@ function lines(words: Word[]): Line[] {
 		if (!group) groups.push((group = []));
 		group.push(word);
 	}
-	return groups.map(group => ({ text: clean(group.sort((first, second) => first.left - second.left).map(word => word.text).join(" ")), left: group[0]!.left, top: group[0]!.top }));
+	return groups.map(group => ({
+		text: clean(group.sort((first, second) => first.left - second.left).map(word => word.text).join(" ")),
+		left: group[0]!.left,
+		top: group[0]!.top
+	}));
 }
 function record(source: StateBallotSource, name: string, office: string, party: string, district: string, designation: string): StateCandidateRecord {
 	const position = offices.indexOf(office);
-	const scope = position < 6 ? "statewide" : position === 6 ? "congressional" : position === 7 ? "state-senate" : position === 8 ? "state-house" : "local";
+	const scope = position < 6
+		? "statewide"
+		: position === 6
+			? "congressional"
+			: position === 7
+				? "state-senate"
+				: position === 8
+					? "state-house"
+					: "local";
 	if (position < 0 || !parties.includes(party) || !/^[\p{L}\p{M} .,'’/-]{3,180}$/u.test(name)) throw new Error("The East Greenwich candidate or party requires review.");
-	if (["congressional", "state-senate", "state-house"].includes(scope) ? !/^[1-9]\d{0,2}$/u.test(district) : district !== "") throw new Error("The East Greenwich office district requires review.");
-	const jurisdiction = scope === "local" ? "East Greenwich" : "";
-	return { id: createHash("sha256").update(JSON.stringify([source.id, office, scope, district, jurisdiction, name])).digest("hex").slice(0, 24), name, office, district, scope, status: "listed", party, ...(jurisdiction ? { jurisdiction } : {}), ballotDesignation: designation, sourceAreaLabel: "East Greenwich" };
+	if (["congressional", "state-senate", "state-house"].includes(scope)
+		? !/^[1-9]\d{0,2}$/u.test(district)
+		: district !== "") {
+		throw new Error("The East Greenwich office district requires review.");
+	}
+	const jurisdiction = scope === "local"
+		? "East Greenwich"
+		: "";
+	return {
+		id: createHash("sha256").update(JSON.stringify([
+			source.id,
+			office,
+			scope,
+			district,
+			jurisdiction,
+			name
+		])).digest("hex").slice(0, 24),
+		name,
+		office,
+		district,
+		scope,
+		status: "listed",
+		party,
+		...(jurisdiction
+			? { jurisdiction }
+			: {}),
+		ballotDesignation: designation,
+		sourceAreaLabel: "East Greenwich"
+	};
 }
 
 export function readEastGreenwichCandidateSample(source: StateBallotSource, body: string, precinct: string) {
 	if (source.stateCode !== "RI" || !/^20\d{2}-11-0[2-8]$/u.test(source.electionDate) || new Date(`${source.electionDate}T00:00:00Z`).getUTCDay() !== 2 || Number(source.electionDate.slice(0, 4)) % 2 || !/^09\d{2}$/u.test(precinct)) throw new Error("The East Greenwich election or precinct requires review.");
 	const parsed = pages(body);
 	const first = parsed[0]!;
-	const reverse = [[50, 230], [230, 415], [415, 605]].flatMap(([left, right]) => lines(parsed[1]!.filter(word => word.left >= left! && word.left < right!)));
-	const date = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${source.electionDate}T00:00:00Z`));
+	const reverse = [
+		[50, 230],
+		[230, 415],
+		[415, 605]
+	].flatMap(([left, right]) => lines(parsed[1]!.filter(word => word.left >= left! && word.left < right!)));
+	const date = new Intl.DateTimeFormat("en-US", {
+		month: "long",
+		day: "numeric",
+		year: "numeric",
+		timeZone: "UTC"
+	}).format(new Date(`${source.electionDate}T00:00:00Z`));
 	const heading = lines(first.filter(word => word.top < 200 && word.left < 480)).map(line => line.text);
-	if (heading.join("|") !== ["State of Rhode Island Official Ballot", "General Election", date, "East Greenwich"].join("|")) throw new Error("The East Greenwich election heading requires review.");
+	if (heading.join("|") !== [
+		"State of Rhode Island Official Ballot",
+		"General Election",
+		date,
+		"East Greenwich"
+	].join("|")) {
+		throw new Error("The East Greenwich election heading requires review.");
+	}
 	const districtLines = lines(first.filter(word => word.top < 200 && word.left >= 480)).map(line => line.text);
 	const districts = districtLines.slice(1).map((line, index) => new RegExp(`^${["Congressional", "Senate", "Representative"][index]} District ([1-9]\\d{0,2})$`, "u").exec(line)?.[1]);
 	if (districtLines.length !== 4 || districtLines[0] !== `Precinct ${precinct}` || districts.length !== 3 || districts.some(value => !value)) throw new Error("The East Greenwich header districts require review.");
@@ -81,7 +170,11 @@ export function readEastGreenwichCandidateSample(source: StateBallotSource, body
 	if (footer.filter(line => line === "Voting continues").length !== 1 || footer.filter(line => line === "on back").length !== 1) throw new Error("The East Greenwich continuation marker requires review.");
 	const records: StateCandidateRecord[] = [];
 	const observed = new Set<string>();
-	for (const [left, right] of [[50, 230], [230, 415], [415, 605]]) {
+	for (const [left, right] of [
+		[50, 230],
+		[230, 415],
+		[415, 605]
+	]) {
 		const column = lines(first.filter(word => word.top >= 200 && word.left >= left! && word.left < right!));
 		let office = "";
 		let district = "";
@@ -134,5 +227,12 @@ export function readEastGreenwichCandidateSample(source: StateBallotSource, body
 	}
 	if (new Set(records.map(item => item.id)).size !== records.length || records.length > 300) throw new Error("The East Greenwich candidate identities require review.");
 	records.sort((first, second) => offices.indexOf(first.office) - offices.indexOf(second.office));
-	return { records, precinct, congressionalDistrict: districts[0]!, senateDistrict: districts[1]!, houseDistrict: districts[2]!, pageCount: 2 };
+	return {
+		records,
+		precinct,
+		congressionalDistrict: districts[0]!,
+		senateDistrict: districts[1]!,
+		houseDistrict: districts[2]!,
+		pageCount: 2
+	};
 }

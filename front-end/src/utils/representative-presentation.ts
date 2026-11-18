@@ -24,7 +24,9 @@ export interface RepresentativePresentation {
 
 export function resolveRepresentativeContentSummary(value: string | null | undefined) {
 	const summary = value?.trim() ?? "";
-	return /^(?:Matched from |Ballot Clarity attached |Congress\.gov attached |Congress\.gov confirmed |Congress\.gov lists |.+ is linked here through area results)/u.test(summary) || /Ballot Clarity (?:can attach|keeps available)|local officeholder layer/u.test(summary) ? "" : summary;
+	return /^(?:Matched from |Ballot Clarity attached |Congress\.gov attached |Congress\.gov confirmed |Congress\.gov lists |.+ is linked here through area results)/u.test(summary) || /Ballot Clarity (?:can attach|keeps available)|local officeholder layer/u.test(summary)
+		? ""
+		: summary;
 }
 
 export function substantiveBiography(person: Pick<PersonProfile, "biography"> | null | undefined) {
@@ -38,8 +40,12 @@ export function resolveRepresentativePresentation(
 	const classification = classifyRepresentative({
 		districtLabel: representative.districtLabel,
 		governmentLevel: representative.governmentLevel,
-		officeSought: "officeSought" in representative ? representative.officeSought : representative.officeDisplayLabel,
-		officeTitle: "officeTitle" in representative ? representative.officeTitle : undefined,
+		officeSought: "officeSought" in representative
+			? representative.officeSought
+			: representative.officeDisplayLabel,
+		officeTitle: "officeTitle" in representative
+			? representative.officeTitle
+			: undefined,
 		officeType: representative.officeType,
 		stateName,
 	});

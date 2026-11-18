@@ -78,7 +78,13 @@ export function iowaCountyNativeFixture(
 				"YES",
 				"NO"
 			],
-			["Public Measures", "Constitutional Amendment 1", "Shall the following amendment be adopted?", "YES", "NO"]
+			[
+				"Public Measures",
+				"Constitutional Amendment 1",
+				"Shall the following amendment be adopted?",
+				"YES",
+				"NO"
+			]
 		]
 	];
 	if (county === "Woodbury") {
@@ -90,20 +96,28 @@ export function iowaCountyNativeFixture(
 					if (line === "Jordan Example REP") return ["Jordan Example"];
 					if (line === "Casey Sample") return [line, "Republican Party"];
 					const partisan = /^(.+) (REP|DEM)$/u.exec(line);
-					return partisan ? [partisan[1]!, printedParties[partisan[2]!]!] : [line];
+					return partisan
+						? [partisan[1]!, printedParties[partisan[2]!]!]
+						: [line];
 				});
 			}
 		}
 	}
 	const escape = (value: string) =>
 		value.replace(/&/gu, "&amp;").replace(/</gu, "&lt;").replace(/>/gu, "&gt;").replace(/"/gu, "&quot;");
-	const starts = county === "Monona" ? [24, 216, 408] : [38, 220, 400];
+	const starts = county === "Monona"
+		? [24, 216, 408]
+		: [38, 220, 400];
 	const word = (value: string, left: number, top: number, width = 160) =>
 		`<word xMin="${left}" xMax="${left + width}" yMin="${top}" yMax="${top + 10}">${escape(value)}</word>`;
-	const bbox = `<doc>${columns.map((page, pageIndex) => `<page width="612" height="1008">${pageIndex === 0 ? word(title, 24, 60) : ""}${page.map((column, columnIndex) => column.map((line, lineIndex) => word(line, starts[columnIndex]!, 300 + lineIndex * 24)).join("")).join("")}</page>`).join("")}</doc>`;
+	const bbox = `<doc>${columns.map((page, pageIndex) => `<page width="612" height="1008">${pageIndex === 0
+		? word(title, 24, 60)
+		: ""}${page.map((column, columnIndex) => column.map((line, lineIndex) => word(line, starts[columnIndex]!, 300 + lineIndex * 24)).join("")).join("")}</page>`).join("")}</doc>`;
 	const layout = `${title}\n${columns.flat(2).join("\n")}`;
 	const document: IowaSampleDocument = {
-		url: `https://${county === "Monona" ? "mononacountyiowa.gov" : "elections.woodburycountyiowa.gov"}/files/sample_ballots/example_style_1.pdf`,
+		url: `https://${county === "Monona"
+			? "mononacountyiowa.gov"
+			: "elections.woodburycountyiowa.gov"}/files/sample_ballots/example_style_1.pdf`,
 		style,
 		sha256: createHash("sha256").update("synthetic PDF fixture").digest("hex"),
 		retrievedAt: "2026-11-06T20:00:00.000Z",

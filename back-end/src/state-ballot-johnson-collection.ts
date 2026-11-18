@@ -57,7 +57,10 @@ export async function fetchJohnsonNativeCapture(source: StateBallotSource, disco
 	const lockPath = join(directory, `${source.id}.lock`);
 	const lock = await open(lockPath, "wx", 0o600);
 	try {
-		await lock.writeFile(JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }));
+		await lock.writeFile(JSON.stringify({
+			pid: process.pid,
+			startedAt: new Date().toISOString()
+		}));
 		await lock.sync();
 		return await collect(source, discovery, directory, options);
 	}
@@ -98,13 +101,23 @@ async function collect(source: StateBallotSource, discovery: string, directory: 
 	const resources: JohnsonBallotResource[] = [];
 	const resource = async (url: string) => {
 		await wait(delay);
-		const response = await request(url, { allowedHosts: [new URL(url).hostname], maxBytes: 2 * 1024 * 1024, timeoutMs: 25000 });
+		const response = await request(url, {
+			allowedHosts: [new URL(url).hostname],
+			maxBytes: 2 * 1024 * 1024,
+			timeoutMs: 25000
+		});
 		if (response.status !== 200 && !(url === "https://gis.johnsoncountyiowa.gov/robots.txt" && response.status === 404 && response.body.length === 0)) throw new Error("The Johnson County resource request failed; retain accepted evidence.");
 		const body = response.body.toString("utf8");
 		if (body.includes("\uFFFD") || Buffer.byteLength(body) > 2 * 1024 * 1024) throw new Error("The Johnson County resource encoding or bounds require review.");
 		const sha256 = johnsonBallotHash(body);
 		const old = previousEvidence?.resources.find(item => item.url === url && item.sha256 === sha256 && item.body === body);
-		const item = { url, status: response.status, body, sha256, retrievedAt: old?.retrievedAt ?? new Date(now()).toISOString() };
+		const item = {
+			url,
+			status: response.status,
+			body,
+			sha256,
+			retrievedAt: old?.retrievedAt ?? new Date(now()).toISOString()
+		};
 		resources.push(item);
 		return item;
 	};
@@ -129,14 +142,20 @@ async function collect(source: StateBallotSource, discovery: string, directory: 
 		if (previousEvidence) throw new Error("The accepted Johnson County samples disappeared; retain the accepted capture.");
 		return discovery;
 	}
-	const executable = options.extract ? undefined : await resolveStateBallotPdfExtractor();
+	const executable = options.extract
+		? undefined
+		: await resolveStateBallotPdfExtractor();
 	const extract = options.extract ?? ((bytes: Buffer, format: "raw" | "layout") => extractStateBallotPdfText(bytes, executable!, 12000, format, 12));
 	const documents: JohnsonSampleText[] = [];
 	let totalBytes = 0;
 	for (const url of inventory.urls) {
 		if (!robots.allowed(url)) throw new Error("The county robots policy excludes this sample ballot.");
 		await wait(delay);
-		const response = await request(url, { allowedHosts: ["johnsoncountyiowa.gov"], maxBytes: 12 * 1024 * 1024, timeoutMs: 25000 });
+		const response = await request(url, {
+			allowedHosts: ["johnsoncountyiowa.gov"],
+			maxBytes: 12 * 1024 * 1024,
+			timeoutMs: 25000
+		});
 		totalBytes += response.body.length;
 		if (response.status !== 200 || response.contentType !== "application/pdf" || response.body.subarray(0, 5).toString() !== "%PDF-" || response.body.length > 12 * 1024 * 1024 || totalBytes > 128 * 1024 * 1024) throw new Error("The Johnson County PDF inventory exceeds its reviewed transport bounds.");
 		const sha256 = johnsonBallotHash(response.body);
@@ -151,11 +170,22 @@ async function collect(source: StateBallotSource, discovery: string, directory: 
 		if (stored && (!stored.equals(response.body) || johnsonBallotHash(stored) !== sha256)) throw new Error("The retained Johnson County PDF is inconsistent.");
 		if (!stored) await atomicWrite(directory, filename, response.body);
 		const old = previousEvidence?.documents.find(document => document.url === url && document.sha256 === sha256);
-		const document = old ?? { url, sha256, retrievedAt: new Date(now()).toISOString(), raw: await extract(response.body, "raw"), layout: await extract(response.body, "layout") };
+		const document = old ?? {
+			url,
+			sha256,
+			retrievedAt: new Date(now()).toISOString(),
+			raw: await extract(response.body, "raw"),
+			layout: await extract(response.body, "layout")
+		};
 		documents.push(document);
 	}
 	const ballots = readJohnsonBallotEvidence(source, { schemaVersion: 1, resources, documents }, page.body, now());
-	const body = JSON.stringify({ schemaVersion: 2, type: "iowa-johnson-candidate-capture", discovery: JSON.parse(discovery), ballots });
+	const body = JSON.stringify({
+		schemaVersion: 2,
+		type: "iowa-johnson-candidate-capture",
+		discovery: JSON.parse(discovery),
+		ballots
+	});
 	if (Buffer.byteLength(body) > 12 * 1024 * 1024) throw new Error("The Johnson County complete capture exceeds its size bound.");
 	const accepted = parseIowaJohnsonCandidateCapture(source, body, createStateCandidateRecord, now(), previous);
 	if (previous && previous.records.some(record => !accepted.records.some(item => item.id === record.id))) throw new Error("An accepted Johnson County candidate disappeared; retain the prior capture.");

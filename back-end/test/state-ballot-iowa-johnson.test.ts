@@ -23,9 +23,24 @@ const indexFixture = readFileSync(new URL("./fixtures/iowa-johnson-index.html", 
 const retrievedAt = "2026-10-26T03:00:00.000Z";
 const now = Date.parse("2026-10-26T05:00:00.000Z");
 const hash = (body: string) => createHash("sha256").update(body).digest("hex");
-const page = (body: string, url: string, clock = retrievedAt) => ({ url, body, sha256: hash(body), retrievedAt: clock });
+function page(body: string, url: string, clock = retrievedAt) {
+	return {
+		url,
+		body,
+		sha256: hash(body),
+		retrievedAt: clock
+	};
+}
 function capture(body = fixture, index = indexFixture, clock = retrievedAt, url = source.pageUrl) {
-	return JSON.stringify({ schemaVersion: 1, type: "iowa-johnson-candidate-capture", policies: iowaJohnsonPolicyReceipts, index: page(index, iowaJohnsonDiscoveryUrl, clock), pages: [page(body, url, clock)] });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "iowa-johnson-candidate-capture",
+		policies: iowaJohnsonPolicyReceipts,
+		index: page(index, iowaJohnsonDiscoveryUrl, clock),
+		pages: [
+			page(body, url, clock)
+		]
+	});
 }
 const read = (body = fixture) => readIowaJohnsonCandidatePage(source, body, createStateCandidateRecord);
 const future = (body: string) => body.replaceAll("2026", "2028").replaceAll("November 3", "November 7").replaceAll("november-3-", "november-7-");
@@ -35,7 +50,19 @@ test("Johnson County supplies 102 candidates while keeping six measures, nine em
 	const result = read();
 	assert.equal(result.records.length, 102);
 	assert.equal(result.records.filter(isActiveStateCandidateRecord).length, 102);
-	assert.deepEqual(Object.fromEntries(["statewide", "congressional", "state-senate", "state-house", "local"].map(scope => [scope, result.records.filter(record => record.scope === scope).length])), { "statewide": 18, "congressional": 3, "state-senate": 2, "state-house": 9, "local": 70 });
+	assert.deepEqual(Object.fromEntries([
+		"statewide",
+		"congressional",
+		"state-senate",
+		"state-house",
+		"local"
+	].map(scope => [scope, result.records.filter(record => record.scope === scope).length])), {
+		"statewide": 18,
+		"congressional": 3,
+		"state-senate": 2,
+		"state-house": 9,
+		"local": 70
+	});
 	assert.equal(result.emptyOffices.length, 9);
 	assert.equal(result.questions.length, 6);
 	assert.equal(result.excludedOffices.length, 1);
@@ -83,7 +110,9 @@ test("Addresses, contact numbers and protected email links remain outside candid
 
 test("Offered-date discovery ignores the historical results link and binds every current publication", () => {
 	const discovery = readIowaJohnsonDiscovery(capture(), now);
-	assert.deepEqual(discovery.elections, [{ electionId: null, electionDate: "2026-11-03", pageUrl: source.pageUrl }]);
+	assert.deepEqual(discovery.elections, [
+		{ electionId: null, electionDate: "2026-11-03", pageUrl: source.pageUrl }
+	]);
 	const catalog = discoverStateBallotElectionCycles(capture(), source.id, now);
 	assert.deepEqual(stateBallotCycleSources(catalog, now), []);
 	assert.equal(getStateBallotCycleFamily(source.id).discoveryUrl, iowaJohnsonDiscoveryUrl);
@@ -91,9 +120,18 @@ test("Offered-date discovery ignores the historical results link and binds every
 	const value = JSON.parse(capture());
 	value.pages = [];
 	assert.throws(() => readIowaJohnsonDiscovery(JSON.stringify(value), now), /contract/u);
-	value.pages = [page(fixture, source.pageUrl), page(fixture, source.pageUrl)];
+	value.pages = [
+		page(fixture, source.pageUrl),
+		page(fixture, source.pageUrl)
+	];
 	assert.throws(() => readIowaJohnsonDiscovery(JSON.stringify(value), now), /incomplete/u);
-	assert.throws(() => parseStateBallotCycleCatalog({ ...catalog, elections: [...catalog.elections, ...catalog.elections] }, now), /duplicated/u);
+	assert.throws(() => parseStateBallotCycleCatalog({
+		...catalog,
+		elections: [
+			...catalog.elections,
+			...catalog.elections
+		]
+	}, now), /duplicated/u);
 });
 
 test("Future published pages reuse the family and explicit presidential tickets without treating synthetic names as evidence", () => {
@@ -147,23 +185,39 @@ test("A changed access policy stops the ordinary pinned transport before candida
 		return "User-agent: *\nDisallow: /\n";
 	}), /policy requires review/u);
 	assert.deepEqual(requests, ["https://johnsoncountyiowa.gov/robots.txt"]);
-	await assert.rejects(fetchIowaJohnsonCycleDiscovery({ requestText: async () => {
-		throw new Error("publisher unavailable");
-	}, wait: async () => {} }), /publisher unavailable/u);
-	await assert.rejects(fetchIowaJohnsonCandidateCapture(source, { discovery: capture(), now: () => now }), /external Johnson County collection evidence directory/u);
+	await assert.rejects(fetchIowaJohnsonCycleDiscovery({
+		requestText: async () => {
+			throw new Error("publisher unavailable");
+		},
+		wait: async () => {}
+	}), /publisher unavailable/u);
+	await assert.rejects(fetchIowaJohnsonCandidateCapture(source, {
+		discovery: capture(),
+		now: () => now
+	}), /external Johnson County collection evidence directory/u);
 });
 
 test("The scheduled family persists current data, preserves cached clocks and validates every metadata field on cold reads", async () => {
 	const directory = await mkdtemp(join(tmpdir(), "ballot-ia-johnson-"));
 	try {
-		const options = { familyId: source.id, catalogPath: join(directory, "cycles.json"), dataDirectory: directory, fetchDiscovery: async () => capture(), fetchCandidates: async () => capture(), now: () => now };
+		const options = {
+			familyId: source.id,
+			catalogPath: join(directory, "cycles.json"),
+			dataDirectory: directory,
+			fetchDiscovery: async () => capture(),
+			fetchCandidates: async () => capture(),
+			now: () => now
+		};
 		const first = await syncStateBallotCycles(options);
 		assert.equal(first.results[0]!.status, "available");
 		assert.equal(first.results[0]!.records, 102);
 		assert.equal(first.results[0]!.imported, true);
-		const second = await syncStateBallotCycles({ ...options, fetchCandidates: async () => {
-			throw new Error("unchanged data must remain cached");
-		} });
+		const second = await syncStateBallotCycles({
+			...options,
+			fetchCandidates: async () => {
+				throw new Error("unchanged data must remain cached");
+			}
+		});
 		assert.equal(second.results[0]!.status, "available");
 		assert.equal(second.results[0]!.imported, false);
 		assert.equal(second.results[0]!.retrievedAt, first.results[0]!.retrievedAt);
@@ -174,11 +228,26 @@ test("The scheduled family persists current data, preserves cached clocks and va
 		const corrupt = JSON.parse(serialized);
 		corrupt.records[0].voteLimit = 0;
 		assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify(corrupt), "automatic"), /vote limit/u);
-		const repository = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => now, fetchText: async () => {
-			throw new Error("cold read must not request publisher");
-		} });
+		const repository = createStateBallotRepository({
+			sources: [source],
+			dataDirectory: directory,
+			now: () => now,
+			fetchText: async () => {
+				throw new Error("cold read must not request publisher");
+			}
+		});
 		assert.equal((await repository.getSnapshot("IA", source.id))!.records.length, 102);
-		const preview = buildStateBallotPreview(snapshot, { districtMatches: [{ id: "cd-1", districtType: "congressional", districtCode: "1", label: "Congressional District 1", sourceSystem: "U.S. Census Geocoder" }] });
+		const preview = buildStateBallotPreview(snapshot, {
+			districtMatches: [
+				{
+					id: "cd-1",
+					districtType: "congressional",
+					districtCode: "1",
+					label: "Congressional District 1",
+					sourceSystem: "U.S. Census Geocoder"
+				}
+			]
+		});
 		assert.equal(preview!.candidateCount, 21);
 		assert.ok(!preview!.contests.some(contest => contest.candidates.some(candidate => candidate.name === "Adam Brandt")));
 	}
@@ -189,30 +258,59 @@ test("The scheduled family persists current data, preserves cached clocks and va
 
 test("County preference uses a verified Johnson County match and preserves unrelated, approximate and unavailable fallbacks", async (context) => {
 	context.mock.method(Date, "now", () => now);
-	const snapshot = { source, ...parseIowaJohnsonCandidateCapture(source, capture(), createStateCandidateRecord, now) };
+	const snapshot = {
+		source,
+		...parseIowaJohnsonCandidateCapture(source, capture(), createStateCandidateRecord, now)
+	};
 	const requested: Array<string | undefined> = [];
-	const repository: StateBallotRepository = { sources: [source], getSnapshot: async (_state, id) => {
-		requested.push(id);
-		return id === source.id ? snapshot : null;
-	} };
-	const lookup = (labels: string[]) => ({ result: "resolved", inputKind: "zip", location: { state: "Iowa" }, districtMatches: labels.map(label => ({ id: label, label, districtType: "county", districtCode: "103", sourceSystem: "U.S. Census Geocoder" })) }) as LocationLookupResponse;
+	const repository: StateBallotRepository = {
+		sources: [source],
+		getSnapshot: async (_state, id) => {
+			requested.push(id);
+			return id === source.id
+				? snapshot
+				: null;
+		}
+	};
+	const lookup = (labels: string[]) => ({
+		result: "resolved",
+		inputKind: "zip",
+		location: { state: "Iowa" },
+		districtMatches: labels.map(label => ({
+			id: label,
+			label,
+			districtType: "county",
+			districtCode: "103",
+			sourceSystem: "U.S. Census Geocoder"
+		}))
+	}) as LocationLookupResponse;
 	const resolved = await attachStateBallotPreview(lookup(["Johnson County"]), repository);
 	assert.equal(requested[0], source.id);
 	assert.equal(resolved.ballotContentPreviews![0]!.id, source.id);
 	assert.equal(resolved.ballotContentPreviews![0]!.candidateCount, 18);
-	for (const labels of [["Story County"], ["Johnson County", "Story County"], []]) {
+	for (const labels of [
+		["Story County"],
+		["Johnson County", "Story County"],
+		[]
+	]) {
 		requested.length = 0;
 		await attachStateBallotPreview(lookup(labels), repository);
 		assert.deepEqual(requested, [undefined]);
 	}
 	requested.length = 0;
-	await attachStateBallotPreview({ ...lookup(["Johnson County"]), detectedFromIp: true }, repository);
+	await attachStateBallotPreview({
+		...lookup(["Johnson County"]),
+		detectedFromIp: true
+	}, repository);
 	assert.deepEqual(requested, [undefined]);
 	const failed: Array<string | undefined> = [];
-	await attachStateBallotPreview(lookup(["Johnson County"]), { ...repository, getSnapshot: async (_state, id) => {
-		failed.push(id);
-		return null;
-	} });
+	await attachStateBallotPreview(lookup(["Johnson County"]), {
+		...repository,
+		getSnapshot: async (_state, id) => {
+			failed.push(id);
+			return null;
+		}
+	});
 	assert.deepEqual(failed, [source.id, undefined]);
 });
 
@@ -223,7 +321,13 @@ test("Explicit future waiting pages persist as pending and automatically import 
 		const futureUrl = source.pageUrl.replace("november-3-2026", "november-7-2028");
 		const pendingBody = future(fixture).replace(/<dl[\s\S]+<\/dl>/u, "<p>Candidate information will be posted</p>");
 		const pending = capture(pendingBody, future(indexFixture), "2028-10-26T03:00:00.000Z", futureUrl);
-		const options = { familyId: source.id, catalogPath: join(directory, "cycles.json"), dataDirectory: directory, fetchDiscovery: async () => pending, now: () => futureNow };
+		const options = {
+			familyId: source.id,
+			catalogPath: join(directory, "cycles.json"),
+			dataDirectory: directory,
+			fetchDiscovery: async () => pending,
+			now: () => futureNow
+		};
 		const first = await syncStateBallotCycles(options);
 		assert.equal(first.results[0]!.status, "awaiting-records");
 		assert.equal(first.results[0]!.imported, false);
@@ -231,13 +335,21 @@ test("Explicit future waiting pages persist as pending and automatically import 
 		assert.equal(await createStateBallotStorage(directory).read(futureSource), null);
 		assert.ok(await createStateBallotStorage(directory).readPending(futureSource, futureNow));
 		const filled = capture(future(fixture), future(indexFixture), "2028-10-26T03:00:00.000Z", futureUrl);
-		const second = await syncStateBallotCycles({ ...options, fetchDiscovery: async () => filled });
+		const second = await syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => filled
+		});
 		assert.equal(second.results[0]!.status, "available");
 		assert.equal(second.results[0]!.records, 102);
 		assert.equal(second.results[0]!.imported, true);
-		const reader = createStateBallotRepository({ sources: [futureSource], dataDirectory: directory, now: () => futureNow, fetchText: async () => {
-			throw new Error("Accepted future records must survive a cold read.");
-		} });
+		const reader = createStateBallotRepository({
+			sources: [futureSource],
+			dataDirectory: directory,
+			now: () => futureNow,
+			fetchText: async () => {
+				throw new Error("Accepted future records must survive a cold read.");
+			}
+		});
 		assert.equal((await reader.getSnapshot("IA", futureSource.id))!.records.length, 102);
 		assert.equal(reader.isAwaitingRecords!(futureSource.id), false);
 	}

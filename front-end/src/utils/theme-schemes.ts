@@ -334,7 +334,9 @@ export const defaultThemeScheme = defaultThemeSchemeDefinition.id;
 export const themeSchemeOptions: readonly ThemeSchemeOption[] = themeSchemeDefinitions.map(option => ({
 	description: option.description,
 	id: option.id,
-	isDefault: isDefaultThemeSchemeDefinition(option) ? option.isDefault : undefined,
+	isDefault: isDefaultThemeSchemeDefinition(option)
+		? option.isDefault
+		: undefined,
 	label: option.label,
 	swatches: {
 		dark: createThemeSwatch(option.modes.dark),
@@ -349,11 +351,15 @@ export function isDarkThemeValue(value: string) {
 }
 
 export function getThemeTogglePreference(value: string): ThemeValue {
-	return isDarkThemeValue(value) ? "light" : "dark";
+	return isDarkThemeValue(value)
+		? "light"
+		: "dark";
 }
 
 export function normalizeThemeScheme(value?: string | null): ThemeSchemeId {
-	return isThemeSchemeId(value) ? value : defaultThemeScheme;
+	return isThemeSchemeId(value)
+		? value
+		: defaultThemeScheme;
 }
 
 export function isThemeSchemeId(value?: string | null): value is ThemeSchemeId {

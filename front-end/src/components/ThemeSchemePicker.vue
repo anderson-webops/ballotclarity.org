@@ -21,7 +21,9 @@ const panelRef = ref<HTMLElement | null>(null);
 const triggerRef = ref<HTMLElement | null>(null);
 const panelStyle = ref<Record<string, string>>({});
 const isDark = computed(() => isDarkThemeValue(colorMode.value));
-const currentModeLabel = computed(() => hasMounted.value ? (isDark.value ? "Dark" : "Light") : "Mode");
+const currentModeLabel = computed(() => hasMounted.value
+	? (isDark.value ? "Dark" : "Light")
+	: "Mode");
 const panelAlignment = computed(() => props.panelAlign ?? props.align);
 
 function toggleOpen() {

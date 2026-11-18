@@ -3,8 +3,25 @@ import test from "node:test";
 import { inspectFairbanksPdfGeometry } from "../src/fairbanks-pdf-geometry.js";
 
 function document(kind: "sample" | "notice" = "sample") {
-	const media = kind === "sample" ? [0, 0, 612, 1008] : [0, 0, 792, 792];
-	return { pages: [{ object: "1 0 R" }], qpdf: [{}, { "obj:1 0 R": { value: { "/Type": "/Page", "/Parent": "2 0 R" } }, "obj:2 0 R": { value: { "/Type": "/Pages", "/MediaBox": media } } }] };
+	const media = kind === "sample"
+		? [0, 0, 612, 1008]
+		: [0, 0, 792, 792];
+	return {
+		pages: [
+			{ object: "1 0 R" }
+		],
+		qpdf: [
+			{},
+			{
+				"obj:1 0 R": {
+					value: { "/Type": "/Page", "/Parent": "2 0 R" }
+				},
+				"obj:2 0 R": {
+					value: { "/Type": "/Pages", "/MediaBox": media }
+				}
+			}
+		]
+	};
 }
 
 test("Fairbanks metadata resolves inherited reviewed media and unchanged crop geometry", () => {
@@ -19,7 +36,18 @@ test("Fairbanks metadata resolves inherited reviewed media and unchanged crop ge
 });
 
 test("Cropped, rotated, scaled and unfamiliar Fairbanks pages remain held", () => {
-	for (const [key, value] of [["/CropBox", [95, 0, 612, 1008]], ["/Rotate", 90], ["/UserUnit", 2], ["/MediaBox", [0, 0, 600, 1008]]] as const) {
+	for (const [key, value] of [
+		[
+			"/CropBox",
+			[95, 0, 612, 1008]
+		],
+		["/Rotate", 90],
+		["/UserUnit", 2],
+		[
+			"/MediaBox",
+			[0, 0, 600, 1008]
+		]
+	] as const) {
 		const data = document();
 		Object.assign(data.qpdf[1]!["obj:2 0 R"]!.value, { [key]: value });
 		assert.throws(() => inspectFairbanksPdfGeometry(JSON.stringify(data), "sample"), /geometry requires review/u);

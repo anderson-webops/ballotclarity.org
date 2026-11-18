@@ -81,7 +81,9 @@ function defaultPublicSourceFileDirectory() {
 export function createSourceAssetStore(options: SourceAssetStoreOptions = {}) {
 	const configuredBaseUrl = (process.env.SOURCE_ASSET_BASE_URL || "").trim();
 	const mode: SourceAssetMode = configuredBaseUrl ? "external-base" : "public-mirror";
-	const baseUrl = configuredBaseUrl ? parseSourceAssetBaseUrl(configuredBaseUrl) : null;
+	const baseUrl = configuredBaseUrl
+		? parseSourceAssetBaseUrl(configuredBaseUrl)
+		: null;
 	const publicSourceFileDirectory = options.publicSourceFileDirectory === undefined
 		? defaultPublicSourceFileDirectory()
 		: options.publicSourceFileDirectory;

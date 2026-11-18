@@ -31,12 +31,17 @@ export function analyzeAlabamaObjects(objects: string, input: AlabamaSourceIdent
 if (parentPort) {
 	try {
 		const input = workerData as { objects: string; input: AlabamaSourceIdentity };
-		parentPort.postMessage({ ok: true, ...analyzeAlabamaObjects(input.objects, input.input) });
+		parentPort.postMessage({
+			ok: true,
+			...analyzeAlabamaObjects(input.objects, input.input)
+		});
 	}
 	catch (error) {
 		parentPort.postMessage({
 			ok: false,
-			error: error instanceof Error ? error.message : "The Alabama native worker failed closed."
+			error: error instanceof Error
+				? error.message
+				: "The Alabama native worker failed closed."
 		});
 	}
 }

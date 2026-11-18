@@ -22,7 +22,9 @@ async function main() {
 	catch (error) {
 		logger.error("launch_directory.sync_failed", {
 			error: sanitizeLogText(
-				error instanceof Error ? error.message : "Unable to sync launch directory snapshot.",
+				error instanceof Error
+					? error.message
+					: "Unable to sync launch directory snapshot.",
 				512,
 			),
 		});

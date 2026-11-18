@@ -1,5 +1,7 @@
 export function cambridgeFixture(year = 2026) {
-	const date = year === 2028 ? `November 7, ${year}` : `November 3, ${year}`;
+	const date = year === 2028
+		? `November 7, ${year}`
+		: `November 3, ${year}`;
 	const header = `${date} State Election\nCandidates in Cambridge Districts\n`;
 	return `${header}Senator in Congress
         SAMPLE SENATOR, 1 Example Rd., Example, Democratic

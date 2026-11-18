@@ -58,7 +58,9 @@ test("Maui future cycles wait for their own evidence and then reuse the same pip
 	const first = await runMauiMeasureAutomation(source.planPath, { now: source.now });
 	await source.seed("2030");
 	const held = await runMauiMeasureAutomation(source.planPath, { now: source.now });
-	assert.deepEqual(held.issues, [{ resolution: null, reason: "election-review-required" }]);
+	assert.deepEqual(held.issues, [
+		{ resolution: null, reason: "election-review-required" }
+	]);
 	assert.equal(held.lastPrepared?.electionDate, "2028-11-07");
 	await source.reviewCurrent();
 	const future = await runMauiMeasureAutomation(source.planPath, { now: source.now });
@@ -73,7 +75,9 @@ test("Maui missing resolution evidence remains an explicit review exception rath
 	const result = await runMauiMeasureAutomation(source.planPath, { now: source.now });
 	assert.equal(result.status, "review");
 	assert.equal(result.lastPrepared, null);
-	assert.deepEqual(result.issues, [{ resolution: "28-2", reason: "resolution-evidence-required" }]);
+	assert.deepEqual(result.issues, [
+		{ resolution: "28-2", reason: "resolution-evidence-required" }
+	]);
 }));
 
 test("Maui changed input bytes fail closed before reuse and preserve the prior output reference", async () => isolated(async (_directory, source) => {
@@ -89,12 +93,15 @@ test("Maui failed native persistence preserves the earlier prepared guide and re
 	const first = await runMauiMeasureAutomation(source.planPath, { now: source.now });
 	source.advance(1000);
 	await source.reviewCurrent();
-	await assert.rejects(runMauiMeasureAutomation(source.planPath, { now: source.now, prepare: async (path) => {
-		const plan = JSON.parse(await readFile(path, "utf8"));
-		await mkdir(plan.outputDirectory);
-		await writeFile(join(plan.outputDirectory, "partial.json"), "partial derivative");
-		throw new Error("controlled persistence failure");
-	} }), /controlled persistence/u);
+	await assert.rejects(runMauiMeasureAutomation(source.planPath, {
+		now: source.now,
+		prepare: async (path) => {
+			const plan = JSON.parse(await readFile(path, "utf8"));
+			await mkdir(plan.outputDirectory);
+			await writeFile(join(plan.outputDirectory, "partial.json"), "partial derivative");
+			throw new Error("controlled persistence failure");
+		}
+	}), /controlled persistence/u);
 	assert.deepEqual((await readMauiPreparationRun(source.plan.preparationDirectory, source.now()))?.lastPrepared, first.lastPrepared);
 	assert.equal((await readdir(source.plan.preparationDirectory)).filter(name => name.startsWith("maui-prepared-")).length, 1);
 	assert.equal((await runMauiMeasureAutomation(source.planPath, { now: source.now })).prepared, true);
@@ -102,9 +109,13 @@ test("Maui failed native persistence preserves the earlier prepared guide and re
 
 test("Maui collection failure retains prior native output without performing a private import", async () => isolated(async (_directory, source) => {
 	const first = await runMauiMeasureAutomation(source.planPath, { now: source.now });
-	await assert.rejects(runMauiMeasureAutomation(source.planPath, { now: source.now, collect: true, collector: async () => {
-		throw new Error("controlled source outage");
-	} }), /source outage/u);
+	await assert.rejects(runMauiMeasureAutomation(source.planPath, {
+		now: source.now,
+		collect: true,
+		collector: async () => {
+			throw new Error("controlled source outage");
+		}
+	}), /source outage/u);
 	const failed = await readMauiPreparationRun(source.plan.preparationDirectory, source.now());
 	assert.equal(failed?.failure, "collection-failed");
 	assert.deepEqual(failed?.lastPrepared, first.lastPrepared);
@@ -113,10 +124,19 @@ test("Maui collection failure retains prior native output without performing a p
 test("Maui completed output survives journal interruption and is adopted once without regenerating it", async () => isolated(async (_directory, source) => {
 	const first = await runMauiMeasureAutomation(source.planPath, { now: source.now });
 	const run = (await readMauiPreparationRun(source.plan.preparationDirectory, source.now()))!;
-	await writeFile(join(source.plan.preparationDirectory, "maui-preparation-run.json"), JSON.stringify({ ...run, status: "running", input: null, lastPrepared: null, finishedAt: null }));
-	const recovered = await runMauiMeasureAutomation(source.planPath, { now: source.now, prepare: async () => {
-		throw new Error("a complete output must be reused");
-	} });
+	await writeFile(join(source.plan.preparationDirectory, "maui-preparation-run.json"), JSON.stringify({
+		...run,
+		status: "running",
+		input: null,
+		lastPrepared: null,
+		finishedAt: null
+	}));
+	const recovered = await runMauiMeasureAutomation(source.planPath, {
+		now: source.now,
+		prepare: async () => {
+			throw new Error("a complete output must be reused");
+		}
+	});
 	assert.equal(recovered.reused, true);
 	assert.deepEqual(recovered.lastPrepared, first.lastPrepared);
 }));
@@ -130,11 +150,14 @@ test("Maui preparation ownership excludes another worker without changing its re
 	const held = new Promise<void>((resolve) => {
 		release = resolve;
 	});
-	const running = runMauiMeasureAutomation(source.planPath, { now: source.now, prepare: async (...args) => {
-		enter();
-		await held;
-		return prepareMauiMeasureGuideFiles(...args);
-	} });
+	const running = runMauiMeasureAutomation(source.planPath, {
+		now: source.now,
+		prepare: async (...args) => {
+			enter();
+			await held;
+			return prepareMauiMeasureGuideFiles(...args);
+		}
+	});
 	await started;
 	try {
 		await assert.rejects(runMauiMeasureAutomation(source.planPath, { now: source.now }), /already running/u);
@@ -146,7 +169,28 @@ test("Maui preparation ownership excludes another worker without changing its re
 test("Maui dataset status remains protected and reports preparation independently of production import", async () => isolated(async (_directory, source) => {
 	await runMauiMeasureAutomation(source.planPath, { now: source.now });
 	const repository = createMauiMeasureRepository(source.planPath, source.now)!;
-	const app = await createApp({ adminDbPath: ":memory:", allowLegacyAdminActorHeadersForTesting: true, adminApiKey: "controlled-maui-status-key", activeLookupCookieSecret: "controlled-maui-status-cookie-key-long-enough", adminMfaEncryptionKey: "controlled-maui-status-mfa-key-long-enough", mauiMeasureRepository: repository, stateBallotRepository: null, electionReferenceRepository: null, fultonOfficeholderRepository: null, fultonCountyOfficeholderRepository: null, fultonCalendarRepository: null, courtDirectoryRepository: null, magistrateCourtRepository: null, congressClient: null, googleCivicClient: null, openStatesClient: null, openFecClient: null, ldaClient: null, addressEnrichmentService: null, locationGuessOptions: { mode: "disabled" } });
+	const app = await createApp({
+		adminDbPath: ":memory:",
+		allowLegacyAdminActorHeadersForTesting: true,
+		adminApiKey: "controlled-maui-status-key",
+		activeLookupCookieSecret: "controlled-maui-status-cookie-key-long-enough",
+		adminMfaEncryptionKey: "controlled-maui-status-mfa-key-long-enough",
+		mauiMeasureRepository: repository,
+		stateBallotRepository: null,
+		electionReferenceRepository: null,
+		fultonOfficeholderRepository: null,
+		fultonCountyOfficeholderRepository: null,
+		fultonCalendarRepository: null,
+		courtDirectoryRepository: null,
+		magistrateCourtRepository: null,
+		congressClient: null,
+		googleCivicClient: null,
+		openStatesClient: null,
+		openFecClient: null,
+		ldaClient: null,
+		addressEnrichmentService: null,
+		locationGuessOptions: { mode: "disabled" }
+	});
 	const server = app.listen(0, "127.0.0.1");
 	try {
 		await once(server, "listening");
@@ -154,7 +198,14 @@ test("Maui dataset status remains protected and reports preparation independentl
 		assert.ok(address && typeof address !== "string");
 		const url = `http://127.0.0.1:${address.port}/api/admin/operations`;
 		assert.equal((await fetch(url)).status, 401);
-		const response = await fetch(url, { headers: { "x-admin-api-key": "controlled-maui-status-key", "x-admin-actor-username": "fixture-admin", "x-admin-actor-display-name": "Fixture Admin", "x-admin-actor-role": "admin" } });
+		const response = await fetch(url, {
+			headers: {
+				"x-admin-api-key": "controlled-maui-status-key",
+				"x-admin-actor-username": "fixture-admin",
+				"x-admin-actor-display-name": "Fixture Admin",
+				"x-admin-actor-role": "admin"
+			}
+		});
 		assert.equal(response.status, 200);
 		const data = await response.json();
 		const dataset = data.datasets.find((item: { id: string }) => item.id === "hi-maui-charter");
@@ -201,7 +252,13 @@ test("Maui operation inspection distinguishes collection, preparation, source re
 	assert.equal(pending.preparationState, "unreported");
 	assert.equal(pending.reviewIssues?.length, 0);
 	await runMauiMeasureAutomation(source.planPath, { now: source.now });
-	const result = await buildAdminOperations({ measures: repository, candidates: null, references: null, dataDirectory: null, now: source.now() });
+	const result = await buildAdminOperations({
+		measures: repository,
+		candidates: null,
+		references: null,
+		dataDirectory: null,
+		now: source.now()
+	});
 	assert.equal(result.datasets[0]?.status, "review");
 	assert.match(result.datasets[0]?.reviewIssues?.[0]?.reason ?? "", /question changed/u);
 	assert.equal(result.datasets[0]?.lastImportAt, null);

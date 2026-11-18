@@ -26,5 +26,11 @@ export function restoreMatchingBallotPreviews(
 	if (districts(context) !== districts(refreshed))
 		return context;
 	const current = refreshed.ballotContentPreviews ?? [];
-	return { ...refreshed, ballotContentPreviews: [...current, ...expired.filter(previous => !current.some(preview => preview.id === previous.id))] };
+	return {
+		...refreshed,
+		ballotContentPreviews: [
+			...current,
+			...expired.filter(previous => !current.some(preview => preview.id === previous.id))
+		]
+	};
 }

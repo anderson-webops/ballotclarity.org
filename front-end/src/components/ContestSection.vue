@@ -10,8 +10,12 @@ const props = withDefaults(defineProps<{
 });
 
 const itemCountLabel = computed(() => props.contest.type === "candidate"
-	? `${props.contest.candidates?.length ?? 0} candidate${props.contest.candidates?.length === 1 ? "" : "s"}`
-	: `${props.contest.measures?.length ?? 0} measure${props.contest.measures?.length === 1 ? "" : "s"}`);
+	? `${props.contest.candidates?.length ?? 0} candidate${props.contest.candidates?.length === 1
+		? ""
+		: "s"}`
+	: `${props.contest.measures?.length ?? 0} measure${props.contest.measures?.length === 1
+		? ""
+		: "s"}`);
 // Measure contests share a generic office label ("County Ballot Measure"); the measure title tells them apart.
 const displayTitle = computed(() => props.contest.type === "measure" && props.contest.measures?.length === 1
 	? props.contest.measures[0]?.title ?? props.contest.office

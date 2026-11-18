@@ -2,7 +2,9 @@ import type { AdminSessionResponse } from "~/types/civic";
 
 export default defineNuxtRouteMiddleware(async (to) => {
 	const session = await $fetch<AdminSessionResponse>("/api/admin/session", {
-		headers: import.meta.server ? useRequestHeaders(["cookie"]) : undefined
+		headers: import.meta.server
+			? useRequestHeaders(["cookie"])
+			: undefined
 	});
 
 	if (!session.configured) {

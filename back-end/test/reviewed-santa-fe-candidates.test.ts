@@ -7,7 +7,14 @@ test("Santa Fe native preparation retains named choices, literal tickets and cou
 	const result = readReviewedSantaFeCandidates(santaFeFixture(), "2026-11-03");
 	assert.equal(result.pageCount, 1);
 	assert.equal(result.evidence.length, 6);
-	assert.deepEqual(result.evidence.map(item => item.record.party), ["Democratic Party", "Republican Party", "Democratic Party", "Republican Party", "Forward Party", undefined]);
+	assert.deepEqual(result.evidence.map(item => item.record.party), [
+		"Democratic Party",
+		"Republican Party",
+		"Democratic Party",
+		"Republican Party",
+		"Forward Party",
+		undefined
+	]);
 	assert.equal(result.evidence[2]!.record.name, "EXAMPLE CHEN AND EXAMPLE ORTIZ");
 	assert.equal(result.evidence[3]!.record.name, "EXAMPLE LÓPEZ");
 	assert.equal(result.evidence[3]!.record.district, "41");

@@ -23,7 +23,11 @@ function pages(name = "Casey Future", identity = 400) {
 }
 
 test("current Clerk follows actual current statements and offered profiles across future years", () => {
-	for (const [name, identity] of [["Casey Future", 400], ["Alexis Successor", 431], ["Ché Example", 502]] as const) {
+	for (const [name, identity] of [
+		["Casey Future", 400],
+		["Alexis Successor", 431],
+		["Ché Example", 502]
+	] as const) {
 		const source = pages(name, identity);
 		const person = parseFultonClerk(source.home, source.about);
 		assert.equal(person.name, name);
@@ -38,7 +42,13 @@ test("current Clerk follows actual current statements and offered profiles acros
 
 test("a former, vacant, conflicting or unoffered Clerk requires intervention", () => {
 	const source = pages();
-	for (const about of [source.about.replace("Casey Future", "Different Person"), source.about.replace("Meet Clerk, Casey Future", "Former Clerk, Casey Future"), source.about.replace(source.url, "https://example.org/400/Meet-Clerk-Casey-Future"), source.about.replace("</h1>", `</h1><a href="${source.url}">Meet Clerk, Casey Future</a>`), source.about.replace("Copyright Notices</a>", "Copyright Notices</a><a href='/terms'>Terms of Service</a>")]) assert.throws(() => parseFultonClerk(source.home, about));
+	for (const about of [
+		source.about.replace("Casey Future", "Different Person"),
+		source.about.replace("Meet Clerk, Casey Future", "Former Clerk, Casey Future"),
+		source.about.replace(source.url, "https://example.org/400/Meet-Clerk-Casey-Future"),
+		source.about.replace("</h1>", `</h1><a href="${source.url}">Meet Clerk, Casey Future</a>`),
+		source.about.replace("Copyright Notices</a>", "Copyright Notices</a><a href='/terms'>Terms of Service</a>")
+	]) assert.throws(() => parseFultonClerk(source.home, about));
 	assert.throws(() => parseFultonClerk(source.home.replace("Led by the Honorable", "Formerly led by the Honorable"), source.about));
 	const vacant = pages("Vacant");
 	assert.throws(() => parseFultonClerk(vacant.home, vacant.about));
@@ -47,7 +57,15 @@ test("a former, vacant, conflicting or unoffered Clerk requires intervention", (
 });
 
 test("Clerk URLs preserve the offered host, role and bounded identity without queries", () => {
-	for (const value of ["https://example.org/400/Meet-Clerk-Casey-Future", "https://www.fultonclerk.org@evil.example/400/Meet-Clerk-Casey-Future", "http://www.fultonclerk.org/400/Meet-Clerk-Casey-Future", "https://www.fultonclerk.org/400/Meet-Clerk-Casey-Future?token=private", "/admin/Meet-Clerk-Casey-Future", "/400/Meet-Former-Clerk-Casey-Future", "/400/Meet-Clerk-Casey-Future#name"]) assert.throws(() => fultonClerkProfileUrl(value));
+	for (const value of [
+		"https://example.org/400/Meet-Clerk-Casey-Future",
+		"https://www.fultonclerk.org@evil.example/400/Meet-Clerk-Casey-Future",
+		"http://www.fultonclerk.org/400/Meet-Clerk-Casey-Future",
+		"https://www.fultonclerk.org/400/Meet-Clerk-Casey-Future?token=private",
+		"/admin/Meet-Clerk-Casey-Future",
+		"/400/Meet-Former-Clerk-Casey-Future",
+		"/400/Meet-Clerk-Casey-Future#name"
+	]) assert.throws(() => fultonClerkProfileUrl(value));
 	assert.equal(fultonClerkProfileUrl("/432/Meet-Clerk-New-Person"), "https://www.fultonclerk.org/432/Meet-Clerk-New-Person");
 });
 
@@ -59,7 +77,13 @@ test("reviewed robots and every substantive copyright condition stay bound", () 
 	verifyFultonClerkPolicy(notice(2030).replace("</div>", "</div><a href='/161/Glossary-of-Legal-Terms'>Glossary of Legal Terms</a>"), 1, Date.parse("2030-01-01"));
 	assert.throws(() => verifyFultonClerkPolicy(notice(2030).replace("</div>", "</div><a href='/terms'>Terms</a>"), 1, Date.parse("2030-01-01")));
 	assert.throws(() => verifyFultonClerkPolicy(notice(2030).replace("</div>", "</div><a href='/161/Glossary-of-Legal-Terms'>Terms</a>"), 1, Date.parse("2030-01-01")));
-	for (const body of [notice(2030).replace("All rights reserved.", "All rights transferred."), notice(2030).replace("2006-2030", "2006-2029"), notice(2033), notice(2030).replace("</div>", " Automated access prohibited.</div>"), notice(2030).replace("Copyright Notices</a>", "Copyright Notices</a><a href='/privacy'>Privacy</a>")]) assert.throws(() => verifyFultonClerkPolicy(body, 1, Date.parse("2030-01-01")));
+	for (const body of [
+		notice(2030).replace("All rights reserved.", "All rights transferred."),
+		notice(2030).replace("2006-2030", "2006-2029"),
+		notice(2033),
+		notice(2030).replace("</div>", " Automated access prohibited.</div>"),
+		notice(2030).replace("Copyright Notices</a>", "Copyright Notices</a><a href='/privacy'>Privacy</a>")
+	]) assert.throws(() => verifyFultonClerkPolicy(body, 1, Date.parse("2030-01-01")));
 	assert.throws(() => verifyFultonClerkPolicy("Changed legal disclaimer", 2));
 	assert.equal(fultonClerkPublication.minimumRequestIntervalMs, 20000);
 });
@@ -85,8 +109,16 @@ test("both historical four-office bindings remain readable and upgrade with exac
 	const directory = await mkdtemp(join(tmpdir(), "ballot-clerk-upgrade-"));
 	try {
 		const legacy = exampleExpandedCountyOfficeholders();
-		const configuration = countyOfficeHash(JSON.stringify({ ...fultonCountyOfficeholderPublication, offices: fultonCountyOfficeholderPublication.offices.slice(0, 4) }));
-		const before = `${JSON.stringify({ sourceConfigurationSha256: configuration, importedAt: legacy.retrievedAt, acquisition: "imported", snapshot: legacy })}\n`;
+		const configuration = countyOfficeHash(JSON.stringify({
+			...fultonCountyOfficeholderPublication,
+			offices: fultonCountyOfficeholderPublication.offices.slice(0, 4)
+		}));
+		const before = `${JSON.stringify({
+			sourceConfigurationSha256: configuration,
+			importedAt: legacy.retrievedAt,
+			acquisition: "imported",
+			snapshot: legacy
+		})}\n`;
 		await writeFile(join(directory, "fulton-county-offices.json"), before);
 		assert.deepEqual(readFultonCountyOfficeholderEnvelope(directory).snapshot, legacy);
 		await importFultonCountyOfficeholders(directory, exampleCompleteCountyOfficeholders());
@@ -95,7 +127,12 @@ test("both historical four-office bindings remain readable and upgrade with exac
 		const accepted = await readFile(join(directory, "fulton-county-offices.json"), "utf8");
 		await assert.rejects(importFultonCountyOfficeholders(directory, legacy), /cannot be downgraded/u);
 		assert.equal(await readFile(join(directory, "fulton-county-offices.json"), "utf8"), accepted);
-		await writeFile(join(directory, "fulton-county-offices.json"), JSON.stringify({ sourceConfigurationSha256: configuration, importedAt: legacy.retrievedAt, acquisition: "imported", snapshot: exampleCompleteCountyOfficeholders() }));
+		await writeFile(join(directory, "fulton-county-offices.json"), JSON.stringify({
+			sourceConfigurationSha256: configuration,
+			importedAt: legacy.retrievedAt,
+			acquisition: "imported",
+			snapshot: exampleCompleteCountyOfficeholders()
+		}));
 		assert.throws(() => readFultonCountyOfficeholderEnvelope(directory));
 	}
 	finally { await rm(directory, { recursive: true, force: true }); }
@@ -109,13 +146,28 @@ test("an interrupted county collection waits without new requests or clock chang
 		const journal = join(directory, "county-office-automation");
 		await mkdir(journal);
 		const startedAt = new Date(countyOfficeTestTime + 7 * 3600000).toISOString();
-		const bytes = `${JSON.stringify({ schemaVersion: 1, type: "ballot-automation-run", status: "running", startedAt, finishedAt: null, lastImportAt: new Date(countyOfficeTestTime).toISOString(), lastSuccessAt: null, nextRunAt: null, results: [] })}\n`;
+		const bytes = `${JSON.stringify({
+			schemaVersion: 1,
+			type: "ballot-automation-run",
+			status: "running",
+			startedAt,
+			finishedAt: null,
+			lastImportAt: new Date(countyOfficeTestTime).toISOString(),
+			lastSuccessAt: null,
+			nextRunAt: null,
+			results: []
+		})}\n`;
 		await writeFile(join(journal, "automation-run.json"), bytes);
 		let requests = 0;
-		await assert.rejects(collectFultonCountyOfficeholders({ directory, includeClerk: true, now: () => Date.parse(startedAt) + 1000, request: async () => {
-			requests++;
-			throw new Error("Unexpected publisher request");
-		} }), /next permitted retry/u);
+		await assert.rejects(collectFultonCountyOfficeholders({
+			directory,
+			includeClerk: true,
+			now: () => Date.parse(startedAt) + 1000,
+			request: async () => {
+				requests++;
+				throw new Error("Unexpected publisher request");
+			}
+		}), /next permitted retry/u);
 		assert.equal(requests, 0);
 		assert.equal(await readFile(join(journal, "automation-run.json"), "utf8"), bytes);
 		assert.equal(await readFile(join(directory, "fulton-county-offices.json"), "utf8"), before);
@@ -135,10 +187,14 @@ test("a retained five-office inventory cannot widen the legacy collector's netwo
 		await importFultonCountyOfficeholders(directory, exampleCompleteCountyOfficeholders(), countyOfficeTestTime);
 		const before = await readFile(join(directory, "fulton-county-offices.json"), "utf8");
 		let requests = 0;
-		await assert.rejects(collectFultonCountyOfficeholders({ directory, now: () => countyOfficeTestTime + 7 * 3600000, request: async () => {
-			requests++;
-			throw new Error("Unexpected publisher request");
-		} }), /explicit scope approval/u);
+		await assert.rejects(collectFultonCountyOfficeholders({
+			directory,
+			now: () => countyOfficeTestTime + 7 * 3600000,
+			request: async () => {
+				requests++;
+				throw new Error("Unexpected publisher request");
+			}
+		}), /explicit scope approval/u);
 		assert.equal(requests, 0);
 		assert.equal(await readFile(join(directory, "fulton-county-offices.json"), "utf8"), before);
 	}

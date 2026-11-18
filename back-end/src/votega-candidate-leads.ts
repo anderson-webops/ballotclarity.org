@@ -26,8 +26,16 @@ const object = (value: unknown): value is Record<string, unknown> => !!value && 
 const date = (value: unknown): value is string => typeof value === "string" && /^20\d{2}-\d{2}-\d{2}$/u.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
 const timestamp = (value: unknown, now: number): value is string => typeof value === "string" && Number.isFinite(Date.parse(value)) && Date.parse(value) <= now;
 const normalized = (value: string) => value.normalize("NFC").toLowerCase().replace(/[’‘]/gu, "'").replace(/[“”]/gu, "\"").replace(/\s+/gu, " ").trim();
-const personName = (value: string) => normalized(value.includes(",") && value.split(",").length === 2 ? value.split(",").reverse().join(" ") : value);
-const party = (value: string) => normalized(value) === "democratic" ? "democrat" : normalized(value);
+function personName(value: string) {
+	return normalized(value.includes(",") && value.split(",").length === 2
+		? value.split(",").reverse().join(" ")
+		: value);
+}
+function party(value: string) {
+	return normalized(value) === "democratic"
+		? "democrat"
+		: normalized(value);
+}
 const columns = "raceId,level,chamber,district,cycle,phase,electionDate,party,name,type,isIncumbent,candidateId,memberId,memberSource,candidateKey";
 
 interface PublicationBodies {
@@ -54,7 +62,11 @@ interface CandidateContext {
 function officeKey(scope: StateCandidateRecord["scope"], office: string, district: string) {
 	const label = normalized(office);
 	if (["congressional", "state-senate", "state-house"].includes(scope)) {
-		const expression = scope === "congressional" ? /^(?:united states house of representatives|u\.s\. house)(?: -)?(?: district (\d+))?$/u : scope === "state-senate" ? /^(?:state senate|georgia state senate)(?: -)?(?: district (\d+))?$/u : /^(?:state house(?: of representatives)?|georgia house of representatives)(?: -)?(?: district (\d+))?$/u;
+		const expression = scope === "congressional"
+			? /^(?:united states house of representatives|u\.s\. house)(?: -)?(?: district (\d+))?$/u
+			: scope === "state-senate"
+				? /^(?:state senate|georgia state senate)(?: -)?(?: district (\d+))?$/u
+				: /^(?:state house(?: of representatives)?|georgia house of representatives)(?: -)?(?: district (\d+))?$/u;
 		const matched = expression.exec(label);
 		if (!matched || !/^\d{1,3}$/u.test(district) || Number(district) < 1 || (matched[1] && Number(matched[1]) !== Number(district))) return null;
 		return `${scope}:${Number(district)}`;
@@ -63,9 +75,25 @@ function officeKey(scope: StateCandidateRecord["scope"], office: string, distric
 	if (["united states senate", "u.s. senate"].includes(label) && !district) return "us-senate";
 	const commissioner = /^public service commission(?:er)?(?: district (\d+))?$/u.exec(label);
 	if (commissioner && /^\d$/u.test(district) && Number(district) >= 1 && Number(district) <= 5 && (!commissioner[1] || Number(commissioner[1]) === Number(district))) return `psc:${Number(district)}`;
-	const aliases: Record<string, string> = { "labor commissioner": "commissioner of labor", "insurance commissioner": "commissioner of insurance", "insurance & fire safety commissioner": "commissioner of insurance", "agriculture commissioner": "commissioner of agriculture" };
+	const aliases: Record<string, string> = {
+		"labor commissioner": "commissioner of labor",
+		"insurance commissioner": "commissioner of insurance",
+		"insurance & fire safety commissioner": "commissioner of insurance",
+		"agriculture commissioner": "commissioner of agriculture"
+	};
 	const canonical = aliases[label] ?? label;
-	return !district && ["governor", "lieutenant governor", "secretary of state", "attorney general", "commissioner of agriculture", "commissioner of insurance", "state school superintendent", "commissioner of labor"].includes(canonical) ? canonical : null;
+	return !district && [
+		"governor",
+		"lieutenant governor",
+		"secretary of state",
+		"attorney general",
+		"commissioner of agriculture",
+		"commissioner of insurance",
+		"state school superintendent",
+		"commissioner of labor"
+	].includes(canonical)
+		? canonical
+		: null;
 }
 
 function candidateContexts(bodies: PublicationBodies, electionDate: string, phase: string, now: number) {
@@ -78,7 +106,10 @@ function candidateContexts(bodies: PublicationBodies, electionDate: string, phas
 	const table = new Map<string, Record<string, string>[]>();
 	for (const row of rows) {
 		const key = JSON.stringify([row.raceId, row.phase, row.candidateKey]);
-		table.set(key, [...table.get(key) ?? [], row]);
+		table.set(key, [
+			...table.get(key) ?? [],
+			row
+		]);
 	}
 	const identities = new Set<string>();
 	const contexts: CandidateContext[] = [];
@@ -90,8 +121,16 @@ function candidateContexts(bodies: PublicationBodies, electionDate: string, phas
 		const selected = race.phases[phase];
 		if (!object(selected) || selected.electionDate !== electionDate) continue;
 		if (!text(race.chamber, 300) || !["federal", "state-executive", "state"].includes(String(race.level))) continue;
-		const scope = race.level === "federal" && race.chamber === "U.S. House" ? "congressional" : race.level === "state" && race.chamber === "Georgia State Senate" ? "state-senate" : race.level === "state" && race.chamber === "Georgia House of Representatives" ? "state-house" : "statewide";
-		const seat = race.district === undefined ? "" : String(race.district);
+		const scope = race.level === "federal" && race.chamber === "U.S. House"
+			? "congressional"
+			: race.level === "state" && race.chamber === "Georgia State Senate"
+				? "state-senate"
+				: race.level === "state" && race.chamber === "Georgia House of Representatives"
+					? "state-house"
+					: "statewide";
+		const seat = race.district === undefined
+			? ""
+			: String(race.district);
 		const office = officeKey(scope, race.chamber, seat);
 		if (!office) continue;
 		if (selected.candidates !== undefined && selected.ballots !== undefined) throw new Error("A VoteGA phase has competing candidate representations.");
@@ -130,7 +169,15 @@ function candidateContexts(bodies: PublicationBodies, electionDate: string, phas
 				}
 			}
 			if (names.length > 1 && !names.slice(1).some(name => personName(name) === personName(row.name))) throw new Error("The VoteGA candidate table and JSON names disagree.");
-			const context: CandidateContext = { key: identity, name: row.name, names: [...new Set(names.map(personName))], party: party(row.party), officeKey: office };
+			const context: CandidateContext = {
+				key: identity,
+				name: row.name,
+				names: [
+					...new Set(names.map(personName))
+				],
+				party: party(row.party),
+				officeKey: office
+			};
 			for (const field of ["occupation", "county"] as const) {
 				if (candidate[field] !== undefined && candidate[field] !== null && candidate[field] !== "") {
 					if (!text(candidate[field]) || !candidate[field].trim()) throw new Error("The VoteGA candidate context has invalid text.");
@@ -160,15 +207,54 @@ export function prepareVoteGaCandidateLeads(bodies: PublicationBodies, snapshots
 	if (!electionDate || !snapshots.length || snapshots.length > 100 || snapshots.some(snapshot => snapshot.source.stateCode !== "GA" || snapshot.source.electionDate !== electionDate || Date.parse(snapshot.retrievedAt) > now) || new Set(snapshots.map(snapshot => snapshot.source.id)).size !== snapshots.length) throw new Error("Provide distinct official Georgia snapshots for one election.");
 	const { contexts, updatedAt } = candidateContexts(bodies, electionDate, phase, now);
 	const records = snapshots.flatMap(snapshot => snapshot.records.map((record) => {
-		const identity = { sourceId: snapshot.source.id, recordId: record.id, name: record.name, office: record.office, district: record.district, party: record.party ?? "" };
+		const identity = {
+			sourceId: snapshot.source.id,
+			recordId: record.id,
+			name: record.name,
+			office: record.office,
+			district: record.district,
+			party: record.party ?? ""
+		};
 		const office = officeKey(record.scope, record.office, record.district);
-		if (!["listed", "qualified", "filed", "write-in", "unopposed"].includes(record.status)) return { ...identity, status: "inactive-official-record" as const };
+		if (![
+			"listed",
+			"qualified",
+			"filed",
+			"write-in",
+			"unopposed"
+		].includes(record.status)) {
+			return { ...identity, status: "inactive-official-record" as const };
+		}
 		if (!office) return { ...identity, status: "unsupported-office" as const };
 		if (!record.party) return { ...identity, status: "missing-party" as const };
 		const matches = contexts.filter(context => context.names.includes(personName(record.name)) && context.party === party(record.party!) && context.officeKey === office);
-		if (matches.length !== 1) return { ...identity, status: matches.length ? "ambiguous" as const : "not-matched" as const };
+		if (matches.length !== 1) {
+			return {
+				...identity,
+				status: matches.length ? "ambiguous" as const : "not-matched" as const
+			};
+		}
 		const matched = matches[0]!;
-		return { ...identity, status: "review-required" as const, context: { key: matched.key, sourceName: matched.name, ...(matched.website ? { website: matched.website } : {}), ...(matched.websiteHold ? { websiteHold: matched.websiteHold } : {}), ...(matched.occupation ? { occupation: matched.occupation } : {}), ...(matched.county ? { residenceCounty: matched.county } : {}) } };
+		return {
+			...identity,
+			status: "review-required" as const,
+			context: {
+				key: matched.key,
+				sourceName: matched.name,
+				...(matched.website
+					? { website: matched.website }
+					: {}),
+				...(matched.websiteHold
+					? { websiteHold: matched.websiteHold }
+					: {}),
+				...(matched.occupation
+					? { occupation: matched.occupation }
+					: {}),
+				...(matched.county
+					? { residenceCounty: matched.county }
+					: {})
+			}
+		};
 	}));
 	return {
 		schemaVersion: 1,
@@ -176,9 +262,32 @@ export function prepareVoteGaCandidateLeads(bodies: PublicationBodies, snapshots
 		stateCode: "GA",
 		electionDate,
 		phase,
-		publication: { ...voteGaPublication, commit: bodies.commit, capturedAt: bodies.capturedAt, updatedAt, racesSha256: digest(bodies.races), candidatesSha256: digest(bodies.candidates), licenseSha256: digest(bodies.license), noticeSha256: digest(bodies.notice), url: `${voteGaPublication.repository}/blob/${bodies.commit}/races/${electionDate.slice(0, 4)}/races.json` },
-		policy: { publicImport: false, qualificationAuthority: "official-snapshot-only", upstreamReuseReviewRequired: true, copiedBiographies: false, copiedImages: false, inferredIncumbency: false },
-		snapshots: snapshots.map(snapshot => ({ sourceId: snapshot.source.id, sourceUrl: snapshot.source.pageUrl, sourceSha256: snapshot.sha256, retrievedAt: snapshot.retrievedAt, recordCount: snapshot.records.length })),
+		publication: {
+			...voteGaPublication,
+			commit: bodies.commit,
+			capturedAt: bodies.capturedAt,
+			updatedAt,
+			racesSha256: digest(bodies.races),
+			candidatesSha256: digest(bodies.candidates),
+			licenseSha256: digest(bodies.license),
+			noticeSha256: digest(bodies.notice),
+			url: `${voteGaPublication.repository}/blob/${bodies.commit}/races/${electionDate.slice(0, 4)}/races.json`
+		},
+		policy: {
+			publicImport: false,
+			qualificationAuthority: "official-snapshot-only",
+			upstreamReuseReviewRequired: true,
+			copiedBiographies: false,
+			copiedImages: false,
+			inferredIncumbency: false
+		},
+		snapshots: snapshots.map(snapshot => ({
+			sourceId: snapshot.source.id,
+			sourceUrl: snapshot.source.pageUrl,
+			sourceSha256: snapshot.sha256,
+			retrievedAt: snapshot.retrievedAt,
+			recordCount: snapshot.records.length
+		})),
 		counts: { officialRecords: records.length, publicationContexts: contexts.length, reviewRequired: records.filter(record => record.status === "review-required").length },
 		records,
 	};
@@ -186,7 +295,12 @@ export function prepareVoteGaCandidateLeads(bodies: PublicationBodies, snapshots
 
 export async function prepareVoteGaCandidateLeadFiles(path: string, now = Date.now()) {
 	const plan = JSON.parse(await readBoundedStateData(path));
-	const fields = ["races", "candidates", "license", "notice"] as const;
+	const fields = [
+		"races",
+		"candidates",
+		"license",
+		"notice"
+	] as const;
 	if (!object(plan) || Object.keys(plan).sort().join(",") !== "candidateFiles,outputDirectory,phase,publication,schemaVersion,type" || plan.schemaVersion !== 1 || plan.type !== "votega-candidate-lead-preparation" || !["general", "primary", "runoff"].includes(String(plan.phase)) || !object(plan.publication) || Object.keys(plan.publication).sort().join(",") !== "candidates,capturedAt,commit,license,notice,races" || !Array.isArray(plan.candidateFiles) || !plan.candidateFiles.length || plan.candidateFiles.length > 100 || !plan.candidateFiles.every(file => typeof file === "string" && isAbsolute(file)) || typeof plan.outputDirectory !== "string" || !isAbsolute(plan.outputDirectory) || normalize(plan.outputDirectory) !== plan.outputDirectory) throw new Error("Provide a valid external VoteGA candidate-lead preparation plan.");
 	const publication = plan.publication;
 	const bodies: Record<string, string> = {};
@@ -201,7 +315,13 @@ export async function prepareVoteGaCandidateLeadFiles(path: string, now = Date.n
 		const metadata = JSON.parse(body);
 		const source = configuredStateBallotSources.find(item => item.id === metadata?.sourceId);
 		if (!source || !["manual-snapshot", "automatic"].includes(metadata.retrievalPolicy)) throw new Error("Candidate inputs must match configured official sources.");
-		return { hash: { path: file, sha256: digest(body) }, snapshot: parseBundledStateSnapshot(source, body, metadata.retrievalPolicy) };
+		return {
+			hash: {
+				path: file,
+				sha256: digest(body)
+			},
+			snapshot: parseBundledStateSnapshot(source, body, metadata.retrievalPolicy)
+		};
 	}));
 	const report = prepareVoteGaCandidateLeads({ ...bodies, commit: publication.commit, capturedAt: publication.capturedAt } as PublicationBodies, inputs.map(input => input.snapshot), String(plan.phase), now);
 	assertExternalStateDataDirectory(plan.outputDirectory);
@@ -211,6 +331,14 @@ export async function prepareVoteGaCandidateLeadFiles(path: string, now = Date.n
 	await mkdir(plan.outputDirectory);
 	await writeFile(join(plan.outputDirectory, "LICENSE"), bodies.license!, { flag: "wx" });
 	await writeFile(join(plan.outputDirectory, "NOTICE.md"), bodies.notice!, { flag: "wx" });
-	await writeFile(join(plan.outputDirectory, "candidate-context-leads.json"), `${JSON.stringify({ ...report, inputHashes: inputs.map(input => input.hash) }, null, 2)}\n`, { flag: "wx" });
-	return { ...report.counts, outputDirectory: plan.outputDirectory, imported: false, publisherRequests: 0 };
+	await writeFile(join(plan.outputDirectory, "candidate-context-leads.json"), `${JSON.stringify({
+		...report,
+		inputHashes: inputs.map(input => input.hash)
+	}, null, 2)}\n`, { flag: "wx" });
+	return {
+		...report.counts,
+		outputDirectory: plan.outputDirectory,
+		imported: false,
+		publisherRequests: 0
+	};
 }

@@ -74,13 +74,27 @@ import { fetchWinnebagoCandidateCapture } from "./state-ballot-winnebago-collect
 
 type SourceTextRequest = (url: string, options: { allowedHosts: string[]; maxBytes: number; maxRedirects: number; postBody?: string; timeoutMs: number; textEncoding?: "utf-8" | "utf-8-or-windows-1252" }) => Promise<string>;
 
-export const publicStateExportFormats = ["mississippi-csv", "south-dakota-csv", "hawaii-csv", "illinois-tsv", "montana-csv"];
+export const publicStateExportFormats = [
+	"mississippi-csv",
+	"south-dakota-csv",
+	"hawaii-csv",
+	"illinois-tsv",
+	"montana-csv"
+];
 
 function assertDakotaSourceIdentity(source: StateBallotSource) {
-	const state = source.format === "south-dakota-csv" ? "SD" : "ND";
-	const family = getStateBallotCycleFamily(state === "SD" ? "sd-sos-2026" : "nd-sos-2026");
+	const state = source.format === "south-dakota-csv"
+		? "SD"
+		: "ND";
+	const family = getStateBallotCycleFamily(state === "SD"
+		? "sd-sos-2026"
+		: "nd-sos-2026");
 	const electionId = new URL(source.url).searchParams.get("eid") ?? "";
-	if (source.stateCode !== state || source.retrievalPolicy || source.postBody || source.documentUrls?.length || source.documentLinks?.length || !validStateBallotGeneralDate(source.electionDate) || source.electionDate < family.source.electionDate || Number(source.electionDate.slice(0, 4)) % 2 || source.id !== (source.electionDate === family.source.electionDate ? family.source.id : `${family.prefix}-${source.electionDate}`) || source.url !== dakotaCandidateRosterUrl(state, electionId) || source.pageUrl !== source.url || ((electionId === new URL(family.source.url).searchParams.get("eid")) !== (source.electionDate === family.source.electionDate))) throw new Error("The Dakota candidate source does not identify the configured general election.");
+	if (source.stateCode !== state || source.retrievalPolicy || source.postBody || source.documentUrls?.length || source.documentLinks?.length || !validStateBallotGeneralDate(source.electionDate) || source.electionDate < family.source.electionDate || Number(source.electionDate.slice(0, 4)) % 2 || source.id !== (source.electionDate === family.source.electionDate
+		? family.source.id
+		: `${family.prefix}-${source.electionDate}`) || source.url !== dakotaCandidateRosterUrl(state, electionId) || source.pageUrl !== source.url || ((electionId === new URL(family.source.url).searchParams.get("eid")) !== (source.electionDate === family.source.electionDate))) {
+		throw new Error("The Dakota candidate source does not identify the configured general election.");
+	}
 }
 
 export function buildPublicStateExportForm(source: StateBallotSource, body: string) {
@@ -97,8 +111,11 @@ export function buildPublicStateExportForm(source: StateBallotSource, body: stri
 		const family = getStateBallotCycleFamily("mt-general-2026");
 		const electionId = new URL(source.url).searchParams.get("e");
 		const originalId = new URL(family.source.url).searchParams.get("e");
-		if (source.stateCode !== "MT" || source.retrievalPolicy || !validStateBallotGeneralDate(source.electionDate) || source.electionDate < family.source.electionDate || Number(source.electionDate.slice(0, 4)) % 2 !== 0 || !electionId || !/^[1-9]\d{0,8}$/u.test(electionId) || source.url !== `${family.discoveryUrl}?e=${electionId}` || source.pageUrl !== source.url || source.id !== (source.electionDate === family.source.electionDate ? family.source.id : `${family.prefix}-${source.electionDate}`) || ((electionId === originalId) !== (source.electionDate === family.source.electionDate)))
+		if (source.stateCode !== "MT" || source.retrievalPolicy || !validStateBallotGeneralDate(source.electionDate) || source.electionDate < family.source.electionDate || Number(source.electionDate.slice(0, 4)) % 2 !== 0 || !electionId || !/^[1-9]\d{0,8}$/u.test(electionId) || source.url !== `${family.discoveryUrl}?e=${electionId}` || source.pageUrl !== source.url || source.id !== (source.electionDate === family.source.electionDate
+			? family.source.id
+			: `${family.prefix}-${source.electionDate}`) || ((electionId === originalId) !== (source.electionDate === family.source.electionDate))) {
 			throw new Error("The Montana public export election identity is not configured.");
+		}
 		const year = source.electionDate.slice(0, 4);
 		const label = `FEDERAL GENERAL ${year}`;
 		const date = `${source.electionDate.slice(5, 7)}/${source.electionDate.slice(8, 10)}/${year}`;
@@ -108,16 +125,24 @@ export function buildPublicStateExportForm(source: StateBallotSource, body: stri
 		const action = new URL(stateHtmlAttribute(forms[0]!, "action"), source.url);
 		if (action.href !== source.url) throw new Error("The Montana public export target has changed.");
 		if (stateHtmlDescendants(forms[0]!, node => node.nodeName === "select").length !== 2) throw new Error("The Montana public export filters have changed.");
-		for (const [name, value] of [["hidElectionDate", label], ["hidElectionType", "General"]]) {
+		for (const [name, value] of [
+			["hidElectionDate", label],
+			["hidElectionType", "General"]
+		]) {
 			const key = `ctl00$ContentPlaceHolder1$${name}`;
 			const inputs = stateHtmlDescendants(forms[0]!, node => node.nodeName === "input" && stateHtmlAttribute(node, "type") === "hidden" && stateHtmlAttribute(node, "name") === key);
 			if (inputs.length !== 1 || stateHtmlAttribute(inputs[0]!, "value") !== value) throw new Error("The Montana public export election identity has changed.");
 			fields.set(key, value!);
 		}
-		for (const [name, value, selectedLabel] of [["ddlElection", electionId, `${label} (${date}) (General)`], ["ddlCounty", "99", "STATE"]]) {
+		for (const [name, value, selectedLabel] of [
+			["ddlElection", electionId, `${label} (${date}) (General)`],
+			["ddlCounty", "99", "STATE"]
+		]) {
 			const key = `ctl00$ContentPlaceHolder1$${name}`;
 			const selects = stateHtmlDescendants(forms[0]!, node => node.nodeName === "select" && stateHtmlAttribute(node, "name") === key);
-			const selected = selects.length === 1 ? stateHtmlDescendants(selects[0]!, node => node.nodeName === "option" && Boolean(node.attrs?.some(attribute => attribute.name === "selected"))) : [];
+			const selected = selects.length === 1
+				? stateHtmlDescendants(selects[0]!, node => node.nodeName === "option" && Boolean(node.attrs?.some(attribute => attribute.name === "selected")))
+				: [];
 			if (selected.length !== 1 || stateHtmlAttribute(selected[0]!, "value") !== value || stateHtmlText(selected[0]!).replace(/\s+/gu, " ").trim() !== selectedLabel)
 				throw new Error("The Montana public export does not select the unfiltered general election.");
 			fields.set(key, value!);
@@ -131,8 +156,11 @@ export function buildPublicStateExportForm(source: StateBallotSource, body: stri
 	else if (source.format === "mississippi-csv") {
 		const family = getStateBallotCycleFamily("ms-sos-2026");
 		try {
-			if (source.stateCode !== "MS" || source.retrievalPolicy || source.url !== family.discoveryUrl || source.pageUrl !== source.url || source.id !== (source.electionDate === family.source.electionDate ? family.source.id : `${family.prefix}-${source.electionDate}`) || readMississippiGeneralElectionDate(body) !== source.electionDate)
+			if (source.stateCode !== "MS" || source.retrievalPolicy || source.url !== family.discoveryUrl || source.pageUrl !== source.url || source.id !== (source.electionDate === family.source.electionDate
+				? family.source.id
+				: `${family.prefix}-${source.electionDate}`) || readMississippiGeneralElectionDate(body) !== source.electionDate) {
 				throw new Error("The Mississippi source identity does not match its report.");
+			}
 		}
 		catch (error) { throw new Error("The public candidate export does not identify the configured general election.", { cause: error }); }
 		control = "btnDownloadExcel";
@@ -186,10 +214,17 @@ export function buildNorthDakotaSearchForm(source: StateBallotSource, body: stri
 		if (/^__(?:VIEWSTATE(?:\d*|GENERATOR|FIELDCOUNT)|EVENTVALIDATION|EVENTTARGET|EVENTARGUMENT)$/u.test(name))
 			fields.set(name, stateHtmlAttribute(input, "value"));
 	}
-	for (const suffix of ["ddlJursdiction", "ddlDistrict", "ddlContest", "ddlCandidate"]) {
+	for (const suffix of [
+		"ddlJursdiction",
+		"ddlDistrict",
+		"ddlContest",
+		"ddlCandidate"
+	]) {
 		const name = `ctl00$ContentPlaceHolder1$${suffix}`;
 		const select = stateHtmlDescendants(document, node => node.nodeName === "select" && stateHtmlAttribute(node, "name") === name)[0];
-		const value = suffix === "ddlJursdiction" ? "AL" : "0";
+		const value = suffix === "ddlJursdiction"
+			? "AL"
+			: "0";
 		if (!select || !stateHtmlDescendants(select, node => node.nodeName === "option" && stateHtmlAttribute(node, "value") === value).length)
 			throw new Error("The public candidate search form no longer supports an unfiltered request.");
 		fields.set(name, value);
@@ -222,7 +257,18 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	if (source.format === "cassia-pdf") return fetchCassiaCandidateCapture(source, { requestText: request });
 	if (source.format === "iowa-county-pdf") return fetchIowaCountyCandidateCapture(source);
 	if (source.format === "iowa-polk-pdf") return fetchIowaPolkCandidateCapture(source, { requestText: request });
-	if (source.format === "fairbanks-pdf") return fetchFairbanksCandidateCapture(source, { requestText: (url, options) => request(String(url), { allowedHosts: [...(options?.allowedHosts ?? ["www.fnsb.gov"])], maxBytes: options?.maxBytes ?? 2 * 1024 * 1024, maxRedirects: options?.maxRedirects ?? 0, timeoutMs: options?.timeoutMs ?? 30000 }) });
+	if (source.format === "fairbanks-pdf") {
+		return fetchFairbanksCandidateCapture(source, {
+			requestText: (url, options) => request(String(url), {
+				allowedHosts: [
+					...(options?.allowedHosts ?? ["www.fnsb.gov"])
+				],
+				maxBytes: options?.maxBytes ?? 2 * 1024 * 1024,
+				maxRedirects: options?.maxRedirects ?? 0,
+				timeoutMs: options?.timeoutMs ?? 30000
+			})
+		});
+	}
 	if (source.format === "juneau-html") return fetchJuneauCandidateCapture(source, { requestText: request });
 	if (source.format === "los-ranchos-html") return fetchLosRanchosCandidateCapture(source, { requestText: request });
 	if (source.format === "independence-html") return fetchIndependenceCandidateCapture(source, { requestText: request });
@@ -252,27 +298,63 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 	if (source.stateCode === "WY" && (source.format !== "csv" || !validStateBallotGeneralDate(source.electionDate) || Number(source.electionDate.slice(0, 4)) % 2 || source.url !== wyomingCandidateRosterUrl(source.electionDate))) throw new Error("The Wyoming roster must retain its exact official election URL.");
 	if (["south-dakota-csv", "north-dakota-html"].includes(source.format)) assertDakotaSourceIdentity(source);
 	if (source.stateCode === "FL" || source.format === "south-carolina-html") {
-		const family = getStateBallotCycleFamily(source.stateCode === "FL" ? source.format === "florida-local-tsv" ? "fl-doe-local-2026" : "fl-doe-2026" : "sc-sec-2026");
-		const electionId = source.stateCode === "FL" ? floridaSourceElectionId(source) : new URL(source.url).searchParams.get("electionId") ?? "";
-		if (source.stateCode !== family.source.stateCode || source.retrievalPolicy || source.documentUrls?.length || source.documentLinks?.length || !validStateBallotGeneralDate(source.electionDate) || source.electionDate < family.source.electionDate || Number(source.electionDate.slice(0, 4)) % 2 || source.id !== (source.electionDate === family.source.electionDate ? family.source.id : `${family.prefix}-${source.electionDate}`) || (source.stateCode === "SC" && (source.postBody || source.url !== southCarolinaCandidateRosterUrl(electionId) || source.pageUrl !== source.url || ((electionId === "22596") !== (source.electionDate === family.source.electionDate))))) throw new Error("The public candidate source does not identify the approved state and general election.");
+		const family = getStateBallotCycleFamily(source.stateCode === "FL"
+			? source.format === "florida-local-tsv"
+				? "fl-doe-local-2026"
+				: "fl-doe-2026"
+			: "sc-sec-2026");
+		const electionId = source.stateCode === "FL"
+			? floridaSourceElectionId(source)
+			: new URL(source.url).searchParams.get("electionId") ?? "";
+		if (source.stateCode !== family.source.stateCode || source.retrievalPolicy || source.documentUrls?.length || source.documentLinks?.length || !validStateBallotGeneralDate(source.electionDate) || source.electionDate < family.source.electionDate || Number(source.electionDate.slice(0, 4)) % 2 || source.id !== (source.electionDate === family.source.electionDate
+			? family.source.id
+			: `${family.prefix}-${source.electionDate}`) || (source.stateCode === "SC" && (source.postBody || source.url !== southCarolinaCandidateRosterUrl(electionId) || source.pageUrl !== source.url || ((electionId === "22596") !== (source.electionDate === family.source.electionDate))))) {
+			throw new Error("The public candidate source does not identify the approved state and general election.");
+		}
 	}
 	if (source.format === "delaware-html") {
 		const family = getStateBallotCycleFamily("de-doe-2026");
-		if (source.stateCode !== "DE" || !validStateBallotGeneralDate(source.electionDate) || source.electionDate < family.source.electionDate || Number(source.electionDate.slice(0, 4)) % 2 || source.id !== (source.electionDate === family.source.electionDate ? family.source.id : `${family.prefix}-${source.electionDate}`) || source.url !== delawareCandidateRosterUrl(source.electionDate) || source.pageUrl !== source.url) throw new Error("The Delaware roster must retain its exact official election identity and URL.");
+		if (source.stateCode !== "DE" || !validStateBallotGeneralDate(source.electionDate) || source.electionDate < family.source.electionDate || Number(source.electionDate.slice(0, 4)) % 2 || source.id !== (source.electionDate === family.source.electionDate
+			? family.source.id
+			: `${family.prefix}-${source.electionDate}`) || source.url !== delawareCandidateRosterUrl(source.electionDate) || source.pageUrl !== source.url) {
+			throw new Error("The Delaware roster must retain its exact official election identity and URL.");
+		}
 	}
 	if (source.stateCode === "NC") return fetchNorthCarolinaCandidateCapture(source, request);
 	if (source.stateCode === "KY") return fetchKentuckyCandidateCapture(source, request);
-	const options = { allowedHosts: [new URL(source.url).hostname], maxBytes: 12 * 1024 * 1024, maxRedirects: ["WY", "FL"].includes(source.stateCode) || ["montana-csv", "mississippi-csv", "delaware-html", "south-dakota-csv", "north-dakota-html", "south-carolina-html"].includes(source.format) ? 0 : 2, timeoutMs: 12_000 };
+	const options = {
+		allowedHosts: [new URL(source.url).hostname],
+		maxBytes: 12 * 1024 * 1024,
+		maxRedirects: ["WY", "FL"].includes(source.stateCode) || [
+			"montana-csv",
+			"mississippi-csv",
+			"delaware-html",
+			"south-dakota-csv",
+			"north-dakota-html",
+			"south-carolina-html"
+		].includes(source.format)
+			? 0
+			: 2,
+		timeoutMs: 12_000
+	};
 	if (source.stateCode === "MD") {
 		const electionId = marylandSourceElectionId(source);
 		const discovery = await fetchMarylandCycleDiscovery(request);
-		const elections = readMarylandElectionDiscovery(discovery, source.format === "csv" ? "state" : "local");
+		const elections = readMarylandElectionDiscovery(discovery, source.format === "csv"
+			? "state"
+			: "local");
 		if (elections.filter(election => election.electionId === electionId && election.electionDate === source.electionDate && election.rosterUrl === source.pageUrl).length !== 1) throw new Error("The Maryland candidate source is not currently published by its election index.");
 		const bounded = { ...options, maxRedirects: 0 };
 		const roster = await request(source.pageUrl, bounded);
 		validateMarylandRoster(source, roster);
 		const records = await request(source.url, bounded);
-		const body = JSON.stringify({ schemaVersion: 1, type: "maryland-candidate-export", discovery, roster, records });
+		const body = JSON.stringify({
+			schemaVersion: 1,
+			type: "maryland-candidate-export",
+			discovery,
+			roster,
+			records
+		});
 		if (Buffer.byteLength(body) > options.maxBytes) throw new Error("The combined Maryland candidate capture exceeds its bounds.");
 		return body;
 	}
@@ -280,9 +362,18 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 		const page = await request(source.pageUrl, options);
 		const postBody = buildFloridaCandidateForm(source, page);
 		if (source.format === "florida-local-tsv") {
-			const countyCodes = await request(floridaCountyCodesUrl, { ...options, postBody: buildFloridaCountyForm(page) });
+			const countyCodes = await request(floridaCountyCodesUrl, {
+				...options,
+				postBody: buildFloridaCountyForm(page)
+			});
 			const records = await request(source.url, { ...options, postBody, textEncoding: "utf-8-or-windows-1252" });
-			const envelope = JSON.stringify({ schemaVersion: 1, type: "florida-local-export", page, countyCodes, records });
+			const envelope = JSON.stringify({
+				schemaVersion: 1,
+				type: "florida-local-export",
+				page,
+				countyCodes,
+				records
+			});
 			if (Buffer.byteLength(envelope) > options.maxBytes) throw new Error("The combined Florida local export exceeds its bounds.");
 			return envelope;
 		}
@@ -292,21 +383,30 @@ export async function fetchStateBallotSourceText(source: StateBallotSource, requ
 		return fetchWashingtonCandidatePages(source, request, options);
 	if (source.format === "south-carolina-html") {
 		const page = await request(source.url, options);
-		const records = await request(new URL("/Candidate/CandidateSearch/", source.url).href, { ...options, postBody: buildSouthCarolinaSearchForm(source, page) });
+		const records = await request(new URL("/Candidate/CandidateSearch/", source.url).href, {
+			...options,
+			postBody: buildSouthCarolinaSearchForm(source, page)
+		});
 		if (Buffer.byteLength(page) + Buffer.byteLength(records) > options.maxBytes)
 			throw new Error("The public candidate search exceeds its size limit.");
 		return JSON.stringify({ page, records });
 	}
 	if (publicStateExportFormats.includes(source.format)) {
 		const page = await request(source.url, options);
-		const records = await request(source.url, { ...options, postBody: buildPublicStateExportForm(source, page) });
+		const records = await request(source.url, {
+			...options,
+			postBody: buildPublicStateExportForm(source, page)
+		});
 		if (Buffer.byteLength(page) + Buffer.byteLength(records) > options.maxBytes)
 			throw new Error("The combined candidate export exceeds its size limit.");
 		return JSON.stringify({ page, records });
 	}
 	if (source.format === "north-dakota-html") {
 		const form = await request(source.url, options);
-		return request(source.url, { ...options, postBody: buildNorthDakotaSearchForm(source, form) });
+		return request(source.url, {
+			...options,
+			postBody: buildNorthDakotaSearchForm(source, form)
+		});
 	}
 	return request(source.url, { ...options, postBody: source.postBody });
 }

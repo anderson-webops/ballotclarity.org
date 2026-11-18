@@ -40,10 +40,14 @@ async function main() {
 			username
 		});
 
-		console.log(`Created ${user.role} user ${user.username} in ${(process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL) ? "configured admin database" : dbPath || "default admin database"}.`);
+		console.log(`Created ${user.role} user ${user.username} in ${(process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL)
+			? "configured admin database"
+			: dbPath || "default admin database"}.`);
 	}
 	catch (error) {
-		console.error(error instanceof Error ? error.message : "Unable to create admin user.");
+		console.error(error instanceof Error
+			? error.message
+			: "Unable to create admin user.");
 		process.exitCode = 1;
 	}
 	finally {

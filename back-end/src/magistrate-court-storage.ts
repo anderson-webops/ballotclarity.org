@@ -72,7 +72,26 @@ export function createMagistrateCourtRepository(directory = process.env.MAGISTRA
 			}
 			catch { failure = "Court collection evidence is invalid."; }
 			if (run?.status === "failed" && (run.finishedAt ?? "") >= (current?.importedAt ?? "")) failure = run.results[0]?.reason ?? "source-unavailable";
-			return [{ id: magistrateCourtPublication.sourceId, label: magistrateCourtPublication.title, stateCode: "GA", electionDate: "", kind: "officeholders", mode: "automatic", status: failure ? "error" : Date.parse(current!.snapshot.retrievedAt) + magistrateCourtPublication.minimumRefreshIntervalMs < Date.now() ? "stale" : "current", records: current?.snapshot.judges.length ?? null, retrievedAt: current?.snapshot.retrievedAt ?? null, lastAttemptAt: run?.startedAt ?? null, lastImportAt: current?.importedAt ?? null, failure }];
+			return [
+				{
+					id: magistrateCourtPublication.sourceId,
+					label: magistrateCourtPublication.title,
+					stateCode: "GA",
+					electionDate: "",
+					kind: "officeholders",
+					mode: "automatic",
+					status: failure
+						? "error"
+						: Date.parse(current!.snapshot.retrievedAt) + magistrateCourtPublication.minimumRefreshIntervalMs < Date.now()
+							? "stale"
+							: "current",
+					records: current?.snapshot.judges.length ?? null,
+					retrievedAt: current?.snapshot.retrievedAt ?? null,
+					lastAttemptAt: run?.startedAt ?? null,
+					lastImportAt: current?.importedAt ?? null,
+					failure
+				}
+			];
 		}
 	};
 }
@@ -103,7 +122,12 @@ async function atomicFile(path: string, body: string | Buffer) {
 export async function writeMagistrateCourt(directory: string, snapshot: MagistrateCourtSnapshot, acquisition: "collected" | "imported", now = Date.now()) {
 	validateMagistrateCourtSnapshot(snapshot, now);
 	if (!Number.isFinite(now) || now < Math.max(...snapshot.documents.map(document => Date.parse(document.capturedAt))) || !["collected", "imported"].includes(acquisition)) throw new Error("The court import clock or acquisition is invalid.");
-	const envelope: MagistrateCourtEnvelope = { sourceConfigurationSha256: configurationSha256, importedAt: new Date(now).toISOString(), acquisition, snapshot };
+	const envelope: MagistrateCourtEnvelope = {
+		sourceConfigurationSha256: configurationSha256,
+		importedAt: new Date(now).toISOString(),
+		acquisition,
+		snapshot
+	};
 	const body = `${JSON.stringify(envelope)}\n`;
 	if (Buffer.byteLength(body) > 128 * 1024) throw new Error("The court snapshot exceeds its bounds.");
 	try {

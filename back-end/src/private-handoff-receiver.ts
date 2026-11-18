@@ -43,7 +43,10 @@ export async function createHandoffReceiver(options: {
 	const keys = new Map(
 		options.publicKeys.map((key) => {
 			if (key.type !== "public") throw new Error("Only public verification keys belong on the receiver.");
-			return [handoffKeyId(key), key];
+			return [
+				handoffKeyId(key),
+				key
+			];
 		})
 	);
 	if (keys.size !== options.publicKeys.length) throw new Error("Duplicate handoff verification keys.");
@@ -56,7 +59,12 @@ export async function createHandoffReceiver(options: {
 	);
 	let active = 0;
 	const server = createServer(
-		{ maxHeaderSize: 8192, requestTimeout: 10000, headersTimeout: 5000, keepAliveTimeout: 1000 },
+		{
+			maxHeaderSize: 8192,
+			requestTimeout: 10000,
+			headersTimeout: 5000,
+			keepAliveTimeout: 1000
+		},
 		async (request, response) => {
 			response.setHeader("Cache-Control", "no-store");
 			response.setHeader("Content-Type", "application/json");
@@ -92,9 +100,15 @@ export async function createHandoffReceiver(options: {
 				response.end(JSON.stringify(result));
 			}
 			catch (error) {
-				response.statusCode = error instanceof HandoffError ? error.status : 503;
+				response.statusCode = error instanceof HandoffError
+					? error.status
+					: 503;
 				response.end(
-					JSON.stringify({ error: error instanceof HandoffError ? error.code : "receiver-unavailable" })
+					JSON.stringify({
+						error: error instanceof HandoffError
+							? error.code
+							: "receiver-unavailable"
+					})
 				);
 			}
 			finally {

@@ -152,7 +152,9 @@ test("createGoogleCivicClient bounds provider requests with an abort signal", as
 			capturedSignal = init?.signal;
 			return new Response(JSON.stringify({
 				error: {
-					errors: [{ reason: "badRequest" }],
+					errors: [
+						{ reason: "badRequest" }
+					],
 					message: "Address could not be parsed",
 				},
 			}), {

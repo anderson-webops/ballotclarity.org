@@ -8,18 +8,42 @@ import { unionCandidateHash as hash, unionCandidateOrigin, unionCandidatePolicyH
 export const unionSampleLandingUrl = `${unionCandidateOrigin}/sample-ballots-2/`;
 export const unionCountyOrigin = "https://ucnj.org";
 export const unionCountyPolicyUrls = [`${unionCountyOrigin}/robots.txt`, `${unionCountyOrigin}/`, `${unionCountyOrigin}/privacy-statement/`] as const;
-const municipalities = ["Berkeley Heights", "Clark", "Cranford", "Elizabeth", "Fanwood", "Garwood", "Hillside", "Kenilworth", "Linden", "Mountainside", "New Providence", "Plainfield", "Rahway", "Roselle", "Roselle Park", "Scotch Plains", "Springfield", "Summit", "Union", "Westfield", "Winfield"];
+const municipalities = [
+	"Berkeley Heights",
+	"Clark",
+	"Cranford",
+	"Elizabeth",
+	"Fanwood",
+	"Garwood",
+	"Hillside",
+	"Kenilworth",
+	"Linden",
+	"Mountainside",
+	"New Providence",
+	"Plainfield",
+	"Rahway",
+	"Roselle",
+	"Roselle Park",
+	"Scotch Plains",
+	"Springfield",
+	"Summit",
+	"Union",
+	"Westfield",
+	"Winfield"
+];
 const clean = (value: string) => value.replace(/\s+/gu, " ").trim();
 const text = (node: StateHtmlNode) => clean(stateHtmlText(node));
 function reject(): never {
 	throw new Error("The Union County sample-ballot source requires review.");
 }
 function legalLinks(document: StateHtmlNode, origin: string) {
-	return [...new Set(descendants(document, node => node.nodeName === "a" && /privacy|terms|copyright|disclaimer|licen[cs]e/iu.test(`${text(node)} ${attribute(node, "href")}`)).flatMap((node) => {
-		const address = new URL(attribute(node, "href"), origin);
-		if (address.protocol === "mailto:" || (address.pathname === "/privacy-statement/" && (address.searchParams.has("share") || address.hash.startsWith("#print")))) return [];
-		return [address.href];
-	}))].sort();
+	return [
+		...new Set(descendants(document, node => node.nodeName === "a" && /privacy|terms|copyright|disclaimer|licen[cs]e/iu.test(`${text(node)} ${attribute(node, "href")}`)).flatMap((node) => {
+			const address = new URL(attribute(node, "href"), origin);
+			if (address.protocol === "mailto:" || (address.pathname === "/privacy-statement/" && (address.searchParams.has("share") || address.hash.startsWith("#print")))) return [];
+			return [address.href];
+		}))
+	].sort();
 }
 function region(body: string) {
 	if (Buffer.byteLength(body) > 2 * 1024 * 1024) return reject();
@@ -55,7 +79,9 @@ export function readUnionSampleEdition(body: string): UnionSampleEdition {
 	const current = children.findIndex(node => node.nodeName === "h4" && text(node) === "Current");
 	const past = children.findIndex(node => node.nodeName === "h4" && text(node) === "Past");
 	if (current < 0 || past <= current) return reject();
-	const links = children.slice(current + 1, past).flatMap(node => node.nodeName === "a" ? [node] : descendants(node, child => child.nodeName === "a"));
+	const links = children.slice(current + 1, past).flatMap(node => node.nodeName === "a"
+		? [node]
+		: descendants(node, child => child.nodeName === "a"));
 	if (links.length !== 1) return reject();
 	const match = /^Sample Ballots for the (November) ([2-8]), (20\d{2}) General Election$/u.exec(text(links[0]!));
 	if (!match) return reject();
@@ -89,7 +115,9 @@ export function readUnionSampleCatalog(body: string, edition: UnionSampleEdition
 			const children = row.childNodes ?? [];
 			const leading = children.filter(node => node.nodeName !== "ul");
 			const label = clean(leading.map(stateHtmlText).join(" "));
-			const links = leading.flatMap(node => node.nodeName === "a" ? [node] : descendants(node, child => child.nodeName === "a"));
+			const links = leading.flatMap(node => node.nodeName === "a"
+				? [node]
+				: descendants(node, child => child.nodeName === "a"));
 			const nested = children.filter(node => node.nodeName === "ul");
 			if (label === "Back to Top") {
 				if (links.length !== 1 || attribute(links[0]!, "href") !== "#top" || nested.length) return reject();
@@ -128,13 +156,21 @@ export function readUnionSampleCatalog(body: string, edition: UnionSampleEdition
 	if (!documents.length || documents.length > 99 || new Set(documents.flatMap(document => document.claims.map(claim => claim.municipality))).size !== municipalities.length) return reject();
 	const claims = documents.flatMap(document => document.claims.map(claim => JSON.stringify(claim)));
 	if (new Set(claims).size !== claims.length) return reject();
-	const offered = [...new Set(descendants(main, node => node.nodeName === "a" && /\.pdf(?:$|[?#])/iu.test(attribute(node, "href"))).map(node => new URL(attribute(node, "href"), edition.url).href))].sort();
-	const allowed = [...documents.map(document => document.url), `${unionCandidateOrigin}/wp-content/uploads/2025/03/Find-your-Ward-and-District.pdf`].filter(url => offered.includes(url)).sort();
+	const offered = [
+		...new Set(descendants(main, node => node.nodeName === "a" && /\.pdf(?:$|[?#])/iu.test(attribute(node, "href"))).map(node => new URL(attribute(node, "href"), edition.url).href))
+	].sort();
+	const allowed = [
+		...documents.map(document => document.url),
+		`${unionCandidateOrigin}/wp-content/uploads/2025/03/Find-your-Ward-and-District.pdf`
+	].filter(url => offered.includes(url)).sort();
 	if (offered.join("\n") !== allowed.join("\n")) return reject();
 	documents.sort((left, right) => left.form - right.form);
 	for (const document of documents) document.claims.sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
 	const catalog = { edition, documents };
-	return { ...catalog, sha256: hash(JSON.stringify(catalog)) };
+	return {
+		...catalog,
+		sha256: hash(JSON.stringify(catalog))
+	};
 }
 
 export interface UnionBallotCapture { role: string; url: string; sha256: string; capturedAt: string; requestedAt: string; body: Buffer }
@@ -159,15 +195,34 @@ async function collectUnionSelectedSamples(select: (catalog: UnionSampleCatalog)
 	async function request(role: string, url: string, pdf = false) {
 		const host = new URL(url).hostname;
 		if (!["unioncountyvotes.com", "ucnj.org"].includes(host)) return reject();
-		const earliest = (previous.get(host) ?? -Infinity) + (host === "unioncountyvotes.com" ? 31000 : 1100);
+		const earliest = (previous.get(host) ?? -Infinity) + (host === "unioncountyvotes.com"
+			? 31000
+			: 1100);
 		while (now() < earliest) await (options.sleep ?? wait)(Math.ceil(earliest - now()));
 		const requestedAt = new Date(now()).toISOString();
-		const response = await (options.request ?? fetchRemoteSourceDocument)(url, { allowedHosts: [host], maxBytes: pdf ? 12 * 1024 * 1024 : 2 * 1024 * 1024, timeoutMs: 20000 });
+		const response = await (options.request ?? fetchRemoteSourceDocument)(url, {
+			allowedHosts: [host],
+			maxBytes: pdf
+				? 12 * 1024 * 1024
+				: 2 * 1024 * 1024,
+			timeoutMs: 20000
+		});
 		previous.set(host, now());
-		if (response.status !== 200 || !response.body.length || (pdf ? !response.body.subarray(0, 5).equals(Buffer.from("%PDF-")) || !/application\/pdf/iu.test(response.contentType) : !/text\/(?:plain|html)/iu.test(response.contentType))) return reject();
+		if (response.status !== 200 || !response.body.length || (pdf
+			? !response.body.subarray(0, 5).equals(Buffer.from("%PDF-")) || !/application\/pdf/iu.test(response.contentType)
+			: !/text\/(?:plain|html)/iu.test(response.contentType))) {
+			return reject();
+		}
 		total += response.body.length;
 		if (total > 64 * 1024 * 1024) return reject();
-		const capture = { role, url, requestedAt, capturedAt: new Date(now()).toISOString(), sha256: hash(response.body), body: response.body };
+		const capture = {
+			role,
+			url,
+			requestedAt,
+			capturedAt: new Date(now()).toISOString(),
+			sha256: hash(response.body),
+			body: response.body
+		};
 		await options.onCapture?.(capture);
 		captures.push(capture);
 		return capture.body.toString("utf8");
@@ -183,5 +238,12 @@ async function collectUnionSelectedSamples(select: (catalog: UnionSampleCatalog)
 	const selected = select(catalog);
 	if (!selected.length || selected.length > 25) return reject();
 	for (const document of selected) await request(`form-${document.form}`, document.url, true);
-	return { catalog, selected, captures, imported: false, publicationApproved: false, personalApplicabilityVerified: false };
+	return {
+		catalog,
+		selected,
+		captures,
+		imported: false,
+		publicationApproved: false,
+		personalApplicabilityVerified: false
+	};
 }

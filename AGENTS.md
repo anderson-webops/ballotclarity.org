@@ -64,7 +64,7 @@ artifact contracts and source documentation remain separate.
 
 ## Build, Test, and Development Commands
 
-- `npm install` at the repository root installs the full monorepo. Keep the root and back-end lockfiles in sync.
+- `npm ci` at the repository root installs the authoritative locked workspace. Keep the root and back-end lockfiles in sync.
 - `npm run dev`, `npm run serve`, and `npm run preview` run the Nuxt front-end in local, LAN, and preview modes.
 - `npm run server` starts the API in watch mode; `npm run server:once` runs it without the watcher and is the better
   choice for IDE stop/start behavior.
@@ -89,9 +89,8 @@ artifact contracts and source documentation remain separate.
 - `test/e2e-smoke.test.ts` at the repo root is the smoke path for integrated build/runtime validation. Keep it working
   when changing routing, server startup, or API wiring.
 - When touching API contracts or election-data behavior, update tests in the same change set.
-- After every code change, run a local verification pass against the locally retrieved API-backed data already available
-  in the workspace or `.env`-driven provider flow, and confirm that every affected route, page, and connected system
-  still populates and hooks up to the correct data rather than only passing static/unit checks.
+- Verify affected API-backed routes against controlled fixtures and retained data with their approval/provenance intact.
+  Keep routine checks independent of live credentials; provider checks require their separate authorization.
 
 ## Commit and Review Guidelines
 
@@ -117,11 +116,11 @@ artifact contracts and source documentation remain separate.
 - Use lowercase annotated semver tags only. Do not invent ad-hoc labels such as `V1`, `torca-r07`, `pre-lfs-migration-*`, or similar one-off names.
 - This repo follows the stable `v1.x` line. Stay on `v1` for routine work; only cut `v2` for an intentional breaking product, API-contract, or deployment change.
 - Before creating a new tag, check the latest tag in the active semver line. Published tags are immutable; a later release-worthy commit receives the next appropriate semver tag and never moves an existing tag.
-- Keep each GitHub release aligned with its immutable tag. Release notes and assets may be corrected in place, but a release must never be repointed at a different commit.
+- Keep each GitHub release aligned with its immutable tag and assets. Correct a deployable artifact through a new qualified release, retaining earlier evidence.
 - Cut a fresh semver tag and release only when the work crosses a real release boundary, such as a new deployable milestone, a materially different operator/user-facing state, or a version-line change that deserves its own notes and rollback point.
 - Create an annotated tag when ballot lookup behavior, candidate/measure/election content, API contracts, dependency/security posture, or health/deploy behavior materially changes.
 - Create a GitHub release when that tag represents a real production milestone for voters, operators, or rollback/reference needs. Release notes should summarize scope, validation, rollout notes, and any migration or recovery steps.
-- If the existing tag or release history contains stale drafts, redundant entries, or ad-hoc labels, clean that history up instead of preserving clutter.
+- Preserve existing tags, releases, receipts and historical evidence; history cleanup requires a separately reviewed exact-ref authorization.
 - Skip tags and releases for trivial doc-only edits, formatting-only changes, or routine housekeeping unless they change deployment, operations, or a consumer-facing contract.
 
 ## Dependency & Lockfile Discipline
@@ -137,7 +136,7 @@ Required production/dev dependency update flow before every dependency commit:
 4. If the update is only a lockfile/security refresh, regenerate from the root with `npm install --package-lock-only --ignore-scripts --no-fund --no-audit`.
 5. Run `npm audit` from the repository root and resolve all known production and development advisories before creating a release tag or publishing a release. Record genuine upstream blockers and keep the release held until they are resolved.
 
-Required dependency verification before every commit/push:
+Required dependency verification before accepted default-branch integration and release:
 1. Run `npm ci` from the repository root.
 2. Run `npm run lint`.
 3. Run `npm run typecheck`.
@@ -149,7 +148,12 @@ If `npm ci` fails because `package.json` and `package-lock.json` are out of sync
 2. Re-run `npm ci` from the repository root.
 3. Commit the resulting `package-lock.json` change with the related dependency/package change.
 
-Never commit or push dependency/package changes if root `npm ci` fails.
+With Jacob's explicit approval to use existing CI under local resource constraints,
+isolated candidate commits may be pushed through an existing review branch before
+full local installation. Preserve focused checks and lock parity, then require the
+complete clean locked installation and project checks in exact-source CI before
+integration, tagging or release. An unavailable, failed or partial result stays
+open; intermediate source progress is not release qualification.
 
 ## Direct Delivery and Pull Requests
 

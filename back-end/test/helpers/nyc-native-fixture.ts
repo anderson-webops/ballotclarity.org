@@ -15,9 +15,18 @@ export function nycFontFixture(extended = false, swap = false) {
 	if (extended) {
 		tables.get("maxp")!.writeUInt16BE(6, 4);
 		const offsets = tables.get("loca")!;
-		tables.set("loca", Buffer.concat([offsets, offsets.subarray(-2)]));
+		tables.set("loca", Buffer.concat([
+			offsets,
+			offsets.subarray(-2)
+		]));
 	}
-	const entries = [[0xF020, 1], [0xF041, 2], [0xF042, 3], [0xF0C0, 4], [0xFFFF, 0]];
+	const entries = [
+		[0xF020, 1],
+		[0xF041, 2],
+		[0xF042, 3],
+		[0xF0C0, 4],
+		[0xFFFF, 0]
+	];
 	const start = 12;
 	const segments = entries.length;
 	const cmap = Buffer.alloc(start + 16 + segments * 8);
@@ -45,7 +54,10 @@ export function nycFontFixture(extended = false, swap = false) {
 		directory.writeUInt32BE(bytes.length, entry + 12);
 		position += bytes.length;
 	}
-	return Buffer.concat([directory, ...tables.values()]);
+	return Buffer.concat([
+		directory,
+		...tables.values()
+	]);
 }
 
 export function nycUnicodeFixture() {
@@ -68,13 +80,17 @@ export function nycVisualFixture(firstLabel = "THE CONTEST LIST") {
 				const path = `M 0 -5 L ${1 + character.codePointAt(0)! / 1000} -5 L 1 0 L 0 0 Z`;
 				if (!definitions.has(character)) definitions.set(character, { id: `glyph-0-${definitions.size}`, path });
 				const definition = definitions.get(character)!;
-				approvals[character] = [createHash("sha256").update(path).digest("hex")];
+				approvals[character] = [
+					createHash("sha256").update(path).digest("hex")
+				];
 				uses.push(`<use xlink:href="#${definition.id}" x="${position}" y="${baseline}"/>`);
 			}
 			position += 2;
 		}
 		if (!before) firstFieldUses = uses.slice();
 	}
-	const svg = `<svg width="792pt" height="612pt" viewBox="0 0 792 612"><defs>${[...definitions.values()].map(definition => `<g id="${definition.id}"><path d="${definition.path}"/></g>`).join("")}</defs><g fill="rgb(0%, 0%, 0%)" fill-opacity="1">${uses.join("")}</g></svg>`;
+	const svg = `<svg width="792pt" height="612pt" viewBox="0 0 792 612"><defs>${[
+		...definitions.values()
+	].map(definition => `<g id="${definition.id}"><path d="${definition.path}"/></g>`).join("")}</defs><g fill="rgb(0%, 0%, 0%)" fill-opacity="1">${uses.join("")}</g></svg>`;
 	return { xml, svg, approvals, firstFieldUses };
 }

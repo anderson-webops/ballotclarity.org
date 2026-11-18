@@ -22,8 +22,12 @@ export function summarizeGoogleCivicProviderFailure(status: number, body: string
 }
 
 export function summarizeProviderProbeError(error: unknown, timeoutMs: number) {
-	const name = error instanceof Error ? error.name : "";
-	const message = error instanceof Error ? error.message : String(error);
+	const name = error instanceof Error
+		? error.name
+		: "";
+	const message = error instanceof Error
+		? error.message
+		: String(error);
 
 	if (name === "AbortError") {
 		return `Network probe timed out after ${timeoutMs}ms before the provider returned a response. Check local outbound HTTPS, DNS, proxy/VPN, and provider availability, then retry.`;

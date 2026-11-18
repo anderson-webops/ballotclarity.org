@@ -24,19 +24,50 @@ const hash = (value: string) => createHash("sha256").update(value).digest("hex")
 function fixture(year = 2026, pending = false) {
 	const at = `${year}-10-26T10:00:00.000Z`;
 	const pageUrl = `https://dcboe.org/elections/${year}-elections`;
-	const urls = year === 2026 ? legacyReviewedStateBallotSource(source)!.documentUrls! : [1, 2, 3].map((number, index) => `https://dcboe.org/getContentAsset/${String(number).repeat(8)}-${String(number).repeat(4)}-${String(number).repeat(4)}-${String(number).repeat(4)}-${String(number).repeat(12)}/55555555-5555-5555-5555-555555555555/${year}-General-${index === 2 ? "Election-WRITE-IN-CANDIDATES" : "CANDIDATES"}-07222028.pdf?language=en`);
-	const page = (url: string, body: string) => ({ url, body, sha256: hash(body), retrievedAt: at });
+	const urls = year === 2026
+		? legacyReviewedStateBallotSource(source)!.documentUrls!
+		: [1, 2, 3].map((number, index) => `https://dcboe.org/getContentAsset/${String(number).repeat(8)}-${String(number).repeat(4)}-${String(number).repeat(4)}-${String(number).repeat(4)}-${String(number).repeat(12)}/55555555-5555-5555-5555-555555555555/${year}-General-${index === 2
+				? "Election-WRITE-IN-CANDIDATES"
+				: "CANDIDATES"}-07222028.pdf?language=en`);
+	const page = (url: string, body: string) => ({
+		url,
+		body,
+		sha256: hash(body),
+		retrievedAt: at
+	});
 	const text = dcFixture(year);
-	const documents = urls.map((url, index) => ({ url, text: text[index]!, sha256: hash(url), retrievedAt: at })).slice(0, pending ? 2 : 3);
+	const documents = urls.map((url, index) => ({
+		url,
+		text: text[index]!,
+		sha256: hash(url),
+		retrievedAt: at
+	})).slice(0, pending ? 2 : 3);
 	const controls = documents.map((document, index) => `<a href="${document.url}">${labels[index]}</a>`).join("");
-	return { schemaVersion: 1, type: "dc-discovery", policies: dcPolicyReceipts, accessibility: page("https://dcboe.org/Accessibility", policy), index: page(dcDiscoveryUrl, `<a href="${pageUrl}">${year} Elections</a>${footer}`), pages: [page(pageUrl, `<div id="main-content"><h2>${year} Elections</h2><p>GENERAL ELECTION - November ${year === 2026 ? "3" : "7"}, ${year}</p>${controls}<p>PRIMARY ELECTION - June 16, ${year}</p><a href="/private">Primary Candidates</a></div>${footer}`)], documents: [documents] };
+	return {
+		schemaVersion: 1,
+		type: "dc-discovery",
+		policies: dcPolicyReceipts,
+		accessibility: page("https://dcboe.org/Accessibility", policy),
+		index: page(dcDiscoveryUrl, `<a href="${pageUrl}">${year} Elections</a>${footer}`),
+		pages: [
+			page(pageUrl, `<div id="main-content"><h2>${year} Elections</h2><p>GENERAL ELECTION - November ${year === 2026
+				? "3"
+				: "7"}, ${year}</p>${controls}<p>PRIMARY ELECTION - June 16, ${year}</p><a href="/private">Primary Candidates</a></div>${footer}`)
+		],
+		documents: [documents]
+	};
 }
 const nowFor = (value: ReturnType<typeof fixture>) => Date.parse(value.index.retrievedAt) + 3600000;
 function target(value: ReturnType<typeof fixture>) {
-	return value.pages[0]!.url.includes("2026") ? source : stateBallotCycleSources(discoverStateBallotElectionCycles(JSON.stringify(value), source.id, nowFor(value)), nowFor(value))[0]!;
+	return value.pages[0]!.url.includes("2026")
+		? source
+		: stateBallotCycleSources(discoverStateBallotElectionCycles(JSON.stringify(value), source.id, nowFor(value)), nowFor(value))[0]!;
 }
 async function capture(value: ReturnType<typeof fixture>) {
-	return fetchDcCandidateCapture(target(value), { discovery: JSON.stringify(value), now: () => nowFor(value) });
+	return fetchDcCandidateCapture(target(value), {
+		discovery: JSON.stringify(value),
+		now: () => nowFor(value)
+	});
 }
 
 test("D.C. reusable discovery preserves its original manual descriptor and citizenship notice", async () => {
@@ -54,7 +85,12 @@ test("D.C. offered future dates remain pending until all three published lists a
 	const parsed = readDcDiscovery(JSON.stringify(value), nowFor(value));
 	assert.equal(parsed.elections[0]!.electionDate, "2028-11-07");
 	assert.deepEqual(parsed.elections[0]!.dcDocuments, []);
-	assert.throws(() => parseDcCandidateCapture(target(value), JSON.stringify({ schemaVersion: 1, type: "dc-candidate-capture", discovery: value, electionDate: "2028-11-07" }), createStateCandidateRecord, nowFor(value)), StateBallotAwaitingRecordsError);
+	assert.throws(() => parseDcCandidateCapture(target(value), JSON.stringify({
+		schemaVersion: 1,
+		type: "dc-candidate-capture",
+		discovery: value,
+		electionDate: "2028-11-07"
+	}), createStateCandidateRecord, nowFor(value)), StateBallotAwaitingRecordsError);
 });
 
 test("D.C. page, linked-policy and source-binding changes fail before import", () => {
@@ -73,26 +109,48 @@ test("D.C. page, linked-policy and source-binding changes fail before import", (
 		value.pages[0]!.sha256 = hash(value.pages[0]!.body);
 		assert.throws(() => readDcDiscovery(JSON.stringify(value), nowFor(value)));
 	}
-	for (const url of ["http://dcboe.org/file.pdf", source.pageUrl, "https://example.org/list.pdf", `${source.documentUrls?.[0] ?? "https://dcboe.org/file.pdf"}#page=1`]) assert.throws(() => validateDcDocumentUrl(url));
+	for (const url of [
+		"http://dcboe.org/file.pdf",
+		source.pageUrl,
+		"https://example.org/list.pdf",
+		`${source.documentUrls?.[0] ?? "https://dcboe.org/file.pdf"}#page=1`
+	]) assert.throws(() => validateDcDocumentUrl(url));
 });
 
 test("D.C. collection is serial, zero-redirect and uses only offered public controls", async () => {
 	const value = fixture(2028);
 	const requests: string[] = [];
 	const sleeps: number[] = [];
-	const body = await fetchDcCycleDiscovery({ now: () => nowFor(value), sleep: async (duration) => {
-		sleeps.push(duration);
-	}, requestText: async (url, options) => {
-		assert.equal(options.maxRedirects, 0);
-		requests.push(url);
-		if (url === dcDiscoveryUrl) return value.index.body;
-		if (url === value.accessibility.url) return value.accessibility.body;
-		assert.equal(url, value.pages[0]!.url);
-		return value.pages[0]!.body;
-	}, requestDocument: async (url) => {
-		requests.push(url);
-		return { status: url.endsWith("/robots.txt") ? 404 : 200, contentType: url.endsWith("/robots.txt") ? "text/html" : "application/pdf", body: url.endsWith("/robots.txt") ? Buffer.alloc(0) : Buffer.from(`%PDF-1.7\n${url}`), etag: undefined };
-	}, extractor: async bytes => value.documents[0]!.find(document => bytes.toString().endsWith(document.url))!.text });
+	const body = await fetchDcCycleDiscovery({
+		now: () => nowFor(value),
+		sleep: async (duration) => {
+			sleeps.push(duration);
+		},
+		requestText: async (url, options) => {
+			assert.equal(options.maxRedirects, 0);
+			requests.push(url);
+			if (url === dcDiscoveryUrl) return value.index.body;
+			if (url === value.accessibility.url) return value.accessibility.body;
+			assert.equal(url, value.pages[0]!.url);
+			return value.pages[0]!.body;
+		},
+		requestDocument: async (url) => {
+			requests.push(url);
+			return {
+				status: url.endsWith("/robots.txt")
+					? 404
+					: 200,
+				contentType: url.endsWith("/robots.txt")
+					? "text/html"
+					: "application/pdf",
+				body: url.endsWith("/robots.txt")
+					? Buffer.alloc(0)
+					: Buffer.from(`%PDF-1.7\n${url}`),
+				etag: undefined
+			};
+		},
+		extractor: async bytes => value.documents[0]!.find(document => bytes.toString().endsWith(document.url))!.text
+	});
 	assert.equal(requests.length, 7);
 	assert.equal(sleeps.length, 6);
 	assert.ok(sleeps.every(duration => duration >= 11000));
@@ -102,10 +160,17 @@ test("D.C. collection is serial, zero-redirect and uses only offered public cont
 test("D.C. denials and changed robots stop before any page or PDF request", async () => {
 	for (const status of [200, 301, 403, 429, 500]) {
 		let requests = 0;
-		await assert.rejects(fetchDcCycleDiscovery({ requestDocument: async () => {
-			requests++;
-			return { status, contentType: "text/html", body: Buffer.alloc(0), etag: undefined };
-		} }), /robots/u);
+		await assert.rejects(fetchDcCycleDiscovery({
+			requestDocument: async () => {
+				requests++;
+				return {
+					status,
+					contentType: "text/html",
+					body: Buffer.alloc(0),
+					etag: undefined
+				};
+			}
+		}), /robots/u);
 		assert.equal(requests, 1);
 	}
 });
@@ -117,14 +182,30 @@ test("D.C. reviewed migration retains the exact envelope, clocks, cached reads a
 	let clock = nowFor(value);
 	const parsed = parseDcCandidateCapture(source, await capture(value), createStateCandidateRecord, clock);
 	const storage = createStateBallotStorage(directory);
-	await storage.write({ source: legacyReviewedStateBallotSource(source)!, records: parsed.records, retrievedAt: parsed.retrievedAt, sha256: parsed.sha256, documents: parsed.documents });
+	await storage.write({
+		source: legacyReviewedStateBallotSource(source)!,
+		records: parsed.records,
+		retrievedAt: parsed.retrievedAt,
+		sha256: parsed.sha256,
+		documents: parsed.documents
+	});
 	const filename = (await readdir(directory))[0]!;
 	const original = await readFile(join(directory, filename));
 	let requests = 0;
-	const options = { familyId: source.id, dataDirectory: directory, catalogPath: join(directory, "cycles.json"), now: () => clock, fetchDiscovery: async () => JSON.stringify(value), fetchCandidates: async (selected: StateBallotSource) => {
-		requests++;
-		return fetchDcCandidateCapture(selected, { discovery: JSON.stringify(value), now: () => clock });
-	} };
+	const options = {
+		familyId: source.id,
+		dataDirectory: directory,
+		catalogPath: join(directory, "cycles.json"),
+		now: () => clock,
+		fetchDiscovery: async () => JSON.stringify(value),
+		fetchCandidates: async (selected: StateBallotSource) => {
+			requests++;
+			return fetchDcCandidateCapture(selected, {
+				discovery: JSON.stringify(value),
+				now: () => clock
+			});
+		}
+	};
 	const first = await syncStateBallotCycles(options);
 	assert.equal(first.results[0]!.imported, true);
 	const backup = (await readdir(directory)).find(name => name.startsWith(`${filename}.legacy-`));
@@ -151,7 +232,13 @@ test("D.C. future waiting receipt invalidates when the complete publications arr
 	context.after(() => rm(directory, { recursive: true }));
 	let value = fixture(2028, true);
 	const selected = target(value);
-	const options = { familyId: source.id, dataDirectory: directory, catalogPath: join(directory, "cycles.json"), now: () => nowFor(value), fetchDiscovery: async () => JSON.stringify(value) };
+	const options = {
+		familyId: source.id,
+		dataDirectory: directory,
+		catalogPath: join(directory, "cycles.json"),
+		now: () => nowFor(value),
+		fetchDiscovery: async () => JSON.stringify(value)
+	};
 	assert.equal((await syncStateBallotCycles(options)).results.find(result => result.sourceId === selected.id)!.status, "awaiting-records");
 	value = fixture(2028);
 	assert.equal((await syncStateBallotCycles(options)).results.find(result => result.sourceId === selected.id)!.records, 6);
@@ -163,11 +250,23 @@ test("D.C. failed backup preserves accepted data and never reports a successful 
 	const value = fixture();
 	const parsed = parseDcCandidateCapture(source, await capture(value), createStateCandidateRecord, nowFor(value));
 	const storage = createStateBallotStorage(directory);
-	await storage.write({ source: legacyReviewedStateBallotSource(source)!, records: parsed.records, retrievedAt: parsed.retrievedAt, sha256: parsed.sha256, documents: parsed.documents });
+	await storage.write({
+		source: legacyReviewedStateBallotSource(source)!,
+		records: parsed.records,
+		retrievedAt: parsed.retrievedAt,
+		sha256: parsed.sha256,
+		documents: parsed.documents
+	});
 	const filename = (await readdir(directory))[0]!;
 	const bytes = await readFile(join(directory, filename));
 	await writeFile(join(directory, `${filename}.legacy-${hash(bytes.toString())}`), "Owned conflicting backup fixture.");
-	const result = await syncStateBallotCycles({ familyId: source.id, dataDirectory: directory, catalogPath: join(directory, "cycles.json"), now: () => nowFor(value), fetchDiscovery: async () => JSON.stringify(value) });
+	const result = await syncStateBallotCycles({
+		familyId: source.id,
+		dataDirectory: directory,
+		catalogPath: join(directory, "cycles.json"),
+		now: () => nowFor(value),
+		fetchDiscovery: async () => JSON.stringify(value)
+	});
 	assert.equal(result.results[0]!.status, "persistence-failed");
 	assert.equal(result.results[0]!.imported, false);
 	assert.ok((await readFile(join(directory, filename))).equals(bytes));

@@ -49,22 +49,102 @@ const translations: Record<string, string> = {
 	"Board Member": "Miembro de Junta",
 	"Council Member": "Miembro de Concejo",
 };
-const categories = ["United States Offices", "State Offices", "County Offices", "Judges", "Nonpartisan Contests (Schools, Fire Districts, Municipalities)"];
-const parties = new Set(["DEM", "REP", "LBT", "GRN", "PND", "NOL", "IND", "NONPARTISAN"]);
+const categories = [
+	"United States Offices",
+	"State Offices",
+	"County Offices",
+	"Judges",
+	"Nonpartisan Contests (Schools, Fire Districts, Municipalities)"
+];
+const parties = new Set([
+	"DEM",
+	"REP",
+	"LBT",
+	"GRN",
+	"PND",
+	"NOL",
+	"IND",
+	"NONPARTISAN"
+]);
 function reject(reason: string): never {
 	throw new Error(`The Pima ${reason} requires review.`);
 }
 function base(label: string): Office {
-	const scope: StateContestScope = label === "U.S. Representative in Congress" ? "congressional" : label === "State Senator" ? "state-senate" : label === "State Representative" ? "state-house" : ["Governor and Lieutenant Governor", "Secretary of State", "Attorney General", "State Treasurer", "Superintendent of Public Instruction", "State Mine Inspector", "Corporation Commissioner", "Justice of the Arizona Supreme Court"].includes(label) ? "statewide" : "local";
-	const exclude = label === "Governor and Lieutenant Governor" ? "Running-mate pairing is not established by this list." : /^(?:Justice of the Arizona Supreme Court|Judge of the)/u.test(label) ? "Judicial retention requires separate corroboration." : undefined;
-	return { office: label, scope, district: "", ...(scope === "local" ? { jurisdiction: "Pima County" } : {}), candidates: 0, ...(exclude ? { exclude } : {}) };
+	const scope: StateContestScope = label === "U.S. Representative in Congress"
+		? "congressional"
+		: label === "State Senator"
+			? "state-senate"
+			: label === "State Representative"
+				? "state-house"
+				: [
+						"Governor and Lieutenant Governor",
+						"Secretary of State",
+						"Attorney General",
+						"State Treasurer",
+						"Superintendent of Public Instruction",
+						"State Mine Inspector",
+						"Corporation Commissioner",
+						"Justice of the Arizona Supreme Court"
+					].includes(label)
+						? "statewide"
+						: "local";
+	const exclude = label === "Governor and Lieutenant Governor"
+		? "Running-mate pairing is not established by this list."
+		: /^(?:Justice of the Arizona Supreme Court|Judge of the)/u.test(label)
+			? "Judicial retention requires separate corroboration."
+			: undefined;
+	return {
+		office: label,
+		scope,
+		district: "",
+		...(scope === "local"
+			? { jurisdiction: "Pima County" }
+			: {}),
+		candidates: 0,
+		...(exclude
+			? { exclude }
+			: {})
+	};
 }
 function nameValid(name: string) {
 	return name.length <= 200 && /^[\p{L}\p{M} .,'’"-]+$/u.test(name) && /\p{L}/u.test(name) && name === name.toUpperCase();
 }
 function identity(source: StateBallotSource, office: Office, name: string, party: string, status: "listed" | "write-in"): StateCandidateRecord {
-	const label = office.office + (office.termEnd ? ` (Term expires ${office.termEnd})` : "");
-	return { id: createHash("sha256").update(JSON.stringify([source.id, source.electionDate, label, office.district, office.jurisdiction ?? "", name, party, status])).digest("hex").slice(0, 24), name, office: label, party, scope: office.scope, district: office.district, status, ...(office.jurisdiction ? { jurisdiction: office.jurisdiction } : {}), ...(office.district ? { sourceDistrictLabel: `${["Justice of the Peace", "Constable"].includes(office.office) ? "Justice Prec." : "Dist."} ${office.district}` } : {}), ...(office.termEnd ? { termEnd: office.termEnd } : {}), ...(office.voteLimit ? { voteLimit: office.voteLimit } : {}) };
+	const label = office.office + (office.termEnd
+		? ` (Term expires ${office.termEnd})`
+		: "");
+	return {
+		id: createHash("sha256").update(JSON.stringify([
+			source.id,
+			source.electionDate,
+			label,
+			office.district,
+			office.jurisdiction ?? "",
+			name,
+			party,
+			status
+		])).digest("hex").slice(0, 24),
+		name,
+		office: label,
+		party,
+		scope: office.scope,
+		district: office.district,
+		status,
+		...(office.jurisdiction
+			? { jurisdiction: office.jurisdiction }
+			: {}),
+		...(office.district
+			? { sourceDistrictLabel: `${["Justice of the Peace", "Constable"].includes(office.office)
+					? "Justice Prec."
+					: "Dist."} ${office.district}` }
+			: {}),
+		...(office.termEnd
+			? { termEnd: office.termEnd }
+			: {}),
+		...(office.voteLimit
+			? { voteLimit: office.voteLimit }
+			: {})
+	};
 }
 function rows(fields: readonly PimaNativeField[]) {
 	const result: PimaNativeField[][] = [];
@@ -83,11 +163,22 @@ export function readPimaFields(source: StateBallotSource, pages: readonly (reado
 	const records: StateCandidateRecord[] = [];
 	const claims: PimaClaim[] = [];
 	function add(office: Office, name: string, party: string, page: number, status: "listed" | "write-in") {
-		const judicialName = office.exclude?.startsWith("Judicial") ? name.replace(/ - DIVISION [1-9]\d?$/u, "") : name;
+		const judicialName = office.exclude?.startsWith("Judicial")
+			? name.replace(/ - DIVISION [1-9]\d?$/u, "")
+			: name;
 		if (!nameValid(judicialName) || !parties.has(party))
 			return reject("candidate row");
 		office.candidates++;
-		const claim: PimaClaim = { name, party, office: office.office, district: office.district, ...(office.jurisdiction ? { jurisdiction: office.jurisdiction } : {}), page };
+		const claim: PimaClaim = {
+			name,
+			party,
+			office: office.office,
+			district: office.district,
+			...(office.jurisdiction
+				? { jurisdiction: office.jurisdiction }
+				: {}),
+			page
+		};
 		if (office.exclude) {
 			claim.exclusion = office.exclude;
 		}
@@ -106,7 +197,19 @@ export function readPimaFields(source: StateBallotSource, pages: readonly (reado
 		const fields = pages[0]!;
 		const day = Number(source.electionDate.slice(8));
 		const year = source.electionDate.slice(0, 4);
-		const fixed = ["PIMA COUNTY, STATE OF ARIZONA", `GENERAL ELECTION - NOVEMBER ${day}, ${year} /`, `ELECCION GENERAL - ${day} DE NOVIEMBRE DE ${year}`, "WRITE-IN LIST / LISTA CANDIDATOS POR ESCRITO", "NAME / NOMBRE", "OFFICE / PUESTO", "PARTY /", "PARTIDO", "In accordance with A.R.S. 16-312 et seq. only the above names will be counted in the tally of ballots.", "De acuerdo con A.R.S. 16-312 et seq. solamente los nombres sobre escritos serán contados en la escrutación de", "boletas."];
+		const fixed = [
+			"PIMA COUNTY, STATE OF ARIZONA",
+			`GENERAL ELECTION - NOVEMBER ${day}, ${year} /`,
+			`ELECCION GENERAL - ${day} DE NOVIEMBRE DE ${year}`,
+			"WRITE-IN LIST / LISTA CANDIDATOS POR ESCRITO",
+			"NAME / NOMBRE",
+			"OFFICE / PUESTO",
+			"PARTY /",
+			"PARTIDO",
+			"In accordance with A.R.S. 16-312 et seq. only the above names will be counted in the tally of ballots.",
+			"De acuerdo con A.R.S. 16-312 et seq. solamente los nombres sobre escritos serán contados en la escrutación de",
+			"boletas."
+		];
 		for (const label of fixed) {
 			if (fields.filter(field => field.text === label && field.bold).length !== 1)
 				return reject("write-in heading");
@@ -119,8 +222,12 @@ export function readPimaFields(source: StateBallotSource, pages: readonly (reado
 			return reject("write-in names");
 		const used = new Set(names);
 		for (const [index, name] of names.entries()) {
-			const top = index ? (names[index - 1]!.top + name.top) / 2 : 190;
-			const bottom = names[index + 1] ? (names[index + 1]!.top + name.top) / 2 : 790;
+			const top = index
+				? (names[index - 1]!.top + name.top) / 2
+				: 190;
+			const bottom = names[index + 1]
+				? (names[index + 1]!.top + name.top) / 2
+				: 790;
 			const row = body.filter(field => field !== name && field.top >= top && field.top < bottom);
 			if (row.some(field => used.has(field)))
 				return reject("write-in row overlap");
@@ -138,14 +245,25 @@ export function readPimaFields(source: StateBallotSource, pages: readonly (reado
 			const district = /^(U\.S\. REPRESENTATIVE IN CONGRESS - DISTRICT|BOARD OF SUPERVISORS - DISTRICT|JUSTICE OF THE PEACE - PRECINCT|CONSTABLE, JUSTICE PRECINCT) ([1-9]\d?)$/u.exec(label);
 			const jurisdiction = /^(GOVERNING BOARD|BOARD MEMBER) - ([\p{L}\p{M}\d .-]+)$/u.exec(label);
 			if (district) {
-				office = base(district[1]!.startsWith("U.S.") ? "U.S. Representative in Congress" : district[1]!.startsWith("BOARD") ? "Board of Supervisors" : district[1]!.startsWith("JUSTICE") ? "Justice of the Peace" : "Constable");
+				office = base(district[1]!.startsWith("U.S.")
+					? "U.S. Representative in Congress"
+					: district[1]!.startsWith("BOARD")
+						? "Board of Supervisors"
+						: district[1]!.startsWith("JUSTICE")
+							? "Justice of the Peace"
+							: "Constable");
 				office.district = district[2]!;
 			}
 			else if (jurisdiction) {
-				office = base(jurisdiction[1] === "GOVERNING BOARD" ? "Governing Board" : "Board Member");
+				office = base(jurisdiction[1] === "GOVERNING BOARD"
+					? "Governing Board"
+					: "Board Member");
 				office.jurisdiction = jurisdiction[2]!;
-				if (!(office.office === "Governing Board" ? / Unified School District No\. [1-9]\d?$/iu : / Fire District$/iu).test(office.jurisdiction))
+				if (!(office.office === "Governing Board"
+					? / Unified School District No\. [1-9]\d?$/iu
+					: / Fire District$/iu).test(office.jurisdiction)) {
 					return reject("write-in jurisdiction");
+				}
 			}
 			else if (label === "GOVERNOR") {
 				office = base("Governor and Lieutenant Governor");
@@ -156,7 +274,9 @@ export function readPimaFields(source: StateBallotSource, pages: readonly (reado
 			else {
 				return reject("write-in office");
 			}
-			add(office, name.text, partyFields[0]!.text === "NON" ? "NONPARTISAN" : partyFields[0]!.text, 1, "write-in");
+			add(office, name.text, partyFields[0]!.text === "NON"
+				? "NONPARTISAN"
+				: partyFields[0]!.text, 1, "write-in");
 		}
 		if (used.size !== body.length)
 			return reject("write-in field inventory");
@@ -175,7 +295,9 @@ export function readPimaFields(source: StateBallotSource, pages: readonly (reado
 		const footer = fields.filter(field => field.top > 1110);
 		const stamp = footer.find(field => field.text.startsWith("UPDATED:"));
 		const date = stamp && /^UPDATED: ([1-9]|1[0-2])\/([1-9]|[12]\d|3[01])\/(20\d{2}) (?:[1-9]|1[0-2]):[0-5]\d (?:AM|PM)$/u.exec(stamp.text);
-		const updated = date ? `${date[3]}-${date[1]!.padStart(2, "0")}-${date[2]!.padStart(2, "0")}` : "";
+		const updated = date
+			? `${date[3]}-${date[1]!.padStart(2, "0")}-${date[2]!.padStart(2, "0")}`
+			: "";
 		if (footer.length !== 2 || !updated || !Number.isFinite(Date.parse(updated)) || new Date(`${updated}T00:00:00Z`).toISOString().slice(0, 10) !== updated || updated > source.electionDate || updated.slice(0, 4) !== source.electionDate.slice(0, 4) || (sourceAsOfDate && sourceAsOfDate !== updated) || footer.filter(field => field.text === `Page ${pageIndex + 1} of ${pages.length}`).length !== 1 || footer.some(field => field.bold))
 			return reject("candidate publication stamp");
 		sourceAsOfDate = updated;
@@ -217,7 +339,14 @@ export function readPimaFields(source: StateBallotSource, pages: readonly (reado
 				continue;
 			}
 			const district = /^(Dist\.|Justice Prec\.) ([1-9]\d?)$/u.exec(field.text);
-			if (field.bold && district && !office.candidates && !office.district && (district[1] === "Justice Prec." ? ["Justice of the Peace", "Constable"].includes(office.office) : ["U.S. Representative in Congress", "State Senator", "State Representative", "Board of Supervisors"].includes(office.office))) {
+			if (field.bold && district && !office.candidates && !office.district && (district[1] === "Justice Prec."
+				? ["Justice of the Peace", "Constable"].includes(office.office)
+				: [
+						"U.S. Representative in Congress",
+						"State Senator",
+						"State Representative",
+						"Board of Supervisors"
+					].includes(office.office))) {
 				office.district = district[2]!;
 				continue;
 			}
@@ -263,5 +392,8 @@ export function readPimaDocument(source: StateBallotSource, xml: string, svgPage
 	if (svgPages.length !== pages.length)
 		return reject("visible page inventory");
 	const visual = svgPages.map((svg, index) => inspectPimaVisual(xml, svg, index + 1, kind));
-	return { ...readPimaFields(source, pages, kind), visual };
+	return {
+		...readPimaFields(source, pages, kind),
+		visual
+	};
 }

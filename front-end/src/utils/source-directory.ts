@@ -12,7 +12,9 @@ const sectionMetadata: Record<SourcePublicationKind, { description: string; head
 };
 
 export function formatSourcePublicationKind(kind: SourcePublicationKind) {
-	return kind === "curated-global" ? "Curated global record" : "Published page record";
+	return kind === "curated-global"
+		? "Curated global record"
+		: "Published page record";
 }
 
 export function sourceDisplayDate(value: string | null | undefined) {

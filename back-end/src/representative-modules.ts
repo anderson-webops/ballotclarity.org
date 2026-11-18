@@ -276,7 +276,10 @@ function parsePersonName(value: string | null | undefined) {
 		return {
 			canonicalGivenName: pickCanonicalGivenName(givenTokens),
 			surname: surnameTokens.join(" "),
-			tokens: [...surnameTokens, ...givenTokens],
+			tokens: [
+				...surnameTokens,
+				...givenTokens
+			],
 		};
 	}
 
@@ -307,7 +310,9 @@ function formatDate(value: string | undefined) {
 		return "";
 
 	const date = new Date(value);
-	return Number.isNaN(date.getTime()) ? value : dateFormatter.format(date);
+	return Number.isNaN(date.getTime())
+		? value
+		: dateFormatter.format(date);
 }
 
 function buildEnrichmentStatus(
@@ -325,7 +330,9 @@ function buildEnrichmentStatus(
 }
 
 function summarizeProviderError(error: unknown) {
-	const message = error instanceof Error ? error.message : String(error);
+	const message = error instanceof Error
+		? error.message
+		: String(error);
 	return message.replace(/\s+/g, " ").trim().slice(0, 240);
 }
 
@@ -339,7 +346,9 @@ function buildProviderErrorStatus(
 	return buildEnrichmentStatus(
 		"unavailable",
 		"provider_error",
-		errorSummary ? `${summary} ${errorSummary}` : summary,
+		errorSummary
+			? `${summary} ${errorSummary}`
+			: summary,
 		sourceSystem,
 	);
 }
@@ -560,10 +569,15 @@ function rankCandidateMatch(candidate: OpenFecCandidateSearchRecord, target: Fed
 
 function pickBestCandidate(candidates: OpenFecCandidateSearchRecord[], target: FederalRepresentativeTarget) {
 	const rankedCandidates = [...candidates]
-		.map(candidate => ({ candidate, score: rankCandidateMatch(candidate, target) }))
+		.map(candidate => ({
+			candidate,
+			score: rankCandidateMatch(candidate, target)
+		}))
 		.sort((left, right) => right.score - left.score);
 
-	return rankedCandidates[0]?.score >= 120 ? rankedCandidates[0].candidate : null;
+	return rankedCandidates[0]?.score >= 120
+		? rankedCandidates[0].candidate
+		: null;
 }
 
 function buildFundingLineItems(totals: OpenFecCommitteeTotalsRecord) {
@@ -741,7 +755,9 @@ async function resolveFundingAttachment(
 
 	const coverageLabel = [
 		`${committeeTotals.cycle} cycle`,
-		committeeTotals.coverageEndDate ? `through ${formatDate(committeeTotals.coverageEndDate)}` : "",
+		committeeTotals.coverageEndDate
+			? `through ${formatDate(committeeTotals.coverageEndDate)}`
+			: "",
 	].filter(Boolean).join(" ");
 	const sources = buildOpenFecSources(candidate, committeeTotals);
 	const totalRaised = committeeTotals.receipts;
@@ -763,7 +779,11 @@ async function resolveFundingAttachment(
 			receiptBreakdown,
 			smallDonorShare,
 			sources,
-			summary: `${committeeName} reported ${formatCurrency(totalRaised)} in receipts${totalSpent ? `, ${formatCurrency(totalSpent)} in disbursements,` : ""}${committeeTotals.lastCashOnHandEndPeriod ? ` and ${formatCurrency(committeeTotals.lastCashOnHandEndPeriod)} cash on hand` : ""} in the ${coverageLabel}.`,
+			summary: `${committeeName} reported ${formatCurrency(totalRaised)} in receipts${totalSpent
+				? `, ${formatCurrency(totalSpent)} in disbursements,`
+				: ""}${committeeTotals.lastCashOnHandEndPeriod
+				? ` and ${formatCurrency(committeeTotals.lastCashOnHandEndPeriod)} cash on hand`
+				: ""} in the ${coverageLabel}.`,
 			topFunders: receiptBreakdown,
 			totalRaised,
 			totalSpent,
@@ -978,7 +998,9 @@ async function resolveInfluenceAttachment(
 		registrantTotals.set(report.registrantName, (registrantTotals.get(report.registrantName) ?? 0) + reportAmount);
 	}
 
-	const topRegistrants = [...registrantTotals.entries()]
+	const topRegistrants = [
+		...registrantTotals.entries()
+	]
 		.sort((left, right) => right[1] - left[1])
 		.slice(0, 3)
 		.map(([name, amount]) => ({ amount, name }));
@@ -991,8 +1013,16 @@ async function resolveInfluenceAttachment(
 				: `LD-203 contribution report matched to ${target.name}.`,
 		)));
 	const latestPostedAt = mergeDate(...filteredReports.map(report => report.postedAt));
-	const matchLabel = matchMode === "committee" ? committeeName : target.name;
-	const summary = `${contributionCount} LD-203 contribution item${contributionCount === 1 ? "" : "s"} across ${filteredReports.length} report${filteredReports.length === 1 ? "" : "s"} in ${resolvedYear} matched ${matchLabel}, totaling ${formatCurrency(totalAmount)}.${topRegistrants.length ? ` Largest reporting registrants: ${topRegistrants.map(item => `${item.name} (${formatCurrency(item.amount)})`).join(", ")}.` : ""}`;
+	const matchLabel = matchMode === "committee"
+		? committeeName
+		: target.name;
+	const summary = `${contributionCount} LD-203 contribution item${contributionCount === 1
+		? ""
+		: "s"} across ${filteredReports.length} report${filteredReports.length === 1
+		? ""
+		: "s"} in ${resolvedYear} matched ${matchLabel}, totaling ${formatCurrency(totalAmount)}.${topRegistrants.length
+		? ` Largest reporting registrants: ${topRegistrants.map(item => `${item.name} (${formatCurrency(item.amount)})`).join(", ")}.`
+		: ""}`;
 	const attachment = {
 		dataAsOf: latestPostedAt,
 		influence: {
@@ -1059,10 +1089,15 @@ function rankCongressMemberMatch(member: CongressMemberRecord, target: FederalRe
 
 function pickBestCongressMember(members: CongressMemberRecord[], target: FederalRepresentativeTarget) {
 	const rankedMembers = [...members]
-		.map(member => ({ member, score: rankCongressMemberMatch(member, target) }))
+		.map(member => ({
+			member,
+			score: rankCongressMemberMatch(member, target)
+		}))
 		.sort((left, right) => right.score - left.score);
 
-	return rankedMembers[0]?.score >= 140 ? rankedMembers[0].member : null;
+	return rankedMembers[0]?.score >= 140
+		? rankedMembers[0].member
+		: null;
 }
 
 function buildCongressSources(member: CongressMemberDetail): Source[] {
@@ -1101,8 +1136,12 @@ function buildCongressSources(member: CongressMemberDetail): Source[] {
 }
 
 function resolvePositiveInteger(value: number | string | null | undefined, fallback: number) {
-	const parsed = typeof value === "number" ? value : Number(value);
-	return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
+	const parsed = typeof value === "number"
+		? value
+		: Number(value);
+	return Number.isSafeInteger(parsed) && parsed > 0
+		? parsed
+		: fallback;
 }
 
 function buildCongressTermOfficeContext(member: CongressMemberDetail): PersonProfileOfficeContext {
@@ -1116,10 +1155,18 @@ function buildCongressTermOfficeContext(member: CongressMemberDetail): PersonPro
 		.sort((left, right) => left.startYear - right.startYear)[0];
 
 	return {
-		currentTermEndLabel: term?.endYear ? String(term.endYear) : term ? "Present" : undefined,
-		currentTermLabel: term ? `${term.congress}th Congress (${term.startYear}-${term.endYear || "present"})` : undefined,
-		currentTermStartLabel: term ? String(term.startYear) : undefined,
-		serviceStartLabel: firstTerm ? String(firstTerm.startYear) : undefined,
+		currentTermEndLabel: term?.endYear
+			? String(term.endYear)
+			: term ? "Present" : undefined,
+		currentTermLabel: term
+			? `${term.congress}th Congress (${term.startYear}-${term.endYear || "present"})`
+			: undefined,
+		currentTermStartLabel: term
+			? String(term.startYear)
+			: undefined,
+		serviceStartLabel: firstTerm
+			? String(firstTerm.startYear)
+			: undefined,
 	};
 }
 
@@ -1145,7 +1192,9 @@ async function resolveCongressAttachment(
 	const term = [...detail.terms].sort((left, right) => right.congress - left.congress)[0];
 	const termOfficeContext = buildCongressTermOfficeContext(detail);
 	const profileImages = buildCongressProfileImages(detail);
-	const officeTypeLabel = term?.memberType || (target.office === "S" ? "Senator" : "Representative");
+	const officeTypeLabel = term?.memberType || (target.office === "S"
+		? "Senator"
+		: "Representative");
 	const districtLabel = target.office === "H" && term?.district
 		? `${term.stateName || detail.state}'s ${formatOrdinal(term.district)} Congressional District`
 		: term?.stateName || detail.state;
@@ -1157,15 +1206,29 @@ async function resolveCongressAttachment(
 	].filter((link): link is ExternalLink => Boolean(link));
 	const officeSummaryParts = [
 		`Congress.gov lists ${detail.directOrderName} as a current ${officeTypeLabel} from ${term?.stateName || detail.state}.`,
-		districtLabel && target.office === "H" ? `District context: ${districtLabel}.` : "",
-		detail.addressInformation?.officeAddress ? `Official office: ${detail.addressInformation.officeAddress}.` : "",
-		detail.addressInformation?.phoneNumber ? `Official phone: ${detail.addressInformation.phoneNumber}.` : "",
-		detail.officialWebsiteUrl ? `Official website: ${detail.officialWebsiteUrl}.` : "",
+		districtLabel && target.office === "H"
+			? `District context: ${districtLabel}.`
+			: "",
+		detail.addressInformation?.officeAddress
+			? `Official office: ${detail.addressInformation.officeAddress}.`
+			: "",
+		detail.addressInformation?.phoneNumber
+			? `Official phone: ${detail.addressInformation.phoneNumber}.`
+			: "",
+		detail.officialWebsiteUrl
+			? `Official website: ${detail.officialWebsiteUrl}.`
+			: "",
 	].filter(Boolean);
 	const legislativeSummaryParts = [
-		typeof detail.sponsoredLegislationCount === "number" ? `Sponsored legislation count: ${detail.sponsoredLegislationCount}.` : "",
-		typeof detail.cosponsoredLegislationCount === "number" ? `Cosponsored legislation count: ${detail.cosponsoredLegislationCount}.` : "",
-		term ? `Current Congress tracked here: ${term.congress} (${term.startYear}-${term.endYear || "present"}).` : "",
+		typeof detail.sponsoredLegislationCount === "number"
+			? `Sponsored legislation count: ${detail.sponsoredLegislationCount}.`
+			: "",
+		typeof detail.cosponsoredLegislationCount === "number"
+			? `Cosponsored legislation count: ${detail.cosponsoredLegislationCount}.`
+			: "",
+		term
+			? `Current Congress tracked here: ${term.congress} (${term.startYear}-${term.endYear || "present"}).`
+			: "",
 	].filter(Boolean);
 
 	return {
@@ -1173,7 +1236,10 @@ async function resolveCongressAttachment(
 			{
 				id: `congress:${detail.bioguideId}`,
 				sources,
-				summary: [...officeSummaryParts, ...legislativeSummaryParts].join(" "),
+				summary: [
+					...officeSummaryParts,
+					...legislativeSummaryParts
+				].join(" "),
 				title: "Congress.gov office context",
 			},
 		],
@@ -1182,7 +1248,9 @@ async function resolveCongressAttachment(
 			"available",
 			"attached",
 			typeof detail.sponsoredLegislationCount === "number" || typeof detail.cosponsoredLegislationCount === "number"
-				? `Congress.gov attached current legislative context for this officeholder, including sponsorship counts${term ? ` from the ${term.congress}th Congress` : ""}.`
+				? `Congress.gov attached current legislative context for this officeholder, including sponsorship counts${term
+					? ` from the ${term.congress}th Congress`
+					: ""}.`
 				: "Congress.gov attached the current federal member record for this officeholder.",
 			"Congress.gov",
 		),
@@ -1365,7 +1433,9 @@ function buildDerivedOfficeContext(
 		referenceLinks: referenceLinks.length ? referenceLinks : undefined,
 	};
 
-	return Object.values(mergedContext).some(Boolean) ? mergedContext : undefined;
+	return Object.values(mergedContext).some(Boolean)
+		? mergedContext
+		: undefined;
 }
 
 function buildOfficeContextBlock(
@@ -1377,15 +1447,33 @@ function buildOfficeContextBlock(
 		return null;
 
 	const summaryParts = [
-		officeContext.jurisdictionLabel ? `Jurisdiction: ${officeContext.jurisdictionLabel}.` : "",
-		officeContext.chamberLabel ? `Chamber: ${officeContext.chamberLabel}.` : "",
-		officeContext.districtLabel ? `District or seat: ${officeContext.districtLabel}.` : "",
-		officeContext.currentTermLabel ? `Current term context: ${officeContext.currentTermLabel}.` : "",
-		officeContext.currentTermStartLabel ? `Current term starts: ${officeContext.currentTermStartLabel}.` : "",
-		officeContext.currentTermEndLabel ? `Current term ends: ${officeContext.currentTermEndLabel}.` : "",
-		officeContext.serviceStartLabel ? `Service history begins: ${officeContext.serviceStartLabel}.` : "",
-		officeContext.officialOfficeAddress ? `Official office address: ${officeContext.officialOfficeAddress}.` : "",
-		officeContext.officialPhone ? `Official phone: ${officeContext.officialPhone}.` : "",
+		officeContext.jurisdictionLabel
+			? `Jurisdiction: ${officeContext.jurisdictionLabel}.`
+			: "",
+		officeContext.chamberLabel
+			? `Chamber: ${officeContext.chamberLabel}.`
+			: "",
+		officeContext.districtLabel
+			? `District or seat: ${officeContext.districtLabel}.`
+			: "",
+		officeContext.currentTermLabel
+			? `Current term context: ${officeContext.currentTermLabel}.`
+			: "",
+		officeContext.currentTermStartLabel
+			? `Current term starts: ${officeContext.currentTermStartLabel}.`
+			: "",
+		officeContext.currentTermEndLabel
+			? `Current term ends: ${officeContext.currentTermEndLabel}.`
+			: "",
+		officeContext.serviceStartLabel
+			? `Service history begins: ${officeContext.serviceStartLabel}.`
+			: "",
+		officeContext.officialOfficeAddress
+			? `Official office address: ${officeContext.officialOfficeAddress}.`
+			: "",
+		officeContext.officialPhone
+			? `Official phone: ${officeContext.officialPhone}.`
+			: "",
 	].filter(Boolean);
 
 	if (!summaryParts.length)
@@ -1717,23 +1805,30 @@ export function createRepresentativeModuleResolver({
 				...response.person.whatWeKnow.flatMap(item => item.sources),
 				...attachment.whatWeKnow.flatMap(item => item.sources),
 			]).length
-				? [...response.person.whatWeKnow, ...attachment.whatWeKnow]
+				? [
+						...response.person.whatWeKnow,
+						...attachment.whatWeKnow
+					]
 				: response.person.whatWeKnow;
 			const whatWeDoNotKnow = [
 				...response.person.whatWeDoNotKnow,
 				...(attachment.enrichmentStatus.funding.status === "unavailable"
-					? [buildTrustBullet(
-							"funding-unavailable",
-							attachment.enrichmentStatus.funding.summary,
-							addedSources,
-						)]
+					? [
+							buildTrustBullet(
+								"funding-unavailable",
+								attachment.enrichmentStatus.funding.summary,
+								addedSources,
+							)
+						]
 					: []),
 				...(attachment.enrichmentStatus.influence.status === "unavailable"
-					? [buildTrustBullet(
-							"influence-unavailable",
-							attachment.enrichmentStatus.influence.summary,
-							addedSources,
-						)]
+					? [
+							buildTrustBullet(
+								"influence-unavailable",
+								attachment.enrichmentStatus.influence.summary,
+								addedSources,
+							)
+						]
 					: []),
 			];
 			const profileImages = uniqueProfileImages([

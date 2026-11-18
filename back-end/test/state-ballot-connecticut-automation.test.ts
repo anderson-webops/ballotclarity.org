@@ -27,16 +27,39 @@ const now = Date.parse("2026-10-25T12:00:00.000Z");
 const digest = (body: string) => createHash("sha256").update(body).digest("hex");
 const main = (body: string) => `<main id="mainContent">${body}</main>${footer}`;
 function discovery(dates = [source.electionDate], documents = [original]) {
-	const elections = dates.map(date => ({ electionId: null, electionDate: date, pageUrl: source.pageUrl.replace("2026", date.slice(0, 4)) }));
-	return JSON.stringify({ schemaVersion: 1, type: "connecticut-town-discovery", policies: connecticutPolicyReceipts, index: main(`<h1>Ballots</h1>${elections.map(election => `<a href="${election.pageUrl}">November ${Number(election.electionDate.slice(-2))}, ${election.electionDate.slice(0, 4)}, State Election, Sample Town Ballots</a>`).join("")}`), pages: elections.map(election => ({ url: election.pageUrl, body: main(`<h1>November ${Number(election.electionDate.slice(-2))}, ${election.electionDate.slice(0, 4)}</h1><h1>State Election Sample Town Ballots</h1>${documents.map(document => `<a href="${document.url.replace("/2026/", `/${election.electionDate.slice(0, 4)}/`)}">${document.town}</a>`).join("")}`) })) });
+	const elections = dates.map(date => ({
+		electionId: null,
+		electionDate: date,
+		pageUrl: source.pageUrl.replace("2026", date.slice(0, 4))
+	}));
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "connecticut-town-discovery",
+		policies: connecticutPolicyReceipts,
+		index: main(`<h1>Ballots</h1>${elections.map(election => `<a href="${election.pageUrl}">November ${Number(election.electionDate.slice(-2))}, ${election.electionDate.slice(0, 4)}, State Election, Sample Town Ballots</a>`).join("")}`),
+		pages: elections.map(election => ({
+			url: election.pageUrl,
+			body: main(`<h1>November ${Number(election.electionDate.slice(-2))}, ${election.electionDate.slice(0, 4)}</h1><h1>State Election Sample Town Ballots</h1>${documents.map(document => `<a href="${document.url.replace("/2026/", `/${election.electionDate.slice(0, 4)}/`)}">${document.town}</a>`).join("")}`)
+		}))
+	});
 }
 function capture(entry = source, body = discovery([entry.electionDate])) {
 	const documents = readConnecticutDiscovery(body).find(item => item.election.electionDate === entry.electionDate)!.documents;
-	return JSON.stringify({ schemaVersion: 1, type: "connecticut-town-candidates", discovery: body, documents: documents.map((document) => {
-		const original = fixture.documents.find(item => item.town === document.town)!;
-		const text = JSON.stringify(original.pages).replaceAll("November 3, 2026", `November ${Number(entry.electionDate.slice(-2))}, ${entry.electionDate.slice(0, 4)}`);
-		return { ...document, text, sha256: digest(text), retrievedAt: `${entry.electionDate.slice(0, 4)}-10-25T12:00:00.000Z` };
-	}) });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "connecticut-town-candidates",
+		discovery: body,
+		documents: documents.map((document) => {
+			const original = fixture.documents.find(item => item.town === document.town)!;
+			const text = JSON.stringify(original.pages).replaceAll("November 3, 2026", `November ${Number(entry.electionDate.slice(-2))}, ${entry.electionDate.slice(0, 4)}`);
+			return {
+				...document,
+				text,
+				sha256: digest(text),
+				retrievedAt: `${entry.electionDate.slice(0, 4)}-10-25T12:00:00.000Z`
+			};
+		})
+	});
 }
 
 test("Connecticut discovers only explicitly offered elections and keeps reviewed fallback identity", () => {
@@ -57,14 +80,27 @@ test("Connecticut discovers only explicitly offered elections and keeps reviewed
 
 test("Connecticut rejects guessed elections, unsafe documents, changed policies and incomplete discovery", () => {
 	const body = discovery();
-	for (const altered of [body.replace("November 3, 2026", "November 4, 2026"), body.replace("State Election, Sample Town Ballots", "Sample Ballots"), body.replace("https://portal.ct.gov/sots/election-services/town-ballots/2026", "https://example.org/sots/election-services/town-ballots/2026"), body.replace("?rev=", "?token="), body.replace("/2026/", "/2028/"), body.replace("For State Employees", "Employees"), body.replace("\"policies\":[", "\"policies\":[{} ,")]) assert.throws(() => readConnecticutDiscovery(altered));
+	for (const altered of [
+		body.replace("November 3, 2026", "November 4, 2026"),
+		body.replace("State Election, Sample Town Ballots", "Sample Ballots"),
+		body.replace("https://portal.ct.gov/sots/election-services/town-ballots/2026", "https://example.org/sots/election-services/town-ballots/2026"),
+		body.replace("?rev=", "?token="),
+		body.replace("/2026/", "/2028/"),
+		body.replace("For State Employees", "Employees"),
+		body.replace("\"policies\":[", "\"policies\":[{} ,")
+	]) assert.throws(() => readConnecticutDiscovery(altered));
 	const value = JSON.parse(body);
 	value.pages = [];
 	assert.throws(() => readConnecticutDiscovery(JSON.stringify(value)), /omitted/u);
 	value.pages = JSON.parse(body).pages;
 	value.pages[0].body = value.pages[0].body.replace(/<a href="[^"]+">Andover<\/a>/u, "");
 	assert.deepEqual(readConnecticutElectionDiscovery(JSON.stringify(value)), []);
-	assert.throws(() => parseStateBallotCycleCatalog({ ...discoverStateBallotElectionCycles(body, source.id, now), elections: [{ electionId: null, electionDate: "2028-11-07", pageUrl: source.pageUrl }] }, now));
+	assert.throws(() => parseStateBallotCycleCatalog({
+		...discoverStateBallotElectionCycles(body, source.id, now),
+		elections: [
+			{ electionId: null, electionDate: "2028-11-07", pageUrl: source.pageUrl }
+		]
+	}, now));
 	assert.throws(() => validateConnecticutSource({ ...source, retrievalPolicy: "manual-snapshot" }));
 	const index = JSON.parse(body).index;
 	assert.throws(() => readConnecticutElectionIndex(index.replace("</main>", `<a href="${source.pageUrl}">November 3, 2026, State Election, Sample Town Ballots</a></main>`)), /repeats/u);
@@ -85,14 +121,25 @@ test("Connecticut captures complete offered original bytes with paced public req
 	const body = discovery();
 	const waits: number[] = [];
 	let requests = 0;
-	const captured = await fetchConnecticutCandidateCapture(source, { discovery: body, now: () => now, wait: async (delay) => {
-		waits.push(delay);
-	}, requestDocument: async (url, options) => {
-		requests++;
-		assert.equal(url, original.url);
-		assert.deepEqual(options.allowedHosts, ["portal.ct.gov"]);
-		return { status: 200, body: Buffer.from("%PDF-synthetic-test-only"), contentType: "application/pdf", etag: undefined };
-	}, extractor: async () => original.pages });
+	const captured = await fetchConnecticutCandidateCapture(source, {
+		discovery: body,
+		now: () => now,
+		wait: async (delay) => {
+			waits.push(delay);
+		},
+		requestDocument: async (url, options) => {
+			requests++;
+			assert.equal(url, original.url);
+			assert.deepEqual(options.allowedHosts, ["portal.ct.gov"]);
+			return {
+				status: 200,
+				body: Buffer.from("%PDF-synthetic-test-only"),
+				contentType: "application/pdf",
+				etag: undefined
+			};
+		},
+		extractor: async () => original.pages
+	});
 	assert.equal(requests, 1);
 	assert.deepEqual(waits, [11000]);
 	const result = parseConnecticutCandidateCapture(source, captured, createStateCandidateRecord, now);
@@ -105,12 +152,15 @@ test("Connecticut captures complete offered original bytes with paced public req
 
 test("Connecticut policy changes stop discovery before ballot requests", async () => {
 	let requests = 0;
-	await assert.rejects(fetchConnecticutCycleDiscovery({ requestText: async (url, options) => {
-		requests++;
-		assert.equal(url, "https://portal.ct.gov/robots.txt");
-		assert.equal(options.maxRedirects, 0);
-		return "User-agent: *\nDisallow: /\n";
-	}, wait: async () => {} }), /policy requires review/u);
+	await assert.rejects(fetchConnecticutCycleDiscovery({
+		requestText: async (url, options) => {
+			requests++;
+			assert.equal(url, "https://portal.ct.gov/robots.txt");
+			assert.equal(options.maxRedirects, 0);
+			return "User-agent: *\nDisallow: /\n";
+		},
+		wait: async () => {}
+	}), /policy requires review/u);
 	assert.equal(requests, 1);
 });
 
@@ -141,10 +191,16 @@ test("Connecticut persists dynamic town provenance and invalidates fresh caches 
 	await storage.write({ source, ...result });
 	assert.deepEqual((await storage.read(source))?.documents, result.documents);
 	let requests = 0;
-	const read = (collectionIndexSha256: string) => createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => now + 1000, collectionIndexSha256: { [source.id]: collectionIndexSha256 }, fetchText: async () => {
-		requests++;
-		return capture();
-	} });
+	const read = (collectionIndexSha256: string) => createStateBallotRepository({
+		sources: [source],
+		dataDirectory: directory,
+		now: () => now + 1000,
+		collectionIndexSha256: { [source.id]: collectionIndexSha256 },
+		fetchText: async () => {
+			requests++;
+			return capture();
+		}
+	});
 	await read(result.collectionIndexSha256).getSnapshot("CT");
 	assert.equal(requests, 0);
 	const mismatched = await read("a".repeat(64)).getSnapshot("CT");
@@ -165,13 +221,21 @@ test("Connecticut refresh preserves exact legacy rollback bytes and keeps ordina
 	const target = join(directory, `${source.id}.json`);
 	const originalBytes = await readFile(target, "utf8");
 	let requests = 0;
-	const reader = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => now, fetchText: async () => {
-		requests++;
-		throw new Error("unexpected publisher request");
-	} });
+	const reader = createStateBallotRepository({
+		sources: [source],
+		dataDirectory: directory,
+		now: () => now,
+		fetchText: async () => {
+			requests++;
+			throw new Error("unexpected publisher request");
+		}
+	});
 	assert.equal((await reader.getSnapshot("CT"))?.records.length, 709);
 	assert.equal(requests, 0);
-	const migrated = { source, ...parseConnecticutCandidateCapture(source, capture(), createStateCandidateRecord, now, old.records) };
+	const migrated = {
+		source,
+		...parseConnecticutCandidateCapture(source, capture(), createStateCandidateRecord, now, old.records)
+	};
 	await storage.write(migrated);
 	const backup = `${target}.legacy-${digest(originalBytes)}`;
 	assert.equal(await readFile(backup, "utf8"), originalBytes);
@@ -190,10 +254,15 @@ test("Connecticut public reads stay offline across stale imports, misses and res
 	const parsed = parseConnecticutCandidateCapture(source, capture(), createStateCandidateRecord, now);
 	const storage = createStateBallotStorage(directory);
 	let requests = 0;
-	const options = { sources: [source], dataDirectory: directory, now: () => now + 2 * 86400000, fetchText: async () => {
-		requests++;
-		throw new Error("Public readers must remain offline.");
-	} };
+	const options = {
+		sources: [source],
+		dataDirectory: directory,
+		now: () => now + 2 * 86400000,
+		fetchText: async () => {
+			requests++;
+			throw new Error("Public readers must remain offline.");
+		}
+	};
 	const reader = createStateBallotRepository(options);
 	assert.equal(await reader.getSnapshot("CT"), null);
 	await storage.write({ source, ...parsed });
@@ -209,10 +278,16 @@ test("Connecticut explicit collection still refreshes native imports without a f
 	const parsed = parseConnecticutCandidateCapture(source, capture(), createStateCandidateRecord, now);
 	await storage.write({ source, ...parsed });
 	let requests = 0;
-	const collector = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => now + 2 * 86400000, refreshReviewedLegacy: true, fetchText: async () => {
-		requests++;
-		return capture();
-	} });
+	const collector = createStateBallotRepository({
+		sources: [source],
+		dataDirectory: directory,
+		now: () => now + 2 * 86400000,
+		refreshReviewedLegacy: true,
+		fetchText: async () => {
+			requests++;
+			return capture();
+		}
+	});
 	assert.deepEqual((await collector.getSnapshot("CT"))?.records, parsed.records);
 	assert.equal(requests, 1);
 	assert.deepEqual((await storage.read(source))?.records, JSON.parse(JSON.stringify(parsed.records)));
@@ -222,10 +297,17 @@ test("Connecticut routine cycle sync records durable imports, idempotent cache r
 	const directory = await mkdtemp(join(tmpdir(), "ballot-ct-sync-test-"));
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	let requests = 0;
-	const options = { familyId: source.id, catalogPath: join(directory, "catalog.json"), dataDirectory: join(directory, "snapshots"), now: () => now, fetchDiscovery: async () => discovery(), fetchCandidates: async () => {
-		requests++;
-		return capture();
-	} };
+	const options = {
+		familyId: source.id,
+		catalogPath: join(directory, "catalog.json"),
+		dataDirectory: join(directory, "snapshots"),
+		now: () => now,
+		fetchDiscovery: async () => discovery(),
+		fetchCandidates: async () => {
+			requests++;
+			return capture();
+		}
+	};
 	const imported = await syncStateBallotCycles(options);
 	assert.equal(imported.results[0]!.imported, true);
 	assert.equal(imported.results[0]!.status, "available");
@@ -233,9 +315,13 @@ test("Connecticut routine cycle sync records durable imports, idempotent cache r
 	assert.equal(requests, 1);
 	assert.equal(repeated.results[0]!.imported, false);
 	assert.equal(repeated.results[0]!.retrievedAt, imported.results[0]!.retrievedAt);
-	const changed = await syncStateBallotCycles({ ...options, fetchDiscovery: async () => discovery(undefined, fixture.documents.slice(0, 2)), fetchCandidates: async () => {
-		throw new Error("test failure");
-	} });
+	const changed = await syncStateBallotCycles({
+		...options,
+		fetchDiscovery: async () => discovery(undefined, fixture.documents.slice(0, 2)),
+		fetchCandidates: async () => {
+			throw new Error("test failure");
+		}
+	});
 	assert.equal(changed.results[0]!.status, "unavailable");
 	assert.equal(changed.results[0]!.imported, false);
 	assert.ok(await createStateBallotStorage(options.dataDirectory).read(source));
@@ -259,12 +345,23 @@ test("Connecticut holds disappearing accepted towns instead of silently replacin
 	const directory = await mkdtemp(join(tmpdir(), "ballot-ct-missing-town-test-"));
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	const initialBody = discovery(undefined, fixture.documents.slice(0, 2));
-	const initial = { source, ...parseConnecticutCandidateCapture(source, capture(source, initialBody), createStateCandidateRecord, now) };
+	const initial = {
+		source,
+		...parseConnecticutCandidateCapture(source, capture(source, initialBody), createStateCandidateRecord, now)
+	};
 	const storage = createStateBallotStorage(directory);
 	await storage.write(initial);
 	const before = await readFile(join(directory, `${source.id}.json`), "utf8");
 	const nextBody = discovery();
-	const repository = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => now + 1000, collectionIndexSha256: { [source.id]: connecticutIndexDigest(readConnecticutDiscovery(nextBody)[0]!.documents) }, fetchText: async () => capture(source, nextBody) });
+	const repository = createStateBallotRepository({
+		sources: [source],
+		dataDirectory: directory,
+		now: () => now + 1000,
+		collectionIndexSha256: {
+			[source.id]: connecticutIndexDigest(readConnecticutDiscovery(nextBody)[0]!.documents)
+		},
+		fetchText: async () => capture(source, nextBody)
+	});
 	assert.equal(await repository.getSnapshot("CT"), null);
 	assert.equal(await readFile(join(directory, `${source.id}.json`), "utf8"), before);
 	assert.equal((await repository.inspectSources!())[0]!.lastImportAt, null);

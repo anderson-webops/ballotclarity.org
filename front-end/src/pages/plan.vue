@@ -9,23 +9,35 @@ import { buildPlanUnavailableMessaging } from "~/utils/plan-messaging";
 
 const civicStore = useCivicStore();
 const route = useRoute();
-definePageMeta({ middleware: to => to.hash === "#change-location" ? navigateTo("/#location-lookup", { replace: true }) : undefined });
+definePageMeta({
+	middleware: to => to.hash === "#change-location"
+		? navigateTo("/#location-lookup", { replace: true })
+		: undefined
+});
 const { ballotPlan, compareCount, compareList, isHydrated, selectedElection, selectedLocation } = storeToRefs(civicStore);
 const { formatDate, formatDateTime } = useFormatters();
 const { activeLookupContext, allowsGuideEntryPoints } = useGuideEntryGate();
 
-const effectiveBallotPlan = computed(() => isHydrated.value ? ballotPlan.value : {});
+const effectiveBallotPlan = computed(() => isHydrated.value
+	? ballotPlan.value
+	: {});
 const effectiveCompareCount = computed(() => isHydrated.value ? compareCount.value : 0);
-const effectiveCompareList = computed(() => isHydrated.value ? compareList.value : []);
+const effectiveCompareList = computed(() => isHydrated.value
+	? compareList.value
+	: []);
 const showPersistedPlanState = computed(() => isHydrated.value);
-const requestedElectionSlug = computed(() => typeof route.query.election === "string" ? route.query.election : undefined);
+const requestedElectionSlug = computed(() => typeof route.query.election === "string"
+	? route.query.election
+	: undefined);
 const electionSlug = computed(() => {
 	if (showPersistedPlanState.value && !allowsGuideEntryPoints.value)
 		return undefined;
 
 	return selectedElection.value?.slug ?? requestedElectionSlug.value;
 });
-const locationSlug = computed(() => isHydrated.value && allowsGuideEntryPoints.value ? selectedLocation.value?.slug : undefined);
+const locationSlug = computed(() => isHydrated.value && allowsGuideEntryPoints.value
+	? selectedLocation.value?.slug
+	: undefined);
 const { data, error, pending } = await useBallot(electionSlug, locationSlug);
 
 const planUnavailableMessaging = computed(() => buildPlanUnavailableMessaging(activeLookupContext.value));
@@ -62,8 +74,12 @@ const completionStats = computed(() => {
 	return {
 		contestCount,
 		pendingCount: Math.max(contestCount - savedCount, 0),
-		progressLabel: contestCount ? `${savedCount} of ${contestCount} contests saved` : "No ballot loaded yet",
-		progressPercent: contestCount ? Math.round((savedCount / contestCount) * 100) : 0,
+		progressLabel: contestCount
+			? `${savedCount} of ${contestCount} contests saved`
+			: "No ballot loaded yet",
+		progressPercent: contestCount
+			? Math.round((savedCount / contestCount) * 100)
+			: 0,
 		savedCount
 	};
 });
@@ -78,11 +94,15 @@ const planSummaryItems = computed(() => ([
 	},
 	{
 		label: "Election day",
-		value: data.value ? formatDate(data.value.election.date) : "Not loaded"
+		value: data.value
+			? formatDate(data.value.election.date)
+			: "Not loaded"
 	},
 	{
 		label: "Last updated",
-		value: data.value ? formatDateTime(data.value.updatedAt) : "Not loaded"
+		value: data.value
+			? formatDateTime(data.value.updatedAt)
+			: "Not loaded"
 	}
 ]));
 
@@ -130,7 +150,10 @@ function buildPlannedEntry(contest: Contest, selection: BallotPlanSelection) {
 		href: measureDetailPath(measure, data.value?.election.slug),
 		index,
 		label: measure.title,
-		note: [measure.location, measureDecisionEffectLabel(measure)].filter(Boolean).join(" · "),
+		note: [
+			measure.location,
+			measureDecisionEffectLabel(measure)
+		].filter(Boolean).join(" · "),
 		savedAt: selection.savedAt,
 		selectionLabel: measureDecisionLabel(measure, selection.decision),
 		sourceCount: measure.sources.length,
@@ -145,8 +168,12 @@ function printPlan() {
 }
 
 function unplannedContestPath(contest: Contest) {
-	const measure = contest.type === "measure" && contest.measures?.length === 1 ? contest.measures[0] : null;
-	return measure ? measureDetailPath(measure, data.value?.election.slug) : `/contest/${contest.slug}`;
+	const measure = contest.type === "measure" && contest.measures?.length === 1
+		? contest.measures[0]
+		: null;
+	return measure
+		? measureDetailPath(measure, data.value?.election.slug)
+		: `/contest/${contest.slug}`;
 }
 </script>
 

@@ -36,7 +36,9 @@ const profileData = computed(() => {
 const person = computed(() => profileData.value?.person ?? null);
 const pagePending = computed(() => pending.value || (!data.value && !fallbackData.value));
 const funding = computed(() => person.value?.funding ?? null);
-const fundingAvailable = computed(() => person.value ? hasPersonFunding(person.value) : false);
+const fundingAvailable = computed(() => person.value
+	? hasPersonFunding(person.value)
+	: false);
 const fundingUnavailableSummary = computed(() => person.value
 	? person.value.enrichmentStatus?.funding.summary || "No campaign-finance summary is attached to this officeholder yet."
 	: "");
@@ -45,11 +47,23 @@ const fundingHighlights = computed(() => {
 		return [];
 
 	return [
-		funding.value.committeeName ? { label: "Committee", value: funding.value.committeeName } : null,
-		funding.value.coverageLabel ? { label: "Coverage", value: funding.value.coverageLabel } : null,
-		typeof funding.value.totalSpent === "number" ? { label: "Disbursements", value: formatCurrency(funding.value.totalSpent) } : null,
+		funding.value.committeeName
+			? { label: "Committee", value: funding.value.committeeName }
+			: null,
+		funding.value.coverageLabel
+			? { label: "Coverage", value: funding.value.coverageLabel }
+			: null,
+		typeof funding.value.totalSpent === "number"
+			? {
+					label: "Disbursements",
+					value: formatCurrency(funding.value.totalSpent)
+				}
+			: null,
 		typeof funding.value.smallDonorShare === "number" && Number.isFinite(funding.value.smallDonorShare) && funding.value.smallDonorShare > 0
-			? { label: "Small-donor share", value: formatPercent(funding.value.smallDonorShare) }
+			? {
+					label: "Small-donor share",
+					value: formatPercent(funding.value.smallDonorShare)
+				}
 			: null,
 	].filter((item): item is { label: string; value: string } => Boolean(item));
 });
@@ -68,8 +82,16 @@ function buildLookupAwareTarget(path: string) {
 }
 const breadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
-	{ label: layerBreadcrumbLink.value.label, to: buildLookupAwareTarget(layerBreadcrumbLink.value.to) },
-	{ label: person.value?.name ?? "Representative profile", to: person.value ? buildLookupAwareTarget(`/representatives/${person.value.slug}`) : undefined },
+	{
+		label: layerBreadcrumbLink.value.label,
+		to: buildLookupAwareTarget(layerBreadcrumbLink.value.to)
+	},
+	{
+		label: person.value?.name ?? "Representative profile",
+		to: person.value
+			? buildLookupAwareTarget(`/representatives/${person.value.slug}`)
+			: undefined
+	},
 	{ label: "Funding" }
 ]);
 
@@ -80,22 +102,40 @@ const summaryItems = computed(() => {
 	if (!fundingAvailable.value || !funding.value) {
 		return [
 			{ label: "Current office", value: person.value.officeDisplayLabel || person.value.officeSought },
-			{ label: "Updated", value: formatDate(person.value.freshness.dataLastUpdatedAt ?? person.value.updatedAt) }
+			{
+				label: "Updated",
+				value: formatDate(person.value.freshness.dataLastUpdatedAt ?? person.value.updatedAt)
+			}
 		];
 	}
 
 	return [
 		{ label: "Current office", value: person.value.officeDisplayLabel || person.value.officeSought },
-		{ label: "Total raised", note: "Current filing-window total.", value: formatCurrency(funding.value.totalRaised) },
-		{ label: "Disbursements", note: "Reported spending in the same filing window.", value: typeof funding.value.totalSpent === "number" ? formatCurrency(funding.value.totalSpent) : "Not published" },
-		{ label: "Cash on hand", value: formatCurrency(funding.value.cashOnHand) }
+		{
+			label: "Total raised",
+			note: "Current filing-window total.",
+			value: formatCurrency(funding.value.totalRaised)
+		},
+		{
+			label: "Disbursements",
+			note: "Reported spending in the same filing window.",
+			value: typeof funding.value.totalSpent === "number"
+				? formatCurrency(funding.value.totalSpent)
+				: "Not published"
+		},
+		{
+			label: "Cash on hand",
+			value: formatCurrency(funding.value.cashOnHand)
+		}
 	];
 });
 
 usePageSeo({
 	description: funding.value?.summary ?? "Representative funding page with campaign-finance summary, top funders, and source links.",
 	path: `/representatives/${representativeSlug.value}/funding`,
-	title: person.value ? `${person.value.name} Funding` : "Representative funding"
+	title: person.value
+		? `${person.value.name} Funding`
+		: "Representative funding"
 });
 </script>
 

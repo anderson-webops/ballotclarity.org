@@ -12,19 +12,43 @@ import { registerStateRecordRoutes } from "../src/state-records.js";
 
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 const source = configuredStateBallotSources.find(source => source.id === "ga-fulton-2026")!;
-const snapshot = (): StateBallotSnapshot => ({ source, sha256: hash("original"), retrievedAt: "2026-11-01T12:00:00Z", records: Array.from({ length: 151 }, (_, index) => ({ id: hash(`candidate-${index}`).slice(0, 24), name: `Candidate ${index}`, office: "Governor", district: "", scope: "statewide", party: "Example", status: index === 150 ? "withdrawn" : "listed" })) });
+function snapshot(): StateBallotSnapshot {
+	return {
+		source,
+		sha256: hash("original"),
+		retrievedAt: "2026-11-01T12:00:00Z",
+		records: Array.from({ length: 151 }, (_, index) => ({
+			id: hash(`candidate-${index}`).slice(0, 24),
+			name: `Candidate ${index}`,
+			office: "Governor",
+			district: "",
+			scope: "statewide",
+			party: "Example",
+			status: index === 150
+				? "withdrawn"
+				: "listed"
+		}))
+	};
+}
 async function serve(options: { snapshot?: StateBallotSnapshot | null; candidateFailure?: boolean; referenceFailure?: boolean; maximum?: number } = {}) {
-	const data = options.snapshot === undefined ? snapshot() : options.snapshot;
+	const data = options.snapshot === undefined
+		? snapshot()
+		: options.snapshot;
 	let reads = 0;
-	const candidates = { sources: [source], async getSnapshot() {
-		reads++;
-		if (options.candidateFailure) throw new Error("private candidate storage path");
-		return data;
-	} } as unknown as StateBallotRepository;
-	const references: ElectionReferenceRepository = { async getSnapshot() {
-		if (options.referenceFailure) throw new Error("private reference storage path");
-		return null;
-	} };
+	const candidates = {
+		sources: [source],
+		async getSnapshot() {
+			reads++;
+			if (options.candidateFailure) throw new Error("private candidate storage path");
+			return data;
+		}
+	} as unknown as StateBallotRepository;
+	const references: ElectionReferenceRepository = {
+		async getSnapshot() {
+			if (options.referenceFailure) throw new Error("private reference storage path");
+			return null;
+		}
+	};
 	const app = express();
 	registerStateRecordRoutes(app, candidates, createPublicRequestThrottle({ maxRequests: options.maximum ?? 30, maxBuckets: 10, windowMs: 60_000 }), () => Date.parse("2026-11-01T12:00:00Z"));
 	registerStateRecordDetailRoutes(app, candidates, references, undefined, () => Date.parse("2026-11-01T12:00:00Z"));
@@ -32,7 +56,13 @@ async function serve(options: { snapshot?: StateBallotSnapshot | null; candidate
 	await once(server, "listening");
 	const address = server.address();
 	assert(address && typeof address === "object");
-	return { origin: `http://127.0.0.1:${address.port}`, reads: () => reads, close: () => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())) };
+	return {
+		origin: `http://127.0.0.1:${address.port}`,
+		reads: () => reads,
+		close: () => new Promise<void>((resolve, reject) => server.close(error => error
+			? reject(error)
+			: resolve()))
+	};
 }
 
 test("a stable candidate ID resolves directly without a name hint or paginating directory pages", async () => {
@@ -58,7 +88,14 @@ test("a stable candidate ID resolves directly without a name hint or paginating 
 test("invalid identifiers, source arrays and extraneous filters fail before candidate reads", async () => {
 	const server = await serve();
 	try {
-		for (const suffix of [`ZZ/${hash("id").slice(0, 24)}`, "GA/not-an-id", `GA/${hash("id").slice(0, 24)}?source=unknown`, `GA/${hash("id").slice(0, 24)}?source=a&source=b`, `GA/${hash("id").slice(0, 24)}?q=other`, `GA/${hash("id").slice(0, 24)}?source[key]=a`]) assert.equal((await fetch(`${server.origin}/api/state-records/${suffix}`)).status, 400);
+		for (const suffix of [
+			`ZZ/${hash("id").slice(0, 24)}`,
+			"GA/not-an-id",
+			`GA/${hash("id").slice(0, 24)}?source=unknown`,
+			`GA/${hash("id").slice(0, 24)}?source=a&source=b`,
+			`GA/${hash("id").slice(0, 24)}?q=other`,
+			`GA/${hash("id").slice(0, 24)}?source[key]=a`
+		]) assert.equal((await fetch(`${server.origin}/api/state-records/${suffix}`)).status, 400);
 		assert.equal(server.reads(), 0);
 	}
 	finally { await server.close(); }

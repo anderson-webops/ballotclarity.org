@@ -136,6 +136,10 @@ test("Alabama requires the unique regular election date and complete certificati
 	);
 });
 test("Alabama wrong county, election, host and duplicate links fail closed", () => {
+	for (const hostname of ["wwwXsosXalabamaXgov", "www.sos.alabama.gov.example", "example.org"]) {
+		const changed = edit("/election-information/2026", body => body.replace("/sites/default/files/election-2026/certification0.pdf", `https://${hostname}/sites/default/files/election-2026/certification0.pdf`));
+		assert.throws(() => prepareAlabamaReferences(changed, now));
+	}
 	for (const replacement of [
 		"Mobile-Sample.pdf",
 		"../2024/Macon_Sample.pdf",

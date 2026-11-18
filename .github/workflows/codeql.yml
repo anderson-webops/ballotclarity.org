@@ -28,16 +28,18 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24.18.1
+          node-version: 26.13.1
           cache: npm
 
-      - name: Pin npm version
+      - name: Prepare the verified locked build toolchain
         run: |
-          npm i -g npm@12.0.2 --allow-scripts=npm
-          npm -v
+          printf '/.ai-work/\n' >> "$(git rev-parse --git-path info/exclude)"
+          bin="$(node scripts/build-toolchain.mjs --print-bin)"
+          printf '%s\n' "$bin" >> "$GITHUB_PATH"
+          "$bin/node" scripts/check-build-toolchain.mjs
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           languages: javascript-typescript
           queries: security-extended
@@ -49,4 +51,4 @@ jobs:
         run: npm run build
 
       - name: Analyze
-        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3

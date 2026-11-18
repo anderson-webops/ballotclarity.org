@@ -12,10 +12,44 @@ delete process.env.ADMIN_DATABASE_URL;
 delete process.env.DATABASE_URL;
 
 test("historical name matches cannot prevent a current federal profile or restore a former office", async (context) => {
-	const former = { id: "former-alex", name: "Alex Example", jurisdiction: { name: "Georgia" }, current_role: null, links: [{ url: "https://example.org/former-state-office", note: "homepage" }], updated_at: "2021-10-08" };
-	const openStatesClient = createOpenStatesClient({ apiKey: "controlled-openstates-key", fetchImpl: (async () => new Response(JSON.stringify({ results: [former] }), { status: 200 })) as typeof fetch });
+	const former = {
+		id: "former-alex",
+		name: "Alex Example",
+		jurisdiction: { name: "Georgia" },
+		current_role: null,
+		links: [
+			{ url: "https://example.org/former-state-office", note: "homepage" }
+		],
+		updated_at: "2021-10-08"
+	};
+	const openStatesClient = createOpenStatesClient({
+		apiKey: "controlled-openstates-key",
+		fetchImpl: (async () => new Response(JSON.stringify({
+			results: [former]
+		}), { status: 200 })) as typeof fetch
+	});
 	const currentMember = true;
-	const detail: CongressMemberDetail = { bioguideId: "E000001", currentMember: true, district: 5, directOrderName: "Alex Example", officialWebsiteUrl: "https://example.org/current-federal-office", party: "Example Party", state: "Georgia", terms: [{ chamber: "House of Representatives", congress: 119, district: 5, memberType: "Representative", startYear: 2025, stateCode: "GA", stateName: "Georgia" }], updatedAt: "2026-11-02T12:00:00Z" };
+	const detail: CongressMemberDetail = {
+		bioguideId: "E000001",
+		currentMember: true,
+		district: 5,
+		directOrderName: "Alex Example",
+		officialWebsiteUrl: "https://example.org/current-federal-office",
+		party: "Example Party",
+		state: "Georgia",
+		terms: [
+			{
+				chamber: "House of Representatives",
+				congress: 119,
+				district: 5,
+				memberType: "Representative",
+				startYear: 2025,
+				stateCode: "GA",
+				stateName: "Georgia"
+			}
+		],
+		updatedAt: "2026-11-02T12:00:00Z"
+	};
 	const app = await createApp({
 		adminDbPath: ":memory:",
 		adminMfaEncryptionKey: "controlled-current-office-mfa-key-long-enough",
@@ -26,7 +60,18 @@ test("historical name matches cannot prevent a current federal profile or restor
 		fultonCountyOfficeholderRepository: null,
 		openStatesClient,
 		congressClient: {
-			async listMembers() { return [{ bioguideId: "E000001", currentMember, district: 5, name: "Example, Alex", party: "Example Party", state: "Georgia" }]; },
+			async listMembers() {
+				return [
+					{
+						bioguideId: "E000001",
+						currentMember,
+						district: 5,
+						name: "Example, Alex",
+						party: "Example Party",
+						state: "Georgia"
+					}
+				];
+			},
 			async listMembersByState() { return []; },
 			async getMember() { return { ...detail, currentMember }; }
 		},
@@ -39,7 +84,9 @@ test("historical name matches cannot prevent a current federal profile or restor
 	const server = app.listen(0, "127.0.0.1");
 	await once(server, "listening");
 	context.after(async () => {
-		await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+		await new Promise<void>((resolve, reject) => server.close(error => error
+			? reject(error)
+			: resolve()));
 		await app.closeResources();
 	});
 	const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;

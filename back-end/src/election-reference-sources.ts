@@ -41,8 +41,20 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 		electionDate: "2026-11-03",
 		optional: true,
 		documents: [
-			{ url: "https://rickjackson.com/about/", title: "Rick Jackson campaign biography", publisher: "Jackson for Governor", kind: "candidate-statement", isCampaignWebsite: true },
-			{ url: "https://www.keishaforgovernor.com/bio", title: "Keisha Lance Bottoms campaign biography", publisher: "Keisha for Governor", kind: "candidate-statement", isCampaignWebsite: true },
+			{
+				url: "https://rickjackson.com/about/",
+				title: "Rick Jackson campaign biography",
+				publisher: "Jackson for Governor",
+				kind: "candidate-statement",
+				isCampaignWebsite: true
+			},
+			{
+				url: "https://www.keishaforgovernor.com/bio",
+				title: "Keisha Lance Bottoms campaign biography",
+				publisher: "Keisha for Governor",
+				kind: "candidate-statement",
+				isCampaignWebsite: true
+			},
 		],
 	},
 	{
@@ -50,11 +62,36 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 		stateCode: "AZ",
 		electionDate: "2026-11-03",
 		documents: [
-			{ url: "https://azgovernor.gov/governor/meet-governor-katie-hobbs", title: "Katie Hobbs biography", publisher: "Office of the Arizona Governor", kind: "official-biography" },
-			{ url: "https://biggs.house.gov/about/biography", title: "Andy Biggs biography", publisher: "Office of Congressman Andy Biggs", kind: "official-biography" },
-			{ url: "https://risalombardo.com/about/", title: "Risa Lombardo candidate statement", publisher: "Lombardo for AZ", kind: "candidate-statement" },
-			{ url: "https://teriann4azgov.org/about", title: "Teri Ann Hourihan candidate statement", publisher: "Teri Ann Hourihan for Arizona Governor", kind: "candidate-statement" },
-			{ url: "https://teriann4azgov.org/teri-anns-lieutenant-governor", title: "Angela Harrolle Mohan candidate statement", publisher: "Teri Ann Hourihan for Arizona Governor", kind: "candidate-statement" },
+			{
+				url: "https://azgovernor.gov/governor/meet-governor-katie-hobbs",
+				title: "Katie Hobbs biography",
+				publisher: "Office of the Arizona Governor",
+				kind: "official-biography"
+			},
+			{
+				url: "https://biggs.house.gov/about/biography",
+				title: "Andy Biggs biography",
+				publisher: "Office of Congressman Andy Biggs",
+				kind: "official-biography"
+			},
+			{
+				url: "https://risalombardo.com/about/",
+				title: "Risa Lombardo candidate statement",
+				publisher: "Lombardo for AZ",
+				kind: "candidate-statement"
+			},
+			{
+				url: "https://teriann4azgov.org/about",
+				title: "Teri Ann Hourihan candidate statement",
+				publisher: "Teri Ann Hourihan for Arizona Governor",
+				kind: "candidate-statement"
+			},
+			{
+				url: "https://teriann4azgov.org/teri-anns-lieutenant-governor",
+				title: "Angela Harrolle Mohan candidate statement",
+				publisher: "Teri Ann Hourihan for Arizona Governor",
+				kind: "candidate-statement"
+			},
 		],
 	},
 	{
@@ -62,22 +99,39 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 		stateCode: "NV",
 		electionDate: "2026-11-03",
 		documents: [
-			{ url: "https://ag.nv.gov/About/AG_Aaron_Ford/", title: "Aaron D. Ford biography", publisher: "Nevada Office of the Attorney General", kind: "official-biography" },
-			{ url: "https://www.gov.nv.gov/about/governor-joe-lombardo/", title: "Joe Lombardo biography", publisher: "Office of the Nevada Governor", kind: "official-biography" },
-			{ url: "https://ltgov.nv.gov/AboutUs/BiographyStavrosAnthony/", title: "Stavros Anthony biography", publisher: "Office of the Nevada Lieutenant Governor", kind: "official-biography" },
+			{
+				url: "https://ag.nv.gov/About/AG_Aaron_Ford/",
+				title: "Aaron D. Ford biography",
+				publisher: "Nevada Office of the Attorney General",
+				kind: "official-biography"
+			},
+			{
+				url: "https://www.gov.nv.gov/about/governor-joe-lombardo/",
+				title: "Joe Lombardo biography",
+				publisher: "Office of the Nevada Governor",
+				kind: "official-biography"
+			},
+			{
+				url: "https://ltgov.nv.gov/AboutUs/BiographyStavrosAnthony/",
+				title: "Stavros Anthony biography",
+				publisher: "Office of the Nevada Lieutenant Governor",
+				kind: "official-biography"
+			},
 		],
 	},
 	{
 		id: "ut-congressional-statements-2026",
 		stateCode: "UT",
 		electionDate: "2026-11-03",
-		documents: [{
-			url: "https://vote.utah.gov/wp-content/uploads/2026/09/2026-Voter-Information-Pamphlet.pdf",
-			pageUrl: "https://vote.utah.gov/wp-content/uploads/2026/09/2026-Voter-Information-Pamphlet.pdf#page=6",
-			title: "2026 congressional candidate submissions",
-			publisher: "Utah Office of the Lieutenant Governor",
-			kind: "candidate-statement",
-		}],
+		documents: [
+			{
+				url: "https://vote.utah.gov/wp-content/uploads/2026/09/2026-Voter-Information-Pamphlet.pdf",
+				pageUrl: "https://vote.utah.gov/wp-content/uploads/2026/09/2026-Voter-Information-Pamphlet.pdf#page=6",
+				title: "2026 congressional candidate submissions",
+				publisher: "Utah Office of the Lieutenant Governor",
+				kind: "candidate-statement",
+			}
+		],
 	},
 	{
 		id: "ak-statewide-statements-2026",
@@ -99,68 +153,135 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 			["Eric Hafner", "https://elections.alaska.gov/doc/oep/2026/HAFNER,%20ERIC_US%20Rep_Eng_v1.pdf"],
 			["Bill Hill", "https://elections.alaska.gov/doc/oep/2026/HILL,%20BILL_US%20Rep_Eng_v2.pdf"],
 			["James C. McDermott", "https://elections.alaska.gov/doc/oep/2026/Mcdermott,%20James%20C_%20USRep_Eng_v2.pdf"],
-		] as const).map(([name, url]) => ({ url, title: `${name} candidate statement`, publisher: "Alaska Division of Elections", kind: "candidate-statement" as const })),
+		] as const).map(([name, url]) => ({
+			url,
+			title: `${name} candidate statement`,
+			publisher: "Alaska Division of Elections",
+			kind: "candidate-statement" as const
+		})),
 	},
 	{
 		id: "or-eastern-statements-2026",
 		stateCode: "OR",
 		electionDate: "2026-11-03",
-		documents: [{
-			url: "https://sos.oregon.gov/elections/Voters-Pamphlet/Documents/VP_G26-Book19_web.pdf",
-			pageUrl: "https://sos.oregon.gov/elections/Voters-Pamphlet/Documents/VP_G26-Book19_web.pdf#page=29",
-			title: "2026 candidate statements: Baker, Grant, Harney, Lake and Malheur",
-			publisher: "Oregon Secretary of State",
-			kind: "candidate-statement",
-		}],
+		documents: [
+			{
+				url: "https://sos.oregon.gov/elections/Voters-Pamphlet/Documents/VP_G26-Book19_web.pdf",
+				pageUrl: "https://sos.oregon.gov/elections/Voters-Pamphlet/Documents/VP_G26-Book19_web.pdf#page=29",
+				title: "2026 candidate statements: Baker, Grant, Harney, Lake and Malheur",
+				publisher: "Oregon Secretary of State",
+				kind: "candidate-statement",
+			}
+		],
 	},
 	{
 		id: "nc-judicial-statements-2026",
 		stateCode: "NC",
 		electionDate: "2026-11-03",
-		documents: [{
-			url: "https://www.ncsbe.gov/voting/upcoming-election/judicial-voter-guide-2026-general-election",
-			title: "2026 judicial candidate submissions",
-			publisher: "North Carolina State Board of Elections",
-			kind: "candidate-statement",
-		}],
+		documents: [
+			{
+				url: "https://www.ncsbe.gov/voting/upcoming-election/judicial-voter-guide-2026-general-election",
+				title: "2026 judicial candidate submissions",
+				publisher: "North Carolina State Board of Elections",
+				kind: "candidate-statement",
+			}
+		],
 	},
 	{
 		id: "nm-supreme-biographies-2026",
 		stateCode: "NM",
 		electionDate: "2026-11-03",
-		documents: [{
-			url: "https://supremecourt.nmcourts.gov/about-this-court/supreme-court-justices/",
-			title: "New Mexico Supreme Court biographies",
-			publisher: "New Mexico Judicial Branch",
-			kind: "official-biography",
-		}],
+		documents: [
+			{
+				url: "https://supremecourt.nmcourts.gov/about-this-court/supreme-court-justices/",
+				title: "New Mexico Supreme Court biographies",
+				publisher: "New Mexico Judicial Branch",
+				kind: "official-biography",
+			}
+		],
 	},
 	{
 		id: "la-senate-reporting-2026",
 		stateCode: "LA",
 		electionDate: "2026-11-03",
-		documents: [{
-			url: "https://louisianaradionetwork.com/2026/09/17/48229/",
-			title: "Bill Cassidy does not plan to endorse Julia Letlow in upcoming U.S. Senate election",
-			publisher: "Louisiana Radio Network",
-			kind: "news-report",
-			publishedDate: "2026-09-17",
-		}],
+		documents: [
+			{
+				url: "https://louisianaradionetwork.com/2026/09/17/48229/",
+				title: "Bill Cassidy does not plan to endorse Julia Letlow in upcoming U.S. Senate election",
+				publisher: "Louisiana Radio Network",
+				kind: "news-report",
+				publishedDate: "2026-09-17",
+			}
+		],
 	},
 	{
 		id: "la-webster-statements-2026",
 		stateCode: "LA",
 		electionDate: "2026-11-03",
 		documents: [
-			{ url: "https://websterparishjournal.com/2026/08/19/davis-qualifies-to-run-for-school-board-dist-9-seat/", title: "Lloyd Davis, Jr. candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-19" },
-			{ url: "https://websterparishjournal.com/2026/08/31/mcmurray-running-for-district-3-school-board-seat/", title: "Patricia Ann McMurray candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-31" },
-			{ url: "https://websterparishjournal.com/2026/08/17/terry-combs-announces-run-for-webster-parish-school-board-district-7/", title: "Terry Combs candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-17" },
-			{ url: "https://websterparishjournal.com/2026/08/17/tina-douglas-announces-candidacy-for-webster-parish-school-board-district-7/", title: "Tina Douglas candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-17" },
-			{ url: "https://websterparishjournal.com/2026/08/17/tamara-tanner-announces-candidacy-for-webster-parish-school-board-district-11/", title: "Tamara Tanner candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-17" },
-			{ url: "https://websterparishjournal.com/2026/08/17/gary-cooper-announces-campaign-for-webster-parish-school-board-district-11/", title: "Gary Cooper candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-17" },
-			{ url: "https://websterparishjournal.com/2026/08/17/javelin-hardy-announces-run-for-minden-city-council-district-c/", title: "Javelin Hardy candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-17" },
-			{ url: "https://websterparishjournal.com/2026/08/18/melancon-announces-candidacy-for-springhill-mayor/", title: "Derek Melancon candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-18" },
-			{ url: "https://websterparishjournal.com/2026/08/18/mitchell-running-for-re-election-minden-city-council-district-c/", title: "Latasha Anderson Mitchell candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-18" },
+			{
+				url: "https://websterparishjournal.com/2026/08/19/davis-qualifies-to-run-for-school-board-dist-9-seat/",
+				title: "Lloyd Davis, Jr. candidate statement",
+				publisher: "Webster Parish Journal",
+				kind: "candidate-statement",
+				publishedDate: "2026-08-19"
+			},
+			{
+				url: "https://websterparishjournal.com/2026/08/31/mcmurray-running-for-district-3-school-board-seat/",
+				title: "Patricia Ann McMurray candidate statement",
+				publisher: "Webster Parish Journal",
+				kind: "candidate-statement",
+				publishedDate: "2026-08-31"
+			},
+			{
+				url: "https://websterparishjournal.com/2026/08/17/terry-combs-announces-run-for-webster-parish-school-board-district-7/",
+				title: "Terry Combs candidate statement",
+				publisher: "Webster Parish Journal",
+				kind: "candidate-statement",
+				publishedDate: "2026-08-17"
+			},
+			{
+				url: "https://websterparishjournal.com/2026/08/17/tina-douglas-announces-candidacy-for-webster-parish-school-board-district-7/",
+				title: "Tina Douglas candidate statement",
+				publisher: "Webster Parish Journal",
+				kind: "candidate-statement",
+				publishedDate: "2026-08-17"
+			},
+			{
+				url: "https://websterparishjournal.com/2026/08/17/tamara-tanner-announces-candidacy-for-webster-parish-school-board-district-11/",
+				title: "Tamara Tanner candidate statement",
+				publisher: "Webster Parish Journal",
+				kind: "candidate-statement",
+				publishedDate: "2026-08-17"
+			},
+			{
+				url: "https://websterparishjournal.com/2026/08/17/gary-cooper-announces-campaign-for-webster-parish-school-board-district-11/",
+				title: "Gary Cooper candidate statement",
+				publisher: "Webster Parish Journal",
+				kind: "candidate-statement",
+				publishedDate: "2026-08-17"
+			},
+			{
+				url: "https://websterparishjournal.com/2026/08/17/javelin-hardy-announces-run-for-minden-city-council-district-c/",
+				title: "Javelin Hardy candidate statement",
+				publisher: "Webster Parish Journal",
+				kind: "candidate-statement",
+				publishedDate: "2026-08-17"
+			},
+			{
+				url: "https://websterparishjournal.com/2026/08/18/melancon-announces-candidacy-for-springhill-mayor/",
+				title: "Derek Melancon candidate statement",
+				publisher: "Webster Parish Journal",
+				kind: "candidate-statement",
+				publishedDate: "2026-08-18"
+			},
+			{
+				url: "https://websterparishjournal.com/2026/08/18/mitchell-running-for-re-election-minden-city-council-district-c/",
+				title: "Latasha Anderson Mitchell candidate statement",
+				publisher: "Webster Parish Journal",
+				kind: "candidate-statement",
+				publishedDate: "2026-08-18"
+			},
 		],
 	},
 	{
@@ -169,17 +290,83 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 		electionDate: "2026-11-03",
 		allowIdentityOnly: true,
 		documents: [
-			{ url: "https://websterparishjournal.com/2026/01/30/ryan-barnette-announces-candidacy-for-minden-chief-of-police/", title: "Ryan Barnette candidacy announcement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-01-30" },
-			{ url: "https://websterparishjournal.com/2026/09/14/hanson-announces-for-springhill-city-council/", title: "Marla Smith Hanson candidacy announcement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-09-14" },
-			{ url: "https://websterparishjournal.com/2026/09/14/rice-runs-for-springhill-city-council-dist-2/", title: "Reva Rice candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-09-14" },
-			{ url: "https://websterparishjournal.com/2026/09/21/lee-announces-for-district-c-minden-city-council/", title: "Eric Lee candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-09-21" },
-			{ url: "https://websterparishjournal.com/2026/08/17/janice-louise-lindsey-keener-announces-for-minden-city-council-district-c/", title: "Janice Louise Lindsey-Keener candidacy announcement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-17" },
-			{ url: "https://websterparishjournal.com/2026/08/19/phenix-running-for-webster-parish-school-board-district-10/", title: "Danielle Phenix candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-19" },
-			{ url: "https://websterparishjournal.com/2026/08/20/franklin-announces-for-wpsb-district-10/", title: "Jeanine Major Franklin candidacy announcement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-20" },
-			{ url: "https://websterparishjournal.com/2026/08/24/evans-announces-for-wpsb-district-9-seat/", title: "Belinda Neloms Evans candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-24" },
-			{ url: "https://websterparishjournal.com/2026/08/24/stewart-runs-for-dist-10-school-board/", title: "Robert Louis Stewart Jr. candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-24" },
-			{ url: "https://websterparishjournal.com/2026/08/26/shaw-announces-run-for-wpsb-district-5/", title: "Yolanda Shaw Palmer candidate statement", publisher: "Webster Parish Journal", kind: "candidate-statement", publishedDate: "2026-08-26" },
-			{ url: "https://websterparishjournal.com/2026/10/15/council-police-chief-candidates-answer-questions-at-forum/", title: "Minden council and police-chief candidate forum report", publisher: "Webster Parish Journal", kind: "news-report", publishedDate: "2026-10-15" },
+			{
+				url: "https://websterparishjournal.com/2026/01/30/ryan-barnette-announces-candidacy-for-minden-chief-of-police/",
+				title: "Ryan Barnette candidacy announcement",
+				publisher: "Webster Parish Journal",
+				kind: "candidate-statement",
+				publishedDate: "2026-01-30"
+			},
+			{
+				url: "https://websterparishjournal.com/2026/09/14/hanson-announces-for-springhill-city-council/",
+				title: "Marla Smith Hanson candidacy announcement",
+				publisher: "Webster Parish Journal",
+				kind: "candidate-statement",
+				publishedDate: "2026-09-14"
+			},
+			{
+				url: "https://websterparishjournal.com/2026/09/14/rice-runs-for-springhill-city-council-dist-2/",
+				title: "Reva Rice candidate statement",
+				publisher: "Webster Parish Journal",
+				kind: "candidate-statement",
+				publishedDate: "2026-09-14"
+			},
+			{
+				url: "https://websterparishjournal.com/2026/09/21/lee-announces-for-district-c-minden-city-council/",
+				title: "Eric Lee candidate statement",
+				publisher: "Webster Parish Journal",
+				kind: "candidate-statement",
+				publishedDate: "2026-09-21"
+			},
+			{
+				url: "https://websterparishjournal.com/2026/08/17/janice-louise-lindsey-keener-announces-for-minden-city-council-district-c/",
+				title: "Janice Louise Lindsey-Keener candidacy announcement",
+				publisher: "Webster Parish Journal",
+				kind: "candidate-statement",
+				publishedDate: "2026-08-17"
+			},
+			{
+				url: "https://websterparishjournal.com/2026/08/19/phenix-running-for-webster-parish-school-board-district-10/",
+				title: "Danielle Phenix candidate statement",
+				publisher: "Webster Parish Journal",
+				kind: "candidate-statement",
+				publishedDate: "2026-08-19"
+			},
+			{
+				url: "https://websterparishjournal.com/2026/08/20/franklin-announces-for-wpsb-district-10/",
+				title: "Jeanine Major Franklin candidacy announcement",
+				publisher: "Webster Parish Journal",
+				kind: "candidate-statement",
+				publishedDate: "2026-08-20"
+			},
+			{
+				url: "https://websterparishjournal.com/2026/08/24/evans-announces-for-wpsb-district-9-seat/",
+				title: "Belinda Neloms Evans candidate statement",
+				publisher: "Webster Parish Journal",
+				kind: "candidate-statement",
+				publishedDate: "2026-08-24"
+			},
+			{
+				url: "https://websterparishjournal.com/2026/08/24/stewart-runs-for-dist-10-school-board/",
+				title: "Robert Louis Stewart Jr. candidate statement",
+				publisher: "Webster Parish Journal",
+				kind: "candidate-statement",
+				publishedDate: "2026-08-24"
+			},
+			{
+				url: "https://websterparishjournal.com/2026/08/26/shaw-announces-run-for-wpsb-district-5/",
+				title: "Yolanda Shaw Palmer candidate statement",
+				publisher: "Webster Parish Journal",
+				kind: "candidate-statement",
+				publishedDate: "2026-08-26"
+			},
+			{
+				url: "https://websterparishjournal.com/2026/10/15/council-police-chief-candidates-answer-questions-at-forum/",
+				title: "Minden council and police-chief candidate forum report",
+				publisher: "Webster Parish Journal",
+				kind: "news-report",
+				publishedDate: "2026-10-15"
+			},
 		],
 	},
 	{
@@ -187,16 +374,42 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 		stateCode: "ME",
 		electionDate: "2026-11-03",
 		documents: [
-			{ url: "https://www.orono.org/DocumentCenter/View/14007/Devon-Biggie---Candidate-Bio?bidId=", title: "Devon Biggie candidate statement", publisher: "Town of Orono", kind: "candidate-statement" },
-			{ url: "https://www.orono.org/DocumentCenter/View/14063/Dan-Council-Bio-2026?bidId=", title: "Daniel Demeritt candidate statement", publisher: "Town of Orono", kind: "candidate-statement" },
-			{ url: "https://www.orono.org/DocumentCenter/View/14048/Matt-Biddle---Candidate-Bio?bidId=", title: "Matt Biddle candidate statement", publisher: "Town of Orono", kind: "candidate-statement" },
+			{
+				url: "https://www.orono.org/DocumentCenter/View/14007/Devon-Biggie---Candidate-Bio?bidId=",
+				title: "Devon Biggie candidate statement",
+				publisher: "Town of Orono",
+				kind: "candidate-statement"
+			},
+			{
+				url: "https://www.orono.org/DocumentCenter/View/14063/Dan-Council-Bio-2026?bidId=",
+				title: "Daniel Demeritt candidate statement",
+				publisher: "Town of Orono",
+				kind: "candidate-statement"
+			},
+			{
+				url: "https://www.orono.org/DocumentCenter/View/14048/Matt-Biddle---Candidate-Bio?bidId=",
+				title: "Matt Biddle candidate statement",
+				publisher: "Town of Orono",
+				kind: "candidate-statement"
+			},
 		],
 	},
 	{
 		id: "wa-congressional-statements-2026",
 		stateCode: "WA",
 		electionDate: "2026-11-03",
-		documents: [186947, 186948, 186949, 186950, 186951, 186952, 186953, 186954, 186955, 186956].map((race, index) => ({
+		documents: [
+			186947,
+			186948,
+			186949,
+			186950,
+			186951,
+			186952,
+			186953,
+			186954,
+			186955,
+			186956
+		].map((race, index) => ({
 			url: `https://voter.votewa.gov/elections/candidate.ashx?e=899&r=${race}&b=0&la=en&c=`,
 			pageUrl: `https://voter.votewa.gov/genericvoterguide.aspx?e=899&c=#/candidates/${race}`,
 			title: `Congressional District ${index + 1} candidate statements`,
@@ -222,14 +435,54 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 		stateCode: "DC",
 		electionDate: "2026-11-03",
 		documents: [
-			{ url: "https://dccouncil.gov/council/phil-mendelson/", title: "Phil Mendelson biography", publisher: "Council of the District of Columbia", kind: "official-biography" },
-			{ url: "https://dccouncil.gov/council/councilmember-robert-c-white-jr/", title: "Robert White biography", publisher: "Council of the District of Columbia", kind: "official-biography" },
-			{ url: "https://dccouncil.gov/council/ward-4-councilmember-janeese-lewis-george/", title: "Janeese Lewis George biography", publisher: "Council of the District of Columbia", kind: "official-biography" },
-			{ url: "https://dccouncil.gov/council/ward-3-councilmember-matthew-frumin/", title: "Matthew Frumin biography", publisher: "Council of the District of Columbia", kind: "official-biography" },
-			{ url: "https://dccouncil.gov/council/ward-5-councilmember-zachary-parker/", title: "Zachary Parker biography", publisher: "Council of the District of Columbia", kind: "official-biography" },
-			{ url: "https://dccouncil.gov/council/councilmember-allen/", title: "Charles Allen biography", publisher: "Council of the District of Columbia", kind: "official-biography" },
-			{ url: "https://oag.dc.gov/about-oag/our-structure-divisions/about-attorney-general", title: "Brian L. Schwalb biography", publisher: "District of Columbia Office of the Attorney General", kind: "official-biography" },
-			{ url: "https://dccouncil.gov/council/elissa-silverman/", title: "Elissa Silverman service history", publisher: "Council of the District of Columbia", kind: "official-biography" },
+			{
+				url: "https://dccouncil.gov/council/phil-mendelson/",
+				title: "Phil Mendelson biography",
+				publisher: "Council of the District of Columbia",
+				kind: "official-biography"
+			},
+			{
+				url: "https://dccouncil.gov/council/councilmember-robert-c-white-jr/",
+				title: "Robert White biography",
+				publisher: "Council of the District of Columbia",
+				kind: "official-biography"
+			},
+			{
+				url: "https://dccouncil.gov/council/ward-4-councilmember-janeese-lewis-george/",
+				title: "Janeese Lewis George biography",
+				publisher: "Council of the District of Columbia",
+				kind: "official-biography"
+			},
+			{
+				url: "https://dccouncil.gov/council/ward-3-councilmember-matthew-frumin/",
+				title: "Matthew Frumin biography",
+				publisher: "Council of the District of Columbia",
+				kind: "official-biography"
+			},
+			{
+				url: "https://dccouncil.gov/council/ward-5-councilmember-zachary-parker/",
+				title: "Zachary Parker biography",
+				publisher: "Council of the District of Columbia",
+				kind: "official-biography"
+			},
+			{
+				url: "https://dccouncil.gov/council/councilmember-allen/",
+				title: "Charles Allen biography",
+				publisher: "Council of the District of Columbia",
+				kind: "official-biography"
+			},
+			{
+				url: "https://oag.dc.gov/about-oag/our-structure-divisions/about-attorney-general",
+				title: "Brian L. Schwalb biography",
+				publisher: "District of Columbia Office of the Attorney General",
+				kind: "official-biography"
+			},
+			{
+				url: "https://dccouncil.gov/council/elissa-silverman/",
+				title: "Elissa Silverman service history",
+				publisher: "Council of the District of Columbia",
+				kind: "official-biography"
+			},
 		],
 	},
 	...washingtonStateStatementSources,
@@ -238,12 +491,42 @@ export const electionReferenceSources: readonly ElectionReferenceSource[] = [
 		stateCode: "ID",
 		electionDate: "2026-11-03",
 		documents: [
-			{ url: "https://gov.idaho.gov/our-governor/", title: "Brad Little biography", publisher: "Office of the Idaho Governor", kind: "official-biography" },
-			{ url: "https://lgo.idaho.gov/about/", title: "Scott Bedke biography", publisher: "Office of the Idaho Lieutenant Governor", kind: "official-biography" },
-			{ url: "https://sos.idaho.gov/meet-the-secretary/", title: "Phil McGrane biography", publisher: "Idaho Secretary of State", kind: "official-biography" },
-			{ url: "https://www.ag.idaho.gov/about/", title: "Raúl R. Labrador biography", publisher: "Idaho Office of the Attorney General", kind: "official-biography" },
-			{ url: "https://www.sde.idaho.gov/about-us/superintendent/", title: "Debbie Critchfield biography", publisher: "Idaho Department of Education", kind: "official-biography" },
-			{ url: "https://sto.idaho.gov/About/Julie-A-Ellsworth-State-Treasurer", title: "Julie A. Ellsworth biography", publisher: "Idaho State Treasurer's Office", kind: "official-biography" },
+			{
+				url: "https://gov.idaho.gov/our-governor/",
+				title: "Brad Little biography",
+				publisher: "Office of the Idaho Governor",
+				kind: "official-biography"
+			},
+			{
+				url: "https://lgo.idaho.gov/about/",
+				title: "Scott Bedke biography",
+				publisher: "Office of the Idaho Lieutenant Governor",
+				kind: "official-biography"
+			},
+			{
+				url: "https://sos.idaho.gov/meet-the-secretary/",
+				title: "Phil McGrane biography",
+				publisher: "Idaho Secretary of State",
+				kind: "official-biography"
+			},
+			{
+				url: "https://www.ag.idaho.gov/about/",
+				title: "Raúl R. Labrador biography",
+				publisher: "Idaho Office of the Attorney General",
+				kind: "official-biography"
+			},
+			{
+				url: "https://www.sde.idaho.gov/about-us/superintendent/",
+				title: "Debbie Critchfield biography",
+				publisher: "Idaho Department of Education",
+				kind: "official-biography"
+			},
+			{
+				url: "https://sto.idaho.gov/About/Julie-A-Ellsworth-State-Treasurer",
+				title: "Julie A. Ellsworth biography",
+				publisher: "Idaho State Treasurer's Office",
+				kind: "official-biography"
+			},
 		],
 	},
 	...openStatesBulkSources,

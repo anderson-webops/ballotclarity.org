@@ -11,7 +11,11 @@ import { configuredStateBallotSources } from "../src/state-ballot-registry.js";
 const fixture = JSON.parse(readFileSync(new URL("./fixtures/nevada-clark-historical-tables.json", import.meta.url), "utf8")) as { electionDate: string; documents: Array<{ pages: StateBallotTablePage[] }> };
 const primary = fixture.documents[0]!.pages;
 const read = (pages = primary) => readClarkCandidateTables(pages, fixture.electionDate, "candidate-table");
-const source = { ...configuredStateBallotSources.find(source => source.id === "nv-clark-2026")!, id: "nv-clark-historical-2024", electionDate: fixture.electionDate };
+const source = {
+	...configuredStateBallotSources.find(source => source.id === "nv-clark-2026")!,
+	id: "nv-clark-historical-2024",
+	electionDate: fixture.electionDate
+};
 
 test("Clark County reads all fourteen historical landscape pages, 195 entries and five nonperson options", () => {
 	const result = read();
@@ -65,7 +69,19 @@ test("Clark County normalizes historical offices without inferring missing depar
 	assert.equal(records.length, 195);
 	assert.equal(new Set(records.map(record => record.id)).size, 195);
 	assert.equal(records.filter(record => record.voteLimit === 5).length, 14);
-	assert.deepEqual(Object.fromEntries(["statewide", "congressional", "state-senate", "state-house", "local"].map(scope => [scope, records.filter(record => record.scope === scope).length])), { "statewide": 11, "congressional": 12, "state-senate": 18, "state-house": 60, "local": 94 });
+	assert.deepEqual(Object.fromEntries([
+		"statewide",
+		"congressional",
+		"state-senate",
+		"state-house",
+		"local"
+	].map(scope => [scope, records.filter(record => record.scope === scope).length])), {
+		"statewide": 11,
+		"congressional": 12,
+		"state-senate": 18,
+		"state-house": 60,
+		"local": 94
+	});
 	assert.ok(records.filter(record => record.scope === "local").every(record => record.sourceAreaLabel === "Clark County"));
 	assert.ok(records.some(record => record.name === "Tina Talim" && record.office === "District Court Judge, Department 14" && record.ballotDesignation === "2-year unexpired term"));
 	assert.ok(records.some(record => record.name === "Terry Coffing" && record.office === "District Court Judge, Department 27"));
@@ -79,8 +95,14 @@ test("Clark County holds unknown historical offices, conflicting sections and ed
 	const claims = read().claims;
 	for (const claim of [
 		{ ...claims[0]!, section: "COUNTY NONPARTISAN" },
-		{ ...claims[0]!, officeParts: ["Unreviewed statewide office"] },
-		{ ...claims.find(claim => claim.officeParts.join(" ").includes("Member State Board of Education District 1"))!, officeParts: ["Member State Board of Education District 1 (NOTE: Boundaries are the same as Congressional District 2)"] },
+		{
+			...claims[0]!,
+			officeParts: ["Unreviewed statewide office"]
+		},
+		{
+			...claims.find(claim => claim.officeParts.join(" ").includes("Member State Board of Education District 1"))!,
+			officeParts: ["Member State Board of Education District 1 (NOTE: Boundaries are the same as Congressional District 2)"]
+		},
 	]) assert.throws(() => normalizeClarkCandidateClaims([claim], source, createStateCandidateRecord), /requires review/u);
 });
 

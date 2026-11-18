@@ -19,7 +19,9 @@ function requireValue(value: unknown, detail: string): asserts value {
 function document(body: string) {
 	requireValue(Buffer.byteLength(body) <= 4 * 1024 * 1024, "native document bound");
 	const parsed = parseStateHtml(body);
-	const pending = [{ node: parsed, depth: 0 }];
+	const pending = [
+		{ node: parsed, depth: 0 }
+	];
 	let visited = 0;
 	while (pending.length) {
 		const entry = pending.pop()!;
@@ -40,7 +42,9 @@ function lines(words: Word[]) {
 function rectangles(svg: string) {
 	const roots = descendants(document(svg), node => node.nodeName === "svg");
 	requireValue(roots.length === 1 && attribute(roots[0]!, "viewBox") === "0 0 612 792", "native grid dimensions");
-	const pending: { node: StateHtmlNode; transformed: boolean }[] = [{ node: roots[0]!, transformed: false }];
+	const pending: { node: StateHtmlNode; transformed: boolean }[] = [
+		{ node: roots[0]!, transformed: false }
+	];
 	const result: Rectangle[] = [];
 	while (pending.length) {
 		const { node, transformed } = pending.pop()!;
@@ -51,7 +55,12 @@ function rectangles(svg: string) {
 			if (/^M [-\d.]+ [-\d.]+ L [-\d.]+ [-\d.]+ L [-\d.]+ [-\d.]+ L [-\d.]+ [-\d.]+ Z(?: M [-\d.]+ [-\d.]+)?\s*$/u.test(path)) {
 				const values = path.match(/-?\d+(?:\.\d+)?/gu)!.map(Number);
 				if (values[1] === values[3] && values[2] === values[4] && values[5] === values[7] && values[0] === values[6]) {
-					const rectangle = { left: Math.min(values[0]!, values[2]!), right: Math.max(values[0]!, values[2]!), top: Math.min(values[1]!, values[5]!), bottom: Math.max(values[1]!, values[5]!) };
+					const rectangle = {
+						left: Math.min(values[0]!, values[2]!),
+						right: Math.max(values[0]!, values[2]!),
+						top: Math.min(values[1]!, values[5]!),
+						bottom: Math.max(values[1]!, values[5]!)
+					};
 					if (rectangle.left >= 0 && rectangle.right <= 612 && rectangle.top >= 0 && rectangle.bottom <= 792 && (rectangle.right - rectangle.left <= 1 || rectangle.bottom - rectangle.top <= 1)) {
 						requireValue(!shifted, "transformed table rules");
 						result.push(rectangle);
@@ -64,7 +73,16 @@ function rectangles(svg: string) {
 	return result;
 }
 function questionId(source: StateBallotSource, question: Omit<StateBallotQuestion, "id">) {
-	return createHash("sha256").update(JSON.stringify([source.id, source.electionDate, question.audience, question.title, question.officialText, question.pages, question.sourceUrl, "notice"])).digest("hex").slice(0, 24);
+	return createHash("sha256").update(JSON.stringify([
+		source.id,
+		source.electionDate,
+		question.audience,
+		question.title,
+		question.officialText,
+		question.pages,
+		question.sourceUrl,
+		"notice"
+	])).digest("hex").slice(0, 24);
 }
 export async function prepareFranklinIssueDocument(bytes: Buffer) {
 	const text = await resolveStateBallotPdfExtractor();
@@ -79,7 +97,13 @@ export async function prepareFranklinIssueDocument(bytes: Buffer) {
 		requireValue(deadline - Date.now() >= 12000, "native preparation duration");
 		svg.push(await extractStateBallotPdfSvg(bytes, vector, page));
 	}
-	const result = JSON.stringify({ schemaVersion: 1, type: "franklin-certified-issue-grid", bbox, layout, svg });
+	const result = JSON.stringify({
+		schemaVersion: 1,
+		type: "franklin-certified-issue-grid",
+		bbox,
+		layout,
+		svg
+	});
 	requireValue(Buffer.byteLength(result) <= 4 * 1024 * 1024, "prepared native document bound");
 	return result;
 }
@@ -93,8 +117,19 @@ export function readFranklinIssueNotices(source: StateBallotSource, body: string
 	const questions: StateBallotQuestion[] = [];
 	for (const [pageIndex, page] of pages.entries()) {
 		requireValue(attribute(page, "width") === "612.000000" && attribute(page, "height") === "792.000000", "page dimensions");
-		const words: Word[] = descendants(page, node => node.nodeName === "word").map(node => ({ text: clean(stateHtmlText(node)), left: Number(attribute(node, "xmin")), right: Number(attribute(node, "xmax")), top: Number(attribute(node, "ymin")), bottom: Number(attribute(node, "ymax")) }));
-		requireValue(words.length > 0 && words.length <= 12000 && words.every(word => word.text && [word.left, word.right, word.top, word.bottom].every(Number.isFinite) && word.left >= 0 && word.right <= 612 && word.top >= 0 && word.bottom <= 792 && word.left < word.right && word.top < word.bottom && !containsControlCharacters(word.text)), "bounded word geometry");
+		const words: Word[] = descendants(page, node => node.nodeName === "word").map(node => ({
+			text: clean(stateHtmlText(node)),
+			left: Number(attribute(node, "xmin")),
+			right: Number(attribute(node, "xmax")),
+			top: Number(attribute(node, "ymin")),
+			bottom: Number(attribute(node, "ymax"))
+		}));
+		requireValue(words.length > 0 && words.length <= 12000 && words.every(word => word.text && [
+			word.left,
+			word.right,
+			word.top,
+			word.bottom
+		].every(Number.isFinite) && word.left >= 0 && word.right <= 612 && word.top >= 0 && word.bottom <= 792 && word.left < word.right && word.top < word.bottom && !containsControlCharacters(word.text)), "bounded word geometry");
 		const grouped = lines(words);
 		const date = `NOVEMBER ${Number(source.electionDate.slice(-2))}, ${source.electionDate.slice(0, 4)} GENERAL ELECTION`;
 		requireValue(grouped.filter(line => joined(line.words) === "CERTIFIED QUESTIONS AND ISSUES").length === 1 && grouped.filter(line => joined(line.words) === date).length === 1 && grouped.filter(line => joined(line.words) === `Page ${pageIndex + 1}`).length === 1, "election and page identity");
@@ -103,12 +138,17 @@ export function readFranklinIssueNotices(source: StateBallotSource, body: string
 		const header = headers[0]!;
 		const middle = (Math.min(...header.words.map(word => word.top)) + Math.max(...header.words.map(word => word.bottom))) / 2;
 		const rules = rectangles(capture.svg[pageIndex]);
-		const boundaries = [...new Set(rules.filter(rule => rule.right - rule.left <= 1 && rule.top < middle && rule.bottom > middle).map(rule => Math.round((rule.left + rule.right) * 5) / 10))].sort((first, second) => first - second);
+		const boundaries = [
+			...new Set(rules.filter(rule => rule.right - rule.left <= 1 && rule.top < middle && rule.bottom > middle).map(rule => Math.round((rule.left + rule.right) * 5) / 10))
+		].sort((first, second) => first - second);
 		requireValue(boundaries.length === 5 && header.words.every((word, index) => word.left > boundaries[index]! && word.right < boundaries[index + 1]!), "column rules and labels agree");
 		const horizontal = new Map<number, Rectangle[]>();
 		for (const rule of rules.filter(rule => rule.bottom - rule.top <= 1 && rule.right - rule.left > 1)) {
 			const height = Math.round((rule.top + rule.bottom) * 5) / 10;
-			horizontal.set(height, [...(horizontal.get(height) ?? []), rule]);
+			horizontal.set(height, [
+				...(horizontal.get(height) ?? []),
+				rule
+			]);
 		}
 		const rows = [...horizontal].filter(([height, segments]) => {
 			if (height <= middle) return false;
@@ -136,23 +176,57 @@ export function readFranklinIssueNotices(source: StateBallotSource, body: string
 				? descriptors.map((entry, position) => {
 						const left = subdivisions.filter(line => line.top >= entry.top && line.top < (descriptors[position + 1]?.top ?? Infinity)).map(line => joined(line.words)).join(" ");
 						const title = left.slice(left.indexOf("Proposed "));
-						const details = content.filter(line => line.top >= (position ? entry.top - 0.6 : -Infinity) && line.top < (descriptors[position + 1]?.top ?? Infinity) - 0.6).map(line => joined(line.words)).join("\n");
+						const details = content.filter(line => line.top >= (position
+							? entry.top - 0.6
+							: -Infinity) && line.top < (descriptors[position + 1]?.top ?? Infinity) - 0.6).map(line => joined(line.words)).join("\n");
 						requireValue(details, "compound notice purpose and rate association");
 						return `${title}\n${details}`;
 					})
-				: [content.map(line => joined(line.words)).join("\n")];
-			const audience = subdivision.startsWith("General Assembly Initiated ") ? "Ohio" : clean(subdivision.split(/\s+[–-]\s+|\bProposed /u)[0]!).replace(/[–-]$/u, "").trim();
-			const question = { audience, title: `${number ? `${number} ` : ""}${subdivision}`, officialText: sections.join("\n\n"), choices: [] as [], textKind: "notice" as const, pages: [pageIndex + 1], sourceUrl, explicitlyAdvisory: false, voterApplicabilityVerified: false as const };
-			questions.push({ id: questionId(source, question), ...question });
+				: [
+						content.map(line => joined(line.words)).join("\n")
+					];
+			const audience = subdivision.startsWith("General Assembly Initiated ")
+				? "Ohio"
+				: clean(subdivision.split(/\s+[–-]\s+|\bProposed /u)[0]!).replace(/[–-]$/u, "").trim();
+			const question = {
+				audience,
+				title: `${number
+					? `${number} `
+					: ""}${subdivision}`,
+				officialText: sections.join("\n\n"),
+				choices: [] as [],
+				textKind: "notice" as const,
+				pages: [pageIndex + 1],
+				sourceUrl,
+				explicitlyAdvisory: false,
+				voterApplicabilityVerified: false as const
+			};
+			questions.push({
+				id: questionId(source, question),
+				...question
+			});
 		}
 		const tableWords = words.filter(word => (word.top + word.bottom) / 2 > rows[0]! && (word.top + word.bottom) / 2 < rows.at(-1)!);
 		requireValue(assigned.length === tableWords.length && new Set(assigned).size === assigned.length, "every native table word assigned exactly once");
 		const furniture = grouped.filter(line => !line.words.some(word => assigned.includes(word)));
-		requireValue(furniture.length === 5 && furniture.every(line => ["CERTIFIED QUESTIONS AND ISSUES", date, `Page ${pageIndex + 1}`, "# Subdivision Purpose Rate"].includes(joined(line.words)) || /^Revised \d{1,2}\/\d{1,2}\/20\d{2}$/u.test(joined(line.words))), "complete printed furniture inventory");
+		requireValue(furniture.length === 5 && furniture.every(line => [
+			"CERTIFIED QUESTIONS AND ISSUES",
+			date,
+			`Page ${pageIndex + 1}`,
+			"# Subdivision Purpose Rate"
+		].includes(joined(line.words)) || /^Revised \d{1,2}\/\d{1,2}\/20\d{2}$/u.test(joined(line.words))), "complete printed furniture inventory");
 		const tokens = (text: string) => clean(text).split(" ").sort().join("\n");
 		requireValue(tokens(words.map(word => word.text).join(" ")) === tokens(layout[pageIndex]), "native and layout word inventories agree");
 	}
-	readFranklinNoticeMetadata(source, { ballotQuestions: questions, documents: [{}, {}, { url: sourceUrl }], retrievalPolicy: "automatic" });
+	readFranklinNoticeMetadata(source, {
+		ballotQuestions: questions,
+		documents: [
+			{},
+			{},
+			{ url: sourceUrl }
+		],
+		retrievalPolicy: "automatic"
+	});
 	for (const prior of previous) {
 		const current = questions.find(question => question.title === prior.title && question.audience === prior.audience);
 		requireValue(current && current.officialText === prior.officialText, "accepted notice changed or disappeared");

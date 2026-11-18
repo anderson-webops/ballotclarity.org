@@ -15,9 +15,24 @@ const exact = (value: unknown, fields: string[]): value is Record<string, unknow
 const canonicalTime = (value: unknown, now: number): value is string => typeof value === "string" && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value && Date.parse(value) <= now;
 type TextRequest = (url: string, options: { allowedHosts: string[]; maxBytes: number; maxRedirects: number; timeoutMs: number }) => Promise<string>;
 export const hennepinOfficePolicies = [
-	{ id: "robots", url: "https://www.hennepincounty.gov/robots.txt", format: "robots", sha256: "2f0bad469b692ef5c39b7ea8ae956980beb07f489a682642a5603166ca816c0d" },
-	{ id: "home", url: "https://www.hennepincounty.gov/", format: "legal-footer", sha256: "09f3f43c02a3769ace84cbbf69d694bc503a1a52fe1a87e17554b44c6301d7b2" },
-	{ id: "privacy", url: "https://www.hennepincounty.gov/government/about/policies/privacy-security-on-county-websites", format: "main", sha256: "7d81c989c6326d2fca385337d8d6acb6207fc230d4dba2a470f0eac9b17b99a8" },
+	{
+		id: "robots",
+		url: "https://www.hennepincounty.gov/robots.txt",
+		format: "robots",
+		sha256: "2f0bad469b692ef5c39b7ea8ae956980beb07f489a682642a5603166ca816c0d"
+	},
+	{
+		id: "home",
+		url: "https://www.hennepincounty.gov/",
+		format: "legal-footer",
+		sha256: "09f3f43c02a3769ace84cbbf69d694bc503a1a52fe1a87e17554b44c6301d7b2"
+	},
+	{
+		id: "privacy",
+		url: "https://www.hennepincounty.gov/government/about/policies/privacy-security-on-county-websites",
+		format: "main",
+		sha256: "7d81c989c6326d2fca385337d8d6acb6207fc230d4dba2a470f0eac9b17b99a8"
+	},
 ] as const;
 export const hennepinOfficePolicyReceipts = hennepinOfficePolicies.map(({ id, url, sha256 }) => ({ id, url, sha256 }));
 
@@ -28,17 +43,32 @@ export function hennepinOfficePolicyFingerprint(body: string, format: typeof hen
 	const footers = descendants(document, node => node.nodeName === "footer");
 	if (footers.length !== 1) throw new Error("The county policy footer requires review.");
 	const footer = clean(stateHtmlText(footers[0]!));
-	const years = [...footer.matchAll(/© Copyright 20\d{2} Hennepin County\. All rights reserved/gu)];
+	const years = [
+		...footer.matchAll(/© Copyright 20\d{2} Hennepin County\. All rights reserved/gu)
+	];
 	if (years.length !== 1) throw new Error("The county copyright statement requires review.");
 	const links = descendants(document, node => node.nodeName === "a" && /privacy|terms|licen[cs]e|legal|disclaimer|copyright/iu.test(`${stateHtmlText(node)} ${attribute(node, "href")}`)).map(node => new URL(attribute(node, "href"), url).href);
 	const footerLinks = descendants(footers[0]!, node => node.nodeName === "a").map(node => new URL(attribute(node, "href"), url).href);
-	return hash(JSON.stringify({ links: [...new Set(links)].sort(), footer: footer.replace(years[0]![0], "© Copyright YEAR Hennepin County. All rights reserved"), footerLinks }));
+	return hash(JSON.stringify({
+		links: [
+			...new Set(links)
+		].sort(),
+		footer: footer.replace(years[0]![0], "© Copyright YEAR Hennepin County. All rights reserved"),
+		footerLinks
+	}));
 }
 
 export function readOfficeInventoryCapture(body: string, now = Date.now()) {
 	if (Buffer.byteLength(body) > 4 * 1024 * 1024) throw new Error("The office inventory capture exceeds its bounds.");
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "policies", "page"]) || value.schemaVersion !== 1 || value.type !== "hennepin-office-inventory-capture" || JSON.stringify(value.policies) !== JSON.stringify(hennepinOfficePolicyReceipts) || !exact(value.page, ["url", "body", "sha256", "retrievedAt"]) || value.page.url !== hennepinOfficeSource.url || typeof value.page.body !== "string" || value.page.sha256 !== hash(value.page.body) || !canonicalTime(value.page.retrievedAt, now)) throw new Error("The office inventory source or policy provenance requires review.");
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"policies",
+		"page"
+	]) || value.schemaVersion !== 1 || value.type !== "hennepin-office-inventory-capture" || JSON.stringify(value.policies) !== JSON.stringify(hennepinOfficePolicyReceipts) || !exact(value.page, ["url", "body", "sha256", "retrievedAt"]) || value.page.url !== hennepinOfficeSource.url || typeof value.page.body !== "string" || value.page.sha256 !== hash(value.page.body) || !canonicalTime(value.page.retrievedAt, now)) {
+		throw new Error("The office inventory source or policy provenance requires review.");
+	}
 	const inventory = parseHennepinOfficeInventory(value.page.body, value.page.retrievedAt, now);
 	return { inventory, capture: value };
 }
@@ -47,7 +77,12 @@ export async function collectHennepinOfficeCapture(options: { requestText?: Text
 	const request = options.requestText ?? fetchRemoteSourceText;
 	const wait = options.wait ?? (milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)));
 	const now = options.now ?? Date.now;
-	const transport = { allowedHosts: ["www.hennepincounty.gov"], maxBytes: 2 * 1024 * 1024, maxRedirects: 0, timeoutMs: 25000 };
+	const transport = {
+		allowedHosts: ["www.hennepincounty.gov"],
+		maxBytes: 2 * 1024 * 1024,
+		maxRedirects: 0,
+		timeoutMs: 25000
+	};
 	let robots: ReturnType<typeof electionDocumentRobotsPolicy> | undefined;
 	const get = async (url: string) => {
 		if (robots) {
@@ -62,7 +97,17 @@ export async function collectHennepinOfficeCapture(options: { requestText?: Text
 		if (policy.format === "robots") robots = electionDocumentRobotsPolicy(Buffer.from(body));
 	}
 	const body = await get(hennepinOfficeSource.url);
-	const capture = JSON.stringify({ schemaVersion: 1, type: "hennepin-office-inventory-capture", policies: hennepinOfficePolicyReceipts, page: { url: hennepinOfficeSource.url, body, sha256: hash(body), retrievedAt: new Date(now()).toISOString() } });
+	const capture = JSON.stringify({
+		schemaVersion: 1,
+		type: "hennepin-office-inventory-capture",
+		policies: hennepinOfficePolicyReceipts,
+		page: {
+			url: hennepinOfficeSource.url,
+			body,
+			sha256: hash(body),
+			retrievedAt: new Date(now()).toISOString()
+		}
+	});
 	readOfficeInventoryCapture(capture, now());
 	return capture;
 }
@@ -97,7 +142,20 @@ async function readText(path: string) {
 
 function parseState(body: string, now: number): OfficeInventoryState {
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "capture", "inventory", "audit", "candidateInputsSha256", "auditSha256", "lastSourceCheckAt", "lastInventoryImportAt", "lastAuditPreparedAt"]) || value.schemaVersion !== 1 || value.type !== "office-inventory-state" || typeof value.capture !== "string" || !canonicalTime(value.lastSourceCheckAt, now) || !canonicalTime(value.lastInventoryImportAt, now) || !canonicalTime(value.lastAuditPreparedAt, now)) throw new Error("The stored office inventory metadata requires review.");
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"capture",
+		"inventory",
+		"audit",
+		"candidateInputsSha256",
+		"auditSha256",
+		"lastSourceCheckAt",
+		"lastInventoryImportAt",
+		"lastAuditPreparedAt"
+	]) || value.schemaVersion !== 1 || value.type !== "office-inventory-state" || typeof value.capture !== "string" || !canonicalTime(value.lastSourceCheckAt, now) || !canonicalTime(value.lastInventoryImportAt, now) || !canonicalTime(value.lastAuditPreparedAt, now)) {
+		throw new Error("The stored office inventory metadata requires review.");
+	}
 	const parsed = readOfficeInventoryCapture(value.capture, now);
 	if (JSON.stringify(parsed.inventory) !== JSON.stringify(value.inventory) || parsed.inventory.retrievedAt > value.lastSourceCheckAt || value.lastInventoryImportAt < parsed.inventory.retrievedAt || value.lastAuditPreparedAt < value.lastInventoryImportAt || hash(JSON.stringify(value.audit)) !== value.auditSha256) throw new Error("The stored office inventory does not match its captured evidence.");
 	const audit = value.audit as OfficeInventoryState["audit"];
@@ -105,14 +163,36 @@ function parseState(body: string, now: number): OfficeInventoryState {
 	const expected = auditOfficeInventory(parsed.inventory, []);
 	const identifiers = new Set<string>();
 	for (const source of audit.candidateSources) {
-		if (!exact(source, ["id", "electionDate", "sourceSha256", "factsSha256", "retrievedAt", "compared"]) || typeof source.id !== "string" || !/^[a-z0-9-]{1,100}$/u.test(source.id) || identifiers.has(source.id) || typeof source.electionDate !== "string" || !/^20\d{2}-\d{2}-\d{2}$/u.test(source.electionDate) || !/^[a-f0-9]{64}$/u.test(String(source.sourceSha256)) || !/^[a-f0-9]{64}$/u.test(String(source.factsSha256)) || !canonicalTime(source.retrievedAt, now) || source.compared !== (source.electionDate === parsed.inventory.electionDate)) throw new Error("The stored candidate evidence requires review.");
+		if (!exact(source, [
+			"id",
+			"electionDate",
+			"sourceSha256",
+			"factsSha256",
+			"retrievedAt",
+			"compared"
+		]) || typeof source.id !== "string" || !/^[a-z0-9-]{1,100}$/u.test(source.id) || identifiers.has(source.id) || typeof source.electionDate !== "string" || !/^20\d{2}-\d{2}-\d{2}$/u.test(source.electionDate) || !/^[a-f0-9]{64}$/u.test(String(source.sourceSha256)) || !/^[a-f0-9]{64}$/u.test(String(source.factsSha256)) || !canonicalTime(source.retrievedAt, now) || source.compared !== (source.electionDate === parsed.inventory.electionDate)) {
+			throw new Error("The stored candidate evidence requires review.");
+		}
 		identifiers.add(source.id);
 	}
 	const compared = audit.candidateSources.some(source => source.compared);
-	if (audit.status !== (!identifiers.size ? "candidate-input-not-configured" : compared ? "compared" : "no-same-election-candidate-snapshot") || audit.comparisonScope !== expected.comparisonScope || audit.inventoryRows !== expected.inventoryRows || audit.unassessedInventoryRows !== expected.unassessedInventoryRows || audit.comparableScheduledOffices !== expected.comparableScheduledOffices || audit.comparisons.length !== expected.comparisons.length) throw new Error("The stored office comparison scope is invalid.");
+	if (audit.status !== (!identifiers.size
+		? "candidate-input-not-configured"
+		: compared ? "compared" : "no-same-election-candidate-snapshot") || audit.comparisonScope !== expected.comparisonScope || audit.inventoryRows !== expected.inventoryRows || audit.unassessedInventoryRows !== expected.unassessedInventoryRows || audit.comparableScheduledOffices !== expected.comparableScheduledOffices || audit.comparisons.length !== expected.comparisons.length) {
+		throw new Error("The stored office comparison scope is invalid.");
+	}
 	for (const [index, row] of audit.comparisons.entries()) {
 		const identity = expected.comparisons[index]!;
-		if (!exact(row, ["inventoryRowId", "key", "status", "records"]) || row.inventoryRowId !== identity.inventoryRowId || row.key !== identity.key || !Array.isArray(row.records) || row.records.length > 25000 || row.records.some(record => !exact(record, ["sourceId", "recordId"]) || typeof record.recordId !== "string" || !/^[a-f0-9]{24,64}$/u.test(record.recordId) || !audit.candidateSources.some(source => source.compared && source.id === record.sourceId)) || row.status !== (!compared ? "not-compared" : row.records.length ? "represented-in-selected-snapshots" : "not-represented-in-selected-snapshots")) throw new Error("The stored office comparison evidence is invalid.");
+		if (!exact(row, [
+			"inventoryRowId",
+			"key",
+			"status",
+			"records"
+		]) || row.inventoryRowId !== identity.inventoryRowId || row.key !== identity.key || !Array.isArray(row.records) || row.records.length > 25000 || row.records.some(record => !exact(record, ["sourceId", "recordId"]) || typeof record.recordId !== "string" || !/^[a-f0-9]{24,64}$/u.test(record.recordId) || !audit.candidateSources.some(source => source.compared && source.id === record.sourceId)) || row.status !== (!compared
+			? "not-compared"
+			: row.records.length ? "represented-in-selected-snapshots" : "not-represented-in-selected-snapshots")) {
+			throw new Error("The stored office comparison evidence is invalid.");
+		}
 	}
 	if (audit.representedOffices !== audit.comparisons.filter(row => row.status === "represented-in-selected-snapshots").length || audit.notRepresentedOffices !== audit.comparisons.filter(row => row.status === "not-represented-in-selected-snapshots").length) throw new Error("The stored office comparison totals are invalid.");
 	return value as unknown as OfficeInventoryState;
@@ -160,7 +240,20 @@ async function persistUnlocked(directory: string, body: string, snapshots: reado
 	const candidateInputsSha256 = hash(JSON.stringify(audit.candidateSources));
 	const auditChanged = inventoryChanged || current.candidateInputsSha256 !== candidateInputsSha256;
 	const preparedAt = new Date(now).toISOString();
-	const state: OfficeInventoryState = { schemaVersion: 1, type: "office-inventory-state", capture, inventory, audit: auditChanged ? audit : current.audit, candidateInputsSha256, auditSha256: hash(JSON.stringify(auditChanged ? audit : current.audit)), lastSourceCheckAt: current && current.lastSourceCheckAt > incoming.inventory.retrievedAt ? current.lastSourceCheckAt : incoming.inventory.retrievedAt, lastInventoryImportAt: inventoryChanged ? preparedAt : current.lastInventoryImportAt, lastAuditPreparedAt: auditChanged ? preparedAt : current.lastAuditPreparedAt };
+	const state: OfficeInventoryState = {
+		schemaVersion: 1,
+		type: "office-inventory-state",
+		capture,
+		inventory,
+		audit: auditChanged ? audit : current.audit,
+		candidateInputsSha256,
+		auditSha256: hash(JSON.stringify(auditChanged ? audit : current.audit)),
+		lastSourceCheckAt: current && current.lastSourceCheckAt > incoming.inventory.retrievedAt
+			? current.lastSourceCheckAt
+			: incoming.inventory.retrievedAt,
+		lastInventoryImportAt: inventoryChanged ? preparedAt : current.lastInventoryImportAt,
+		lastAuditPreparedAt: auditChanged ? preparedAt : current.lastAuditPreparedAt
+	};
 	const serialized = JSON.stringify(state);
 	parseState(serialized, now);
 	const path = await directoryPath(directory, true);
@@ -187,7 +280,12 @@ async function persistUnlocked(directory: string, body: string, snapshots: reado
 		}
 	}
 	await writeAtomic(join(path, "current.json"), serialized);
-	return { state, inventoryChanged, auditChanged, csv: serializeOfficeInventoryCsv(inventory) };
+	return {
+		state,
+		inventoryChanged,
+		auditChanged,
+		csv: serializeOfficeInventoryCsv(inventory)
+	};
 }
 
 export async function persistOfficeInventory(directory: string, body: string, snapshots: readonly StateBallotSnapshot[], now = Date.now()) {

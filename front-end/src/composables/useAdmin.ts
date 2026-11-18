@@ -14,7 +14,9 @@ import type {
 } from "~/types/civic";
 
 function adminRequestHeaders() {
-	return import.meta.server ? useRequestHeaders(["cookie"]) : undefined;
+	return import.meta.server
+		? useRequestHeaders(["cookie"])
+		: undefined;
 }
 
 export function useAdminSession(key = "admin-session") {
@@ -31,7 +33,9 @@ export function useAdminOverview() {
 }
 
 export function useAdminOperations() {
-	return useFetch<AdminOperationsResponse>("/api/admin/operations", { headers: adminRequestHeaders() });
+	return useFetch<AdminOperationsResponse>("/api/admin/operations", {
+		headers: adminRequestHeaders()
+	});
 }
 
 export function useAdminAudit() {

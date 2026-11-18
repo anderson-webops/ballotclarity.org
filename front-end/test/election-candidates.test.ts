@@ -7,10 +7,40 @@ import { readRecoverableStateRecordQuery } from "../src/utils/state-record-query
 
 test("election candidates retain every sourced person in federal, state and local office groups", () => {
 	const records: PublicStateCandidateRecord[] = [
-		{ id: "federal-one", name: "First Federal", office: "United States Senate", scope: "statewide", district: "", status: "listed", party: "Republican" },
-		{ id: "federal-two", name: "Second Federal", office: "United States Senate", scope: "statewide", district: "", status: "listed", party: "Democratic" },
-		{ id: "state", name: "State Person", office: "State Senate", scope: "state-senate", district: "48", status: "listed" },
-		{ id: "local", name: "Local Person", office: "County Commissioner", scope: "local", district: "5", status: "write-in" }
+		{
+			id: "federal-one",
+			name: "First Federal",
+			office: "United States Senate",
+			scope: "statewide",
+			district: "",
+			status: "listed",
+			party: "Republican"
+		},
+		{
+			id: "federal-two",
+			name: "Second Federal",
+			office: "United States Senate",
+			scope: "statewide",
+			district: "",
+			status: "listed",
+			party: "Democratic"
+		},
+		{
+			id: "state",
+			name: "State Person",
+			office: "State Senate",
+			scope: "state-senate",
+			district: "48",
+			status: "listed"
+		},
+		{
+			id: "local",
+			name: "Local Person",
+			office: "County Commissioner",
+			scope: "local",
+			district: "5",
+			status: "write-in"
+		}
 	];
 	const before = structuredClone(records);
 	const groups = groupElectionCandidates(records);
@@ -39,16 +69,44 @@ test("office contents labels stay short while retaining district and unexpired-s
 });
 
 test("source-specific publication labels cannot split the same statewide office, while local jurisdictions stay distinct", () => {
-	const base: PublicStateCandidateRecord = { id: "ordinary", name: "Ordinary Candidate", office: "Governor", scope: "statewide", district: "", status: "listed", jurisdiction: "County consolidated publication" };
-	const groups = groupElectionCandidates([base, { ...base, id: "certified", name: "Certified Write-in", jurisdiction: undefined, status: "write-in" }]);
+	const base: PublicStateCandidateRecord = {
+		id: "ordinary",
+		name: "Ordinary Candidate",
+		office: "Governor",
+		scope: "statewide",
+		district: "",
+		status: "listed",
+		jurisdiction: "County consolidated publication"
+	};
+	const groups = groupElectionCandidates([
+		base,
+		{
+			...base,
+			id: "certified",
+			name: "Certified Write-in",
+			jurisdiction: undefined,
+			status: "write-in"
+		}
+	]);
 	assert.equal(groups[0]!.offices.length, 1);
 	assert.equal(groups[0]!.offices[0]!.candidates.length, 2);
 	assert.equal(groups[0]!.offices[0]!.anchorId, "candidate-office-ordinary");
-	assert.equal(groupElectionCandidates([{ ...base, scope: "local", jurisdiction: "First County" }, { ...base, id: "other-local", scope: "local", jurisdiction: "Second County" }])[0]!.offices.length, 2);
+	assert.equal(groupElectionCandidates([
+		{ ...base, scope: "local", jurisdiction: "First County" },
+		{
+			...base,
+			id: "other-local",
+			scope: "local",
+			jurisdiction: "Second County"
+		}
+	])[0]!.offices.length, 2);
 });
 
 test("known state records load automatically while explicit selections and invalid inputs retain precedence", () => {
-	const states = [{ stateCode: "GA", stateName: "Georgia", configured: true }, { stateCode: "WA", stateName: "Washington", configured: true }];
+	const states = [
+		{ stateCode: "GA", stateName: "Georgia", configured: true },
+		{ stateCode: "WA", stateName: "Washington", configured: true }
+	];
 	assert.equal(readRecoverableStateRecordQuery({}, states, "Georgia").stateCode, "GA");
 	assert.equal(readRecoverableStateRecordQuery({ state: "WA" }, states, "GA").stateCode, "WA");
 	assert.equal(readRecoverableStateRecordQuery({ state: "" }, states, "GA").stateCode, "");
@@ -100,7 +158,7 @@ test("candidate contents follow available groups after mounting without extra so
 	assert.match(candidates, /href: "#candidates-heading", label: "Candidates"/u);
 	assert.match(candidates, /href: `#candidate-level-\$\{group.id\}`/u);
 	assert.match(candidates, /children: group.offices.map/u);
-	assert.match(candidates, /label: electionOfficeLabel\(office.title\), title: office.title/u);
+	assert.match(candidates, /label:\s*electionOfficeLabel\(office.title\),\s*title:\s*office.title/u);
 	assert.match(candidates, /<h4 :id="office.anchorId" tabindex="-1"/u);
 	assert.match(candidates, /<h3 :id="`candidate-level-\$\{level.id\}`" tabindex="-1"/u);
 	assert.doesNotMatch(candidates, /MutationObserver|watchEffect/u);

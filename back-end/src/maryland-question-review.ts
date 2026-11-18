@@ -25,7 +25,11 @@ const jurisdictions: Record<string, { type: "state" | "county" | "city"; name: s
 };
 const hash = (body: string | Uint8Array) => createHash("sha256").update(body).digest("hex");
 const clean = (node: Parameters<typeof stateHtmlText>[0]) => stateHtmlText(node).replace(/\s+/gu, " ").trim();
-const questionId = (heading: string, language: "en" | "es") => new RegExp(`^${language === "en" ? "Question" : "Pregunta"}\\s+([1-9]\\d{0,2}|[A-Z]{1,2})$`, "iu").exec(heading)?.[1]?.toUpperCase();
+function questionId(heading: string, language: "en" | "es") {
+	return new RegExp(`^${language === "en"
+		? "Question"
+		: "Pregunta"}\\s+([1-9]\\d{0,2}|[A-Z]{1,2})$`, "iu").exec(heading)?.[1]?.toUpperCase();
+}
 
 export function parseMarylandQuestionPage(body: Uint8Array, review: MarylandQuestionReview) {
 	const date = new Date(review?.electionDate);
@@ -35,7 +39,9 @@ export function parseMarylandQuestionPage(body: Uint8Array, review: MarylandQues
 	}
 	if (!body.byteLength || body.byteLength > 2 * 1024 * 1024) throw new Error("Maryland question HTML exceeds its size limit.");
 	const document = parseStateHtml(new TextDecoder("utf-8", { fatal: true }).decode(body));
-	const pending = [{ node: document, depth: 0 }];
+	const pending = [
+		{ node: document, depth: 0 }
+	];
 	let visited = 0;
 	while (pending.length) {
 		const { node, depth } = pending.pop()!;
@@ -45,7 +51,12 @@ export function parseMarylandQuestionPage(body: Uint8Array, review: MarylandQues
 	const mains = stateHtmlDescendants(document, node => stateHtmlAttribute(node, "id") === "bodyMain");
 	if (mains.length !== 1) throw new Error("Maryland question content region changed.");
 	const main = mains[0]!;
-	const title = `Ballot Questions for the ${new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(date)} Election`;
+	const title = `Ballot Questions for the ${new Intl.DateTimeFormat("en-US", {
+		month: "long",
+		day: "numeric",
+		year: "numeric",
+		timeZone: "UTC"
+	}).format(date)} Election`;
 	if (!stateHtmlDescendants(main, node => node.nodeName === "h1").some(node => clean(node) === title) || !clean(main).includes("All comment periods have now closed.")) throw new Error("Maryland question election or comment status changed.");
 	const groups = main.childNodes?.filter(node => node.nodeName === "details") ?? [];
 	if (groups.length !== review.areas.length) throw new Error("Maryland question groups changed.");
@@ -62,12 +73,26 @@ export function parseMarylandQuestionPage(body: Uint8Array, review: MarylandQues
 			if (node.nodeName === "h2") {
 				const id = questionId(clean(node), "en");
 				if (!id) throw new Error("Maryland English question heading changed.");
-				current = { id, paragraphs: [], lists: [], translations: [] };
+				current = {
+					id,
+					paragraphs: [],
+					lists: [],
+					translations: []
+				};
 				chunks.push(current);
 				continue;
 			}
 			if (!current) continue;
-			if (stateHtmlDescendants(node, child => ["script", "style", "template", "form", "input", "iframe"].includes(child.nodeName)).length) throw new Error("Maryland question contains unsupported active content.");
+			if (stateHtmlDescendants(node, child => [
+				"script",
+				"style",
+				"template",
+				"form",
+				"input",
+				"iframe"
+			].includes(child.nodeName)).length) {
+				throw new Error("Maryland question contains unsupported active content.");
+			}
 			if (node.nodeName === "p") {
 				current.paragraphs.push(clean(node));
 			}
@@ -77,7 +102,10 @@ export function parseMarylandQuestionPage(body: Uint8Array, review: MarylandQues
 			else if (node.nodeName === "div" && stateHtmlAttribute(node, "lang") === "es") {
 				const headings = stateHtmlDescendants(node, child => child.nodeName === "h2");
 				if (headings.length !== 1 || questionId(clean(headings[0]!), "es") !== current.id) throw new Error("Maryland translation does not match its English question.");
-				current.translations.push({ heading: clean(headings[0]!), text: clean(node) });
+				current.translations.push({
+					heading: clean(headings[0]!),
+					text: clean(node)
+				});
 			}
 			else {
 				throw new Error("Maryland question content shape changed.");
@@ -91,11 +119,37 @@ export function parseMarylandQuestionPage(body: Uint8Array, review: MarylandQues
 			const separate = (text: string) => text.split(/\s*-\s*(?=A vote)/iu);
 			const yes = separate(yesText!);
 			const no = separate(noText!);
-			const ballotOptions = { yes: yes[0]!.trim(), no: no[0]!.trim() };
+			const ballotOptions = {
+				yes: yes[0]!.trim(),
+				no: no[0]!.trim()
+			};
 			if (!isSupportedMeasureBallotOptions(ballotOptions)) throw new Error("Maryland question has an unsupported binary label pair.");
 			const jurisdiction = jurisdictions[area.label]!;
-			questions.push({ area: area.label, jurisdictionType: jurisdiction.type, jurisdictionName: jurisdiction.name, questionId: chunk.id, heading: `Question ${chunk.id}`, paragraphs: chunk.paragraphs, ballotOptions, forExplanation: yes.slice(1).join(" - ") || chunk.paragraphs.find(text => /^A vote FOR\b/iu.test(text)) || "", againstExplanation: no.slice(1).join(" - ") || chunk.paragraphs.find(text => /^A vote AGAINST\b/iu.test(text)) || "", meaningInferred: false, personalBallotAssignment: false });
-			for (const translation of chunk.translations) translations.push({ area: area.label, jurisdictionType: jurisdiction.type, jurisdictionName: jurisdiction.name, questionId: chunk.id, language: "es", ...translation, updatedTranslationPending: new RegExp(`\\btranslation is forthcoming for Question ${chunk.id}\\b`, "iu").test(clean(group)), semanticReviewApproved: false });
+			questions.push({
+				area: area.label,
+				jurisdictionType: jurisdiction.type,
+				jurisdictionName: jurisdiction.name,
+				questionId: chunk.id,
+				heading: `Question ${chunk.id}`,
+				paragraphs: chunk.paragraphs,
+				ballotOptions,
+				forExplanation: yes.slice(1).join(" - ") || chunk.paragraphs.find(text => /^A vote FOR\b/iu.test(text)) || "",
+				againstExplanation: no.slice(1).join(" - ") || chunk.paragraphs.find(text => /^A vote AGAINST\b/iu.test(text)) || "",
+				meaningInferred: false,
+				personalBallotAssignment: false
+			});
+			for (const translation of chunk.translations) {
+				translations.push({
+					area: area.label,
+					jurisdictionType: jurisdiction.type,
+					jurisdictionName: jurisdiction.name,
+					questionId: chunk.id,
+					language: "es",
+					...translation,
+					updatedTranslationPending: new RegExp(`\\btranslation is forthcoming for Question ${chunk.id}\\b`, "iu").test(clean(group)),
+					semanticReviewApproved: false
+				});
+			}
 		}
 	}
 	if (questions.length > 500) throw new Error("Maryland question count exceeds its bound.");
@@ -112,22 +166,98 @@ export async function prepareMarylandQuestionReview(planPath: string, now = Date
 	const result = parseMarylandQuestionPage(body, { electionDate: plan.electionDate, areas: plan.expectedAreas });
 	assertExternalStateDataDirectory(plan.outputDirectory);
 	assertExternalStateDataDirectory(join(await realpath(dirname(plan.outputDirectory)), basename(plan.outputDirectory)));
-	const metadata = { schemaVersion: 1, type: "maryland-question-review", stateCode: "MD", electionDate: plan.electionDate, sourceUrl: capture.url, sourceSha256: capture.sha256, capturedAt: capture.capturedAt, publicationDate: null, preparedAt: new Date(now).toISOString(), questions: result.questions.length, translations: result.translations.length, pendingTranslations: result.translations.filter(item => item.updatedTranslationPending).length, publicationApproved: false, automaticImportApproved: false, personalBallotAssignment: false, meaningInferred: false };
-	const records = result.questions.map(question => ({ ...metadata, type: "maryland-question-review-record", ...question }));
-	const csvCell = (value: string) => `"${(/^\s*[=+@-]|^[\t\r\n]/u.test(value) ? "'" : "") + value.replaceAll("\"", "\"\"")}"`;
-	const header = ["state", "election_date", "jurisdiction_type", "jurisdiction", "question", "official_text", "for_label", "against_label", "official_for_explanation", "official_against_explanation", "source_url", "source_sha256", "captured_at", "publication_approved", "personal_ballot_assignment"];
-	const rows = records.map(item => ["MD", item.electionDate, item.jurisdictionType, item.jurisdictionName, item.questionId, item.paragraphs.join(" "), item.ballotOptions.yes, item.ballotOptions.no, item.forExplanation, item.againstExplanation, item.sourceUrl, item.sourceSha256, item.capturedAt, "false", "false"]);
+	const metadata = {
+		schemaVersion: 1,
+		type: "maryland-question-review",
+		stateCode: "MD",
+		electionDate: plan.electionDate,
+		sourceUrl: capture.url,
+		sourceSha256: capture.sha256,
+		capturedAt: capture.capturedAt,
+		publicationDate: null,
+		preparedAt: new Date(now).toISOString(),
+		questions: result.questions.length,
+		translations: result.translations.length,
+		pendingTranslations: result.translations.filter(item => item.updatedTranslationPending).length,
+		publicationApproved: false,
+		automaticImportApproved: false,
+		personalBallotAssignment: false,
+		meaningInferred: false
+	};
+	const records = result.questions.map(question => ({
+		...metadata,
+		type: "maryland-question-review-record",
+		...question
+	}));
+	const csvCell = (value: string) => `"${(/^\s*[=+@-]|^[\t\r\n]/u.test(value)
+		? "'"
+		: "") + value.replaceAll("\"", "\"\"")}"`;
+	const header = [
+		"state",
+		"election_date",
+		"jurisdiction_type",
+		"jurisdiction",
+		"question",
+		"official_text",
+		"for_label",
+		"against_label",
+		"official_for_explanation",
+		"official_against_explanation",
+		"source_url",
+		"source_sha256",
+		"captured_at",
+		"publication_approved",
+		"personal_ballot_assignment"
+	];
+	const rows = records.map(item => [
+		"MD",
+		item.electionDate,
+		item.jurisdictionType,
+		item.jurisdictionName,
+		item.questionId,
+		item.paragraphs.join(" "),
+		item.ballotOptions.yes,
+		item.ballotOptions.no,
+		item.forExplanation,
+		item.againstExplanation,
+		item.sourceUrl,
+		item.sourceSha256,
+		item.capturedAt,
+		"false",
+		"false"
+	]);
 	const outputs = [
 		{ name: `${plan.outputName}.jsonl`, body: `${[metadata, ...records].map(item => JSON.stringify(item)).join("\n")}\n` },
 		{ name: `${plan.outputName}.csv`, body: `${[header, ...rows].map(row => row.map(csvCell).join(",")).join("\n")}\n` },
-		{ name: `${plan.outputName}-translations.jsonl`, body: `${result.translations.map(item => JSON.stringify({ ...metadata, type: "maryland-translation-review", ...item })).join("\n")}\n` },
+		{ name: `${plan.outputName}-translations.jsonl`, body: `${result.translations.map(item => JSON.stringify({
+			...metadata,
+			type: "maryland-translation-review",
+			...item
+		})).join("\n")}\n` },
 	];
-	const manifest = { ...metadata, files: outputs.map(file => ({ name: file.name, bytes: Buffer.byteLength(file.body), sha256: hash(file.body) })), publisherRequests: 0, imported: false };
+	const manifest = {
+		...metadata,
+		files: outputs.map(file => ({
+			name: file.name,
+			bytes: Buffer.byteLength(file.body),
+			sha256: hash(file.body)
+		})),
+		publisherRequests: 0,
+		imported: false
+	};
 	outputs.push({ name: `${plan.outputName}-manifest.json`, body: `${JSON.stringify(manifest, null, 2)}\n` });
 	outputs.push({ name: `${plan.outputName}-SHA256SUMS`, body: `${outputs.map(file => `${hash(file.body)}  ${file.name}`).join("\n")}\n` });
 	if (outputs.some(file => Buffer.byteLength(file.body) > 12 * 1024 * 1024)) throw new Error("Prepared Maryland review output exceeds its size limit.");
 	await mkdir(plan.outputDirectory);
 	assertExternalStateDataDirectory(await realpath(plan.outputDirectory));
 	for (const file of outputs) await writeFile(join(plan.outputDirectory, file.name), file.body, { flag: "wx" });
-	return { outputDirectory: plan.outputDirectory, files: outputs.length, questions: result.questions.length, translations: result.translations.length, publisherRequests: 0, imported: false, publicationApproved: false };
+	return {
+		outputDirectory: plan.outputDirectory,
+		files: outputs.length,
+		questions: result.questions.length,
+		translations: result.translations.length,
+		publisherRequests: 0,
+		imported: false,
+		publicationApproved: false
+	};
 }

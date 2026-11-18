@@ -78,12 +78,26 @@ for (const county of ["Monona", "Woodbury"] as const) {
 			...options,
 			request: async (url) => {
 				assert.equal(url, fixture.link.url);
-				return { status: 200, etag: undefined, contentType: "application/pdf", body: Buffer.from("%PDF-Synthetic source fixture") };
+				return {
+					status: 200,
+					etag: undefined,
+					contentType: "application/pdf",
+					body: Buffer.from("%PDF-Synthetic source fixture")
+				};
 			}
 		});
 		assert.deepEqual(waits, [20000]);
 		assert.equal(parseIowaCountyCandidateCapture(fixture.source, body, createStateCandidateRecord, clock).records.length, 11);
-		await assert.rejects(fetchIowaCountyCandidateCapture(fixture.source, { ...options, request: async () => ({ status: 302, etag: undefined, contentType: "application/pdf", location: fixture.link.url, body: Buffer.from("%PDF-Synthetic") }) }), /unavailable/u);
+		await assert.rejects(fetchIowaCountyCandidateCapture(fixture.source, {
+			...options,
+			request: async () => ({
+				status: 302,
+				etag: undefined,
+				contentType: "application/pdf",
+				location: fixture.link.url,
+				body: Buffer.from("%PDF-Synthetic")
+			})
+		}), /unavailable/u);
 		const changed = structuredClone(fixture.capture);
 		changed.documents[0]!.visible = changed.documents[0]!.visible.replace("Avery Example", "Changed name");
 		assert.throws(() => parseIowaCountyCandidateCapture(fixture.source, JSON.stringify(changed), createStateCandidateRecord, fixture.now));
@@ -92,8 +106,21 @@ for (const county of ["Monona", "Woodbury"] as const) {
 	test(`${county} rejects alias loss, changed inventories and stored provenance tampering`, () => {
 		const fixture = iowaCountyFixture(county);
 		const parsed = parseIowaCountyCandidateCapture(fixture.source, JSON.stringify(fixture.capture), createStateCandidateRecord, fixture.now);
-		assert.throws(() => parseIowaCountyCandidateCapture(fixture.source, JSON.stringify(fixture.capture), createStateCandidateRecord, fixture.now, { records: parsed.records, documents: [{ url: fixture.link.url, styles: ["Missing precinct"] }] }), /disappeared/u);
-		assert.throws(() => validateIowaCountyElection({ electionId: null, electionDate: fixture.source.electionDate, pageUrl: fixture.source.pageUrl, iowaCountyDocuments: [fixture.link, fixture.link] }, county));
+		assert.throws(() => parseIowaCountyCandidateCapture(fixture.source, JSON.stringify(fixture.capture), createStateCandidateRecord, fixture.now, {
+			records: parsed.records,
+			documents: [
+				{
+					url: fixture.link.url,
+					styles: ["Missing precinct"]
+				}
+			]
+		}), /disappeared/u);
+		assert.throws(() => validateIowaCountyElection({
+			electionId: null,
+			electionDate: fixture.source.electionDate,
+			pageUrl: fixture.source.pageUrl,
+			iowaCountyDocuments: [fixture.link, fixture.link]
+		}, county));
 		const stored = JSON.parse(serializeStoredStateSnapshot({ source: fixture.source, ...parsed }));
 		stored.documents[0].styles.pop();
 		assert.throws(() => parseBundledStateSnapshot(fixture.source, JSON.stringify(stored), "automatic"), /index/u);
@@ -102,16 +129,32 @@ for (const county of ["Monona", "Woodbury"] as const) {
 		const fixture = iowaCountyFixture(county);
 		const parse = (value: unknown) => parseIowaCountyCandidateCapture(fixture.source, JSON.stringify(value), createStateCandidateRecord, fixture.now);
 		assert.throws(() => parse({ ...fixture.capture, schemaVersion: 1 }), /contract/u);
-		for (const field of ["bboxSha256", "geometrySha256", "wordInventorySha256", "svgSha256", "words", "characters", "minimumContrast", "ruleContacts"]) {
+		for (const field of [
+			"bboxSha256",
+			"geometrySha256",
+			"wordInventorySha256",
+			"svgSha256",
+			"words",
+			"characters",
+			"minimumContrast",
+			"ruleContacts"
+		]) {
 			const changed = structuredClone(fixture.capture);
 			const proof = changed.documents[0]!.appearance.pages[0]! as unknown as Record<string, unknown>;
-			proof[field] = ["minimumContrast", "ruleContacts"].includes(field) ? -1 : typeof proof[field] === "string" ? "changed" : Number(proof[field]) + 1;
+			proof[field] = ["minimumContrast", "ruleContacts"].includes(field)
+				? -1
+				: typeof proof[field] === "string"
+					? "changed"
+					: Number(proof[field]) + 1;
 			assert.throws(() => parse(changed));
 		}
 		const changed = structuredClone(fixture.capture);
 		changed.documents[0]!.appearance.pages.pop();
 		assert.throws(() => parse(changed), /appearance/u);
-		changed.documents[0]!.appearance = { ...fixture.capture.documents[0]!.appearance, sourceSha256: "0".repeat(64) };
+		changed.documents[0]!.appearance = {
+			...fixture.capture.documents[0]!.appearance,
+			sourceSha256: "0".repeat(64)
+		};
 		assert.throws(() => parse(changed), /appearance/u);
 	});
 
@@ -120,7 +163,12 @@ for (const county of ["Monona", "Woodbury"] as const) {
 		await assert.rejects(fetchIowaCountyCycleDiscovery(county, {
 			request: async (url) => {
 				urls.push(url);
-				return { status: 200, etag: undefined, contentType: "text/plain", body: Buffer.from("User-agent: *\nDisallow: /\n") };
+				return {
+					status: 200,
+					etag: undefined,
+					contentType: "text/plain",
+					body: Buffer.from("User-agent: *\nDisallow: /\n")
+				};
 			},
 			now: () => 0
 		}), /policy/u);
@@ -130,7 +178,20 @@ for (const county of ["Monona", "Woodbury"] as const) {
 
 test("Iowa publication descriptors retain date identity and reject foreign links and control-bearing aliases", () => {
 	const fixture = iowaCountyFixture();
-	for (const link of [{ ...fixture.link, url: "https://example.test/sample.pdf" }, { ...fixture.link, styles: ["bad\u0001style"] }]) assert.throws(() => validateIowaCountyElection({ electionId: null, electionDate: fixture.source.electionDate, pageUrl: fixture.source.pageUrl, iowaCountyDocuments: [link] }, "Monona"));
+	for (const link of [
+		{ ...fixture.link, url: "https://example.test/sample.pdf" },
+		{
+			...fixture.link,
+			styles: ["bad\u0001style"]
+		}
+	]) {
+		assert.throws(() => validateIowaCountyElection({
+			electionId: null,
+			electionDate: fixture.source.electionDate,
+			pageUrl: fixture.source.pageUrl,
+			iowaCountyDocuments: [link]
+		}, "Monona"));
+	}
 	const footer = "<div id=\"footer\">Monona County © 2026</div><div id=\"credit\">County publishing</div><a href=\"/page/title_vi/\">Title VI</a>";
 	assert.equal(iowaCountyPolicyFingerprint(footer, "Monona", "home"), iowaCountyPolicyFingerprint(footer.replace("2026", "2028"), "Monona", "home"));
 	assert.notEqual(iowaCountyPolicyFingerprint(footer, "Monona", "home"), iowaCountyPolicyFingerprint(`${footer}<a href=\"/terms/\">Terms</a>`, "Monona", "home"));
@@ -230,9 +291,15 @@ test("Iowa recurring acquisition moves from waiting to durable import and offlin
 			assert.equal(response.status, 200);
 			const payload = await response.json();
 			assert.equal(payload.records.length, 11);
-			assert.deepEqual(payload.source.documentLinks, [{ label: "Sample ballots", url: fixture.source.pageUrl }]);
+			assert.deepEqual(payload.source.documentLinks, [
+				{ label: "Sample ballots", url: fixture.source.pageUrl }
+			]);
 		}
-		finally { await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())); }
+		finally {
+			await new Promise<void>((resolve, reject) => server.close(error => error
+				? reject(error)
+				: resolve()));
+		}
 	}
 	finally { await rm(directory, { recursive: true, force: true }); }
 });

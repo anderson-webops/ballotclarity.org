@@ -38,7 +38,22 @@ function reject(): never {
 	throw new Error("The Douglas County collection contract requires review.");
 }
 export function douglasSource(electionDate: string): StateBallotSource {
-	return { stateCode: "NE", id: electionDate === "2026-11-03" ? "ne-douglas-2026" : `ne-douglas-general-${electionDate}`, label: "Douglas County candidate filings", electionDate, url: douglasDiscoveryUrl, pageUrl: douglasDiscoveryUrl, format: "douglas-html", snapshotStorage: "external", countyName: "Douglas County", defaultPriority: -10, ballotPreview: false, scopeNotice: "Candidate filings, not a verified ballot." };
+	return {
+		stateCode: "NE",
+		id: electionDate === "2026-11-03"
+			? "ne-douglas-2026"
+			: `ne-douglas-general-${electionDate}`,
+		label: "Douglas County candidate filings",
+		electionDate,
+		url: douglasDiscoveryUrl,
+		pageUrl: douglasDiscoveryUrl,
+		format: "douglas-html",
+		snapshotStorage: "external",
+		countyName: "Douglas County",
+		defaultPriority: -10,
+		ballotPreview: false,
+		scopeNotice: "Candidate filings, not a verified ballot."
+	};
 }
 export function validateDouglasSource(source: StateBallotSource) {
 	validateDouglasDate(source.electionDate);
@@ -46,7 +61,14 @@ export function validateDouglasSource(source: StateBallotSource) {
 	if (source.stateCode !== "NE" || source.id !== expected.id || source.url !== douglasDiscoveryUrl || source.pageUrl !== douglasDiscoveryUrl || source.format !== "douglas-html" || source.countyName !== expected.countyName || source.snapshotStorage !== "external" || source.ballotPreview !== false || source.retrievalPolicy || source.postBody || source.delimiter || source.documentUrls || source.documentLinks || source.withheldDistrictScopes || source.withheldStatewideOffices) return reject();
 }
 export function validateDouglasElection(value: unknown): asserts value is DouglasElection {
-	if (!exact(value, ["electionId", "electionDate", "pageUrl", "douglasDocuments"]) || value.electionId !== null || typeof value.electionDate !== "string" || value.pageUrl !== douglasDiscoveryUrl || !Array.isArray(value.douglasDocuments) || !value.douglasDocuments.length || value.douglasDocuments.length > 401) return reject();
+	if (!exact(value, [
+		"electionId",
+		"electionDate",
+		"pageUrl",
+		"douglasDocuments"
+	]) || value.electionId !== null || typeof value.electionDate !== "string" || value.pageUrl !== douglasDiscoveryUrl || !Array.isArray(value.douglasDocuments) || !value.douglasDocuments.length || value.douglasDocuments.length > 401) {
+		return reject();
+	}
 	validateDouglasDate(value.electionDate);
 	const urls = new Set<string>();
 	for (const [index, item] of value.douglasDocuments.entries()) {
@@ -64,7 +86,18 @@ export const douglasDocumentDigest = (documents: readonly { url: string; sha256:
 export function readDouglasCandidateDiscovery(body: string, now = Date.now()) {
 	if (Buffer.byteLength(body) > 20 * 1024 * 1024 || !Number.isFinite(now)) return reject();
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "robots", "home", "privacy", "index", "calendar", "collections"]) || value.schemaVersion !== 1 || value.type !== "douglas-candidate-discovery" || !Array.isArray(value.collections) || value.collections.length > 10) return reject();
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"robots",
+		"home",
+		"privacy",
+		"index",
+		"calendar",
+		"collections"
+	]) || value.schemaVersion !== 1 || value.type !== "douglas-candidate-discovery" || !Array.isArray(value.collections) || value.collections.length > 10) {
+		return reject();
+	}
 	function page(input: unknown, url: string): Page {
 		if (!exact(input, ["url", "body", "sha256", "retrievedAt"]) || input.url !== url || typeof input.body !== "string" || Buffer.byteLength(input.body) > 2 * 1024 * 1024 || input.sha256 !== hash(input.body) || typeof input.retrievedAt !== "string" || !Number.isFinite(Date.parse(input.retrievedAt)) || new Date(input.retrievedAt).toISOString() !== input.retrievedAt || Date.parse(input.retrievedAt) > now) return reject();
 		return input as unknown as Page;
@@ -97,7 +130,12 @@ export function readDouglasCandidateDiscovery(body: string, now = Date.now()) {
 		return { electionDate, selected, profiles };
 	});
 	const elections = collections.map((collection) => {
-		const election = { electionId: null, electionDate: collection.electionDate, pageUrl: douglasDiscoveryUrl, douglasDocuments: [collection.selected, ...collection.profiles].map(({ url, sha256 }) => ({ url, sha256 })) };
+		const election = {
+			electionId: null,
+			electionDate: collection.electionDate,
+			pageUrl: douglasDiscoveryUrl,
+			douglasDocuments: [collection.selected, ...collection.profiles].map(({ url, sha256 }) => ({ url, sha256 }))
+		};
 		validateDouglasElection(election);
 		return election;
 	});
@@ -112,10 +150,24 @@ export async function fetchDouglasCandidateDiscovery(options: Options = {}) {
 	async function capture(url: string, postBody?: string): Promise<Page> {
 		if (!first) await sleep(1000);
 		first = false;
-		const body = await request(url, { allowedHosts: ["www.votedouglascounty-ne.gov"], maxBytes: 2 * 1024 * 1024, maxRedirects: 0, timeoutMs: 30000, textEncoding: "utf-8-or-windows-1252", ...(postBody ? { postBody } : {}) });
+		const body = await request(url, {
+			allowedHosts: ["www.votedouglascounty-ne.gov"],
+			maxBytes: 2 * 1024 * 1024,
+			maxRedirects: 0,
+			timeoutMs: 30000,
+			textEncoding: "utf-8-or-windows-1252",
+			...(postBody
+				? { postBody }
+				: {})
+		});
 		size += Buffer.byteLength(body);
 		if (size > 16 * 1024 * 1024) return reject();
-		const page = { url, body, sha256: hash(body), retrievedAt: new Date(now()).toISOString() };
+		const page = {
+			url,
+			body,
+			sha256: hash(body),
+			retrievedAt: new Date(now()).toISOString()
+		};
 		await options.onPage?.(page);
 		return page;
 	}
@@ -145,7 +197,16 @@ export async function fetchDouglasCandidateDiscovery(options: Options = {}) {
 		}
 		collections.push({ electionDate, selected, profiles });
 	}
-	const body = JSON.stringify({ schemaVersion: 1, type: "douglas-candidate-discovery", robots, home, privacy, index, calendar, collections });
+	const body = JSON.stringify({
+		schemaVersion: 1,
+		type: "douglas-candidate-discovery",
+		robots,
+		home,
+		privacy,
+		index,
+		calendar,
+		collections
+	});
 	readDouglasCandidateDiscovery(body, now());
 	return body;
 }
@@ -154,13 +215,25 @@ export async function fetchDouglasCandidateCapture(source: StateBallotSource, op
 	const discovery = options.discovery ?? await fetchDouglasCandidateDiscovery(options);
 	const parsed = readDouglasCandidateDiscovery(discovery, (options.now ?? Date.now)());
 	if (parsed.elections.length && !parsed.elections.some(item => item.electionDate === source.electionDate)) return reject();
-	return JSON.stringify({ schemaVersion: 1, type: "douglas-candidate-capture", electionDate: source.electionDate, discovery: JSON.parse(discovery) });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "douglas-candidate-capture",
+		electionDate: source.electionDate,
+		discovery: JSON.parse(discovery)
+	});
 }
 export function parseDouglasCandidateCapture(source: StateBallotSource, body: string, now = Date.now(), previous: readonly StateCandidateRecord[] = []) {
 	validateDouglasSource(source);
 	if (Buffer.byteLength(body) > 20 * 1024 * 1024) return reject();
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "electionDate", "discovery"]) || value.schemaVersion !== 1 || value.type !== "douglas-candidate-capture" || value.electionDate !== source.electionDate) return reject();
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"electionDate",
+		"discovery"
+	]) || value.schemaVersion !== 1 || value.type !== "douglas-candidate-capture" || value.electionDate !== source.electionDate) {
+		return reject();
+	}
 	const discovery = readDouglasCandidateDiscovery(JSON.stringify(value.discovery), now);
 	const collection = discovery.collections.find(item => item.electionDate === source.electionDate);
 	if (!collection) {
@@ -174,12 +247,36 @@ export function parseDouglasCandidateCapture(source: StateBallotSource, body: st
 	}
 	const claims = roster.filings.map((filing) => {
 		const profile = collection.profiles.find(item => item.url === filing.profileUrl);
-		const values = profile ? readDouglasProfile(profile.body, filing, source.electionDate.slice(0, 4)) : undefined;
-		return { record: douglasRecord(source, filing, values?.party), filedDate: filing.filedDate, officeCategory: filing.office.category, personalAffiliation: values?.affiliation, personalAffiliationNotANomination: true, profileUrl: profile?.url, writeIn: filing.writeIn };
+		const values = profile
+			? readDouglasProfile(profile.body, filing, source.electionDate.slice(0, 4))
+			: undefined;
+		return {
+			record: douglasRecord(source, filing, values?.party),
+			filedDate: filing.filedDate,
+			officeCategory: filing.office.category,
+			personalAffiliation: values?.affiliation,
+			personalAffiliationNotANomination: true,
+			profileUrl: profile?.url,
+			writeIn: filing.writeIn
+		};
 	});
 	const records = claims.map(claim => claim.record);
 	if (new Set(records.map(item => item.id)).size !== records.length || previous.some(record => !records.some(item => item.id === record.id))) return reject();
-	const documents = [collection.selected, ...collection.profiles].map((page, index) => ({ url: page.url, sha256: page.sha256, retrievedAt: page.retrievedAt, includedRecordCount: index === 0 ? roster.filings.filter(item => item.writeIn).length : 1 }));
+	const documents = [collection.selected, ...collection.profiles].map((page, index) => ({
+		url: page.url,
+		sha256: page.sha256,
+		retrievedAt: page.retrievedAt,
+		includedRecordCount: index === 0
+			? roster.filings.filter(item => item.writeIn).length
+			: 1
+	}));
 	const sha256 = douglasDocumentDigest(documents);
-	return { records, claims, documents, sha256, collectionIndexSha256: sha256, retrievedAt: collection.selected.retrievedAt };
+	return {
+		records,
+		claims,
+		documents,
+		sha256,
+		collectionIndexSha256: sha256,
+		retrievedAt: collection.selected.retrievedAt
+	};
 }

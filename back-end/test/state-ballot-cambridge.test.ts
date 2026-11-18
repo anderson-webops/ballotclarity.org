@@ -21,7 +21,14 @@ test("Cambridge's native reader keeps literal party, ticket, named-district and 
 	assert.equal(result.records[1]!.name, "SAMPLE AND PARTNER");
 	assert.equal(result.records[7]!.party, "Justice for All");
 	assert(!JSON.stringify(result).includes("Example Rd."));
-	assert.equal(result.records[0]!.id, createHash("sha256").update(JSON.stringify(["MA", "2026-11-03", "senator in congress", "", "sample senator", "democratic"])).digest("hex").slice(0, 24));
+	assert.equal(result.records[0]!.id, createHash("sha256").update(JSON.stringify([
+		"MA",
+		"2026-11-03",
+		"senator in congress",
+		"",
+		"sample senator",
+		"democratic"
+	])).digest("hex").slice(0, 24));
 	assert.equal(source.retrievalPolicy, "manual-snapshot");
 });
 

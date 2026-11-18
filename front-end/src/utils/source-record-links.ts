@@ -3,5 +3,7 @@ export function buildSourceRecordHref(sourceId: string, publishedSourceIds: Iter
 		? publishedSourceIds
 		: new Set(publishedSourceIds);
 
-	return publishedSourceIdSet.has(sourceId) ? `/sources/${sourceId}` : null;
+	return publishedSourceIdSet.has(sourceId)
+		? `/sources/${sourceId}`
+		: null;
 }

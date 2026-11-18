@@ -17,7 +17,15 @@ test("the recurring runner resumes after abrupt process death without manual loc
 	const workers: ReturnType<typeof spawn>[] = [];
 	const launch = () => {
 		const worker = spawn(process.execPath, ["--import", "tsx", entry, "--watch"], {
-			env: { PATH: process.env.PATH, HOME: process.env.HOME, TMPDIR: process.env.TMPDIR, STATE_BALLOT_DATA_DIR: directory, STATE_BALLOT_ENABLED_STATES: "NC", STATE_BALLOT_ENABLED_SOURCES: "nc-sbe-2026", STATE_BALLOT_REFRESH_INTERVAL_MS: "60000" },
+			env: {
+				PATH: process.env.PATH,
+				HOME: process.env.HOME,
+				TMPDIR: process.env.TMPDIR,
+				STATE_BALLOT_DATA_DIR: directory,
+				STATE_BALLOT_ENABLED_STATES: "NC",
+				STATE_BALLOT_ENABLED_SOURCES: "nc-sbe-2026",
+				STATE_BALLOT_REFRESH_INTERVAL_MS: "60000"
+			},
 			stdio: ["ignore", "pipe", "pipe"]
 		});
 		workers.push(worker);
@@ -25,7 +33,10 @@ test("the recurring runner resumes after abrupt process death without manual loc
 		worker.stdout.on("data", (chunk) => {
 			output += String(chunk);
 		});
-		return { worker, output: () => output };
+		return {
+			worker,
+			output: () => output
+		};
 	};
 	const waitForPass = async (running: ReturnType<typeof launch>) => {
 		for (let attempt = 0; attempt < 200; attempt++) {

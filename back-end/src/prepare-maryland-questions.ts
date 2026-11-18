@@ -8,6 +8,8 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-	console.error(error instanceof Error ? error.message : "Maryland question review preparation failed.");
+	console.error(error instanceof Error
+		? error.message
+		: "Maryland question review preparation failed.");
 	process.exitCode = 1;
 });

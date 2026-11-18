@@ -11,17 +11,48 @@ import {
 } from "../src/utils/representative-presentation.ts";
 
 test("countywide agency roles retain their sourced identity", () => {
-	for (const officeTitle of ["Sheriff", "District Attorney", "Solicitor General", "Tax Commissioner"]) assert.equal(classifyRepresentative({ officeTitle, districtLabel: "Fulton County", districtType: "county", stateCode: "GA" }).officeDisplayLabel, `Fulton County ${officeTitle}`);
+	for (const officeTitle of [
+		"Sheriff",
+		"District Attorney",
+		"Solicitor General",
+		"Tax Commissioner"
+	]) {
+		assert.equal(classifyRepresentative({
+			officeTitle,
+			districtLabel: "Fulton County",
+			districtType: "county",
+			stateCode: "GA"
+		}).officeDisplayLabel, `Fulton County ${officeTitle}`);
+	}
 });
 
 test("county commission labels distinguish members, chair and vice chair without repeating the district", () => {
-	for (const [officeTitle, districtLabel, expected] of [["County Commission Chair", "Fulton County", "Fulton County Commission Chair"], ["County Commissioner, District 1", "Fulton County Commission District 1", "Fulton County Commissioner, District 1"], ["County Commission Vice Chair, District 6", "Fulton County Commission District 6", "Fulton County Commission Vice Chair, District 6"]]) {
-		assert.equal(classifyRepresentative({ officeTitle, districtLabel, districtType: "county-commission", stateCode: "GA" }).officeDisplayLabel, expected);
+	for (const [officeTitle, districtLabel, expected] of [
+		["County Commission Chair", "Fulton County", "Fulton County Commission Chair"],
+		["County Commissioner, District 1", "Fulton County Commission District 1", "Fulton County Commissioner, District 1"],
+		["County Commission Vice Chair, District 6", "Fulton County Commission District 6", "Fulton County Commission Vice Chair, District 6"]
+	]) {
+		assert.equal(classifyRepresentative({
+			officeTitle,
+			districtLabel,
+			districtType: "county-commission",
+			stateCode: "GA"
+		}).officeDisplayLabel, expected);
 	}
 });
 
 test("representative content summaries omit generated matching commentary", () => {
-	for (const summary of ["Matched from Open States", "Matched from Congress.gov", "Matched from area results", "Matched from current area results", "  Matched from Open States  ", "", "  ", null, undefined])
+	for (const summary of [
+		"Matched from Open States",
+		"Matched from Congress.gov",
+		"Matched from area results",
+		"Matched from current area results",
+		"  Matched from Open States  ",
+		"",
+		"  ",
+		null,
+		undefined
+	])
 		assert.equal(resolveRepresentativeContentSummary(summary), "");
 });
 
@@ -32,8 +63,18 @@ test("representative content summaries preserve substantive descriptions", () =>
 
 test("biography omits provider wiring commentary while keeping sourced person facts", () => {
 	const biography = [
-		{ id: "wiring", title: "Federal finance and disclosure crosswalk", summary: "Ballot Clarity attached federal finance records through a crosswalk.", sources: [] },
-		{ id: "person", title: "Public service", summary: "Served two terms on the city council.", sources: [] }
+		{
+			id: "wiring",
+			title: "Federal finance and disclosure crosswalk",
+			summary: "Ballot Clarity attached federal finance records through a crosswalk.",
+			sources: []
+		},
+		{
+			id: "person",
+			title: "Public service",
+			summary: "Served two terms on the city council.",
+			sources: []
+		}
 	];
 	assert.deepEqual(substantiveBiography({ biography }), [biography[1]]);
 	assert.equal(substantiveBiography(null).length, 0);
@@ -52,10 +93,14 @@ test("biography omits generated office metadata without changing the sourced off
 		summary: "Served on the Atlanta City Council.",
 		sources: [],
 	};
-	const person = { biography: [metadata, biography] };
+	const person = {
+		biography: [metadata, biography]
+	};
 	assert.deepEqual(substantiveBiography(person), [biography]);
 	assert.deepEqual(person.biography, [metadata, biography]);
-	assert.deepEqual(substantiveBiography({ biography: [metadata] }), []);
+	assert.deepEqual(substantiveBiography({
+		biography: [metadata]
+	}), []);
 });
 
 const representatives: RepresentativeSummary[] = [

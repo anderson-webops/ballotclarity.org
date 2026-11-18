@@ -7,24 +7,25 @@ import { assertExternalStateDataDirectory, readBoundedStateDataBytes } from "./s
 
 const applicationId = 1111706673;
 const format = "ballot-automation-lock-v1";
-const lockNames = ["automation.lock", ".fulton-board.lock", ".fulton-county-offices.lock", ".court-directory.lock", ".magistrate-court.lock"];
+const lockNames = [
+	"automation.lock",
+	".fulton-board.lock",
+	".fulton-county-offices.lock",
+	".court-directory.lock",
+	".magistrate-court.lock"
+];
 const activeFilenames = new Set<string>();
 
 async function initializeLock(directory: string, filename: string) {
 	const temporary = join(directory, `.automation-lock-${randomUUID()}.sqlite`);
 	const handle = await open(temporary, "wx", 0o600);
-	await handle.close();
 	let database: DatabaseSync | undefined;
 	try {
 		database = new DatabaseSync(temporary);
 		database.exec(`PRAGMA application_id = ${applicationId}; PRAGMA user_version = 1; CREATE TABLE automation_lock (format TEXT NOT NULL); INSERT INTO automation_lock VALUES ('${format}');`);
 		database.close();
 		database = undefined;
-		const stored = await open(temporary, "r");
-		try {
-			await stored.sync();
-		}
-		finally { await stored.close(); }
+		await handle.sync();
 		try {
 			await link(temporary, filename);
 		}
@@ -32,6 +33,7 @@ async function initializeLock(directory: string, filename: string) {
 	}
 	finally {
 		database?.close();
+		await handle.close();
 		await unlink(temporary);
 	}
 }

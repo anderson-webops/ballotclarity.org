@@ -5,7 +5,9 @@ const api = useApiClient();
 const route = useRoute();
 function readQueryValue(key: string) {
 	const value = route.query[key];
-	return typeof value === "string" ? value : "";
+	return typeof value === "string"
+		? value
+		: "";
 }
 
 const form = reactive({
@@ -15,7 +17,9 @@ const form = reactive({
 	pageUrl: readQueryValue("pageUrl"),
 	sourceLinks: "",
 	subject: readQueryValue("subject"),
-	submissionType: (readQueryValue("type") === "feedback" ? "feedback" : "correction") as "correction" | "feedback"
+	submissionType: (readQueryValue("type") === "feedback"
+		? "feedback"
+		: "correction") as "correction" | "feedback"
 });
 const isSubmitting = ref(false);
 const formMessage = ref("");

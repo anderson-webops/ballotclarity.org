@@ -583,7 +583,9 @@ function buildChecklist(
 			reviewerSignal: hasReviewerConfirmation
 				? `${workflow.reviewer} recorded review notes or recommendation for this package.`
 				: "No reviewer confirmation is recorded yet.",
-			status: !scopeIdentityPass ? "fail" : hasReviewerConfirmation ? "pass" : "warning",
+			status: !scopeIdentityPass
+				? "fail"
+				: hasReviewerConfirmation ? "pass" : "warning",
 			warningStandard: "Warning when the automated identity looks correct but a reviewer has not confirmed the intended coverage scope yet.",
 			whatToCheck: "Verify the package really belongs to the locality and election Ballot Clarity claims to publish.",
 			whyItMatters: "A technically assembled package can still be attached to the wrong local election if the scope is not reviewed.",
@@ -611,7 +613,9 @@ function buildChecklist(
 		}),
 		createChecklistItem({
 			autoSignal: contestTitleDuplicates
-				? `${contestTitleDuplicates} normalized contest title duplicate group${contestTitleDuplicates === 1 ? "" : "s"} detected.`
+				? `${contestTitleDuplicates} normalized contest title duplicate group${contestTitleDuplicates === 1
+					? ""
+					: "s"} detected.`
 				: "Contest titles and office labels look normalized.",
 			blocking: true,
 			category: "contest_completeness",
@@ -628,7 +632,9 @@ function buildChecklist(
 			reviewerSignal: hasReviewerConfirmation
 				? "Reviewer confirmation is recorded for contest normalization."
 				: "Contest normalization still relies only on automated checks.",
-			status: !contestTitlesNormalized || contestTitleDuplicates ? "fail" : hasReviewerConfirmation ? "pass" : "warning",
+			status: !contestTitlesNormalized || contestTitleDuplicates
+				? "fail"
+				: hasReviewerConfirmation ? "pass" : "warning",
 			warningStandard: "Warning when contest titles look normal automatically, but a reviewer has not yet confirmed the list is publication-ready.",
 			whatToCheck: "Check office titles, normalized contest names, and whether any contest appears twice under slightly different labels.",
 			whyItMatters: "Readers lose trust quickly if the contest roster contains messy titles or duplicate races.",
@@ -662,7 +668,9 @@ function buildChecklist(
 		createChecklistItem({
 			autoSignal: candidateContestLinks && !missingCandidateContestAttachmentCount
 				? `${candidates.length} candidates are attached to contests.`
-				: `${missingCandidateContestAttachmentCount} candidate contest${missingCandidateContestAttachmentCount === 1 ? "" : "s"} are missing candidate attachments or mismatch contest links.`,
+				: `${missingCandidateContestAttachmentCount} candidate contest${missingCandidateContestAttachmentCount === 1
+					? ""
+					: "s"} are missing candidate attachments or mismatch contest links.`,
 			blocking: true,
 			category: "candidate_completeness",
 			detail: candidateContestLinks && !missingCandidateContestAttachmentCount
@@ -675,14 +683,20 @@ function buildChecklist(
 			label: "Candidates are attached to the right contests",
 			passStandard: "Pass when candidate contests have attached candidates and each candidate points at a valid contest in the package.",
 			pipelineClass: "automatable_with_review",
-			status: candidateContestLinks && !missingCandidateContestAttachmentCount ? "pass" : "fail",
+			status: candidateContestLinks && !missingCandidateContestAttachmentCount
+				? "pass"
+				: "fail",
 			warningStandard: "Warning is not used here; a broken candidate roster is a blocker.",
 			whatToCheck: "Check whether candidate contests actually include candidates and whether each candidate belongs to a known contest.",
 			whyItMatters: "A published guide becomes misleading fast if candidates appear under the wrong race or disappear entirely.",
 		}),
 		createChecklistItem({
 			autoSignal: candidateDuplicates || candidateReviewFlags
-				? `${candidateDuplicates} duplicate candidate group${candidateDuplicates === 1 ? "" : "s"} and ${candidateReviewFlags} candidate review flag${candidateReviewFlags === 1 ? "" : "s"} detected.`
+				? `${candidateDuplicates} duplicate candidate group${candidateDuplicates === 1
+					? ""
+					: "s"} and ${candidateReviewFlags} candidate review flag${candidateReviewFlags === 1
+					? ""
+					: "s"} detected.`
 				: "Candidate names, party labels, and incumbency fields look internally consistent.",
 			blocking: true,
 			category: "candidate_completeness",
@@ -694,7 +708,9 @@ function buildChecklist(
 			evaluationMode: "hybrid",
 			failStandard: "Fail when obvious duplicate candidates remain unresolved or candidate names/labels are clearly broken.",
 			id: "candidate-normalization",
-			issueKind: candidateDuplicates ? "ambiguous_match" : candidateReviewFlags ? "source_gap" : "normalization_issue",
+			issueKind: candidateDuplicates
+				? "ambiguous_match"
+				: candidateReviewFlags ? "source_gap" : "normalization_issue",
 			label: "Candidate normalization looks publishable",
 			passStandard: "Pass when candidate names look normalized, obvious duplicates are resolved, and reviewer-confirmed mismatches are cleared.",
 			pipelineClass: "automatable_with_review",
@@ -712,7 +728,9 @@ function buildChecklist(
 		}),
 		createChecklistItem({
 			autoSignal: measurePackagesExpected
-				? `${measures.length} measure record${measures.length === 1 ? "" : "s"} are attached.`
+				? `${measures.length} measure record${measures.length === 1
+					? ""
+					: "s"} are attached.`
 				: "No measures were detected for this guide scope.",
 			blocking: true,
 			category: "measure_completeness",
@@ -773,7 +791,9 @@ function buildChecklist(
 		}),
 		createChecklistItem({
 			autoSignal: officialResources.length
-				? `${officialResources.length} official resource link${officialResources.length === 1 ? "" : "s"} are attached.`
+				? `${officialResources.length} official resource link${officialResources.length === 1
+					? ""
+					: "s"} are attached.`
 				: "No official resources are attached.",
 			blocking: true,
 			category: "official_resources",
@@ -789,13 +809,19 @@ function buildChecklist(
 			label: "Official verification resources are attached and valid",
 			passStandard: "Pass when the package includes current official voter or election-administration links and their URLs resolve syntactically.",
 			pipelineClass: "fully_automatable",
-			status: officialResources.length && !invalidOfficialResourceCount ? "pass" : "fail",
+			status: officialResources.length && !invalidOfficialResourceCount
+				? "pass"
+				: "fail",
 			warningStandard: "Warning is not used here; broken official links are blockers.",
 			whatToCheck: "Check that official voter portals, election offices, or equivalent verification links are attached and look valid.",
 			whyItMatters: "Official links are Ballot Clarity's primary reader safety valve for final ballot confirmation.",
 		}),
 		createChecklistItem({
-			autoSignal: `${officialVoterPortalCount} official voter portal link${officialVoterPortalCount === 1 ? "" : "s"} and ${officialElectionOfficeCount} local election office link${officialElectionOfficeCount === 1 ? "" : "s"} detected.`,
+			autoSignal: `${officialVoterPortalCount} official voter portal link${officialVoterPortalCount === 1
+				? ""
+				: "s"} and ${officialElectionOfficeCount} local election office link${officialElectionOfficeCount === 1
+				? ""
+				: "s"} detected.`,
 			blocking: false,
 			category: "official_resources",
 			detail: officialElectionOfficeCount
@@ -822,8 +848,12 @@ function buildChecklist(
 		}),
 		createChecklistItem({
 			autoSignal: invalidSourceUrlCount
-				? `${invalidSourceUrlCount} attached source link${invalidSourceUrlCount === 1 ? "" : "s"} are malformed.`
-				: `${sourceRecords.length} attached source record${sourceRecords.length === 1 ? "" : "s"} have valid URL syntax.`,
+				? `${invalidSourceUrlCount} attached source link${invalidSourceUrlCount === 1
+					? ""
+					: "s"} are malformed.`
+				: `${sourceRecords.length} attached source record${sourceRecords.length === 1
+					? ""
+					: "s"} have valid URL syntax.`,
 			blocking: true,
 			category: "source_coverage",
 			detail: candidateSourceCoverage && measureSourceCoverage && !invalidSourceUrlCount
@@ -836,7 +866,9 @@ function buildChecklist(
 			label: "Core contest, candidate, and measure pages have source coverage",
 			passStandard: "Pass when every core guide entity has attached source records and those links are syntactically valid.",
 			pipelineClass: "automatable_with_review",
-			status: candidateSourceCoverage && measureSourceCoverage && !invalidSourceUrlCount ? "pass" : "fail",
+			status: candidateSourceCoverage && measureSourceCoverage && !invalidSourceUrlCount
+				? "pass"
+				: "fail",
 			warningStandard: "Warning is not used here; Ballot Clarity should not publish unsupported core pages.",
 			whatToCheck: "Check whether candidate and measure pages actually carry source records and whether those source links parse.",
 			whyItMatters: "Source coverage is the backbone of a public civic guide, especially on the core guide pages.",
@@ -948,7 +980,11 @@ function buildChecklist(
 		}),
 		createChecklistItem({
 			autoSignal: limitationNotesPresent
-				? `${workflow.coverageLimits.length} coverage limit note${workflow.coverageLimits.length === 1 ? "" : "s"} and ${workflow.coverageNotes.length} coverage note${workflow.coverageNotes.length === 1 ? "" : "s"} are attached.`
+				? `${workflow.coverageLimits.length} coverage limit note${workflow.coverageLimits.length === 1
+					? ""
+					: "s"} and ${workflow.coverageNotes.length} coverage note${workflow.coverageNotes.length === 1
+					? ""
+					: "s"} are attached.`
 				: "No package-level coverage limits or notes are currently disclosed.",
 			blocking: false,
 			category: "known_limitations",
@@ -1021,7 +1057,9 @@ function buildRecommendationSummary(
 	let reason = "";
 
 	if (blockingFailures.length) {
-		reason = `${blockingFailures.length} blocking checklist item${blockingFailures.length === 1 ? "" : "s"} still fail.`;
+		reason = `${blockingFailures.length} blocking checklist item${blockingFailures.length === 1
+			? ""
+			: "s"} still fail.`;
 	}
 	else if (reviewer === "do_not_publish") {
 		reason = "A reviewer explicitly marked this package do not publish.";
@@ -1058,15 +1096,21 @@ function buildIssues(
 		if (item.status === "pass" || item.status === "not_applicable")
 			return [];
 
-		return [{
-			blocking: item.blocking && item.status === "fail",
-			id: `checklist:${item.id}:${item.status}`,
-			kind: item.issueKind,
-			pipelineClass: item.pipelineClass,
-			severity: item.status === "fail" && item.blocking ? "error" : "warning",
-			summary: item.status === "fail" ? item.failStandard : item.reviewerSignal || item.detail,
-			title: item.label,
-		} satisfies GuidePackageIssue];
+		return [
+{
+	blocking: item.blocking && item.status === "fail",
+	id: `checklist:${item.id}:${item.status}`,
+	kind: item.issueKind,
+	pipelineClass: item.pipelineClass,
+	severity: item.status === "fail" && item.blocking
+		? "error"
+		: "warning",
+	summary: item.status === "fail"
+		? item.failStandard
+		: item.reviewerSignal || item.detail,
+	title: item.label,
+} satisfies GuidePackageIssue
+		];
 	});
 
 	const coverageLimitIssues = workflow.coverageLimits.map(note => ({
@@ -1079,7 +1123,10 @@ function buildIssues(
 		title: "Coverage limit",
 	}));
 
-	return [...checklistIssues, ...coverageLimitIssues];
+	return [
+		...checklistIssues,
+		...coverageLimitIssues
+	];
 }
 
 function buildDiagnostics(
@@ -1135,7 +1182,9 @@ export function buildDefaultGuidePackageSeed(coverageRepository: CoverageReposit
 		return [];
 
 	const additionalPackages: GuidePackageWorkflow[] = (coverageRepository.data.additionalGuides ?? []).map(({ election, jurisdiction, coverageLimits }) => ({
-		coverageLimits: [...(coverageLimits ?? [])],
+		coverageLimits: [
+			...(coverageLimits ?? [])
+		],
 		coverageNotes: [],
 		createdAt: election.updatedAt,
 		draftedAt: election.updatedAt,
@@ -1264,7 +1313,9 @@ export function buildGuidePackageRecord(
 					description: jurisdiction.description,
 					displayName: jurisdiction.displayName,
 					jurisdictionType: jurisdiction.jurisdictionType,
-					...(jurisdiction.countyAreaScope ? { countyAreaScope: jurisdiction.countyAreaScope } : {}),
+					...(jurisdiction.countyAreaScope
+						? { countyAreaScope: jurisdiction.countyAreaScope }
+						: {}),
 					name: jurisdiction.name,
 					nextElectionName: jurisdiction.nextElectionName,
 					nextElectionSlug: jurisdiction.nextElectionSlug,
@@ -1309,7 +1360,9 @@ export function buildGuidePackageList(
 		reviewOptions: coverageElections(coverageRepository.data).flatMap((election) => {
 			const jurisdiction = coverageRepository.getJurisdictionBySlug(election.jurisdictionSlug);
 			return jurisdiction && !workflows.some(workflow => workflow.electionSlug === election.slug)
-				? [{ electionSlug: election.slug, name: election.name, jurisdictionName: jurisdiction.name }]
+				? [
+						{ electionSlug: election.slug, name: election.name, jurisdictionName: jurisdiction.name }
+					]
 				: [];
 		}),
 		updatedAt: packages.map(item => item.workflow.updatedAt).sort((left, right) => right.localeCompare(left))[0] ?? new Date().toISOString(),

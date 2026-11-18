@@ -54,9 +54,15 @@ function transport(year = 2026, day = 3) {
 			return {
 				status,
 				etag: undefined,
-				body: body === undefined ? alabamaFixturePdf : Buffer.from(body),
+				body: body === undefined
+					? alabamaFixturePdf
+					: Buffer.from(body),
 				contentType:
-					body === undefined ? "application/pdf" : url.endsWith("/robots.txt") ? "text/plain" : "text/html"
+					body === undefined
+						? "application/pdf"
+						: url.endsWith("/robots.txt")
+							? "text/plain"
+							: "text/html"
 			};
 		},
 		verifyOriginal: async (_bytes: Buffer, input: Parameters<typeof alabamaVerificationFixture>[0]) =>
@@ -105,7 +111,13 @@ test("Alabama shared acquisition is serial, paced and follows only offered publi
 	assert.equal(parsed.records[1].jurisdiction, "Alabama State Board of Education District 2");
 	assert.equal(
 		stateRecordMatchesDistricts(parsed.records[1], [
-			{ id: "house:2", label: "House 2", districtType: "state-house", districtCode: "2", sourceSystem: "Fixture" }
+			{
+				id: "house:2",
+				label: "House 2",
+				districtType: "state-house",
+				districtCode: "2",
+				sourceSystem: "Fixture"
+			}
 		]),
 		false
 	);
@@ -183,7 +195,13 @@ test("Alabama captured proof, record identity, applicability and missing accepte
 			parseAlabamaCandidateCapture(data.source, body, createStateCandidateRecord, data.options.now(), {
 				source: data.source,
 				...parsed,
-				records: [...parsed.records, { ...parsed.records[0], id: "0".repeat(24) }]
+				records: [
+					...parsed.records,
+					{
+						...parsed.records[0],
+						id: "0".repeat(24)
+					}
+				]
 			}),
 		/disappeared/u
 	);
@@ -300,7 +318,11 @@ test("Alabama batch cursor bounds broad collection to 25 and rotates after resta
 	await second.complete();
 	const third = await selectAlabamaCountyBatch(sources, path);
 	assert.equal(third.sources[0].id, sources[50].id);
-	assert.equal(new Set([...first.sources, ...second.sources, ...third.sources].map(source => source.id)).size, 67);
+	assert.equal(new Set([
+		...first.sources,
+		...second.sources,
+		...third.sources
+	].map(source => source.id)).size, 67);
 	const narrowed = await selectAlabamaCountyBatch([data.source], path);
 	assert.equal(narrowed.sources.length, 1);
 	await writeFile(`${path}.alabama-batch.json`, "{}");

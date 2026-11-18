@@ -17,8 +17,18 @@ const accessibilityUrl = `${origin}/Accessibility`;
 const footerHash = "1d132f942695f57f731fdbc4299281f8fac47cd16d545190531d4ff94fa26ba9";
 export const dcPolicyReceipts = [
 	{ url: `${origin}/robots.txt`, status: 404, sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
-	{ url: dcDiscoveryUrl, status: 200, region: "links", sha256: footerHash },
-	{ url: accessibilityUrl, status: 200, region: "main-content", sha256: "cd269f51e6aadecd04ec6f4731839a646569b050f57daa96f193c6b07cb9f922" }
+	{
+		url: dcDiscoveryUrl,
+		status: 200,
+		region: "links",
+		sha256: footerHash
+	},
+	{
+		url: accessibilityUrl,
+		status: 200,
+		region: "main-content",
+		sha256: "cd269f51e6aadecd04ec6f4731839a646569b050f57daa96f193c6b07cb9f922"
+	}
 ];
 type Kind = "general" | "anc" | "write-ins";
 interface Page { url: string; body: string; sha256: string; retrievedAt: string }
@@ -54,7 +64,14 @@ export function validateDcDocumentUrl(value: string, year?: string) {
 	if (parsed.origin !== origin || parsed.username || parsed.password || parsed.hash || parsed.search !== "?language=en" || !/^\/getContentAsset\/[a-f0-9-]{36}\/[a-f0-9-]{36}\/20\d{2}-General-(?:Election-)?(?:CANDIDATES|WRITE-IN-CANDIDATES)-\d{8}\.pdf$/u.test(parsed.pathname) || (year && !parsed.pathname.split("/").at(-1)!.startsWith(`${year}-`))) throw new Error("The D.C. offered publication URL requires review.");
 }
 export function validateDcElection(value: unknown): asserts value is DcElection {
-	if (!exact(value, ["electionId", "electionDate", "pageUrl", "dcDocuments"]) || value.electionId !== null || !validDate(value.electionDate) || typeof value.pageUrl !== "string" || pageYear(value.pageUrl) !== value.electionDate.slice(0, 4) || !Array.isArray(value.dcDocuments) || ![0, 3].includes(value.dcDocuments.length)) throw new Error("The D.C. election configuration requires review.");
+	if (!exact(value, [
+		"electionId",
+		"electionDate",
+		"pageUrl",
+		"dcDocuments"
+	]) || value.electionId !== null || !validDate(value.electionDate) || typeof value.pageUrl !== "string" || pageYear(value.pageUrl) !== value.electionDate.slice(0, 4) || !Array.isArray(value.dcDocuments) || ![0, 3].includes(value.dcDocuments.length)) {
+		throw new Error("The D.C. election configuration requires review.");
+	}
 	for (const [index, document] of value.dcDocuments.entries()) {
 		if (!exact(document, ["kind", "url", "sha256"]) || document.kind !== kinds[index] || typeof document.url !== "string" || typeof document.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(document.sha256)) throw new Error("The D.C. publication configuration requires review.");
 		validateDcDocumentUrl(document.url, value.electionDate.slice(0, 4));
@@ -62,8 +79,17 @@ export function validateDcElection(value: unknown): asserts value is DcElection 
 	if (new Set(value.dcDocuments.map(document => document.url)).size !== value.dcDocuments.length) throw new Error("The D.C. publications are duplicated.");
 }
 export function validateDcSource(source: StateBallotSource) {
-	validateDcElection({ electionId: null, electionDate: source.electionDate, pageUrl: source.pageUrl, dcDocuments: [] });
-	if (source.stateCode !== "DC" || source.format !== "dc-pdf" || source.url !== source.pageUrl || source.snapshotStorage !== "external" || source.retrievalPolicy || source.postBody || source.documentUrls || source.documentLinks || source.countyName || source.id !== (source.electionDate === "2026-11-03" ? "dc-boe-2026" : `dc-general-${source.electionDate}`)) throw new Error("The D.C. source contract requires review.");
+	validateDcElection({
+		electionId: null,
+		electionDate: source.electionDate,
+		pageUrl: source.pageUrl,
+		dcDocuments: []
+	});
+	if (source.stateCode !== "DC" || source.format !== "dc-pdf" || source.url !== source.pageUrl || source.snapshotStorage !== "external" || source.retrievalPolicy || source.postBody || source.documentUrls || source.documentLinks || source.countyName || source.id !== (source.electionDate === "2026-11-03"
+		? "dc-boe-2026"
+		: `dc-general-${source.electionDate}`)) {
+		throw new Error("The D.C. source contract requires review.");
+	}
 }
 export function dcDocumentDigest(documents: DcElection["dcDocuments"]) {
 	return hash(JSON.stringify(documents));
@@ -90,12 +116,27 @@ function publications(page: Page) {
 	if (mains.length !== 1 || descendants(mains[0]!, node => node.nodeName === "h2" && clean(text(node)) === `${pageYear(page.url)} Elections`).length !== 1) throw new Error("The D.C. election content region changed.");
 	const events: { value: string; url?: string }[] = [];
 	const visit = (node: (typeof mains)[number]) => {
-		if (["script", "style", "form", "template", "noscript"].includes(node.nodeName)) return;
-		if (node.nodeName === "a") {
-			events.push({ value: clean(text(node)), url: new URL(attribute(node, "href"), page.url).href });
+		if ([
+			"script",
+			"style",
+			"form",
+			"template",
+			"noscript"
+		].includes(node.nodeName)) {
 			return;
 		}
-		if (node.nodeName === "#text" && clean(node.value ?? "")) events.push({ value: clean(node.value!) });
+		if (node.nodeName === "a") {
+			events.push({
+				value: clean(text(node)),
+				url: new URL(attribute(node, "href"), page.url).href
+			});
+			return;
+		}
+		if (node.nodeName === "#text" && clean(node.value ?? "")) {
+			events.push({
+				value: clean(node.value!)
+			});
+		}
 		for (const child of node.childNodes ?? []) visit(child);
 	};
 	visit(mains[0]!);
@@ -122,12 +163,25 @@ function publications(page: Page) {
 		result.push({ kind: kinds[index]!, url: event.url });
 	}
 	if (!validDate(electionDate) || electionDate.slice(0, 4) !== pageYear(page.url) || new Set(result.map(item => item.kind)).size !== result.length || new Set(result.map(item => item.url)).size !== result.length) throw new Error("The D.C. general-election date or publications require review.");
-	return { electionDate, documents: result.sort((first, second) => kinds.indexOf(first.kind) - kinds.indexOf(second.kind)) };
+	return {
+		electionDate,
+		documents: result.sort((first, second) => kinds.indexOf(first.kind) - kinds.indexOf(second.kind))
+	};
 }
 export function readDcDiscovery(body: string, now = Date.now()) {
 	if (Buffer.byteLength(body) > 24 * 1024 * 1024) throw new Error("The D.C. discovery exceeds its bounds.");
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "policies", "accessibility", "index", "pages", "documents"]) || value.schemaVersion !== 1 || value.type !== "dc-discovery" || JSON.stringify(value.policies) !== JSON.stringify(dcPolicyReceipts) || !Array.isArray(value.pages) || !Array.isArray(value.documents) || value.pages.length !== value.documents.length) throw new Error("The D.C. discovery contract is invalid.");
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"policies",
+		"accessibility",
+		"index",
+		"pages",
+		"documents"
+	]) || value.schemaVersion !== 1 || value.type !== "dc-discovery" || JSON.stringify(value.policies) !== JSON.stringify(dcPolicyReceipts) || !Array.isArray(value.pages) || !Array.isArray(value.documents) || value.pages.length !== value.documents.length) {
+		throw new Error("The D.C. discovery contract is invalid.");
+	}
 	const index = checkedPage(value.index, now);
 	const accessibility = checkedPage(value.accessibility, now);
 	if (index.url !== dcDiscoveryUrl || accessibility.url !== accessibilityUrl || electionDocumentPolicyFingerprint(Buffer.from(accessibility.body), "region", accessibilityUrl, "main-content") !== dcPolicyReceipts[2]!.sha256) throw new Error("The D.C. linked accessibility policy changed.");
@@ -145,40 +199,83 @@ export function readDcDiscovery(body: string, now = Date.now()) {
 			if (!exact(document, ["url", "text", "sha256", "retrievedAt"]) || document.url !== publication.documents[index]!.url || typeof document.text !== "string" || Buffer.byteLength(document.text) > 4 * 1024 * 1024 || typeof document.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(document.sha256) || typeof document.retrievedAt !== "string" || !Number.isFinite(Date.parse(document.retrievedAt)) || new Date(document.retrievedAt).toISOString() !== document.retrievedAt || Date.parse(document.retrievedAt) > now || Date.parse(document.retrievedAt) < Date.parse(page.retrievedAt)) throw new Error("The D.C. PDF provenance requires review.");
 		}
 		documents.push(captured);
-		const election: DcElection = { electionId: null, electionDate: publication.electionDate, pageUrl: page.url, dcDocuments: captured.length === 3 ? captured.map((item, index) => ({ kind: kinds[index]!, url: item.url, sha256: item.sha256 })) : [] };
+		const election: DcElection = {
+			electionId: null,
+			electionDate: publication.electionDate,
+			pageUrl: page.url,
+			dcDocuments: captured.length === 3
+				? captured.map((item, index) => ({ kind: kinds[index]!, url: item.url, sha256: item.sha256 }))
+				: []
+		};
 		validateDcElection(election);
 		elections.push(election);
 	}
-	return { index, accessibility, elections, documents };
+	return {
+		index,
+		accessibility,
+		elections,
+		documents
+	};
 }
 export async function fetchDcCycleDiscovery(options: Options = {}) {
 	const request = options.requestDocument ?? fetchRemoteSourceDocument;
 	const sleep = options.sleep ?? (milliseconds => new Promise(accept => setTimeout(accept, milliseconds)));
 	const now = options.now ?? Date.now;
-	const robots = await request(dcPolicyReceipts[0]!.url, { allowedHosts: ["dcboe.org"], maxBytes: 2 * 1024 * 1024, timeoutMs: 25000 });
+	const robots = await request(dcPolicyReceipts[0]!.url, {
+		allowedHosts: ["dcboe.org"],
+		maxBytes: 2 * 1024 * 1024,
+		timeoutMs: 25000
+	});
 	if (robots.status !== 404 || hash(robots.body) !== dcPolicyReceipts[0]!.sha256) throw new Error("The D.C. public robots response requires review.");
 	const getPage = async (url: string): Promise<Page> => {
 		await sleep(11000);
-		const body = await (options.requestText ?? fetchRemoteSourceText)(url, { allowedHosts: ["dcboe.org"], maxBytes: 2 * 1024 * 1024, maxRedirects: 0, timeoutMs: 25000 });
-		return checkedPage({ url, body, sha256: hash(body), retrievedAt: new Date(now()).toISOString() }, now());
+		const body = await (options.requestText ?? fetchRemoteSourceText)(url, {
+			allowedHosts: ["dcboe.org"],
+			maxBytes: 2 * 1024 * 1024,
+			maxRedirects: 0,
+			timeoutMs: 25000
+		});
+		return checkedPage({
+			url,
+			body,
+			sha256: hash(body),
+			retrievedAt: new Date(now()).toISOString()
+		}, now());
 	};
 	const index = await getPage(dcDiscoveryUrl);
 	const accessibility = await getPage(accessibilityUrl);
 	if (electionDocumentPolicyFingerprint(Buffer.from(accessibility.body), "region", accessibilityUrl, "main-content") !== dcPolicyReceipts[2]!.sha256) throw new Error("The D.C. linked policy requires review.");
 	const pages: Page[] = [];
 	const documents: Pdf[][] = [];
-	const executable = options.extractor ? null : await resolveStateBallotPdfExtractor();
+	const executable = options.extractor
+		? null
+		: await resolveStateBallotPdfExtractor();
 	for (const url of offeredPages(index.body, now())) {
 		const page = await getPage(url);
 		pages.push(page);
 		const captured: Pdf[] = [];
 		for (const item of publications(page).documents) {
 			await sleep(11000);
-			captured.push(await fetchStateBallotPdfDocument(item.url, { allowedHosts: ["dcboe.org"], request, now, extractor: bytes => options.extractor ? options.extractor(bytes) : extractStateBallotPdfText(bytes, executable!, 12000, "raw-bbox") }));
+			captured.push(await fetchStateBallotPdfDocument(item.url, {
+				allowedHosts: ["dcboe.org"],
+				request,
+				now,
+				extractor: bytes => options.extractor
+					? options.extractor(bytes)
+					: extractStateBallotPdfText(bytes, executable!, 12000, "raw-bbox")
+			}));
 		}
 		documents.push(captured);
 	}
-	const body = JSON.stringify({ schemaVersion: 1, type: "dc-discovery", policies: dcPolicyReceipts, accessibility, index, pages, documents });
+	const body = JSON.stringify({
+		schemaVersion: 1,
+		type: "dc-discovery",
+		policies: dcPolicyReceipts,
+		accessibility,
+		index,
+		pages,
+		documents
+	});
 	readDcDiscovery(body, now());
 	return body;
 }
@@ -187,13 +284,25 @@ export async function fetchDcCandidateCapture(source: StateBallotSource, options
 	const body = options.discovery ?? await fetchDcCycleDiscovery(options);
 	const discovery = readDcDiscovery(body, (options.now ?? Date.now)());
 	if (!discovery.elections.some(election => election.electionDate === source.electionDate && election.pageUrl === source.pageUrl)) throw new Error("The D.C. source is no longer offered.");
-	return JSON.stringify({ schemaVersion: 1, type: "dc-candidate-capture", discovery: JSON.parse(body), electionDate: source.electionDate });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "dc-candidate-capture",
+		discovery: JSON.parse(body),
+		electionDate: source.electionDate
+	});
 }
 export function parseDcCandidateCapture(source: StateBallotSource, body: string, factory: (source: StateBallotSource, values: StateCandidateValues) => StateCandidateRecord | null, now = Date.now(), previousRecords: readonly StateCandidateRecord[] = []) {
 	validateDcSource(source);
 	if (Buffer.byteLength(body) > 24 * 1024 * 1024) throw new Error("The D.C. candidate capture exceeds its bounds.");
 	const capture: unknown = JSON.parse(body);
-	if (!exact(capture, ["schemaVersion", "type", "discovery", "electionDate"]) || capture.schemaVersion !== 1 || capture.type !== "dc-candidate-capture" || capture.electionDate !== source.electionDate) throw new Error("The D.C. candidate capture requires review.");
+	if (!exact(capture, [
+		"schemaVersion",
+		"type",
+		"discovery",
+		"electionDate"
+	]) || capture.schemaVersion !== 1 || capture.type !== "dc-candidate-capture" || capture.electionDate !== source.electionDate) {
+		throw new Error("The D.C. candidate capture requires review.");
+	}
 	const discovery = readDcDiscovery(JSON.stringify(capture.discovery), now);
 	const index = discovery.elections.findIndex(election => election.electionDate === source.electionDate && election.pageUrl === source.pageUrl);
 	if (index < 0) throw new Error("The D.C. captured election is not offered.");
@@ -201,8 +310,24 @@ export function parseDcCandidateCapture(source: StateBallotSource, body: string,
 	if (!election.dcDocuments.length) throw new StateBallotAwaitingRecordsError(source.id);
 	const documents = discovery.documents[index]!;
 	const parsed = readDcCandidateDocuments(source, documents.map(document => document.text), factory);
-	const identity = (record: StateCandidateRecord) => JSON.stringify([record.name, record.office, record.district, record.jurisdiction ?? ""]);
+	const identity = (record: StateCandidateRecord) => JSON.stringify([
+		record.name,
+		record.office,
+		record.district,
+		record.jurisdiction ?? ""
+	]);
 	const current = new Set(parsed.records.map(identity));
 	if (previousRecords.some(record => !current.has(identity(record)))) throw new Error("An accepted D.C. candidate disappeared without an explicit retained status; review the publication change.");
-	return { records: parsed.records, retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString(), sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), documents: documents.map(({ url, sha256, retrievedAt }, position) => ({ url, sha256, retrievedAt, includedRecordCount: parsed.documentCounts[position]! })), collectionIndexSha256: dcDocumentDigest(election.dcDocuments) };
+	return {
+		records: parsed.records,
+		retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString(),
+		sha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+		documents: documents.map(({ url, sha256, retrievedAt }, position) => ({
+			url,
+			sha256,
+			retrievedAt,
+			includedRecordCount: parsed.documentCounts[position]!
+		})),
+		collectionIndexSha256: dcDocumentDigest(election.dcDocuments)
+	};
 }

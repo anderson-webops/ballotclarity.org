@@ -4,7 +4,14 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { stateRecordStatusBadges } from "../src/utils/state-records.ts";
 
-const candidate: PublicStateCandidateRecord = { id: "example", name: "Example", office: "United States Senate", district: "", scope: "statewide", status: "listed" };
+const candidate: PublicStateCandidateRecord = {
+	id: "example",
+	name: "Example",
+	office: "United States Senate",
+	district: "",
+	scope: "statewide",
+	status: "listed"
+};
 
 test("candidacy labels distinguish incumbent candidates without treating missing incumbency as a verified challenger", () => {
 	assert.deepEqual(stateRecordStatusBadges(candidate), []);
@@ -14,7 +21,19 @@ test("candidacy labels distinguish incumbent candidates without treating missing
 	assert.deepEqual(stateRecordStatusBadges({ ...candidate, status: "write-in" }, true), ["Candidate", "Write-in"]);
 	assert.deepEqual(stateRecordStatusBadges({ ...candidate, status: "unopposed", incumbent: true }, true), ["Incumbent candidate", "Unopposed"]);
 	assert.deepEqual(stateRecordStatusBadges({ ...candidate, status: "filed" }, true), ["Candidate", "Filed"]);
-	for (const status of ["listed", "filed", "qualified", "write-in", "unopposed", "withdrawn", "disqualified", "defeated", "elected", "inactive", "unrecognized"] as const) {
+	for (const status of [
+		"listed",
+		"filed",
+		"qualified",
+		"write-in",
+		"unopposed",
+		"withdrawn",
+		"disqualified",
+		"defeated",
+		"elected",
+		"inactive",
+		"unrecognized"
+	] as const) {
 		const labels = stateRecordStatusBadges({ ...candidate, status, incumbent: true }, true);
 		assert(labels.length <= 2);
 		assert(!labels.includes("Challenger"));

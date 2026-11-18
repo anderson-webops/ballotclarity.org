@@ -8,13 +8,75 @@ import { parseStateHtml, stateHtmlAttribute, stateHtmlDescendants, stateHtmlTabl
 type RecordFactory = (source: StateBallotSource, values: StateCandidateValues) => StateCandidateRecord | null;
 
 const headers = [
-	["Offices Up for Election", "District", "Candidate Name", "Party", "Filing Date", "filing Number", "Ballot order", "Email", "Address", "City", "Zip"],
-	["City", "Office", "Candidate Name", "Filing Date", "Time", "Ballot Order", "Email", "Address", "City", "Zip"],
-	["Offices Up For Election", "Candidate Name", "Filing Date", "Filing Order", "Ballot Order", "Email", "Address", "City", "Zip"],
-	["School District", "School Board Office", "Candidate Name", "filing date", "Ballot Order", "Email", "address", "city", "zip"],
+	[
+		"Offices Up for Election",
+		"District",
+		"Candidate Name",
+		"Party",
+		"Filing Date",
+		"filing Number",
+		"Ballot order",
+		"Email",
+		"Address",
+		"City",
+		"Zip"
+	],
+	[
+		"City",
+		"Office",
+		"Candidate Name",
+		"Filing Date",
+		"Time",
+		"Ballot Order",
+		"Email",
+		"Address",
+		"City",
+		"Zip"
+	],
+	[
+		"Offices Up For Election",
+		"Candidate Name",
+		"Filing Date",
+		"Filing Order",
+		"Ballot Order",
+		"Email",
+		"Address",
+		"City",
+		"Zip"
+	],
+	[
+		"School District",
+		"School Board Office",
+		"Candidate Name",
+		"filing date",
+		"Ballot Order",
+		"Email",
+		"address",
+		"city",
+		"zip"
+	],
 ];
-const statewideOffices = ["Governor", "Lieutenant Governor", "Attorney General", "Secretary of State", "State Treasurer", "Auditor of State", "Commissioner of State Lands"];
-const countyOffices = ["County Judge", "County Sheriff", "County Assessor", "Circuit Clerk", "County Clerk", "County Collector", "County Treasurer", "County Coroner", "Justice of the Peace", "Constable"];
+const statewideOffices = [
+	"Governor",
+	"Lieutenant Governor",
+	"Attorney General",
+	"Secretary of State",
+	"State Treasurer",
+	"Auditor of State",
+	"Commissioner of State Lands"
+];
+const countyOffices = [
+	"County Judge",
+	"County Sheriff",
+	"County Assessor",
+	"Circuit Clerk",
+	"County Clerk",
+	"County Collector",
+	"County Treasurer",
+	"County Coroner",
+	"Justice of the Peace",
+	"Constable"
+];
 const electLabels: Record<string, string> = {
 	"U.S. Senate": "Senator-Elect",
 	"Attorney General": "Attorney General-Elect",
@@ -52,7 +114,12 @@ export function parseArkansasCandidateRecords(source: StateBallotSource, body: s
 		throw new Error("The Arkansas public source configuration is invalid.");
 	const document = parseStateHtml(body);
 	const headings = stateHtmlDescendants(document, node => /^h[1-6]$/u.test(node.nodeName)).map(node => clean(stateHtmlText(node)));
-	const date = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(source.electionDate));
+	const date = new Intl.DateTimeFormat("en-US", {
+		month: "long",
+		day: "numeric",
+		year: "numeric",
+		timeZone: "UTC"
+	}).format(new Date(source.electionDate));
 	if (!headings.includes(`Elections to be held on ${date}`) || !headings.includes("General Election, Nonpartisan Judicial General Run-Off and Annual School Run-Off Information") || !headings.includes("Municipal General Election") || !headings.includes("Nonpartisan Judicial General Election Run Off"))
 		throw new Error("The Arkansas page does not identify the configured general election and runoff stages.");
 	const visible = clean(stateHtmlText(document));
@@ -116,19 +183,40 @@ export function parseArkansasCandidateRecords(source: StateBallotSource, body: s
 				party = values[3]!;
 				order = values[6]!;
 				stage = "General Election";
-				if (!["Democratic", "Republican", "Libertarian", "Independent"].includes(party)) throw new Error("The Arkansas printed party labels have changed.");
-				if (section === "Federal" && office === "U.S. Senate") scope = "statewide";
-				else if (section === "Federal" && office === "U.S. Congress (House of Representatives)") scope = "congressional";
-				else if (section === "State" && statewideOffices.includes(office)) scope = "statewide";
-				else if (section === "State" && ["State Senate", "State House"].includes(office)) scope = office === "State Senate" ? "state-senate" : "state-house";
-				else if (section !== "County" || !countyOffices.includes(office)) throw new Error("The Arkansas candidate office or section has changed.");
+				if (![
+					"Democratic",
+					"Republican",
+					"Libertarian",
+					"Independent"
+				].includes(party)) {
+					throw new Error("The Arkansas printed party labels have changed.");
+				}
+				if (section === "Federal" && office === "U.S. Senate") {
+					scope = "statewide";
+				}
+				else if (section === "Federal" && office === "U.S. Congress (House of Representatives)") {
+					scope = "congressional";
+				}
+				else if (section === "State" && statewideOffices.includes(office)) {
+					scope = "statewide";
+				}
+				else if (section === "State" && ["State Senate", "State House"].includes(office)) {
+					scope = office === "State Senate"
+						? "state-senate"
+						: "state-house";
+				}
+				else if (section !== "County" || !countyOffices.includes(office)) {
+					throw new Error("The Arkansas candidate office or section has changed.");
+				}
 				if (scope === "statewide" || (scope === "local" && !["Justice of the Peace", "Constable"].includes(office))) {
 					if (district) throw new Error("The Arkansas statewide or countywide office has an unexpected district.");
 				}
 				else {
 					positiveNumber(district);
 				}
-				jurisdiction = scope === "local" ? "Washington County" : "";
+				jurisdiction = scope === "local"
+					? "Washington County"
+					: "";
 				if (section !== "County") {
 					if (!/^\d{6}$/u.test(values[5]!)) throw new Error("The Arkansas public filing identifier has changed.");
 					sourceCandidateId = values[5];
@@ -136,7 +224,11 @@ export function parseArkansasCandidateRecords(source: StateBallotSource, body: s
 				populatedSections.add(section);
 				if (!/^[1-9]\d{0,2}$/u.test(order)) {
 					if ((electLabels[office] ?? `${office}-Elect`) !== order) throw new Error("The Arkansas unopposed office label has changed.");
-					appearance = section === "State" || office === "Circuit Clerk" ? "Printed on ballot" : section === "County" ? "Not printed on ballot" : "Ballot appearance not specified";
+					appearance = section === "State" || office === "Circuit Clerk"
+						? "Printed on ballot"
+						: section === "County"
+							? "Not printed on ballot"
+							: "Ballot appearance not specified";
 				}
 			}
 			else if (tableIndex === 1) {
@@ -147,8 +239,16 @@ export function parseArkansasCandidateRecords(source: StateBallotSource, body: s
 				district = "";
 				stage = "Municipal General Election";
 				if (!jurisdiction) throw new Error("The Arkansas municipal jurisdiction is missing.");
-				if (order === "Unopposed") appearance = /^(?:City )?Mayor$/u.test(office) ? "Printed on ballot" : /^(?:City )?(?:Attorney|Clerk(?:\/Treasurer)?|Councill? Member\b)/u.test(office) ? "Not printed on ballot" : "Ballot appearance not specified";
-				else positiveNumber(order);
+				if (order === "Unopposed") {
+					appearance = /^(?:City )?Mayor$/u.test(office)
+						? "Printed on ballot"
+						: /^(?:City )?(?:Attorney|Clerk(?:\/Treasurer)?|Councill? Member\b)/u.test(office)
+							? "Not printed on ballot"
+							: "Ballot appearance not specified";
+				}
+				else {
+					positiveNumber(order);
+				}
 			}
 			else if (tableIndex === 2) {
 				if (values[0]) office = values[0];
@@ -179,19 +279,65 @@ export function parseArkansasCandidateRecords(source: StateBallotSource, body: s
 			}
 			if (!name || !office || /^(?:vacant|none|no candidate|write.?in|tba)\b/iu.test(name) || /\b(?:withdrawn|withdrew|disqualified|deceased|cancelled)\b/iu.test(name)) throw new Error("The Arkansas public table contains an unnamed candidate or unreviewed status.");
 			const unopposed = Boolean(appearance);
-			const identity = JSON.stringify([officeKey(office), district, jurisdiction, name, party]);
+			const identity = JSON.stringify([
+				officeKey(office),
+				district,
+				jurisdiction,
+				name,
+				party
+			]);
 			if (identities.has(identity)) throw new Error("The Arkansas table contains duplicate candidate identities.");
 			identities.add(identity);
-			const key = JSON.stringify([officeKey(office), district, jurisdiction]);
+			const key = JSON.stringify([
+				officeKey(office),
+				district,
+				jurisdiction
+			]);
 			const ballotOrders = orders.get(key) ?? [];
-			if (unopposed ? orders.has(key) : ballotOrders.includes(Number(order))) throw new Error("The Arkansas candidate ballot order is duplicated or contradictory.");
-			ballotOrders.push(unopposed ? 0 : Number(order));
+			if (unopposed
+				? orders.has(key)
+				: ballotOrders.includes(Number(order))) {
+				throw new Error("The Arkansas candidate ballot order is duplicated or contradictory.");
+			}
+			ballotOrders.push(unopposed
+				? 0
+				: Number(order));
 			if (!unopposed && ballotOrders.includes(0)) throw new Error("The Arkansas unopposed office has multiple candidates.");
 			orders.set(key, ballotOrders);
-			const record = factory(source, { name, office: tableIndex === 3 ? `School Board ${office}` : office, party, scope, district, jurisdiction, status: "listed", sourceCandidateId, sourceDivision, sourceDistrictLabel: tableIndex === 1 ? office : district ? tableIndex === 3 ? office : `District ${district}` : undefined, sourceAreaLabel: scope === "statewide" ? "Arkansas" : "Washington County list" });
+			const record = factory(source, {
+				name,
+				office: tableIndex === 3
+					? `School Board ${office}`
+					: office,
+				party,
+				scope,
+				district,
+				jurisdiction,
+				status: "listed",
+				sourceCandidateId,
+				sourceDivision,
+				sourceDistrictLabel: tableIndex === 1
+					? office
+					: district
+						? tableIndex === 3
+							? office
+							: `District ${district}`
+						: undefined,
+				sourceAreaLabel: scope === "statewide"
+					? "Arkansas"
+					: "Washington County list"
+			});
 			if (!record) throw new Error("The Arkansas public candidate record is incomplete.");
-			record.sourceStatus = [tableIndex < 2 ? "Unofficial" : "Listed", unopposed ? "Unopposed" : "", appearance].filter(Boolean).join("; ");
-			record.ballotDesignation = `${stage}; ${unopposed ? order : `Ballot order: ${order}`}`;
+			record.sourceStatus = [
+				tableIndex < 2
+					? "Unofficial"
+					: "Listed",
+				unopposed ? "Unopposed" : "",
+				appearance
+			].filter(Boolean).join("; ");
+			record.ballotDesignation = `${stage}; ${unopposed
+				? order
+				: `Ballot order: ${order}`}`;
 			records.push(record);
 		}
 		if (records.length === before || records.length > 25_000 || (tableIndex === 0 && (section !== "County" || populatedSections.size !== 3)) || (tableIndex > 1 && records.length - before < 2)) throw new Error("The Arkansas candidate table is empty, incomplete or too large.");

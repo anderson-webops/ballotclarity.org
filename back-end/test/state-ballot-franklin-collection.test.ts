@@ -24,22 +24,71 @@ const origin = "https://www.vote.franklincountyohio.gov";
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 function fixture(year = 2028, pending = false) {
 	const instant = `${year}-10-20T12:00:00.000Z`;
-	const page = (url: string, body: string) => ({ url, body, sha256: hash(body), retrievedAt: instant });
-	const candidates = year === 2026 ? legacyReviewedStateBallotSource(source)!.documentUrls![0]! : `${origin}/getmedia/11111111-1111-1111-1111-111111111111/${year}-General-Candidate-List-1`;
-	const notice = year === 2026 ? legacyReviewedStateBallotSource(source)!.documentUrls![1]! : `${origin}/getmedia/22222222-2222-2222-2222-222222222222/${year}-General-Form-No-120-FWAB-Notice-46-Day`;
+	const page = (url: string, body: string) => ({
+		url,
+		body,
+		sha256: hash(body),
+		retrievedAt: instant
+	});
+	const candidates = year === 2026
+		? legacyReviewedStateBallotSource(source)!.documentUrls![0]!
+		: `${origin}/getmedia/11111111-1111-1111-1111-111111111111/${year}-General-Candidate-List-1`;
+	const notice = year === 2026
+		? legacyReviewedStateBallotSource(source)!.documentUrls![1]!
+		: `${origin}/getmedia/22222222-2222-2222-2222-222222222222/${year}-General-Form-No-120-FWAB-Notice-46-Day`;
 	const schedule = `${origin}/getmedia/33333333-3333-3333-3333-333333333333/${year}-GENERAL-SCHEDULE`;
 	const pdf = franklinFixture({ year });
-	const body = pending ? `<a href="${schedule}">${year} General Election Schedule with Candidate Requirements (PDF)</a>` : `<a href="${candidates}">${year} General Election Candidates (PDF)</a><a href="${notice}">46 Day Notice for Federal Write-in Absentee Ballot (PDF)</a>`;
-	const publications = pending ? [{ url: schedule, text: `${year} GENERAL\nELECTION SCHEDULE\nPage 1 of 1\nGeneral Election Day ........November ${year === 2028 ? 7 : 3}, ${year}\nOffice: Mayor (Synthetic Incumbent)`, sha256: "c".repeat(64), retrievedAt: instant }] : [{ url: candidates, text: pdf.candidates, sha256: "a".repeat(64), retrievedAt: instant }, { url: notice, text: pdf.notice, sha256: "b".repeat(64), retrievedAt: instant }];
-	return { schemaVersion: 1, type: "franklin-discovery", policies: franklinPolicyReceipts, index: page(franklinDiscoveryUrl, `<main><a href="/election-info/${year}">${year}</a></main>${footer}`), pages: [page(`${origin}/election-info/${year}`, `<main><h1>${year} Election Info</h1><h2>Primary Election</h2><a href="/unrelated">Primary Candidates</a><h2>General Election</h2>${body}<h2>Archives</h2></main>${footer}`)], documents: [publications] };
+	const body = pending
+		? `<a href="${schedule}">${year} General Election Schedule with Candidate Requirements (PDF)</a>`
+		: `<a href="${candidates}">${year} General Election Candidates (PDF)</a><a href="${notice}">46 Day Notice for Federal Write-in Absentee Ballot (PDF)</a>`;
+	const publications = pending
+		? [
+				{
+					url: schedule,
+					text: `${year} GENERAL\nELECTION SCHEDULE\nPage 1 of 1\nGeneral Election Day ........November ${year === 2028
+						? 7
+						: 3}, ${year}\nOffice: Mayor (Synthetic Incumbent)`,
+					sha256: "c".repeat(64),
+					retrievedAt: instant
+				}
+			]
+		: [
+				{
+					url: candidates,
+					text: pdf.candidates,
+					sha256: "a".repeat(64),
+					retrievedAt: instant
+				},
+				{
+					url: notice,
+					text: pdf.notice,
+					sha256: "b".repeat(64),
+					retrievedAt: instant
+				}
+			];
+	return {
+		schemaVersion: 1,
+		type: "franklin-discovery",
+		policies: franklinPolicyReceipts,
+		index: page(franklinDiscoveryUrl, `<main><a href="/election-info/${year}">${year}</a></main>${footer}`),
+		pages: [
+			page(`${origin}/election-info/${year}`, `<main><h1>${year} Election Info</h1><h2>Primary Election</h2><a href="/unrelated">Primary Candidates</a><h2>General Election</h2>${body}<h2>Archives</h2></main>${footer}`)
+		],
+		documents: [publications]
+	};
 }
 const nowFor = (value: ReturnType<typeof fixture>) => Date.parse(value.index.retrievedAt) + 3600000;
 function selected(value: ReturnType<typeof fixture>): StateBallotSource {
 	const catalog = discoverStateBallotElectionCycles(JSON.stringify(value), source.id, nowFor(value));
-	return value.index.retrievedAt.startsWith("2026-") ? source : stateBallotCycleSources(catalog, nowFor(value))[0]!;
+	return value.index.retrievedAt.startsWith("2026-")
+		? source
+		: stateBallotCycleSources(catalog, nowFor(value))[0]!;
 }
 async function capture(value: ReturnType<typeof fixture>) {
-	return fetchFranklinCandidateCapture(selected(value), { discovery: JSON.stringify(value), now: () => nowFor(value) });
+	return fetchFranklinCandidateCapture(selected(value), {
+		discovery: JSON.stringify(value),
+		now: () => nowFor(value)
+	});
 }
 function withIssues(year = 2026) {
 	const value = fixture(year);
@@ -47,7 +96,12 @@ function withIssues(year = 2026) {
 	const url = `${origin}/getmedia/44444444-4444-4444-4444-444444444444/${year}-General-Certified-Questions-and-Issues`;
 	value.pages[0]!.body = value.pages[0]!.body.replace("<h2>Archives</h2>", `<a href="${url}">${year} General - Certified Questions and Issues (PDF)</a><h2>Archives</h2>`);
 	value.pages[0]!.sha256 = hash(value.pages[0]!.body);
-	value.documents[0]!.push({ url, text: JSON.stringify(franklinIssuesFixture(year)), sha256: "d".repeat(64), retrievedAt: value.index.retrievedAt });
+	value.documents[0]!.push({
+		url,
+		text: JSON.stringify(franklinIssuesFixture(year)),
+		sha256: "d".repeat(64),
+		retrievedAt: value.index.retrievedAt
+	});
 	return value;
 }
 
@@ -73,13 +127,30 @@ test("Franklin's fresh collector includes the actual certified-issues link and i
 	const value = withIssues();
 	const requested: string[] = [];
 	const kinds: string[] = [];
-	const body = await fetchFranklinCycleDiscovery({ now: () => nowFor(value), sleep: async () => {}, requestDocument: async (url) => {
-		requested.push(url);
-		return { status: url.endsWith("/robots.txt") ? 404 : 200, body: url.endsWith("/robots.txt") ? Buffer.alloc(0) : Buffer.from(`%PDF-${url}`), contentType: "application/pdf", etag: undefined };
-	}, requestText: async url => url === franklinDiscoveryUrl ? value.index.body : value.pages[0]!.body, extractor: async (bytes, kind) => {
-		kinds.push(kind);
-		return value.documents[0]!.find(document => bytes.toString().endsWith(document.url))!.text;
-	} });
+	const body = await fetchFranklinCycleDiscovery({
+		now: () => nowFor(value),
+		sleep: async () => {},
+		requestDocument: async (url) => {
+			requested.push(url);
+			return {
+				status: url.endsWith("/robots.txt")
+					? 404
+					: 200,
+				body: url.endsWith("/robots.txt")
+					? Buffer.alloc(0)
+					: Buffer.from(`%PDF-${url}`),
+				contentType: "application/pdf",
+				etag: undefined
+			};
+		},
+		requestText: async url => url === franklinDiscoveryUrl
+			? value.index.body
+			: value.pages[0]!.body,
+		extractor: async (bytes, kind) => {
+			kinds.push(kind);
+			return value.documents[0]!.find(document => bytes.toString().endsWith(document.url))!.text;
+		}
+	});
 	assert.equal(requested.length, 4);
 	assert.equal(new Set(requested).size, 4);
 	assert.deepEqual(kinds, ["candidates", "notice", "questions"]);
@@ -91,16 +162,27 @@ test("Franklin's recurring issue imports survive restart and retain accepted not
 	const directory = await mkdtemp(join(tmpdir(), "franklin-notice-cycle-"));
 	context.after(() => rm(directory, { recursive: true }));
 	const value = withIssues();
-	const options = { familyId: source.id, dataDirectory: directory, catalogPath: join(directory, "cycles.json"), now: () => nowFor(value), fetchDiscovery: async () => JSON.stringify(value) };
+	const options = {
+		familyId: source.id,
+		dataDirectory: directory,
+		catalogPath: join(directory, "cycles.json"),
+		now: () => nowFor(value),
+		fetchDiscovery: async () => JSON.stringify(value)
+	};
 	const first = await syncStateBallotCycles(options);
 	assert.equal(first.results[0]!.status, "available");
 	const storage = createStateBallotStorage(directory);
 	const accepted = (await storage.read(source))!;
 	assert.equal(accepted.ballotQuestions!.length, 2);
 	const serialized = serializeStoredStateSnapshot(accepted);
-	const restarted = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => nowFor(value), fetchText: async () => {
-		throw new Error("Cached reads must not fetch.");
-	} });
+	const restarted = createStateBallotRepository({
+		sources: [source],
+		dataDirectory: directory,
+		now: () => nowFor(value),
+		fetchText: async () => {
+			throw new Error("Cached reads must not fetch.");
+		}
+	});
 	assert.equal(serializeStoredStateSnapshot((await restarted.getSnapshot("OH", source.id))!), serialized);
 	assert.equal((await syncStateBallotCycles(options)).results[0]!.imported, false);
 	const catalog = await readFile(options.catalogPath);
@@ -135,7 +217,12 @@ test("Franklin's configured family reads both current and actually published fut
 test("Franklin's published future schedule supplies a date but never a candidate roster", async () => {
 	const value = fixture(2028, true);
 	assert.equal(readFranklinDiscovery(JSON.stringify(value), nowFor(value)).elections[0]!.electionDate, "2028-11-07");
-	assert.throws(() => parseFranklinCandidateCapture(selected(value), JSON.stringify({ schemaVersion: 1, type: "franklin-candidate-capture", discovery: value, electionDate: "2028-11-07" }), createStateCandidateRecord, nowFor(value)), StateBallotAwaitingRecordsError);
+	assert.throws(() => parseFranklinCandidateCapture(selected(value), JSON.stringify({
+		schemaVersion: 1,
+		type: "franklin-candidate-capture",
+		discovery: value,
+		electionDate: "2028-11-07"
+	}), createStateCandidateRecord, nowFor(value)), StateBallotAwaitingRecordsError);
 	const changed = structuredClone(value);
 	changed.documents[0]![0]!.text = changed.documents[0]![0]!.text.replace("November 7", "November 6");
 	assert.throws(() => readFranklinDiscovery(JSON.stringify(changed), nowFor(changed)), /schedule date|date is invalid/u);
@@ -145,11 +232,27 @@ test("Franklin's discovery rejects incomplete sets, altered clocks, duplicate da
 	const value = fixture();
 	for (const changed of [
 		{ ...value, pages: [] },
-		{ ...value, documents: [[]] },
-		{ ...value, documents: [[...value.documents[0]!, value.documents[0]![0]!]] },
+		{
+			...value,
+			documents: [[]]
+		},
+		{
+			...value,
+			documents: [
+				[...value.documents[0]!, value.documents[0]![0]!]
+			]
+		},
 		{ ...value, policies: [] },
-		{ ...value, index: { ...value.index, retrievedAt: "2030-01-01T00:00:00.000Z" } },
-		{ ...value, pages: [{ ...value.pages[0]!, url: `${origin}/election-info/2030` }] }
+		{
+			...value,
+			index: { ...value.index, retrievedAt: "2030-01-01T00:00:00.000Z" }
+		},
+		{
+			...value,
+			pages: [
+				{ ...value.pages[0]!, url: `${origin}/election-info/2030` }
+			]
+		}
 	]) assert.throws(() => readFranklinDiscovery(JSON.stringify(changed), nowFor(value)));
 	const wrong = structuredClone(value);
 	wrong.documents[0]![1]!.text = wrong.documents[0]![1]!.text.replace("November", "October");
@@ -158,17 +261,34 @@ test("Franklin's discovery rejects incomplete sets, altered clocks, duplicate da
 
 test("Franklin's source URLs cannot redirect collection to another host, path, query or credential", () => {
 	const valid = fixture().documents[0]![0]!.url;
-	for (const value of [valid.replace(origin, "https://example.org"), `${valid}?download=1`, `${valid}#fragment`, valid.replace("https://", "https://user:password@"), valid.replace("/getmedia/", "/private/")])
+	for (const value of [
+		valid.replace(origin, "https://example.org"),
+		`${valid}?download=1`,
+		`${valid}#fragment`,
+		valid.replace("https://", "https://user:password@"),
+		valid.replace("/getmedia/", "/private/")
+	])
 		assert.throws(() => validateFranklinDocumentUrl(value));
 });
 
 test("Franklin's collector stops on denied, redirected or newly changed robots responses", async () => {
 	for (const status of [200, 301, 403, 429, 500]) {
 		let textRequests = 0;
-		await assert.rejects(fetchFranklinCycleDiscovery({ now: () => nowFor(fixture()), sleep: async () => {}, requestDocument: async () => ({ status, body: Buffer.alloc(0), contentType: "text/plain", etag: undefined }), requestText: async () => {
-			textRequests++;
-			return "";
-		}, extractor: async () => "" }), /robots response/u);
+		await assert.rejects(fetchFranklinCycleDiscovery({
+			now: () => nowFor(fixture()),
+			sleep: async () => {},
+			requestDocument: async () => ({
+				status,
+				body: Buffer.alloc(0),
+				contentType: "text/plain",
+				etag: undefined
+			}),
+			requestText: async () => {
+				textRequests++;
+				return "";
+			},
+			extractor: async () => ""
+		}), /robots response/u);
 		assert.equal(textRequests, 0);
 	}
 });
@@ -176,10 +296,30 @@ test("Franklin's collector stops on denied, redirected or newly changed robots r
 test("Franklin's collector downloads each offered document once and validates the full acquired set", async () => {
 	const value = fixture();
 	const urls: string[] = [];
-	const body = await fetchFranklinCycleDiscovery({ now: () => nowFor(value), sleep: async () => {}, requestDocument: async (url) => {
-		urls.push(url);
-		return url.endsWith("/robots.txt") ? { status: 404, body: Buffer.alloc(0), contentType: "text/html", etag: undefined } : { status: 200, body: Buffer.from(`%PDF-${url}`), contentType: "application/pdf", etag: undefined };
-	}, requestText: async url => url === franklinDiscoveryUrl ? value.index.body : value.pages[0]!.body, extractor: async bytes => value.documents[0]!.find(document => bytes.toString().endsWith(document.url))!.text });
+	const body = await fetchFranklinCycleDiscovery({
+		now: () => nowFor(value),
+		sleep: async () => {},
+		requestDocument: async (url) => {
+			urls.push(url);
+			return url.endsWith("/robots.txt")
+				? {
+						status: 404,
+						body: Buffer.alloc(0),
+						contentType: "text/html",
+						etag: undefined
+					}
+				: {
+						status: 200,
+						body: Buffer.from(`%PDF-${url}`),
+						contentType: "application/pdf",
+						etag: undefined
+					};
+		},
+		requestText: async url => url === franklinDiscoveryUrl
+			? value.index.body
+			: value.pages[0]!.body,
+		extractor: async bytes => value.documents[0]!.find(document => bytes.toString().endsWith(document.url))!.text
+	});
 	assert.equal(urls.length, 3);
 	assert.equal(new Set(urls).size, urls.length);
 	assert.equal(readFranklinDiscovery(body, nowFor(value)).elections[0]!.franklinDocuments.length, 2);
@@ -188,10 +328,21 @@ test("Franklin's collector downloads each offered document once and validates th
 test("Franklin's collector stops before document downloads when a new legal control appears", async () => {
 	const value = fixture();
 	let documentRequests = 0;
-	await assert.rejects(fetchFranklinCycleDiscovery({ now: () => nowFor(value), sleep: async () => {}, requestDocument: async () => {
-		documentRequests++;
-		return { status: 404, body: Buffer.alloc(0), contentType: "text/plain", etag: undefined };
-	}, requestText: async () => `${value.index.body}<a href="/privacy">Privacy</a>`, extractor: async () => "" }), /legal inventory/u);
+	await assert.rejects(fetchFranklinCycleDiscovery({
+		now: () => nowFor(value),
+		sleep: async () => {},
+		requestDocument: async () => {
+			documentRequests++;
+			return {
+				status: 404,
+				body: Buffer.alloc(0),
+				contentType: "text/plain",
+				etag: undefined
+			};
+		},
+		requestText: async () => `${value.index.body}<a href="/privacy">Privacy</a>`,
+		extractor: async () => ""
+	}), /legal inventory/u);
 	assert.equal(documentRequests, 1);
 });
 
@@ -202,15 +353,31 @@ test("Franklin's reusable synchronization migrates reviewed data with exact reco
 	let clock = nowFor(value);
 	let requests = 0;
 	const data = parseFranklinCandidateCapture(source, await capture(value), createStateCandidateRecord, clock);
-	const legacy = { source: legacyReviewedStateBallotSource(source)!, records: data.records, retrievedAt: data.retrievedAt, sha256: data.sha256, documents: data.documents };
+	const legacy = {
+		source: legacyReviewedStateBallotSource(source)!,
+		records: data.records,
+		retrievedAt: data.retrievedAt,
+		sha256: data.sha256,
+		documents: data.documents
+	};
 	const storage = createStateBallotStorage(directory);
 	await storage.write(legacy);
 	const filename = (await readdir(directory))[0]!;
 	const original = await readFile(join(directory, filename));
-	const options = { familyId: source.id, dataDirectory: directory, catalogPath: join(directory, "cycles.json"), now: () => clock, fetchDiscovery: async () => JSON.stringify(value), fetchCandidates: async (selected: StateBallotSource) => {
-		requests++;
-		return fetchFranklinCandidateCapture(selected, { discovery: JSON.stringify(value), now: () => clock });
-	} };
+	const options = {
+		familyId: source.id,
+		dataDirectory: directory,
+		catalogPath: join(directory, "cycles.json"),
+		now: () => clock,
+		fetchDiscovery: async () => JSON.stringify(value),
+		fetchCandidates: async (selected: StateBallotSource) => {
+			requests++;
+			return fetchFranklinCandidateCapture(selected, {
+				discovery: JSON.stringify(value),
+				now: () => clock
+			});
+		}
+	};
 	const first = await syncStateBallotCycles(options);
 	assert.ok(first.results.find(result => result.sourceId === source.id)!.imported);
 	const snapshot = await storage.read(source);
@@ -223,9 +390,14 @@ test("Franklin's reusable synchronization migrates reviewed data with exact reco
 	const second = await syncStateBallotCycles(options);
 	assert.equal(second.results.find(result => result.sourceId === source.id)!.imported, false);
 	assert.equal(requests, 1);
-	const restarted = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => clock, fetchText: async () => {
-		throw new Error("Cached reads must not fetch.");
-	} });
+	const restarted = createStateBallotRepository({
+		sources: [source],
+		dataDirectory: directory,
+		now: () => clock,
+		fetchText: async () => {
+			throw new Error("Cached reads must not fetch.");
+		}
+	});
 	assert.equal((await restarted.getSnapshot("OH"))!.retrievedAt, data.retrievedAt);
 	assert.equal(serializeStoredStateSnapshot((await storage.read(source))!), serializeStoredStateSnapshot(snapshot!));
 	value.documents[0]![0]!.sha256 = "d".repeat(64);
@@ -246,7 +418,13 @@ test("Franklin's future pending election becomes available when both candidate p
 	context.after(() => rm(directory, { recursive: true }));
 	let value = fixture(2028, true);
 	const target = selected(value);
-	const options = { familyId: source.id, dataDirectory: directory, catalogPath: join(directory, "cycles.json"), now: () => nowFor(value), fetchDiscovery: async () => JSON.stringify(value) };
+	const options = {
+		familyId: source.id,
+		dataDirectory: directory,
+		catalogPath: join(directory, "cycles.json"),
+		now: () => nowFor(value),
+		fetchDiscovery: async () => JSON.stringify(value)
+	};
 	const first = await syncStateBallotCycles(options);
 	assert.equal(first.results.find(result => result.sourceId === target.id)!.status, "awaiting-records");
 	assert.equal(await createStateBallotStorage(directory).read(target), null);
@@ -263,14 +441,27 @@ test("Franklin's failed legacy backup leaves the accepted envelope and its captu
 	const body = await capture(value);
 	const parsed = parseFranklinCandidateCapture(source, body, createStateCandidateRecord, nowFor(value));
 	const storage = createStateBallotStorage(directory);
-	await storage.write({ source: legacyReviewedStateBallotSource(source)!, records: parsed.records, retrievedAt: parsed.retrievedAt, sha256: parsed.sha256, documents: parsed.documents });
+	await storage.write({
+		source: legacyReviewedStateBallotSource(source)!,
+		records: parsed.records,
+		retrievedAt: parsed.retrievedAt,
+		sha256: parsed.sha256,
+		documents: parsed.documents
+	});
 	const filename = (await readdir(directory))[0]!;
 	const original = await readFile(join(directory, filename));
 	await writeFile(join(directory, `${filename}.legacy-${hash(original.toString("utf8"))}`), "Owned conflicting backup fixture.");
 	let failures = 0;
-	const repository = createStateBallotRepository({ sources: [source], dataDirectory: directory, now: () => nowFor(value), refreshReviewedLegacy: true, fetchText: async () => body, onPersistenceError: () => {
-		failures++;
-	} });
+	const repository = createStateBallotRepository({
+		sources: [source],
+		dataDirectory: directory,
+		now: () => nowFor(value),
+		refreshReviewedLegacy: true,
+		fetchText: async () => body,
+		onPersistenceError: () => {
+			failures++;
+		}
+	});
 	const retained = await repository.getSnapshot("OH");
 	assert.equal(failures, 1);
 	assert.equal(retained!.source.retrievalPolicy, "manual-snapshot");

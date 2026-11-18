@@ -14,7 +14,11 @@ interface Options { xmlExecutable?: string; svgExecutable?: string; objectExecut
 export async function verifyNycCandidatePdf(source: StateBallotSource, bytes: Buffer, factory: Factory, options: Options = {}) {
 	if (source.stateCode !== "NY") throw new Error("The NYC native source identity requires review.");
 	nycGeneralDate(source.electionDate);
-	const [xmlExecutable, svgExecutable, objectExecutable] = await Promise.all([resolveStateBallotPdfXmlExtractor(options.xmlExecutable), resolveStateBallotPdfSvgExtractor(options.svgExecutable), resolveStateBallotPdfObjectInspector(options.objectExecutable)]);
+	const [xmlExecutable, svgExecutable, objectExecutable] = await Promise.all([
+		resolveStateBallotPdfXmlExtractor(options.xmlExecutable),
+		resolveStateBallotPdfSvgExtractor(options.svgExecutable),
+		resolveStateBallotPdfObjectInspector(options.objectExecutable)
+	]);
 	const xml = await extractStateBallotPdfXml(bytes, xmlExecutable, "nyc");
 	const objects = await inspectStateBallotPdfObjects(bytes, objectExecutable, "nyc");
 	const fonts = inspectNycPdfFonts(objects);
@@ -25,8 +29,24 @@ export async function verifyNycCandidatePdf(source: StateBallotSource, bytes: Bu
 		const svg = await extractStateBallotPdfSvg(bytes, svgExecutable, page, 12000, "nyc");
 		outputBytes += Buffer.byteLength(svg);
 		if (outputBytes > 32 * 1024 * 1024) throw new Error("The NYC native rendering exceeds its collection bounds.");
-		pages.push({ page, ...inspectNycVisual(xml, svg, page) });
+		pages.push({
+			page,
+			...inspectNycVisual(xml, svg, page)
+		});
 		await options.onPage?.(page, svg);
 	}
-	return { xml, objects, result, proof: { schemaVersion: 1 as const, type: "nyc-native-verification" as const, sourceSha256: createHash("sha256").update(bytes).digest("hex"), xmlSha256: createHash("sha256").update(xml).digest("hex"), objectsSha256: createHash("sha256").update(objects).digest("hex"), fonts, pages } };
+	return {
+		xml,
+		objects,
+		result,
+		proof: {
+			schemaVersion: 1 as const,
+			type: "nyc-native-verification" as const,
+			sourceSha256: createHash("sha256").update(bytes).digest("hex"),
+			xmlSha256: createHash("sha256").update(xml).digest("hex"),
+			objectsSha256: createHash("sha256").update(objects).digest("hex"),
+			fonts,
+			pages
+		}
+	};
 }

@@ -15,7 +15,9 @@ export function rejectOrange(): never {
 function document(body: string) {
 	if (Buffer.byteLength(body) > 2 * 1024 * 1024 || body.includes("\uFFFD")) return rejectOrange();
 	const dom = parseStateHtml(body);
-	const pending = [{ node: dom, depth: 0 }];
+	const pending = [
+		{ node: dom, depth: 0 }
+	];
 	let visited = 0;
 	while (pending.length) {
 		const { node, depth } = pending.pop()!;
@@ -30,7 +32,20 @@ export function orangeGeneralDate(year: string) {
 }
 export function orangeSource(electionDate: string): StateBallotSource {
 	if (electionDate < "2026-11-03" || orangeGeneralDate(electionDate.slice(0, 4)) !== electionDate) return rejectOrange();
-	return { stateCode: "CA", id: electionDate === "2026-11-03" ? "ca-orange-2026" : `ca-orange-general-${electionDate}`, label: "Orange County Registrar of Voters", electionDate, url: orangeDiscoveryUrl, pageUrl: orangeDiscoveryUrl, format: "orange-pdf", snapshotStorage: "external", countyName: "Orange County", defaultPriority: -20 };
+	return {
+		stateCode: "CA",
+		id: electionDate === "2026-11-03"
+			? "ca-orange-2026"
+			: `ca-orange-general-${electionDate}`,
+		label: "Orange County Registrar of Voters",
+		electionDate,
+		url: orangeDiscoveryUrl,
+		pageUrl: orangeDiscoveryUrl,
+		format: "orange-pdf",
+		snapshotStorage: "external",
+		countyName: "Orange County",
+		defaultPriority: -20
+	};
 }
 export function validateOrangeSource(source: StateBallotSource) {
 	const expected = orangeSource(source.electionDate);
@@ -44,9 +59,19 @@ export function orangePolicyFingerprint(body: string) {
 	const footers = descendants(dom, node => node.nodeName === "footer");
 	if (footers.length !== 1) return rejectOrange();
 	const text = (node: Parameters<typeof stateHtmlText>[0]) => stateHtmlText(node).replace(/\s+/gu, " ").trim();
-	const links = (node: Parameters<typeof stateHtmlText>[0]) => descendants(node, child => child.nodeName === "a").map(child => [text(child), new URL(attribute(child, "href"), orangeOrigin).href]);
-	const legalLinks = descendants(dom, node => node.nodeName === "a" && /privacy|terms|copyright|licen[cs]e|disclaimer|polic(?:y|ies)/iu.test(`${text(node)} ${attribute(node, "href")}`)).map(node => [text(node), new URL(attribute(node, "href"), orangeOrigin).href]);
-	return orangeHash(JSON.stringify({ footerTexts: footers.map(text), footerLinks: footers.map(links), legalLinks }));
+	const links = (node: Parameters<typeof stateHtmlText>[0]) => descendants(node, child => child.nodeName === "a").map(child => [
+		text(child),
+		new URL(attribute(child, "href"), orangeOrigin).href
+	]);
+	const legalLinks = descendants(dom, node => node.nodeName === "a" && /privacy|terms|copyright|licen[cs]e|disclaimer|polic(?:y|ies)/iu.test(`${text(node)} ${attribute(node, "href")}`)).map(node => [
+		text(node),
+		new URL(attribute(node, "href"), orangeOrigin).href
+	]);
+	return orangeHash(JSON.stringify({
+		footerTexts: footers.map(text),
+		footerLinks: footers.map(links),
+		legalLinks
+	}));
 }
 export function readOrangeCandidateIndex(body: string) {
 	const dom = document(body);
@@ -54,9 +79,13 @@ export function readOrangeCandidateIndex(body: string) {
 	const scripts = descendants(dom, node => node.nodeName === "script").map(node => (node.childNodes ?? []).map(child => child.value ?? "").join("")).filter(value => value.includes("$('#select-vbm-app')"));
 	if (selects.length !== 1 || scripts.length !== 1) return rejectOrange();
 	const script = scripts[0]!;
-	const mappings = [...script.matchAll(/\burls\s*=\s*\{([\s\S]*?)\};/gu)];
+	const mappings = [
+		...script.matchAll(/\burls\s*=\s*\{([\s\S]*?)\};/gu)
+	];
 	if (mappings.length !== 1 || orangeHash(script.replace(mappings[0]![0], "urls = {__offered_elections__};").replace(/\s+/gu, " ").trim()) !== scriptSha256) return rejectOrange();
-	const pairs = [...mappings[0]![1]!.matchAll(/'([1-9]\d?)'\s*:\s*'(GEN20\d{2})'/gu)];
+	const pairs = [
+		...mappings[0]![1]!.matchAll(/'([1-9]\d?)'\s*:\s*'(GEN20\d{2})'/gu)
+	];
 	const mapping = mappings[0]![1]!.replace(/\s+/gu, "").replace(/,$/u, "");
 	if (mapping !== pairs.map(pair => `'${pair[1]}':'${pair[2]}'`).join(",") || pairs.length > 32 || new Set(pairs.map(pair => pair[1])).size !== pairs.length || selects[0]!.attrs?.some(item => ["disabled", "hidden"].includes(item.name))) return rejectOrange();
 	const options = descendants(selects[0]!, node => node.nodeName === "option");

@@ -10,15 +10,31 @@ import { prepareFultonEducationNoticeFiles } from "../src/prepare-fulton-educati
 import { address, index, section, text } from "./helpers/fulton-education-notice.js";
 
 test("Fulton education discovery follows exact offered editions without constructing yearly document names", () => {
-	assert.deepEqual(discoverFultonEducationNotices(index), [{ electionDate: "2030-11-05", url: address }]);
-	assert.deepEqual(discoverFultonEducationNotices(index.replaceAll("2030", "2034")), [{ electionDate: "2034-11-05", url: address.replace("2030", "2034") }]);
+	assert.deepEqual(discoverFultonEducationNotices(index), [
+		{ electionDate: "2030-11-05", url: address }
+	]);
+	assert.deepEqual(discoverFultonEducationNotices(index.replaceAll("2030", "2034")), [
+		{
+			electionDate: "2034-11-05",
+			url: address.replace("2030", "2034")
+		}
+	]);
 	const newer = section.replaceAll("2030", "2034");
 	assert.deepEqual(discoverFultonEducationNotices(index.replace("</main>", `${newer}</main>`)).map(notice => notice.electionDate), ["2030-11-05", "2034-11-05"]);
 });
 
 test("Fulton education discovery holds changed policies, duplicate editions and unsafe or missing links", () => {
 	assert.throws(() => discoverFultonEducationNotices(index.replace(address, `https://fultoncountyga.gov/-/media/${"document".repeat(300)}.pdf`)));
-	for (const changed of [index.replace("</main>", `${section}</main>`), index.replace(address, address.replace("https:", "http:")), index.replace(address, address.replace("fultoncountyga.gov", "elsewhere.example")), index.replace(address, `${address}?download=1`), index.replace(address, `${address}#page=1`), index.replace("</footer>", `<a href="/new-terms">Terms of Use</a></footer>`), index.replace("Call for Election - ESPLOST", "Unrecognized election notice"), index.replace("November 5, 2030", "February 31, 2030")]) assert.throws(() => discoverFultonEducationNotices(changed));
+	for (const changed of [
+		index.replace("</main>", `${section}</main>`),
+		index.replace(address, address.replace("https:", "http:")),
+		index.replace(address, address.replace("fultoncountyga.gov", "elsewhere.example")),
+		index.replace(address, `${address}?download=1`),
+		index.replace(address, `${address}#page=1`),
+		index.replace("</footer>", `<a href="/new-terms">Terms of Use</a></footer>`),
+		index.replace("Call for Election - ESPLOST", "Unrecognized election notice"),
+		index.replace("November 5, 2030", "February 31, 2030")
+	]) assert.throws(() => discoverFultonEducationNotices(changed));
 });
 
 test("Fulton notice facts retain conditional named projects, maximum rates and exact reconciled principal cents", () => {
@@ -49,11 +65,26 @@ test("Fulton notice reuse follows source dates, amounts, principal years and wra
 });
 
 test("Fulton notice review rejects inconsistent caps, principal schedules, rates and source dates", () => {
-	for (const changed of [text.replace("$100,000.00", "$110,000.00"), text.replace("$5,000,000.00", "$6,000,000.00"), text.replace("six percent 6%", "five percent 6%"), text.replace("2033 $60,000.00", "2034 $60,000.00"), text.replace("Year: Principal Amount:", "Other terms"), text.replace("November 5, 2030", "November 6, 2030"), text.replace("special one percent (1%)", "special one percent (2%)")]) assert.throws(() => readFultonEducationNotice(changed, "2030-11-05"));
+	for (const changed of [
+		text.replace("$100,000.00", "$110,000.00"),
+		text.replace("$5,000,000.00", "$6,000,000.00"),
+		text.replace("six percent 6%", "five percent 6%"),
+		text.replace("2033 $60,000.00", "2034 $60,000.00"),
+		text.replace("Year: Principal Amount:", "Other terms"),
+		text.replace("November 5, 2030", "November 6, 2030"),
+		text.replace("special one percent (1%)", "special one percent (2%)")
+	]) assert.throws(() => readFultonEducationNotice(changed, "2030-11-05"));
 });
 
 test("Fulton notice review holds incomplete lists, duplicate records, unsafe names and unexpected structure", () => {
-	for (const changed of [text.replace("(2) New Elementary", "(3) New Elementary"), text.replace("Replacement elementary school in Planning Region C", "Replacement elementary school in Planning Region A"), text.replace("Example Middle School", "=Example Middle School"), text.replace("For the Atlanta Independent School System:", "Other school system:"), text.replace("Example High School", "Example\u0000High School"), `${text}${"\f".repeat(21)}`]) assert.throws(() => readFultonEducationNotice(changed, "2030-11-05"));
+	for (const changed of [
+		text.replace("(2) New Elementary", "(3) New Elementary"),
+		text.replace("Replacement elementary school in Planning Region C", "Replacement elementary school in Planning Region A"),
+		text.replace("Example Middle School", "=Example Middle School"),
+		text.replace("For the Atlanta Independent School System:", "Other school system:"),
+		text.replace("Example High School", "Example\u0000High School"),
+		`${text}${"\f".repeat(21)}`
+	]) assert.throws(() => readFultonEducationNotice(changed, "2030-11-05"));
 });
 
 test("Fulton education preparation pins the original capture and leaves outputs untouched on invalid input", async (context) => {
@@ -62,9 +93,19 @@ test("Fulton education preparation pins the original capture and leaves outputs 
 	const original = JSON.stringify({ schemaVersion: 1, type: "unrecognized-capture" });
 	const capturePath = join(directory, "capture.json");
 	await writeFile(capturePath, original);
-	const plan = { schemaVersion: 1, type: "fulton-education-notice-preparation", capturePath, captureSha256: createHash("sha256").update(original).digest("hex"), outputRoot: join(directory, "prepared"), electionDate: "latest-published" };
+	const plan = {
+		schemaVersion: 1,
+		type: "fulton-education-notice-preparation",
+		capturePath,
+		captureSha256: createHash("sha256").update(original).digest("hex"),
+		outputRoot: join(directory, "prepared"),
+		electionDate: "latest-published"
+	};
 	const path = join(directory, "plan.json");
-	await writeFile(path, JSON.stringify({ ...plan, captureSha256: "0".repeat(64) }));
+	await writeFile(path, JSON.stringify({
+		...plan,
+		captureSha256: "0".repeat(64)
+	}));
 	await assert.rejects(prepareFultonEducationNoticeFiles(path), /manifest hash changed/u);
 	await writeFile(path, JSON.stringify(plan));
 	await assert.rejects(prepareFultonEducationNoticeFiles(path), /capture inventory/u);

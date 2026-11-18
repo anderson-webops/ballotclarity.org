@@ -27,15 +27,37 @@ async function fixture(context: TestContext, sources: readonly StateBallotSource
 		getCandidatesBySlugs: () => [],
 		getMeasureBySlug: () => null,
 		getSourceById: () => null,
-		getElectionBySlug: slug => data.election?.slug === slug ? data.election : null,
-		getJurisdictionBySlug: slug => data.jurisdiction?.slug === slug ? data.jurisdiction : null
+		getElectionBySlug: slug => data.election?.slug === slug
+			? data.election
+			: null,
+		getJurisdictionBySlug: slug => data.jurisdiction?.slug === slug
+			? data.jurisdiction
+			: null
 	};
-	const app = await createApp({ coverageRepository: coverage, adminDbPath: ":memory:", adminMfaEncryptionKey: "controlled-overview-mfa-key-long-enough", stateBallotRepository: { sources, getSnapshot: async () => {
-		throw new Error("The overview must not collect or load candidates before rendering logistics.");
-	} }, electionReferenceRepository: null, fultonOfficeholderRepository: null, fultonCountyOfficeholderRepository: null, congressClient: null, googleCivicClient: null, openStatesClient: null, openFecClient: null, ldaClient: null });
+	const app = await createApp({
+		coverageRepository: coverage,
+		adminDbPath: ":memory:",
+		adminMfaEncryptionKey: "controlled-overview-mfa-key-long-enough",
+		stateBallotRepository: {
+			sources,
+			getSnapshot: async () => {
+				throw new Error("The overview must not collect or load candidates before rendering logistics.");
+			}
+		},
+		electionReferenceRepository: null,
+		fultonOfficeholderRepository: null,
+		fultonCountyOfficeholderRepository: null,
+		congressClient: null,
+		googleCivicClient: null,
+		openStatesClient: null,
+		openFecClient: null,
+		ldaClient: null
+	});
 	const server = app.listen(0, "127.0.0.1");
 	await once(server, "listening");
-	context.after(() => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())));
+	context.after(() => new Promise<void>((resolve, reject) => server.close(error => error
+		? reject(error)
+		: resolve())));
 	return `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 }
 

@@ -23,15 +23,15 @@ function dictionary(value: unknown): AlabamaPdfDictionary {
 	return value;
 }
 function finiteNumber(value: unknown): number {
-	if (typeof value !== "number" || !Number.isFinite(value)) throw new Error("Invalid PDF numeric property.");
+	if (typeof value !== "number" || !Number.isFinite(value)) throw new TypeError("Invalid PDF numeric property.");
 	return value;
 }
 function booleanValue(value: unknown): boolean {
-	if (typeof value !== "boolean") throw new Error("Invalid PDF boolean property.");
+	if (typeof value !== "boolean") throw new TypeError("Invalid PDF boolean property.");
 	return value;
 }
 function stringValue(value: unknown): string {
-	if (typeof value !== "string") throw new Error("Invalid PDF string property.");
+	if (typeof value !== "string") throw new TypeError("Invalid PDF string property.");
 	return value;
 }
 function numericToken(value: AlabamaToken): number {
@@ -209,7 +209,10 @@ export function tokenizePdfContent(body: string): Generator<AlabamaToken> {
 				if (bytes.length > 65536) throw new Error("String exceeds its bounds.");
 			}
 			if (nesting) throw new Error("Unterminated string.");
-			return { kind: "bytes", bytes: Buffer.from(bytes) };
+			return {
+				kind: "bytes",
+				bytes: Buffer.from(bytes)
+			};
 		}
 		if (character === "[") {
 			const values = [];
@@ -257,7 +260,9 @@ export function tokenizePdfContent(body: string): Generator<AlabamaToken> {
 			if (body[position++] !== ">") throw new Error("Unterminated hexadecimal string.");
 			return {
 				kind: "bytes",
-				bytes: Buffer.from(hexadecimal.length % 2 ? `${hexadecimal}0` : hexadecimal, "hex")
+				bytes: Buffer.from(hexadecimal.length % 2
+					? `${hexadecimal}0`
+					: hexadecimal, "hex")
 			};
 		}
 		if (character === "/") {
@@ -330,11 +335,17 @@ function trueType(program: Buffer): (code: number) => AlabamaFontGlyph {
 	const units = head.readUInt16BE(18);
 	const glyphCount = maximum.readUInt16BE(4);
 	const format = head.readInt16BE(50);
-	const width = format === 0 ? 2 : format === 1 ? 4 : 0;
+	const width = format === 0
+		? 2
+		: format === 1
+			? 4
+			: 0;
 	if (units < 16 || !glyphCount || glyphCount > 20000 || !width || locations.length !== (glyphCount + 1) * width)
 		throw new Error("Invalid glyph locations.");
 	const offsets = Array.from({ length: glyphCount + 1 }, (_, index) =>
-		width === 2 ? locations.readUInt16BE(index * 2) * 2 : locations.readUInt32BE(index * 4));
+		width === 2
+			? locations.readUInt16BE(index * 2) * 2
+			: locations.readUInt32BE(index * 4));
 	if (offsets.some((offset, index) => offset > outlines.length || (index && offset < offsets[index - 1])))
 		throw new Error("Invalid glyph program bounds.");
 	const mappings: number[] = [];
@@ -381,7 +392,9 @@ function trueType(program: Buffer): (code: number) => AlabamaFontGlyph {
 				const address = position + offset + (unicode - first) * 2;
 				if (address + 2 > end) throw new Error("Invalid cmap address.");
 				const value = cmap.readUInt16BE(address);
-				glyph = value ? (value + delta) & 65535 : 0;
+				glyph = value
+					? (value + delta) & 65535
+					: 0;
 			}
 		}
 		if (!glyph || glyph >= glyphCount) throw new Error(`Unmapped font character: ${code}`);
@@ -393,7 +406,12 @@ function trueType(program: Buffer): (code: number) => AlabamaFontGlyph {
 			glyph,
 			units,
 			ink: bytes.length
-				? [bytes.readInt16BE(2), bytes.readInt16BE(4), bytes.readInt16BE(6), bytes.readInt16BE(8)]
+				? [
+						bytes.readInt16BE(2),
+						bytes.readInt16BE(4),
+						bytes.readInt16BE(6),
+						bytes.readInt16BE(8)
+					]
 				: null,
 			outline: bytes
 		};
@@ -409,7 +427,10 @@ export function alabamaTrueTypeMappings(program: Buffer, codes: number[]) {
 		throw new Error("Font mapping evidence exceeds its bounds.");
 	}
 	const decode = trueType(program);
-	return codes.map(code => ({ code, ...decode(code) }));
+	return codes.map(code => ({
+		code,
+		...decode(code)
+	}));
 }
 export function readAlabamaContent(value: unknown): AlabamaContent {
 	const objectProof = inspectAlabamaObjects(value);
@@ -426,7 +447,9 @@ export function readAlabamaContent(value: unknown): AlabamaContent {
 	const objects = document.qpdf[1];
 	if (Object.keys(objects).length > 12000) throw new Error("Object budget exceeded.");
 	const resolved = (value: unknown): unknown =>
-		typeof value === "string" && /^\d+ 0 R$/u.test(value) ? objects[`obj:${value}`]?.value : value;
+		typeof value === "string" && /^\d+ 0 R$/u.test(value)
+			? objects[`obj:${value}`]?.value
+			: value;
 	const stream = (reference: unknown) => {
 		const body = objects[`obj:${reference}`]?.stream?.data;
 		if (typeof body !== "string" || body.length > 16 * 1024 * 1024) throw new Error("Missing bounded stream.");
@@ -487,11 +510,14 @@ export function readAlabamaContent(value: unknown): AlabamaContent {
 				throw new Error("Unsupported font encoding.");
 			}
 			const reference = descriptor["/FontFile2"];
-			if (typeof reference !== "string") throw new Error("Missing TrueType font-program identity.");
+			if (typeof reference !== "string") throw new TypeError("Missing TrueType font-program identity.");
 			if (!programCache.has(reference)) {
 				if (programCache.size >= 16) throw new Error("The Alabama native font-program budget is exceeded.");
 				const program = stream(reference);
-				programCache.set(reference, { glyph: trueType(program), verify: createAlabamaFontVerifier(program) });
+				programCache.set(reference, {
+					glyph: trueType(program),
+					verify: createAlabamaFontVerifier(program)
+				});
 			}
 			({ glyph, verify } = programCache.get(reference)!);
 		}
@@ -507,7 +533,9 @@ export function readAlabamaContent(value: unknown): AlabamaContent {
 			const unicode = stream(font["/ToUnicode"]).toString("ascii");
 			const count = /(\d+) beginbfchar([\s\S]*?)endbfchar/u.exec(unicode);
 			if (!count) throw new Error("Missing Myriad Unicode mapping.");
-			const pairs = [...count[2].matchAll(/<([\da-f]{2})> <([\da-f]{4}(?:[\da-f]{4})*)>/giu)];
+			const pairs = [
+				...count[2].matchAll(/<([\da-f]{2})> <([\da-f]{4}(?:[\da-f]{4})*)>/giu)
+			];
 			if (pairs.length !== Number(count[1]) || count[2].replace(/<[\da-f]{2}> <(?:[\da-f]{4})+>/giu, "").trim())
 				throw new Error("Invalid Myriad Unicode mapping.");
 			const mappings = new Map<number, string>();
@@ -517,8 +545,11 @@ export function readAlabamaContent(value: unknown): AlabamaContent {
 					.match(/.{4}/gu)!
 					.map(part => String.fromCharCode(Number.parseInt(part, 16)))
 					.join("");
-				if (mappings.has(code) || value !== (code === 31 ? "ffi" : decode(code)))
+				if (mappings.has(code) || value !== (code === 31
+					? "ffi"
+					: decode(code))) {
 					throw new Error("Conflicting Myriad Unicode mapping.");
+				}
 				mappings.set(code, value);
 			}
 			decode = (code) => {
@@ -526,7 +557,15 @@ export function readAlabamaContent(value: unknown): AlabamaContent {
 				return mappings.get(code)!;
 			};
 		}
-		const data: FontData = { baseFont, first, widths, glyph, verify, bounds: fontBounds, decode };
+		const data: FontData = {
+			baseFont,
+			first,
+			widths,
+			glyph,
+			verify,
+			bounds: fontBounds,
+			decode
+		};
 		fontCache.set(name, data);
 		return data;
 	}
@@ -616,8 +655,10 @@ export function readAlabamaContent(value: unknown): AlabamaContent {
 			if (width === undefined) throw new Error(`Character outside font widths: ${code}`);
 			const position = multiply(state.matrix, textMatrix);
 			const advance
-				= ((width * state.size) / 1000 + state.spacing + (code === 32 ? state.wordSpacing : 0))
-					* state.horizontalScale;
+				= ((width * state.size) / 1000 + state.spacing + (code === 32
+					? state.wordSpacing
+					: 0))
+				* state.horizontalScale;
 			let information: AlabamaFontGlyph = data.glyph
 				? data.glyph(code)
 				: {
@@ -646,13 +687,18 @@ export function readAlabamaContent(value: unknown): AlabamaContent {
 					if (glyphs.length >= 25000) throw new Error("Visible glyph budget exceeded.");
 					if (data.verify) {
 						try {
-							information = { ...information, ...data.verify(information) };
+							information = {
+								...information,
+								...data.verify(information)
+							};
 						}
 						catch (error) {
 							information = {
 								...information,
 								fontProven: false,
-								fontProofError: error instanceof Error ? error.message : "Unproved font glyph."
+								fontProofError: error instanceof Error
+									? error.message
+									: "Unproved font glyph."
 							};
 						}
 					}
@@ -663,7 +709,9 @@ export function readAlabamaContent(value: unknown): AlabamaContent {
 						font: state.font,
 						fontParsed: Boolean(data.glyph),
 						fontProven: information.fontProven === true,
-						...(information.fontProofError ? { fontProofError: information.fontProofError } : {}),
+						...(information.fontProofError
+							? { fontProofError: information.fontProofError }
+							: {}),
 						ink,
 						origin: point(position, 0, state.rise),
 						clip: [...state.clip],
@@ -762,7 +810,17 @@ export function readAlabamaContent(value: unknown): AlabamaContent {
 			numbers(0);
 			pendingClip = true;
 		}
-		else if (["n", "S", "s", "f", "f*", "B", "B*", "b", "b*"].includes(operator)) {
+		else if ([
+			"n",
+			"S",
+			"s",
+			"f",
+			"f*",
+			"B",
+			"B*",
+			"b",
+			"b*"
+		].includes(operator)) {
 			numbers(0);
 			if (pendingClip) {
 				if (operator !== "n") throw new Error("Combined clipping and painting requires review.");
@@ -791,16 +849,27 @@ export function readAlabamaContent(value: unknown): AlabamaContent {
 					Math.hypot(state.matrix[2], state.matrix[3])
 				);
 				const padding = ((state.lineWidth || 1) * scale * (state.miterLimit ?? 10)) / 2;
-				for (const points of [...currentPath.segments, ...currentPath.curves]) {
+				for (const points of [
+					...currentPath.segments,
+					...currentPath.curves
+				]) {
 					const box = bounds(points);
 					const horizontal = points.length === 2 && Math.abs(box[3] - box[1]) < 0.001;
 					const vertical = points.length === 2 && Math.abs(box[2] - box[0]) < 0.001;
 					const width = ((state.lineWidth || 1) * scale) / 2;
 					const ink = [
-						box[0] - (horizontal ? padding : vertical ? width : padding),
-						box[1] - (vertical ? padding : horizontal ? width : padding),
-						box[2] + (horizontal ? padding : vertical ? width : padding),
-						box[3] + (vertical ? padding : horizontal ? width : padding)
+						box[0] - (horizontal
+							? padding
+							: vertical ? width : padding),
+						box[1] - (vertical
+							? padding
+							: horizontal ? width : padding),
+						box[2] + (horizontal
+							? padding
+							: vertical ? width : padding),
+						box[3] + (vertical
+							? padding
+							: horizontal ? width : padding)
 					];
 					paint({
 						kind: "stroke",
@@ -825,7 +894,9 @@ export function readAlabamaContent(value: unknown): AlabamaContent {
 				for (const [beginning, end] of currentPath.segments) {
 					const horizontal = Math.abs(beginning[1] - end[1]) < 0.001;
 					const vertical = Math.abs(beginning[0] - end[0]) < 0.001;
-					const position = horizontal ? (beginning[1] + end[1]) / 2 : (beginning[0] + end[0]) / 2;
+					const position = horizontal
+						? (beginning[1] + end[1]) / 2
+						: (beginning[0] + end[0]) / 2;
 					if (!horizontal && !vertical) continue;
 					const axis = horizontal ? "h" : "v";
 					const start = Math.max(
@@ -949,7 +1020,9 @@ export function readAlabamaContent(value: unknown): AlabamaContent {
 						Ts: "rise"
 					} as const
 				)[operator as "Tc" | "Tw" | "Tz" | "TL" | "Tr" | "Ts"]
-			] = operator === "Tz" ? value / 100 : value;
+			] = operator === "Tz"
+				? value / 100
+				: value;
 		}
 		else if (operator === "Tj") {
 			if (operands.length !== 1) throw new Error("Invalid text operands.");
@@ -1037,7 +1110,18 @@ export function readAlabamaContent(value: unknown): AlabamaContent {
 				throw new Error("Alpha-is-shape graphics require review.");
 			if (
 				Object.keys(properties).some(
-					key => !["/Type", "/ca", "/CA", "/op", "/OP", "/OPM", "/BM", "/SMask", "/SA", "/AIS"].includes(key)
+					key => ![
+						"/Type",
+						"/ca",
+						"/CA",
+						"/op",
+						"/OP",
+						"/OPM",
+						"/BM",
+						"/SMask",
+						"/SA",
+						"/AIS"
+					].includes(key)
 				)
 			) {
 				throw new Error("An unsupported graphics-state entry requires review.");
@@ -1069,7 +1153,9 @@ export function readAlabamaContent(value: unknown): AlabamaContent {
 		else if (operator === "J" || operator === "j") {
 			const [value] = numbers(1);
 			if (![0, 1, 2].includes(value)) throw new Error("Invalid stroke style.");
-			state[operator === "J" ? "lineCap" : "lineJoin"] = value;
+			state[operator === "J"
+				? "lineCap"
+				: "lineJoin"] = value;
 		}
 		else if (operator === "d") {
 			if (
@@ -1112,8 +1198,12 @@ export function readAlabamaContent(value: unknown): AlabamaContent {
 			) {
 				throw new Error("Unknown color space.");
 			}
-			state[operator === "cs" ? "fillSpace" : "strokeSpace"] = space;
-			state[operator === "cs" ? "fill" : "stroke"] = "other";
+			state[operator === "cs"
+				? "fillSpace"
+				: "strokeSpace"] = space;
+			state[operator === "cs"
+				? "fill"
+				: "stroke"] = "other";
 		}
 		else if (["BMC", "BDC", "MP", "DP"].includes(operator)) {
 			const properties = operator === "BDC" || operator === "DP";
@@ -1167,7 +1257,12 @@ export function readAlabamaContent(value: unknown): AlabamaContent {
 			if (
 				operands.length !== 1
 				|| operands[0].kind !== "name"
-				|| !["/AbsoluteColorimetric", "/RelativeColorimetric", "/Saturation", "/Perceptual"].includes(
+				|| ![
+					"/AbsoluteColorimetric",
+					"/RelativeColorimetric",
+					"/Saturation",
+					"/Perceptual"
+				].includes(
 					operands[0].value
 				)
 			) {

@@ -2,6 +2,25 @@
 
 Ballot Clarity's two compiled services are accepted as one immutable runtime tree. The tracked contract is `deploy/runtime-artifact-contract.json`; it names both entrypoints, all independently required runtime paths, and the writable state that must remain outside a release.
 
+Current builds require Node 26.13.1 and the locked npm 12.2.2 build-only profile.
+Use `npm run toolchain:prepare` to obtain its verified executable directory and
+select that directory before installation. CI verifies the profile's exact lock
+and payload digests; both digests accompany the runtime manifest and receipt.
+Existing releases retain their original source-bound verifiers and requirements.
+Qualification of a new runtime leaves previous artifacts and custody receipts intact.
+
+The backend uses the native TypeScript 7 compiler. Vue's language service and
+TypeScript ESLint retain the TypeScript 6 API required by their published peer
+contracts. Nuxt 4/Nitro 2 likewise retain the H3 1 application API; development
+tools that require H3 2 resolve their independent supported graph. These are
+consumer compatibility boundaries, reviewed again when their parent supports
+the successor API.
+
+The auto-import compiler is reproduced from its signed upstream 7.0.3 source
+using the canonical template's qualified recipe. CI retains registry signature
+checks for registry packages, independently verifies the local compiler archive,
+and exercises it without source or development-dependency access.
+
 After `npm run build`, run:
 
 ```bash

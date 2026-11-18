@@ -30,7 +30,10 @@ test("Dane policy fingerprints ignore bounded email-protection nonces but retain
 	const body = `<main>Privacy terms remain available for public factual collection.</main><footer>Copyright owner <a href="/cdn-cgi/l/email-protection#${"a".repeat(1078)}">Contact</a><a href="/privacy">Privacy</a></footer>`;
 	const first = danePolicyFingerprint(Buffer.from(body), "links", "https://townweb.com/privacy-policy/");
 	assert.equal(first, danePolicyFingerprint(Buffer.from(body.replace("a".repeat(1078), "b".repeat(1078))), "links", "https://townweb.com/privacy-policy/"));
-	for (const changed of [body.replace("Copyright owner", "Copyright owner. Reuse requires permission."), body.replace("href=\"/privacy\"", "href=\"/new-terms\"")]) assert.notEqual(first, danePolicyFingerprint(Buffer.from(changed), "links", "https://townweb.com/privacy-policy/"));
+	for (const changed of [
+		body.replace("Copyright owner", "Copyright owner. Reuse requires permission."),
+		body.replace("href=\"/privacy\"", "href=\"/new-terms\"")
+	]) assert.notEqual(first, danePolicyFingerprint(Buffer.from(changed), "links", "https://townweb.com/privacy-policy/"));
 });
 test("Dane rejects altered dates, unknown sample controls, extra hosts and stale provenance", () => {
 	for (const mutate of [
@@ -42,7 +45,10 @@ test("Dane rejects altered dates, unknown sample controls, extra hosts and stale
 	]) {
 		const fixture = daneFixture();
 		mutate(fixture);
-		for (const page of [...fixture.discovery.news, ...fixture.discovery.articles]) page.sha256 = hash(page.body);
+		for (const page of [
+			...fixture.discovery.news,
+			...fixture.discovery.articles
+		]) page.sha256 = hash(page.body);
 		assert.throws(() => readDaneDiscovery(JSON.stringify(fixture.discovery), fixture.now));
 	}
 	for (const url of ["https://private.invalid/file.pdf", "http://cdn.townweb.com/file.pdf", `${daneFixture().discovery.documents[0]!.url}#page=1`]) assert.throws(() => validateDaneDocumentUrl(url, "Lodi", source.electionDate));
@@ -54,38 +60,83 @@ test("Dane requires shared sample agreement, complete notice reconciliation and 
 	]) {
 		const fixture = daneFixture();
 		edit(fixture);
-		const body = JSON.stringify({ schemaVersion: 1, type: "dane-candidate-capture", electionDate: source.electionDate, discovery: fixture.discovery });
+		const body = JSON.stringify({
+			schemaVersion: 1,
+			type: "dane-candidate-capture",
+			electionDate: source.electionDate,
+			discovery: fixture.discovery
+		});
 		assert.throws(() => parseDaneCandidateCapture(source, body, fixture.now), /disagree|differs/u);
 	}
 	const fixture = daneFixture();
 	const prior = parseDaneCandidateCapture(source, fixture.capture, fixture.now).records;
-	assert.throws(() => parseDaneCandidateCapture(source, fixture.capture, fixture.now, [{ ...prior[0]!, id: "f".repeat(24) }]), /disappeared/u);
+	assert.throws(() => parseDaneCandidateCapture(source, fixture.capture, fixture.now, [
+		{
+			...prior[0]!,
+			id: "f".repeat(24)
+		}
+	]), /disappeared/u);
 });
 test("Dane incomplete publications remain pending instead of publishing a partial candidate list", async () => {
 	const fixture = daneFixture("2026-11-03", ["notice"]);
 	assert.equal(readDaneDiscovery(JSON.stringify(fixture.discovery), fixture.now).elections[0]!.daneDocuments.length, 3);
-	await assert.rejects(async () => parseDaneCandidateCapture(source, await fetchDaneCandidateCapture(source, { discovery: JSON.stringify(fixture.discovery), now: () => fixture.now }), fixture.now), StateBallotAwaitingRecordsError);
+	await assert.rejects(async () => parseDaneCandidateCapture(source, await fetchDaneCandidateCapture(source, {
+		discovery: JSON.stringify(fixture.discovery),
+		now: () => fixture.now
+	}), fixture.now), StateBallotAwaitingRecordsError);
 });
 test("Dane policy denial and unreviewed canonical redirects stop before candidate acquisition", async () => {
 	for (const status of [200, 301, 403, 429]) {
 		let requests = 0;
-		await assert.rejects(fetchDaneCycleDiscovery({ sleep: async () => {}, requestDocument: async () => {
-			requests++;
-			return { status, body: Buffer.from("User-agent: *\nDisallow: /\n"), contentType: "text/plain", etag: undefined };
-		} }));
+		await assert.rejects(fetchDaneCycleDiscovery({
+			sleep: async () => {},
+			requestDocument: async () => {
+				requests++;
+				return {
+					status,
+					body: Buffer.from("User-agent: *\nDisallow: /\n"),
+					contentType: "text/plain",
+					etag: undefined
+				};
+			}
+		}));
 		assert.equal(requests, 1);
 	}
 	const fixture = daneFixture();
 	const urls: string[] = [];
 	const delays: number[] = [];
-	await assert.rejects(fetchDaneCycleDiscovery({ now: () => fixture.now, sleep: async (value) => {
-		delays.push(value);
-	}, requestDocument: async (url) => {
-		urls.push(url);
-		if (url.endsWith("townofdane.gov/robots.txt")) return { status: 200, body: Buffer.from(daneRobotsFixture), contentType: "text/plain", etag: undefined };
-		if (url === fixture.discovery.news[0]!.url) return { status: 200, body: Buffer.from(fixture.discovery.news[0]!.body), contentType: "text/html", etag: undefined };
-		return { status: 301, body: Buffer.alloc(0), contentType: "text/html", etag: undefined, location: "https://private.invalid/robots.txt" };
-	} }), /canonical robots redirect/u);
+	await assert.rejects(fetchDaneCycleDiscovery({
+		now: () => fixture.now,
+		sleep: async (value) => {
+			delays.push(value);
+		},
+		requestDocument: async (url) => {
+			urls.push(url);
+			if (url.endsWith("townofdane.gov/robots.txt")) {
+				return {
+					status: 200,
+					body: Buffer.from(daneRobotsFixture),
+					contentType: "text/plain",
+					etag: undefined
+				};
+			}
+			if (url === fixture.discovery.news[0]!.url) {
+				return {
+					status: 200,
+					body: Buffer.from(fixture.discovery.news[0]!.body),
+					contentType: "text/html",
+					etag: undefined
+				};
+			}
+			return {
+				status: 301,
+				body: Buffer.alloc(0),
+				contentType: "text/html",
+				etag: undefined,
+				location: "https://private.invalid/robots.txt"
+			};
+		}
+	}), /canonical robots redirect/u);
 	assert.equal(urls.length, 3);
 	assert.deepEqual(delays, [11000, 11000]);
 	assert.ok(urls.every(url => !url.includes("private.invalid") && !url.endsWith(".pdf")));
@@ -96,14 +147,27 @@ test("Dane durable imports retain exact reviewed recovery, truthful cache clocks
 	const fixture = daneFixture();
 	const parsed = parseDaneCandidateCapture(source, fixture.capture, fixture.now);
 	const storage = createStateBallotStorage(directory);
-	await storage.write({ ...parsed, source: legacyReviewedStateBallotSource(source)!, collectionIndexSha256: undefined });
+	await storage.write({
+		...parsed,
+		source: legacyReviewedStateBallotSource(source)!,
+		collectionIndexSha256: undefined
+	});
 	const file = (await readdir(directory)).find(name => name.startsWith(source.id))!;
 	const before = await readFile(join(directory, file));
-	const options = { familyId: source.id, dataDirectory: directory, catalogPath: join(directory, "cycles.json"), now: () => fixture.now, fetchDiscovery: async () => JSON.stringify(fixture.discovery) };
+	const options = {
+		familyId: source.id,
+		dataDirectory: directory,
+		catalogPath: join(directory, "cycles.json"),
+		now: () => fixture.now,
+		fetchDiscovery: async () => JSON.stringify(fixture.discovery)
+	};
 	const first = await syncStateBallotCycles(options);
-	const cached = await syncStateBallotCycles({ ...options, fetchCandidates: async () => {
-		throw new Error("Cached data must not request candidates");
-	} });
+	const cached = await syncStateBallotCycles({
+		...options,
+		fetchCandidates: async () => {
+			throw new Error("Cached data must not request candidates");
+		}
+	});
 	assert.equal(first.results[0]!.records, 15);
 	assert.equal(first.results[0]!.imported, true);
 	assert.equal(cached.results[0]!.status, "available");
@@ -113,7 +177,10 @@ test("Dane durable imports retain exact reviewed recovery, truthful cache clocks
 	const backup = (await readdir(directory)).find(name => name.startsWith(`${file}.legacy-`));
 	assert.ok(backup);
 	assert.deepEqual(await readFile(join(directory, backup)), before);
-	await assert.rejects(syncStateBallotCycles({ ...options, fetchDiscovery: async () => JSON.stringify(daneFixture("2026-11-03", ["notice"]).discovery) }), /publication disappeared/u);
+	await assert.rejects(syncStateBallotCycles({
+		...options,
+		fetchDiscovery: async () => JSON.stringify(daneFixture("2026-11-03", ["notice"]).discovery)
+	}), /publication disappeared/u);
 	assert.equal(JSON.parse(serializeStoredStateSnapshot((await storage.read(source))!)).retrievalPolicy, "automatic");
 });
 test("Dane future publication moves from pending to available and cached using offered dates and links", async (context) => {
@@ -124,15 +191,24 @@ test("Dane future publication moves from pending to available and cached using o
 	const future = stateBallotCycleSources(catalog, fixture.now)[0]!;
 	assert.equal(future.id, "wi-town-dane-general-2030-11-05");
 	assert.equal(future.pageUrl, fixture.pageUrl);
-	const options = { familyId: source.id, dataDirectory: directory, catalogPath: join(directory, "cycles.json"), now: () => fixture.now, fetchDiscovery: async () => JSON.stringify(fixture.discovery) };
+	const options = {
+		familyId: source.id,
+		dataDirectory: directory,
+		catalogPath: join(directory, "cycles.json"),
+		now: () => fixture.now,
+		fetchDiscovery: async () => JSON.stringify(fixture.discovery)
+	};
 	assert.equal((await syncStateBallotCycles(options)).results[0]!.status, "awaiting-records");
 	fixture = daneFixture("2030-11-05");
 	const available = await syncStateBallotCycles(options);
 	assert.equal(available.results[0]!.records, 15);
 	assert.equal(available.results[0]!.status, "available");
-	const cached = await syncStateBallotCycles({ ...options, fetchCandidates: async () => {
-		throw new Error("Cached future records must persist");
-	} });
+	const cached = await syncStateBallotCycles({
+		...options,
+		fetchCandidates: async () => {
+			throw new Error("Cached future records must persist");
+		}
+	});
 	assert.equal(cached.results[0]!.status, "available");
 	assert.equal(cached.results[0]!.imported, false);
 });
@@ -143,11 +219,21 @@ test("Dane failed legacy recovery preserves the exact accepted envelope", async 
 	const fixture = daneFixture();
 	const parsed = parseDaneCandidateCapture(source, fixture.capture, fixture.now);
 	const storage = createStateBallotStorage(directory);
-	await storage.write({ ...parsed, source: legacyReviewedStateBallotSource(source)!, collectionIndexSha256: undefined });
+	await storage.write({
+		...parsed,
+		source: legacyReviewedStateBallotSource(source)!,
+		collectionIndexSha256: undefined
+	});
 	const filename = (await readdir(directory)).find(name => name.startsWith(source.id))!;
 	const original = await readFile(join(directory, filename));
 	await writeFile(join(directory, `${filename}.legacy-${createHash("sha256").update(original).digest("hex")}`), "Synthetic conflicting recovery bytes", { flag: "wx" });
-	const result = await syncStateBallotCycles({ familyId: source.id, dataDirectory: directory, catalogPath: join(directory, "cycles.json"), now: () => fixture.now, fetchDiscovery: async () => JSON.stringify(fixture.discovery) });
+	const result = await syncStateBallotCycles({
+		familyId: source.id,
+		dataDirectory: directory,
+		catalogPath: join(directory, "cycles.json"),
+		now: () => fixture.now,
+		fetchDiscovery: async () => JSON.stringify(fixture.discovery)
+	});
 	assert.equal(result.results[0]!.status, "persistence-failed");
 	assert.deepEqual(await readFile(join(directory, filename)), original);
 });
@@ -157,9 +243,16 @@ test("Dane retains an explicitly offered expired election without guessing the n
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	const fixture = daneFixture();
 	const now = Date.parse("2026-11-06T12:00:00Z");
-	const result = await syncStateBallotCycles({ familyId: source.id, dataDirectory: directory, catalogPath: join(directory, "cycles.json"), now: () => now, fetchDiscovery: async () => JSON.stringify(fixture.discovery), fetchCandidates: async () => {
-		throw new Error("An expired election must not request a candidate import");
-	} });
+	const result = await syncStateBallotCycles({
+		familyId: source.id,
+		dataDirectory: directory,
+		catalogPath: join(directory, "cycles.json"),
+		now: () => now,
+		fetchDiscovery: async () => JSON.stringify(fixture.discovery),
+		fetchCandidates: async () => {
+			throw new Error("An expired election must not request a candidate import");
+		}
+	});
 	assert.equal(result.results.length, 1);
 	assert.equal(result.results[0]!.status, "expired");
 	assert.equal(result.results[0]!.records, 0);
@@ -170,7 +263,13 @@ test("Dane same-URL document changes refresh accepted data within the cache wind
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	const fixture = daneFixture();
 	let now = fixture.now;
-	const options = { familyId: source.id, dataDirectory: directory, catalogPath: join(directory, "cycles.json"), now: () => now, fetchDiscovery: async () => JSON.stringify(fixture.discovery) };
+	const options = {
+		familyId: source.id,
+		dataDirectory: directory,
+		catalogPath: join(directory, "cycles.json"),
+		now: () => now,
+		fetchDiscovery: async () => JSON.stringify(fixture.discovery)
+	};
 	const first = await syncStateBallotCycles(options);
 	assert.equal(first.results[0]!.records, 15);
 	const originalUrls = fixture.discovery.documents.map(item => item.url);
@@ -187,9 +286,12 @@ test("Dane same-URL document changes refresh accepted data within the cache wind
 	assert.equal(changed.results[0]!.records, 16);
 	assert.equal(changed.results[0]!.imported, true);
 	assert.equal(changed.results[0]!.retrievedAt, new Date(now).toISOString());
-	const cached = await syncStateBallotCycles({ ...options, fetchCandidates: async () => {
-		throw new Error("The changed accepted PDFs should now be cached");
-	} });
+	const cached = await syncStateBallotCycles({
+		...options,
+		fetchCandidates: async () => {
+			throw new Error("The changed accepted PDFs should now be cached");
+		}
+	});
 	assert.equal(cached.results[0]!.records, 16);
 	assert.equal(cached.results[0]!.imported, false);
 });

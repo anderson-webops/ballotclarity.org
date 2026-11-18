@@ -18,13 +18,29 @@ const reviewedSource = legacyReviewedStateBallotSource(source)!;
 async function fixture() {
 	const directory = await mkdtemp(join(tmpdir(), "ballot-management-owner-"));
 	const retrievedAt = "2026-10-27T22:00:00.000Z";
-	const documents = source.documentUrls!.map((url, index) => ({ url, sha256: "b".repeat(64), retrievedAt, includedRecordCount: index === 0 ? 1 : 0 }));
+	const documents = source.documentUrls!.map((url, index) => ({
+		url,
+		sha256: "b".repeat(64),
+		retrievedAt,
+		includedRecordCount: index === 0
+			? 1
+			: 0
+	}));
 	const snapshot: StateBallotSnapshot = {
 		source: reviewedSource,
 		retrievedAt,
 		sha256: createHash("sha256").update(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))).digest("hex"),
 		documents,
-		records: [{ id: "a".repeat(24), name: "Synthetic Candidate", office: "US Senate", district: "", scope: "statewide", status: "listed" }]
+		records: [
+			{
+				id: "a".repeat(24),
+				name: "Synthetic Candidate",
+				office: "US Senate",
+				district: "",
+				scope: "statewide",
+				status: "listed"
+			}
+		]
 	};
 	await createStateBallotStorage(directory).write({ ...snapshot, source });
 	const input = join(directory, "reviewed.json");
@@ -55,14 +71,45 @@ syncBuiltinESMExports();
 		FULTON_PUBLISHER_REQUEST_DIRECTORY: join(directory, "publisher-requests"),
 		STATE_BALLOT_ENABLED_STATES: "GA",
 		STATE_BALLOT_ENABLED_SOURCES: source.id,
-		STATE_BALLOT_CYCLE_CATALOGS: JSON.stringify({ [source.id]: join(directory, "cycles.json") })
+		STATE_BALLOT_CYCLE_CATALOGS: JSON.stringify({
+			[source.id]: join(directory, "cycles.json")
+		})
 	};
-	const run = (entry: string, args: string[] = []) => spawnSync(process.execPath, ["--import", "tsx", "--import", transport, fileURLToPath(new URL(`../src/${entry}.ts`, import.meta.url)), ...args], { env: environment, encoding: "utf8", timeout: 10000 });
-	const launch = () => spawn(process.execPath, ["--import", "tsx", "--import", transport, fileURLToPath(new URL("../src/manage-state-ballot-cycles.ts", import.meta.url))], { env: { ...environment, FIXTURE_HOLD_TRANSPORT: "1" }, stdio: "ignore" });
-	return { directory, snapshot, input, native, requests, run, launch };
+	const run = (entry: string, args: string[] = []) => spawnSync(process.execPath, [
+		"--import",
+		"tsx",
+		"--import",
+		transport,
+		fileURLToPath(new URL(`../src/${entry}.ts`, import.meta.url)),
+		...args
+	], { env: environment, encoding: "utf8", timeout: 10000 });
+	const launch = () => spawn(process.execPath, [
+		"--import",
+		"tsx",
+		"--import",
+		transport,
+		fileURLToPath(new URL("../src/manage-state-ballot-cycles.ts", import.meta.url))
+	], {
+		env: { ...environment, FIXTURE_HOLD_TRANSPORT: "1" },
+		stdio: "ignore"
+	});
+	return {
+		directory,
+		snapshot,
+		input,
+		native,
+		requests,
+		run,
+		launch
+	};
 }
 
-for (const command of ["reviewed import", "native import", "refresh", "cycle sync"] as const) {
+for (const command of [
+	"reviewed import",
+	"native import",
+	"refresh",
+	"cycle sync"
+] as const) {
 	test(`${command} refuses an existing recurring owner before publisher requests or dataset mutation`, async (context) => {
 		const current = await fixture();
 		context.after(() => rm(current.directory, { recursive: true, force: true }));
@@ -71,7 +118,11 @@ for (const command of ["reviewed import", "native import", "refresh", "cycle syn
 		try {
 			const result = command === "cycle sync"
 				? current.run("manage-state-ballot-cycles")
-				: current.run("manage-state-ballot-data", command === "reviewed import" ? ["import", current.input] : command === "native import" ? ["import-native", source.id, current.native] : ["refresh", "GA"]);
+				: current.run("manage-state-ballot-data", command === "reviewed import"
+						? ["import", current.input]
+						: command === "native import"
+							? ["import-native", source.id, current.native]
+							: ["refresh", "GA"]);
 			assert.equal(result.error, undefined);
 			assert.equal(result.status, 1, result.stderr);
 			assert.match(result.stderr, /already running|database is locked/u);
@@ -88,7 +139,11 @@ for (const command of ["reviewed import", "native import", "refresh", "cycle syn
 test("reviewed import and cached refresh release ownership for subsequent commands without publisher requests", async (context) => {
 	const current = await fixture();
 	context.after(() => rm(current.directory, { recursive: true, force: true }));
-	for (const args of [["refresh", "GA"], ["import-native", source.id, current.native], ["import", current.input]]) {
+	for (const args of [
+		["refresh", "GA"],
+		["import-native", source.id, current.native],
+		["import", current.input]
+	]) {
 		const result = current.run("manage-state-ballot-data", args);
 		assert.equal(result.status, 0, result.stderr);
 		assert.equal(JSON.parse(result.stdout).records, 1);
@@ -102,7 +157,16 @@ test("management failures release ownership and preserve accepted data", async (
 	const current = await fixture();
 	context.after(() => rm(current.directory, { recursive: true, force: true }));
 	const before = await readFile(join(current.directory, `${source.id}.json`));
-	for (const [entry, args] of [["manage-state-ballot-data", ["import", join(current.directory, "missing.json")]], ["manage-state-ballot-cycles", []]] as const) {
+	for (const [entry, args] of [
+		[
+			"manage-state-ballot-data",
+			[
+				"import",
+				join(current.directory, "missing.json")
+			]
+		],
+		["manage-state-ballot-cycles", []]
+	] as const) {
 		const result = current.run(entry, [...args]);
 		assert.equal(result.status, 1, result.stderr);
 		const lock = await acquireStateBallotAutomationLock(current.directory);

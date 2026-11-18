@@ -46,11 +46,25 @@ function content(body: string) {
 			if (lines[++offset] !== "0 0 0 rg") return reject();
 			const text = literal(lines[++offset] ?? "");
 			if (!text.trim() || left < 20 || left > 590 || baseline < 25 || baseline > 765 || lines[++offset] !== "0 g" || lines[++offset] !== "ET") return reject();
-			draws.push({ text, left, baseline, size, order: offset });
+			draws.push({
+				text,
+				left,
+				baseline,
+				size,
+				order: offset
+			});
 			white = false;
 			continue;
 		}
-		if (["1 0 0 1 0 0 cm", "[] 0 d", "2 J", "0 J", "1 w"].includes(line)) continue;
+		if ([
+			"1 0 0 1 0 0 cm",
+			"[] 0 d",
+			"2 J",
+			"0 J",
+			"1 w"
+		].includes(line)) {
+			continue;
+		}
 		if (line === "1 1 1 rg") {
 			white = true;
 			continue;
@@ -65,13 +79,21 @@ function content(body: string) {
 		if (point) {
 			if (point[3] === "m" && points.length) return reject();
 			if (point[3] === "l" && !points.length) return reject();
-			points.push([Number(point[1]), Number(point[2])]);
+			points.push([
+				Number(point[1]),
+				Number(point[2])
+			]);
 		}
 		else if (box) {
 			if (points.length) return reject();
 			const [left, top, width, height] = box.slice(1).map(Number) as [number, number, number, number];
 			if (width <= 0 || height >= 0) return reject();
-			points = [[left, top], [left + width, top], [left + width, top + height], [left, top + height]];
+			points = [
+				[left, top],
+				[left + width, top],
+				[left + width, top + height],
+				[left, top + height]
+			];
 		}
 		else if (curve) {
 			const values = curve.slice(1).map(Number);
@@ -87,14 +109,29 @@ function content(body: string) {
 			const top = Math.max(...points.map(point => point[1]!));
 			if (left < 19.5 || right > 590.5 || bottom < 25 || top > 723) return reject();
 			if (line === "f") {
-				paints.push({ left, right, bottom, top, order: offset });
+				paints.push({
+					left,
+					right,
+					bottom,
+					top,
+					order: offset
+				});
 			}
 			else {
 				for (const [position, end] of points.slice(1).entries()) {
 					const start = points[position]!;
 					if (start[0] !== end[0] && start[1] !== end[1]) return reject();
 					const columnBorder = stroke === "1 1 1 RG" && start[0] === end[0] && [20, 160, 200, 240].includes(start[0]!);
-					paints.push({ left: Math.min(start[0]!, end[0]!) - 0.5, right: Math.max(start[0]!, end[0]!) + 0.5, bottom: Math.min(start[1]!, end[1]!) - 0.5, top: Math.max(start[1]!, end[1]!) + 0.5, order: offset, ...(columnBorder ? { columnBorder: true as const } : {}) });
+					paints.push({
+						left: Math.min(start[0]!, end[0]!) - 0.5,
+						right: Math.max(start[0]!, end[0]!) + 0.5,
+						bottom: Math.min(start[1]!, end[1]!) - 0.5,
+						top: Math.max(start[1]!, end[1]!) + 0.5,
+						order: offset,
+						...(columnBorder
+							? { columnBorder: true as const }
+							: {})
+					});
 				}
 			}
 			points = [];
@@ -128,7 +165,14 @@ export function readKanawhaNativeRendering(objectBody: string, bboxBody: string)
 		const words = stateHtmlDescendants(page, node => node.nodeName === "word").map((node) => {
 			const [left, bottom, right, top] = ["xmin", "ymax", "xmax", "ymin"].map(name => Number(stateHtmlAttribute(node, name)));
 			if (![left, bottom, right, top].every(Number.isFinite) || left < 20 || right > 591 || bottom > 768 || top < 20 || left >= right || top >= bottom) return reject();
-			return { text: stateHtmlText(node), left, bottom: 792 - bottom, right, top: 792 - top, used: false };
+			return {
+				text: stateHtmlText(node),
+				left,
+				bottom: 792 - bottom,
+				right,
+				top: 792 - top,
+				used: false
+			};
 		});
 		if (!words.length || words.length > 6000) return reject();
 		const fields = native.draws.map((draw) => {
@@ -137,7 +181,14 @@ export function readKanawhaNativeRendering(objectBody: string, bboxBody: string)
 			const leading = draw.text.length - draw.text.trimStart().length;
 			if (!selected.length || selected.some(word => word.used) || selected.map(word => word.text).join(" ") !== draw.text.trim() || Math.abs(selected[0]!.left - draw.left - leading * draw.size * 0.278) > 0.1) throw new Error(`The Kanawha County visible position for ${draw.text.slice(0, 80)} requires review.`);
 			for (const word of selected) word.used = true;
-			return { text: draw.text.trim(), left: selected[0]!.left, right: selected.at(-1)!.right, bottom: Math.min(...selected.map(word => word.bottom)), top: Math.max(...selected.map(word => word.top)), order: draw.order };
+			return {
+				text: draw.text.trim(),
+				left: selected[0]!.left,
+				right: selected.at(-1)!.right,
+				bottom: Math.min(...selected.map(word => word.bottom)),
+				top: Math.max(...selected.map(word => word.top)),
+				order: draw.order
+			};
 		});
 		if (words.some(word => !word.used)) return reject();
 		for (const [position, field] of fields.entries()) {

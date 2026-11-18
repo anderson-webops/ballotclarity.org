@@ -12,8 +12,19 @@ const { data: session } = await useAdminSession("admin-content-session");
 
 const canPublish = computed(() => session.value?.role === "admin" && Boolean(session.value.mfaEnabledAt));
 const statusOptions = computed<AdminReviewStatus[]>(() => canPublish.value
-	? ["draft", "in-review", "needs-sources", "ready-to-publish", "published"]
-	: ["draft", "in-review", "needs-sources", "ready-to-publish"]);
+	? [
+			"draft",
+			"in-review",
+			"needs-sources",
+			"ready-to-publish",
+			"published"
+		]
+	: [
+			"draft",
+			"in-review",
+			"needs-sources",
+			"ready-to-publish"
+		]);
 const priorityOptions: AdminPriority[] = ["high", "medium", "low"];
 
 const savingId = ref<string | null>(null);
@@ -74,7 +85,9 @@ async function saveContentItem(item: AdminContentItem) {
 					status: item.status,
 				}
 			: {
-					status: item.status === "published" ? undefined : item.status,
+					status: item.status === "published"
+						? undefined
+						: item.status,
 				}),
 	});
 }

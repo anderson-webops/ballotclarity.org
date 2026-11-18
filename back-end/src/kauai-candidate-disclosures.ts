@@ -4,7 +4,20 @@ import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, p
 
 export const kauaiEthicsIndexUrl = "https://www.kauai.gov/Government/Boards-and-Commissions/Board-of-Ethics";
 export const kauaiDisclosurePdfProfile = Object.freeze({ maximumPages: 100, maximumPdfBytes: 12 * 1024 * 1024, maximumTextBytes: 4 * 1024 * 1024 });
-const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const months = [
+	"January",
+	"February",
+	"March",
+	"April",
+	"May",
+	"June",
+	"July",
+	"August",
+	"September",
+	"October",
+	"November",
+	"December"
+];
 const clean = (value: string) => value.normalize("NFC").replace(/\s+/gu, " ").trim();
 export const kauaiDisclosureHash = (value: string | Uint8Array) => createHash("sha256").update(value).digest("hex");
 function reject(): never {
@@ -21,7 +34,10 @@ export function kauaiDisclosurePublication(value: string) {
 	const url = new URL(value);
 	const match = /^\/files\/assets\/public\/v\/\d{1,2}\/boards-and-commissions\/board-of-ethics\/(20\d{2})_(\d{2})(\d{2})_boe-agenda-packet\.pdf$/iu.exec(url.pathname);
 	if (!match || url.href !== value || url.origin !== "https://www.kauai.gov" || url.username || url.password || url.search || url.hash || url.port) return reject();
-	return { url: value, meetingDate: date(Number(match[1]), Number(match[2]), Number(match[3])) };
+	return {
+		url: value,
+		meetingDate: date(Number(match[1]), Number(match[2]), Number(match[3]))
+	};
 }
 
 export function readKauaiDisclosureIndex(body: string, publicationUrl: string) {
@@ -35,11 +51,20 @@ export function readKauaiDisclosureIndex(body: string, publicationUrl: string) {
 		if (!match) return [];
 		const url = new URL(attribute(node, "href"), kauaiEthicsIndexUrl);
 		if (url.protocol !== "https:" || url.username || url.password || url.port || url.hash || url.href.length > 2048) return reject();
-		return [{ label, url: url.href, meetingDate: date(Number(match[1]), Number(match[2]), Number(match[3])) }];
+		return [
+			{
+				label,
+				url: url.href,
+				meetingDate: date(Number(match[1]), Number(match[2]), Number(match[3]))
+			}
+		];
 	});
 	const matches = offered.filter(item => item.url === publication.url);
 	if (offered.length > 100 || matches.length !== 1 || matches[0]!.meetingDate !== publication.meetingDate) return reject();
-	return { publication, newerOfferedPublications: offered.filter(item => item.meetingDate > publication.meetingDate) };
+	return {
+		publication,
+		newerOfferedPublications: offered.filter(item => item.meetingDate > publication.meetingDate)
+	};
 }
 
 export interface KauaiDisclosureRecord {
@@ -74,7 +99,15 @@ export function readKauaiCandidateDisclosures(text: string, packetMeetingDate: s
 		const normalized = clean(page);
 		const identifier = /\bBOE (20\d{2})-\d{1,3}\b/u.exec(normalized);
 		const heading = /\bDATE: ([A-Za-z]+) (\d{1,2}), (20\d{2}) TO: Board of Ethics FROM: [\p{L} .,'’-]+, Administrative Assistant RE: (20\d{2}) Candidate Disclosure Following is a list of (20\d{2}) Candidates for Mayor and County Council with the dates of disclosure received:/u.exec(normalized);
-		if (!identifier || !heading || !normalized.includes("OFFICE OF BOARDS & COMMISSIONS") || new Set([identifier[1], heading[3], heading[4], heading[5], packet[1]]).size !== 1) return reject();
+		if (!identifier || !heading || !normalized.includes("OFFICE OF BOARDS & COMMISSIONS") || new Set([
+			identifier[1],
+			heading[3],
+			heading[4],
+			heading[5],
+			packet[1]
+		]).size !== 1) {
+			return reject();
+		}
 		const year = Number(heading[3]);
 		const reportDate = date(year, months.indexOf(heading[1]!) + 1, Number(heading[2]));
 		if (reportDate > packetMeetingDate) return reject();
@@ -96,12 +129,29 @@ export function readKauaiCandidateDisclosures(text: string, packetMeetingDate: s
 			if (!row || row[1] !== row[1]!.trim()) return reject();
 			const name = row[1]!;
 			const disclosureReceived = receivedDate(row[2]!, year, reportDate);
-			const disclosureUpdated = row[3] ? receivedDate(row[3], year, reportDate) : null;
+			const disclosureUpdated = row[3]
+				? receivedDate(row[3], year, reportDate)
+				: null;
 			if (disclosureUpdated && disclosureUpdated < disclosureReceived) return reject();
-			records.push({ id: kauaiDisclosureHash(`HI\nKauai County\n${year}\n${office}\n${name}`).slice(0, 24), name, office, disclosureReceived, disclosureUpdated, sourcePage: index + 1 });
+			records.push({
+				id: kauaiDisclosureHash(`HI\nKauai County\n${year}\n${office}\n${name}`).slice(0, 24),
+				name,
+				office,
+				disclosureReceived,
+				disclosureUpdated,
+				sourcePage: index + 1
+			});
 		}
 		if (!council || !records.some(record => record.office === "County Council") || records.length > 100 || new Set(records.map(record => record.name)).size !== records.length) return reject();
-		return [{ cycleYear: year, reportDate, memoId: identifier[0], records, sourcePage: index + 1 }];
+		return [
+			{
+				cycleYear: year,
+				reportDate,
+				memoId: identifier[0],
+				records,
+				sourcePage: index + 1
+			}
+		];
 	}).sort((first, second) => second.reportDate.localeCompare(first.reportDate));
 	if (!reports.length || reports.filter(report => report.reportDate === reports[0]!.reportDate).length !== 1) return reject();
 	return { ...reports[0]!, packetPages: pages.length };

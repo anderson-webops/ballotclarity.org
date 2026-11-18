@@ -16,7 +16,16 @@ function requireValue(value: unknown, detail: string): asserts value {
 	if (!value) throw new Error(`The Cassia ballot question requires review: ${detail}.`);
 }
 function questionId(source: StateBallotSource, question: Omit<StateBallotQuestion, "id">) {
-	return createHash("sha256").update(JSON.stringify([source.id, source.electionDate, question.audience, question.title, question.officialText, question.choices, question.pages, question.sourceUrl])).digest("hex").slice(0, 24);
+	return createHash("sha256").update(JSON.stringify([
+		source.id,
+		source.electionDate,
+		question.audience,
+		question.title,
+		question.officialText,
+		question.choices,
+		question.pages,
+		question.sourceUrl
+	])).digest("hex").slice(0, 24);
 }
 export function readCassiaQuestionMetadata(source: StateBallotSource, data: Record<string, unknown>) {
 	requireValue(data.sourceAsOf === undefined && data.sourceAsOfDate === undefined, "unsupported source clock");
@@ -30,9 +39,15 @@ export function readCassiaQuestionMetadata(source: StateBallotSource, data: Reco
 		requireValue(typeof question.title === "string" && question.title.length <= 350 && typeof question.audience === "string" && (question.audience === "Idaho" || /^[A-Z][A-Z .0-9&'’-]+(?:SCHOOL DISTRICT NO\. [1-9]\d{0,3}|RURAL FIRE PROTECTION DISTRICT)$/u.test(question.audience)) && typeof question.officialText === "string" && question.officialText.length >= 20 && question.officialText.length <= 24000 && !containsControlCharacters(question.title + question.audience + question.officialText.replace(/\n/gu, "")) && !question.officialText.includes("\uFFFD"), "stored wording and audience");
 		requireValue(Array.isArray(question.choices) && question.choices.length >= 2 && question.choices.length <= 20 && question.choices.every(choice => typeof choice === "string" && choice.length > 0 && choice.length <= 1000 && choice.trim() === choice && !containsControlCharacters(choice)) && new Set(question.choices).size === question.choices.length, "stored choices");
 		const advisory = question.title === "Idaho advisory question";
-		requireValue(question.audience === "Idaho" ? /^(?:House Joint Resolution [1-9]\d{0,2}|Proposition [1-9]\d{0,2}|Idaho advisory question)$/u.test(question.title) : question.title === `${question.audience} ${question.audience.includes("SCHOOL DISTRICT") ? "supplemental levy" : "temporary override levy"}`, "printed title");
+		requireValue(question.audience === "Idaho"
+			? /^(?:House Joint Resolution [1-9]\d{0,2}|Proposition [1-9]\d{0,2}|Idaho advisory question)$/u.test(question.title)
+			: question.title === `${question.audience} ${question.audience.includes("SCHOOL DISTRICT")
+				? "supplemental levy"
+				: "temporary override levy"}`, "printed title");
 		requireValue(question.explicitlyAdvisory === advisory && question.voterApplicabilityVerified === false && (advisory || question.choices.length === 2) && (question.audience !== "Idaho" || advisory || isDeepStrictEqual(question.choices, ["Yes", "No"])), "stored voting instruction");
-		requireValue(question.audience === "Idaho" ? question.sourceUrl === urls[0] : urls.slice(1).includes(question.sourceUrl) && question.choices[0]?.startsWith("IN FAVOR OF ") && question.choices[1]?.startsWith("AGAINST "), "question publication and choice labels");
+		requireValue(question.audience === "Idaho"
+			? question.sourceUrl === urls[0]
+			: urls.slice(1).includes(question.sourceUrl) && question.choices[0]?.startsWith("IN FAVOR OF ") && question.choices[1]?.startsWith("AGAINST "), "question publication and choice labels");
 		requireValue(typeof question.sourceUrl === "string" && urls.includes(question.sourceUrl) && Array.isArray(question.pages) && question.pages.length === 1 && Number.isSafeInteger(question.pages[0]) && question.pages[0]! >= 1 && question.pages[0]! <= 40 && question.id === questionId(source, question), "stored identity and document");
 		return question;
 	});
@@ -49,8 +64,20 @@ export function buildCassiaBallotQuestions(source: StateBallotSource, evidence: 
 		}
 		const sourceUrl = documents[item.sourceDocumentIndex]?.url;
 		requireValue(sourceUrl, "document binding");
-		const question = { audience: item.audience, title: item.title, officialText: item.officialText, choices: item.choices as StateBallotQuestion["choices"], pages: [item.pageNumber], sourceUrl, explicitlyAdvisory: item.title === "Idaho advisory question", voterApplicabilityVerified: false as const };
-		ballotQuestions.push({ id: questionId(source, question), ...question });
+		const question = {
+			audience: item.audience,
+			title: item.title,
+			officialText: item.officialText,
+			choices: item.choices as StateBallotQuestion["choices"],
+			pages: [item.pageNumber],
+			sourceUrl,
+			explicitlyAdvisory: item.title === "Idaho advisory question",
+			voterApplicabilityVerified: false as const
+		};
+		ballotQuestions.push({
+			id: questionId(source, question),
+			...question
+		});
 	}
 	readCassiaQuestionMetadata(source, { ballotQuestions, documents, retrievalPolicy: "automatic" });
 	for (const prior of previous) {

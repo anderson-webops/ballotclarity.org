@@ -9,9 +9,16 @@ import { fileURLToPath } from "node:url";
 import { parse as parseCsv } from "csv-parse/sync";
 import { fultonMunicipalRunoffCsv, prepareFultonMunicipalRunoff } from "../src/fulton-municipal-runoff.js";
 
-const source = { url: "https://www.fultoncountyga.gov/-/media/elections/runoff.pdf", sha256: "a".repeat(64), bytes: 100, retrievedAt: "2026-11-13T20:38:39.838Z" };
+const source = {
+	url: "https://www.fultoncountyga.gov/-/media/elections/runoff.pdf",
+	sha256: "a".repeat(64),
+	bytes: 100,
+	retrievedAt: "2026-11-13T20:38:39.838Z"
+};
 function fixture(date = "December 02, 2025") {
-	const field = (top: number, left: number, text: string, font: number, bold = false) => `<text top="${top}" left="${left}" width="150" height="20" font="${font}">${bold ? `<b>${text}</b>` : text}</text>`;
+	const field = (top: number, left: number, text: string, font: number, bold = false) => `<text top="${top}" left="${left}" width="150" height="20" font="${font}">${bold
+		? `<b>${text}</b>`
+		: text}</text>`;
 	return `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE pdf2xml SYSTEM "pdf2xml.dtd"><pdf2xml><page number="1" width="918" height="1512">
 	<fontspec id="1" size="18" family="ABCDEF+Arial" color="#231f20"/><fontspec id="2" size="17" family="ABCDEF+ArialNarrow" color="#231f20"/>
 	<fontspec id="3" size="14" family="ABCDEF+ArialMT" color="#231f20"/><fontspec id="4" size="15" family="ABCDEF+ArialNarrow" color="#231f20"/>
@@ -84,7 +91,20 @@ test("municipal preparation refuses a mismatched original PDF before invoking na
 	const pdf = Buffer.from("%PDF-1.4\ncontrolled fixture\n");
 	await writeFile(join(directory, "ballot.pdf"), pdf);
 	await writeFile(join(directory, "source.json"), JSON.stringify({ ...source, bytes: pdf.length }));
-	const result = spawnSync(process.execPath, ["--import", "tsx", fileURLToPath(new URL("../src/prepare-fulton-municipal-runoff.ts", import.meta.url)), join(directory, "ballot.pdf"), join(directory, "source.json")], { encoding: "utf8", timeout: 5000, env: { ...process.env, STATE_BALLOT_PDFTOHTML: join(directory, "unavailable-extractor") } });
+	const result = spawnSync(process.execPath, [
+		"--import",
+		"tsx",
+		fileURLToPath(new URL("../src/prepare-fulton-municipal-runoff.ts", import.meta.url)),
+		join(directory, "ballot.pdf"),
+		join(directory, "source.json")
+	], {
+		encoding: "utf8",
+		timeout: 5000,
+		env: {
+			...process.env,
+			STATE_BALLOT_PDFTOHTML: join(directory, "unavailable-extractor")
+		}
+	});
 	assert.equal(result.status, 1);
 	assert.equal(result.stdout, "");
 	assert.match(result.stderr, /does not match its original source capture/u);

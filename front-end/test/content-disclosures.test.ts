@@ -7,7 +7,13 @@ import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("../src/", import.meta.url));
 const source = (path: string) => readFileSync(join(root, path), "utf8");
 function vueFiles(directory: string): string[] {
-	return readdirSync(directory, { withFileTypes: true }).flatMap(entry => entry.isDirectory() ? vueFiles(join(directory, entry.name)) : entry.name.endsWith(".vue") ? [join(directory, entry.name)] : []);
+	return readdirSync(directory, { withFileTypes: true }).flatMap(entry => entry.isDirectory()
+		? vueFiles(join(directory, entry.name))
+		: entry.name.endsWith(".vue")
+			? [
+					join(directory, entry.name)
+				]
+			: []);
 }
 
 test("shared content sections cannot become disclosure controls", () => {
@@ -40,7 +46,12 @@ test("lookup results omit matching commentary without hiding voting information"
 	const panel = source("components/LookupResultsPanel.vue");
 	assert.doesNotMatch(panel, /How this result was matched|SourceProvenanceStrip/u);
 	assert.match(panel, /<section v-if="hasElectionLogistics && electionLogistics"/u);
-	for (const field of ["pollingLocations", "earlyVoteSites", "dropOffLocations", "officialSourceNote"])
+	for (const field of [
+		"pollingLocations",
+		"earlyVoteSites",
+		"dropOffLocations",
+		"officialSourceNote"
+	])
 		assert.ok(panel.includes(`electionLogistics.${field}`));
 });
 
@@ -80,7 +91,14 @@ test("comparisons link to profiles instead of repeating their secondary material
 test("representative profiles show records directly without a duplicate availability summary", () => {
 	const page = source("pages/representatives/[slug]/index.vue");
 	assert.doesNotMatch(page, /Records available|moduleStatusItems|availableModuleStatusItems|person\.enrichmentStatus/u);
-	for (const section of ["office-context", "biography", "actions", "funding", "influence", "sources"])
+	for (const section of [
+		"office-context",
+		"biography",
+		"actions",
+		"funding",
+		"influence",
+		"sources"
+	])
 		assert.ok(page.includes(`id="${section}"`));
 	assert.match(page, /<SourceList :sources="person\.sources"/u);
 	assert.match(page, /person\.value\.funding\.committeeName/u);

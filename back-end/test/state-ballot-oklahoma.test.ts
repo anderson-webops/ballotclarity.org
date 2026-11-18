@@ -21,8 +21,17 @@ test("Oklahoma registry preserves Woodward and selects a distinct statewide coll
 	assert.deepEqual(source, oklahomaSource("2026-11-03"));
 	assert.equal(configuredStateBallotSources.find(source => source.id === "ok-woodward-2026")!.retrievalPolicy, "manual-snapshot");
 	assert.equal(getStateBallotCycleFamily(source.id).discoveryUrl, oklahomaDiscoveryUrl);
-	for (const date of ["2026-11-04", "2026-02-30", "2027-11-02", "2024-11-05"]) assert.throws(() => oklahomaSource(date));
-	for (const input of [{ ...source, url: "https://other.invalid/list" }, { ...source, defaultPriority: 0 }, { ...source, retrievalPolicy: "manual-snapshot" as const }]) assert.throws(() => validateOklahomaSource(input));
+	for (const date of [
+		"2026-11-04",
+		"2026-02-30",
+		"2027-11-02",
+		"2024-11-05"
+	]) assert.throws(() => oklahomaSource(date));
+	for (const input of [
+		{ ...source, url: "https://other.invalid/list" },
+		{ ...source, defaultPriority: 0 },
+		{ ...source, retrievalPolicy: "manual-snapshot" as const }
+	]) assert.throws(() => validateOklahomaSource(input));
 	for (const value of ["https://other.invalid/2028-voter-information-calendar.html", `${oklahomaOrigin}/elections/elections-results/next-election/2028-voter-information-calendar.html?download=1`, `${oklahomaOrigin}/elections/elections-results/next-election/2026-voter-information-calendar.html`]) assert.throws(() => validateOklahomaCalendarUrl(value, "2028"));
 });
 
@@ -39,12 +48,30 @@ test("Oklahoma native tables preserve every county context, party omission and u
 	assert.equal(parsed.sourceAsOf, "10/1/2026 8:00:00 AM");
 	assert.equal(parsed.sourceAsOfDate, "2026-10-01");
 	assert.deepEqual(parseStateCandidateRecords(input.source, input.body()), parsed.records);
-	assert.deepEqual(stateRecordDocumentLinks(input.source), [{ label: "Candidate list", url: oklahomaCandidateUrl }]);
+	assert.deepEqual(stateRecordDocumentLinks(input.source), [
+		{ label: "Candidate list", url: oklahomaCandidateUrl }
+	]);
 	const local = parsed.records.find(record => record.scope === "local")!;
-	assert.equal(stateRecordMatchesDistricts(local, [{ id: "county-40001", districtType: "county", districtCode: "001", label: "Adair County", sourceSystem: "Synthetic context" }]), false);
+	assert.equal(stateRecordMatchesDistricts(local, [
+		{
+			id: "county-40001",
+			districtType: "county",
+			districtCode: "001",
+			label: "Adair County",
+			sourceSystem: "Synthetic context"
+		}
+	]), false);
 	const senator = parsed.records.find(record => record.scope === "state-senate")!;
 	assert.equal(senator.district, "17");
-	assert.equal(stateRecordMatchesDistricts(senator, [{ id: "upper-17", districtType: "state-senate", districtCode: "17", label: "Senate 17", sourceSystem: "Synthetic context" }]), true);
+	assert.equal(stateRecordMatchesDistricts(senator, [
+		{
+			id: "upper-17",
+			districtType: "state-senate",
+			districtCode: "17",
+			label: "Senate 17",
+			sourceSystem: "Synthetic context"
+		}
+	]), true);
 	assert(!parsed.records.some(record => /SUPREME COURT|QUESTION/u.test(record.office)));
 });
 
@@ -57,7 +84,10 @@ test("Oklahoma rejects altered geography, party labels, markup, omissions and so
 		["<body>", "<body style=\"display:none\">"],
 		["<body>", "<body><script>document.body.remove()</script>"],
 		["width=\"970\"", "width=\"960\""],
-		[oklahomaFixtureTable(4, "Avery Example, REPUBLICAN"), ""],
+		[
+			oklahomaFixtureTable(4, "Avery Example, REPUBLICAN"),
+			""
+		],
 		["10/1/2026 8:00:00 AM", "13/1/2026 8:00:00 AM"],
 		["10/1/2026 8:00:00 AM", "10/1/2026 18:00:00 AM"],
 		["NOVEMBER / 2026 LIST OF ELECTIONS", "JUNE / 2026 LIST OF ELECTIONS"],
@@ -72,7 +102,9 @@ test("Oklahoma discovers actual offered future calendars and validates stored me
 		assert.equal(discovery.elections[0]!.electionDate, date);
 		const catalog = discoverStateBallotElectionCycles(input.body(), "ok-seb-2026", input.epoch);
 		assert.equal(catalog.elections[0]!.oklahomaContentSha256, input.capture.candidates.sha256);
-		assert.deepEqual(stateBallotCycleSources(catalog, input.epoch), date === "2026-11-03" ? [] : [input.source]);
+		assert.deepEqual(stateBallotCycleSources(catalog, input.epoch), date === "2026-11-03"
+			? []
+			: [input.source]);
 		const parsed = parseOklahomaCandidateCapture(input.source, input.body(), createStateCandidateRecord, input.epoch);
 		const stored = serializeStoredStateSnapshot({ source: input.source, ...parsed });
 		assert.deepEqual(parseBundledStateSnapshot(input.source, stored, "automatic").records, JSON.parse(JSON.stringify(parsed.records)));
@@ -82,7 +114,12 @@ test("Oklahoma discovers actual offered future calendars and validates stored me
 			assert.throws(() => parseBundledStateSnapshot(input.source, JSON.stringify(value), "automatic"));
 		}
 	}
-	assert.throws(() => validateOklahomaElection({ electionId: null, electionDate: "2028-11-07", pageUrl: `${oklahomaCandidateUrl}?next=1`, oklahomaContentSha256: "a".repeat(64) }));
+	assert.throws(() => validateOklahomaElection({
+		electionId: null,
+		electionDate: "2028-11-07",
+		pageUrl: `${oklahomaCandidateUrl}?next=1`,
+		oklahomaContentSha256: "a".repeat(64)
+	}));
 });
 
 test("Oklahoma refuses foreign calendars, changed policies, tampered bytes and unsupported election types", () => {
@@ -117,16 +154,20 @@ test("Oklahoma collection observes policy order, reviewed 404 absence, per-host 
 	const input = oklahomaFixture("2028-11-07");
 	const requested: string[] = [];
 	const waits: number[] = [];
-	const body = await fetchOklahomaCycleDiscovery({ now: () => input.epoch, wait: async (milliseconds) => {
-		waits.push(milliseconds);
-	}, request: async (url, options) => {
-		assert.deepEqual(options.allowedHosts, [new URL(url).hostname]);
-		assert.equal(options.maxBytes, 2 * 1024 * 1024);
-		assert.equal(options.timeoutMs, 25000);
-		requested.push(url);
-		assert(input.responses.has(url));
-		return input.responses.get(url)!;
-	} });
+	const body = await fetchOklahomaCycleDiscovery({
+		now: () => input.epoch,
+		wait: async (milliseconds) => {
+			waits.push(milliseconds);
+		},
+		request: async (url, options) => {
+			assert.deepEqual(options.allowedHosts, [new URL(url).hostname]);
+			assert.equal(options.maxBytes, 2 * 1024 * 1024);
+			assert.equal(options.timeoutMs, 25000);
+			requested.push(url);
+			assert(input.responses.has(url));
+			return input.responses.get(url)!;
+		}
+	});
 	assert.equal(parseOklahomaCandidateCapture(input.source, body, createStateCandidateRecord, input.epoch).records.length, 169);
 	assert.equal(requested.length, 9);
 	assert.deepEqual(requested.slice(0, 2), [`${oklahomaOrigin}/robots.txt`, `${oklahomaHostingOrigin}/robots.txt`]);
@@ -138,10 +179,21 @@ test("Oklahoma transport stops before candidate access on policy denial, redirec
 	for (const status of [200, 301, 401, 403, 429, 503]) {
 		const input = oklahomaFixture();
 		const requests: string[] = [];
-		await assert.rejects(fetchOklahomaCycleDiscovery({ now: () => input.epoch, wait: async () => {}, request: async (url) => {
-			requests.push(url);
-			return url === `${oklahomaHostingOrigin}/robots.txt` ? { status, body: Buffer.from("User-agent: *\nAllow: /\n"), contentType: "text/plain", etag: undefined } : input.responses.get(url)!;
-		} }));
+		await assert.rejects(fetchOklahomaCycleDiscovery({
+			now: () => input.epoch,
+			wait: async () => {},
+			request: async (url) => {
+				requests.push(url);
+				return url === `${oklahomaHostingOrigin}/robots.txt`
+					? {
+							status,
+							body: Buffer.from("User-agent: *\nAllow: /\n"),
+							contentType: "text/plain",
+							etag: undefined
+						}
+					: input.responses.get(url)!;
+			}
+		}));
 		assert(!requests.includes(oklahomaCandidateUrl));
 	}
 });
@@ -150,20 +202,33 @@ test("Oklahoma cycles persist, repeat and restart without new publisher requests
 	const input = oklahomaFixture("2028-11-07");
 	const directory = await mkdtemp(join(tmpdir(), "oklahoma-cycles-"));
 	try {
-		const options = { familyId: "ok-seb-2026", catalogPath: join(directory, "cycles.json"), dataDirectory: join(directory, "snapshots"), now: () => input.epoch, fetchDiscovery: async () => input.body() };
+		const options = {
+			familyId: "ok-seb-2026",
+			catalogPath: join(directory, "cycles.json"),
+			dataDirectory: join(directory, "snapshots"),
+			now: () => input.epoch,
+			fetchDiscovery: async () => input.body()
+		};
 		const first = await syncStateBallotCycles(options);
 		assert.equal(first.results[0]!.status, "available");
 		assert.equal(first.results[0]!.records, 169);
 		assert.equal(first.results[0]!.imported, true);
 		let candidateRequests = 0;
-		const second = await syncStateBallotCycles({ ...options, fetchCandidates: async () => {
-			candidateRequests++;
-			throw new Error("Repeated candidate requests are unnecessary.");
-		} });
+		const second = await syncStateBallotCycles({
+			...options,
+			fetchCandidates: async () => {
+				candidateRequests++;
+				throw new Error("Repeated candidate requests are unnecessary.");
+			}
+		});
 		assert.equal(second.results[0]!.records, 169);
 		assert.equal(candidateRequests, 0);
 		assert.equal(second.catalogChanged, false);
-		const repository = createStateBallotRepository({ sources: [input.source], dataDirectory: options.dataDirectory, now: () => input.epoch });
+		const repository = createStateBallotRepository({
+			sources: [input.source],
+			dataDirectory: options.dataDirectory,
+			now: () => input.epoch
+		});
 		assert.equal((await repository.getSnapshot("OK", input.source.id))!.records.length, 169);
 		const stored = await createStateBallotStorage(options.dataDirectory).read(input.source);
 		assert.equal(stored!.sourceAsOf, "10/1/2028 8:00:00 AM");
@@ -176,18 +241,37 @@ test("Oklahoma catalog roll-forward preserves historical cohorts and holds activ
 	const next = oklahomaFixture("2030-11-05");
 	const directory = await mkdtemp(join(tmpdir(), "oklahoma-rollover-"));
 	try {
-		const options = { familyId: "ok-seb-2026", catalogPath: join(directory, "cycles.json"), dataDirectory: join(directory, "snapshots") };
-		await syncStateBallotCycles({ ...options, now: () => first.epoch, fetchDiscovery: async () => first.body() });
+		const options = {
+			familyId: "ok-seb-2026",
+			catalogPath: join(directory, "cycles.json"),
+			dataDirectory: join(directory, "snapshots")
+		};
+		await syncStateBallotCycles({
+			...options,
+			now: () => first.epoch,
+			fetchDiscovery: async () => first.body()
+		});
 		const before = await readFile(options.catalogPath);
 		const missing = oklahomaFixture("2028-11-07");
 		missing.capture.candidates.status = 404;
 		missing.capture.candidates.body = "";
 		missing.capture.candidates.sha256 = oklahomaHash("");
 		missing.capture.calendar = null;
-		await assert.rejects(syncStateBallotCycles({ ...options, now: () => first.epoch, fetchDiscovery: async () => missing.body() }), /disappeared/u);
+		await assert.rejects(syncStateBallotCycles({
+			...options,
+			now: () => first.epoch,
+			fetchDiscovery: async () => missing.body()
+		}), /disappeared/u);
 		assert.deepEqual(await readFile(options.catalogPath), before);
-		const rolled = await syncStateBallotCycles({ ...options, now: () => next.epoch, fetchDiscovery: async () => next.body() });
-		assert.deepEqual(rolled.results.map(item => [item.electionDate, item.status]), [["2028-11-07", "expired"], ["2030-11-05", "available"]]);
+		const rolled = await syncStateBallotCycles({
+			...options,
+			now: () => next.epoch,
+			fetchDiscovery: async () => next.body()
+		});
+		assert.deepEqual(rolled.results.map(item => [item.electionDate, item.status]), [
+			["2028-11-07", "expired"],
+			["2030-11-05", "available"]
+		]);
 		const catalog = JSON.parse(await readFile(options.catalogPath, "utf8"));
 		assert.deepEqual(catalog.elections.map((item: { electionDate: string }) => item.electionDate), ["2028-11-07", "2030-11-05"]);
 		assert.equal((await createStateBallotStorage(options.dataDirectory).read(first.source))!.records.length, 169);
@@ -199,7 +283,13 @@ test("Oklahoma candidate loss and publisher failures preserve accepted bytes", a
 	const input = oklahomaFixture("2028-11-07");
 	const directory = await mkdtemp(join(tmpdir(), "oklahoma-recovery-"));
 	try {
-		const options = { familyId: "ok-seb-2026", catalogPath: join(directory, "cycles.json"), dataDirectory: join(directory, "snapshots"), now: () => input.epoch, fetchDiscovery: async () => input.body() };
+		const options = {
+			familyId: "ok-seb-2026",
+			catalogPath: join(directory, "cycles.json"),
+			dataDirectory: join(directory, "snapshots"),
+			now: () => input.epoch,
+			fetchDiscovery: async () => input.body()
+		};
 		await syncStateBallotCycles(options);
 		const file = join(options.dataDirectory, `${input.source.id}.json`);
 		const before = await readFile(file);
@@ -208,11 +298,17 @@ test("Oklahoma candidate loss and publisher failures preserve accepted bytes", a
 		const failed = await syncStateBallotCycles(options);
 		assert.equal(failed.results[0]!.status, "unavailable");
 		assert.deepEqual(await readFile(file), before);
-		await assert.rejects(syncStateBallotCycles({ ...options, fetchDiscovery: async () => {
-			throw new Error("Publisher unavailable");
-		} }), /Publisher unavailable/u);
+		await assert.rejects(syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => {
+				throw new Error("Publisher unavailable");
+			}
+		}), /Publisher unavailable/u);
 		assert.deepEqual(await readFile(file), before);
-		const recovered = await syncStateBallotCycles({ ...options, fetchDiscovery: async () => oklahomaFixture("2028-11-07").body() });
+		const recovered = await syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => oklahomaFixture("2028-11-07").body()
+		});
 		assert.equal(recovered.results[0]!.records, 169);
 		await writeFile(join(directory, "unrelated.txt"), "preserve unrelated state");
 		assert.equal(await readFile(join(directory, "unrelated.txt"), "utf8"), "preserve unrelated state");

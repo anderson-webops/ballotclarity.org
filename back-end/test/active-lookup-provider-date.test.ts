@@ -58,7 +58,16 @@ test("cached lookups drop missing or malformed provider dates", () => {
 test("cached representative websites and portraits survive navigation safely", () => {
 	const context = buildContext();
 	context.representativeMatches[0]!.officialWebsiteUrl = "https://example.org/representative";
-	context.representativeMatches[0]!.profileImages = [{ url: "https://example.org/portrait.jpg", alt: "Alex Example", priority: 20, sourceKind: "official", sourceLabel: "Official portrait", sourceSystem: "Official office" }];
+	context.representativeMatches[0]!.profileImages = [
+		{
+			url: "https://example.org/portrait.jpg",
+			alt: "Alex Example",
+			priority: 20,
+			sourceKind: "official",
+			sourceLabel: "Official portrait",
+			sourceSystem: "Official office"
+		}
+	];
 	const restored = roundTrip(context);
 	assert.equal(restored?.representativeMatches[0]?.officialWebsiteUrl, "https://example.org/representative");
 	assert.equal(restored?.representativeMatches[0]?.profileImages?.[0]?.url, "https://example.org/portrait.jpg");

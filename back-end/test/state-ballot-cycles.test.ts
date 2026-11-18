@@ -25,7 +25,12 @@ test("discovery permits one bounded official-host redirect without weakening can
 	assert.equal(await fetchStateBallotCycleDiscovery(async (url, options) => {
 		attempts++;
 		assert.equal(url, "https://voter.votewa.gov/CandidateList.aspx");
-		assert.deepEqual(options, { allowedHosts: ["voter.votewa.gov"], maxBytes: 2 * 1024 * 1024, maxRedirects: 1, timeoutMs: 12000 });
+		assert.deepEqual(options, {
+			allowedHosts: ["voter.votewa.gov"],
+			maxBytes: 2 * 1024 * 1024,
+			maxRedirects: 1,
+			timeoutMs: 12000
+		});
 		return "official page";
 	}), "official page");
 	assert.equal(attempts, 1);
@@ -35,15 +40,59 @@ const discovery = (extra = option("906", "2027-11-02")) => `<form method="post" 
 
 function candidatePage(electionId: string, date: string, name = "Synthetic Candidate") {
 	const year = date.slice(0, 4);
-	const headers = ["District Type", "District", "Race", "Term Type", "Term Length", "Name", "Mailing Address", "Email", "Phone", "Filing Date", "Party Preference", "Status", "Election Status", "Ballot Order"];
-	const values = ["Congressional", "Congressional District 1", "U.S. Representative", "Regular", "2", name, "", "", "", `05/01/${year}`, "STATES NO PARTY PREFERENCE", "Active", "In General", "1"];
-	return `<form method="post" action="./CandidateList.aspx?e=${electionId}"><select name="${prefix}ddlElection">${option(electionId, date)}</select><select name="${prefix}ddlCounty"><option value=""></option></select><select name="ctl00$ddlLanguages"><option value="en-us">English</option></select><input type="hidden" name="${prefix}hidElectionDate" value="GENERAL ${year}"><input type="hidden" name="${prefix}hidElectionType" value="General">${["DistrictType", "Jurisdiction", "Race", "BallotName", "PetitionFilingDate", "PoliticalPartyID"].map(filter => `<input class="rgFilterBox" name="${grid}$ctl00$ctl02$ctl03$FilterTextBox_${filter}" value="">`).join("")}<table id="ctl00_ContentPlaceHolder1_grdCandidates_ctl00"><tr>${headers.map(header => `<th class="rgHeader">${header}</th>`).join("")}</tr><tr class="rgRow">${values.map((value, index) => `<td>${index === 5 ? `<a href="/genericvoterguide.aspx?e=${electionId}&amp;c=#/candidates/1001/2001">${value}</a>` : value}</td>`).join("")}</tr><tr><td><a class="rgCurrentPage">1</a><div class="rgInfoPart">1 items in 1 pages</div><input name="${grid}$ctl00$ctl03$ctl01$PageSizeComboBox" value="100"></td></tr></table></form>`;
+	const headers = [
+		"District Type",
+		"District",
+		"Race",
+		"Term Type",
+		"Term Length",
+		"Name",
+		"Mailing Address",
+		"Email",
+		"Phone",
+		"Filing Date",
+		"Party Preference",
+		"Status",
+		"Election Status",
+		"Ballot Order"
+	];
+	const values = [
+		"Congressional",
+		"Congressional District 1",
+		"U.S. Representative",
+		"Regular",
+		"2",
+		name,
+		"",
+		"",
+		"",
+		`05/01/${year}`,
+		"STATES NO PARTY PREFERENCE",
+		"Active",
+		"In General",
+		"1"
+	];
+	return `<form method="post" action="./CandidateList.aspx?e=${electionId}"><select name="${prefix}ddlElection">${option(electionId, date)}</select><select name="${prefix}ddlCounty"><option value=""></option></select><select name="ctl00$ddlLanguages"><option value="en-us">English</option></select><input type="hidden" name="${prefix}hidElectionDate" value="GENERAL ${year}"><input type="hidden" name="${prefix}hidElectionType" value="General">${[
+		"DistrictType",
+		"Jurisdiction",
+		"Race",
+		"BallotName",
+		"PetitionFilingDate",
+		"PoliticalPartyID"
+	].map(filter => `<input class="rgFilterBox" name="${grid}$ctl00$ctl02$ctl03$FilterTextBox_${filter}" value="">`).join("")}<table id="ctl00_ContentPlaceHolder1_grdCandidates_ctl00"><tr>${headers.map(header => `<th class="rgHeader">${header}</th>`).join("")}</tr><tr class="rgRow">${values.map((value, index) => `<td>${index === 5
+		? `<a href="/genericvoterguide.aspx?e=${electionId}&amp;c=#/candidates/1001/2001">${value}</a>`
+		: value}</td>`).join("")}</tr><tr><td><a class="rgCurrentPage">1</a><div class="rgInfoPart">1 items in 1 pages</div><input name="${grid}$ctl00$ctl03$ctl01$PageSizeComboBox" value="100"></td></tr></table></form>`;
 }
 
 test("official election options bind cycle dates and identifiers without guessing or treating primaries as general elections", () => {
 	const catalog = discoverWashingtonElectionCycles(discovery(), now);
-	assert.deepEqual(discoverWashingtonElectionCycles(discovery("<option value=\"2\">1900 General (11/06/1900) (General)</option>"), now).elections, [{ electionId: "899", electionDate: "2026-11-03" }]);
-	assert.deepEqual(catalog.elections, [{ electionId: "899", electionDate: "2026-11-03" }, { electionId: "906", electionDate: "2027-11-02" }]);
+	assert.deepEqual(discoverWashingtonElectionCycles(discovery("<option value=\"2\">1900 General (11/06/1900) (General)</option>"), now).elections, [
+		{ electionId: "899", electionDate: "2026-11-03" }
+	]);
+	assert.deepEqual(catalog.elections, [
+		{ electionId: "899", electionDate: "2026-11-03" },
+		{ electionId: "906", electionDate: "2027-11-02" }
+	]);
 	const [future] = stateBallotCycleSources(catalog);
 	assert.equal(future!.id, "wa-general-2027-11-02");
 	assert.equal(future!.label, "Washington general-election candidate list (2027)");
@@ -64,20 +113,35 @@ test("running record routes discover a new cycle without restarting and retain a
 		process.env.STATE_BALLOT_DATA_DIR = dataDirectory;
 		process.env.STATE_BALLOT_ENABLED_STATES = "WA";
 		delete process.env.STATE_BALLOT_ENABLED_SOURCES;
-		const repository = createStateBallotRepository({ now: () => now, fetchText: async () => {
-			throw new Error("Live publisher requests are disabled");
-		} });
+		const repository = createStateBallotRepository({
+			now: () => now,
+			fetchText: async () => {
+				throw new Error("Live publisher requests are disabled");
+			}
+		});
 		const app = express();
 		registerStateRecordRoutes(app, repository);
 		const server = app.listen(0, "127.0.0.1");
 		await once(server, "listening");
-		close = () => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+		close = () => new Promise<void>((resolve, reject) => server.close(error => error
+			? reject(error)
+			: resolve()));
 		const address = server.address();
 		assert.ok(address && typeof address === "object");
 		const origin = `http://127.0.0.1:${address.port}`;
 		const sourceId = "wa-general-2028-11-07";
 		assert.equal((await fetch(`${origin}/api/state-records/WA?source=${sourceId}`)).status, 400);
-		await syncStateBallotCycles({ catalogPath, dataDirectory, now: () => now, fetchDiscovery: async () => discovery(option("990", "2028-11-07")), fetchCandidates: async source => JSON.stringify({ pages: [candidatePage(new URL(source.url).searchParams.get("e")!, source.electionDate)] }) });
+		await syncStateBallotCycles({
+			catalogPath,
+			dataDirectory,
+			now: () => now,
+			fetchDiscovery: async () => discovery(option("990", "2028-11-07")),
+			fetchCandidates: async source => JSON.stringify({
+				pages: [
+					candidatePage(new URL(source.url).searchParams.get("e")!, source.electionDate)
+				]
+			})
+		});
 		const response = await fetch(`${origin}/api/state-records/WA?source=${sourceId}`);
 		assert.equal(response.status, 200);
 		const payload = await response.json();
@@ -97,13 +161,46 @@ test("running record routes discover a new cycle without restarting and retain a
 });
 
 test("discovery refuses changed controls, duplicate identities, false dates and hostile form targets", () => {
-	for (const body of [discovery(option("906", "2027-11-03")), discovery(option("899", "2027-11-02")), discovery(option("906", "2026-11-03")), discovery(option("906", "2027-11-02") + option("907", "2027-11-02")), discovery().replace("./CandidateList.aspx?e=899", "https://example.com/CandidateList.aspx"), discovery().replace("ddlElection", "renamed"), discovery().replace("GENERAL 2027", "GENERAL 2028"), discovery().repeat(2)])
+	for (const body of [
+		discovery(option("906", "2027-11-03")),
+		discovery(option("899", "2027-11-02")),
+		discovery(option("906", "2026-11-03")),
+		discovery(option("906", "2027-11-02") + option("907", "2027-11-02")),
+		discovery().replace("./CandidateList.aspx?e=899", "https://example.com/CandidateList.aspx"),
+		discovery().replace("ddlElection", "renamed"),
+		discovery().replace("GENERAL 2027", "GENERAL 2028"),
+		discovery().repeat(2)
+	])
 		assert.throws(() => discoverWashingtonElectionCycles(body, now));
 });
 
 test("catalog contracts preserve parser, source approvals, manual source boundaries and provenance", () => {
 	const catalog = discoverWashingtonElectionCycles(discovery(), now);
-	for (const value of [{ ...catalog, familyId: "ar-washington-2026" }, { ...catalog, url: "https://example.com/" }, { ...catalog, sourceConfigurationSha256: "0".repeat(64) }, { ...catalog, discovery: { ...catalog.discovery, retrievedAt: "2027-01-01T00:00:00.000Z" } }, { ...catalog, elections: [{ electionId: "../escape", electionDate: "2027-11-02" }] }, { ...catalog, elections: [{ electionId: "906", electionDate: "2027-11-02", url: "http://localhost/" }] }, { ...catalog, elections: [] }])
+	for (const value of [
+		{ ...catalog, familyId: "ar-washington-2026" },
+		{ ...catalog, url: "https://example.com/" },
+		{
+			...catalog,
+			sourceConfigurationSha256: "0".repeat(64)
+		},
+		{
+			...catalog,
+			discovery: { ...catalog.discovery, retrievedAt: "2027-01-01T00:00:00.000Z" }
+		},
+		{
+			...catalog,
+			elections: [
+				{ electionId: "../escape", electionDate: "2027-11-02" }
+			]
+		},
+		{
+			...catalog,
+			elections: [
+				{ electionId: "906", electionDate: "2027-11-02", url: "http://localhost/" }
+			]
+		},
+		{ ...catalog, elections: [] }
+	])
 		assert.throws(() => parseStateBallotCycleCatalog(value, now));
 });
 
@@ -136,40 +233,80 @@ test("a synthetic 2028 cycle runs discovery, strict page fetch, normalization, a
 	try {
 		const catalogPath = join(directory, "cycles.json");
 		const fetches: string[] = [];
-		const options = { catalogPath, dataDirectory: join(directory, "data"), now: () => now, fetchDiscovery: async () => discovery(option("990", "2028-11-07")), fetchCandidates: async (source: typeof original) => {
-			fetches.push(source.id);
-			return fetchWashingtonCandidatePages(source, async () => candidatePage(new URL(source.url).searchParams.get("e")!, source.electionDate), { allowedHosts: ["voter.votewa.gov"], maxBytes: 12 * 1024 * 1024, maxRedirects: 0, timeoutMs: 12000 });
-		} };
+		const options = {
+			catalogPath,
+			dataDirectory: join(directory, "data"),
+			now: () => now,
+			fetchDiscovery: async () => discovery(option("990", "2028-11-07")),
+			fetchCandidates: async (source: typeof original) => {
+				fetches.push(source.id);
+				return fetchWashingtonCandidatePages(source, async () => candidatePage(new URL(source.url).searchParams.get("e")!, source.electionDate), {
+					allowedHosts: ["voter.votewa.gov"],
+					maxBytes: 12 * 1024 * 1024,
+					maxRedirects: 0,
+					timeoutMs: 12000
+				});
+			}
+		};
 		const first = await syncStateBallotCycles(options);
 		assert.deepEqual(first.results.map(result => result.status), ["available", "available"]);
 		assert.equal(fetches.length, 2);
 		const bytes = await readFile(catalogPath);
-		const second = await syncStateBallotCycles({ ...options, now: () => now + 1000 });
+		const second = await syncStateBallotCycles({
+			...options,
+			now: () => now + 1000
+		});
 		assert.equal(second.catalogChanged, false);
 		assert.equal(fetches.length, 2);
 		assert.deepEqual(await readFile(catalogPath), bytes);
 		const sources = resolveStateBallotConfiguration({ STATE_BALLOT_CYCLE_CATALOG: catalogPath, STATE_BALLOT_ENABLED_STATES: "WA" }).sources;
-		const cold = createStateBallotRepository({ sources, dataDirectory: options.dataDirectory, now: options.now, fetchText: async () => {
-			throw new Error("Cold read must use persisted data");
-		} });
+		const cold = createStateBallotRepository({
+			sources,
+			dataDirectory: options.dataDirectory,
+			now: options.now,
+			fetchText: async () => {
+				throw new Error("Cold read must use persisted data");
+			}
+		});
 		const current = await cold.getSnapshot("WA", original.id);
 		const future = await cold.getSnapshot("WA", "wa-general-2028-11-07");
 		assert.equal(future!.records[0]!.name, "Synthetic Candidate");
 		assert.notEqual(current!.records[0]!.id, future!.records[0]!.id);
 		assert.equal(future!.source.electionDate, "2028-11-07");
-		assert.throws(() => parseStateCandidateRecords(future!.source, JSON.stringify({ pages: [candidatePage("899", "2026-11-03")] })));
+		assert.throws(() => parseStateCandidateRecords(future!.source, JSON.stringify({
+			pages: [
+				candidatePage("899", "2026-11-03")
+			]
+		})));
 		const stored = await readFile(join(options.dataDirectory, `${future!.source.id}.json`));
-		const failed = await syncStateBallotCycles({ ...options, now: () => now + 5 * 3600000, fetchCandidates: async () => {
-			throw new Error("403, stop this source");
-		} });
+		const failed = await syncStateBallotCycles({
+			...options,
+			now: () => now + 5 * 3600000,
+			fetchCandidates: async () => {
+				throw new Error("403, stop this source");
+			}
+		});
 		assert.ok(failed.results.every(result => result.status === "unavailable"));
 		assert.deepEqual(await readFile(join(options.dataDirectory, `${future!.source.id}.json`)), stored);
 		assert.equal((await createStateBallotStorage(options.dataDirectory).read(future!.source))!.records.length, 1);
-		const isolated = await syncStateBallotCycles({ ...options, now: () => now + 5 * 3600000, fetchCandidates: async source => source.id === original.id ? JSON.stringify({ pages: [candidatePage("899", source.electionDate, "Updated Synthetic Candidate")] }) : "changed schema" });
+		const isolated = await syncStateBallotCycles({
+			...options,
+			now: () => now + 5 * 3600000,
+			fetchCandidates: async source => source.id === original.id
+				? JSON.stringify({
+						pages: [
+							candidatePage("899", source.electionDate, "Updated Synthetic Candidate")
+						]
+					})
+				: "changed schema"
+		});
 		assert.deepEqual(isolated.results.map(result => result.status), ["available", "unavailable"]);
 		assert.deepEqual(await readFile(join(options.dataDirectory, `${future!.source.id}.json`)), stored);
 		assert.equal((await createStateBallotStorage(options.dataDirectory).read(original))!.records[0]!.name, "Updated Synthetic Candidate");
-		await assert.rejects(syncStateBallotCycles({ ...options, fetchDiscovery: async () => discovery() }), /disappeared/u);
+		await assert.rejects(syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => discovery()
+		}), /disappeared/u);
 		assert.deepEqual(await readFile(catalogPath), bytes);
 	}
 	finally { await rm(directory, { recursive: true, force: true }); }
@@ -181,21 +318,35 @@ test("synchronization reports durable-write failures and preserves catalog bytes
 		const catalogPath = join(directory, "cycles.json");
 		const dataDirectory = join(directory, "not-a-directory");
 		await mkdir(dataDirectory);
-		const options = { catalogPath, dataDirectory, now: () => now, enabledSourceIds: [original.id], fetchDiscovery: async () => discovery(), fetchCandidates: async () => {
-			await rm(dataDirectory, { recursive: true });
-			await writeFile(dataDirectory, "synthetic storage failure");
-			return JSON.stringify({ pages: [candidatePage("899", original.electionDate)] });
-		} };
+		const options = {
+			catalogPath,
+			dataDirectory,
+			now: () => now,
+			enabledSourceIds: [original.id],
+			fetchDiscovery: async () => discovery(),
+			fetchCandidates: async () => {
+				await rm(dataDirectory, { recursive: true });
+				await writeFile(dataDirectory, "synthetic storage failure");
+				return JSON.stringify({
+					pages: [
+						candidatePage("899", original.electionDate)
+					]
+				});
+			}
+		};
 		const result = await syncStateBallotCycles(options);
 		assert.equal(result.results.length, 1);
 		assert.equal(result.results[0]!.status, "persistence-failed");
 		assert.equal(await readFile(dataDirectory, "utf8"), "synthetic storage failure");
 		const accepted = await readFile(catalogPath);
 		let calls = 0;
-		await assert.rejects(syncStateBallotCycles({ ...options, fetchDiscovery: async () => {
-			calls++;
-			throw new Error("403: access denied");
-		} }), /403/u);
+		await assert.rejects(syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => {
+				calls++;
+				throw new Error("403: access denied");
+			}
+		}), /403/u);
 		assert.equal(calls, 1);
 		assert.deepEqual(await readFile(catalogPath), accepted);
 	}

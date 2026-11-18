@@ -10,7 +10,14 @@ const clean = (value: string) => value.replace(/\s+/gu, " ").trim();
 const fields = "audience,choices,explicitlyAdvisory,id,officialText,pages,title,voterApplicabilityVerified";
 
 export function fultonQuestionId(source: StateBallotSource, question: Omit<StateBallotQuestion, "id">) {
-	return createHash("sha256").update(JSON.stringify([source.id, source.electionDate, question.audience, question.title, clean(question.officialText), question.pages])).digest("hex").slice(0, 24);
+	return createHash("sha256").update(JSON.stringify([
+		source.id,
+		source.electionDate,
+		question.audience,
+		question.title,
+		clean(question.officialText),
+		question.pages
+	])).digest("hex").slice(0, 24);
 }
 
 function precedingHeading(lines: string[], marker: number) {
@@ -62,7 +69,13 @@ export function parseFultonBallotQuestions(source: StateBallotSource, body: stri
 				if (/Yes\s*(?:or|\/)\s*No/iu.test(line)) throw new Error("The Fulton question choices require review.");
 				return [];
 			}
-			return [{ index, first: match[1]?.trim() ?? "", constitutional: /^\d+\. /u.test(match[1] ?? "") }];
+			return [
+				{
+					index,
+					first: match[1]?.trim() ?? "",
+					constitutional: /^\d+\. /u.test(match[1] ?? "")
+				}
+			];
 		});
 		if (!markers.length) {
 			if ((questionsStarted && page.trim()) || /\bShall /u.test(page)) throw new Error("A Fulton question continuation requires review.");
@@ -71,14 +84,20 @@ export function parseFultonBallotQuestions(source: StateBallotSource, body: stri
 		questionsStarted = true;
 		if (markers.some(marker => marker.constitutional !== markers[0]!.constitutional))
 			throw new Error("The Fulton question sections require review.");
-		const headings = markers.map(marker => marker.constitutional ? null : precedingHeading(lines, marker.index));
+		const headings = markers.map(marker => marker.constitutional
+			? null
+			: precedingHeading(lines, marker.index));
 		if (markers[0]!.constitutional && !lines.slice(0, markers[0]!.index).some(line => line.trim() === "Proposed Constitutional Amendments"))
 			throw new Error("The Fulton constitutional question heading is missing.");
 		for (const [position, marker] of markers.entries()) {
 			const next = markers[position + 1];
-			const end = next ? headings[position + 1]?.start ?? next.index : lines.length;
+			const end = next
+				? headings[position + 1]?.start ?? next.index
+				: lines.length;
 			const remainder = questionParagraph(lines.slice(marker.index + 1, end));
-			const printed = `${marker.first}${marker.first && remainder ? " " : ""}${remainder}`.trim();
+			const printed = `${marker.first}${marker.first && remainder
+				? " "
+				: ""}${remainder}`.trim();
 			let title = headings[position]?.title ?? "";
 			let officialText = printed;
 			if (marker.constitutional) {
@@ -93,8 +112,19 @@ export function parseFultonBallotQuestions(source: StateBallotSource, body: stri
 			}
 			if (title.length > 350 || officialText.length < 20 || officialText.length > 20000 || !/[?.][”"]?$/u.test(officialText))
 				throw new Error("The Fulton question is incomplete or exceeds its bounds.");
-			const question = { audience, title, officialText, choices: ["Yes", "No"] as [string, string], pages: [pageIndex + 1], explicitlyAdvisory: /\badvisory\b/iu.test(title), voterApplicabilityVerified: false as const };
-			questions.push({ id: fultonQuestionId(source, question), ...question });
+			const question = {
+				audience,
+				title,
+				officialText,
+				choices: ["Yes", "No"] as [string, string],
+				pages: [pageIndex + 1],
+				explicitlyAdvisory: /\badvisory\b/iu.test(title),
+				voterApplicabilityVerified: false as const
+			};
+			questions.push({
+				id: fultonQuestionId(source, question),
+				...question
+			});
 		}
 	}
 	if (questions.length > maximumQuestions || new Set(questions.map(question => question.id)).size !== questions.length)

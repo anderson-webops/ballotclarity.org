@@ -11,7 +11,11 @@ async function main() {
 		console.log(JSON.stringify(prepareMagistrateCourtDirectory(capture), null, 2));
 		return;
 	}
-	if (!directory || extra.length || (command === "import" ? !file : file !== undefined) || !["collect", "import", "export"].includes(command ?? "")) throw new Error("Use collect DIRECTORY, import DIRECTORY SNAPSHOT.json, or export DIRECTORY.");
+	if (!directory || extra.length || (command === "import"
+		? !file
+		: file !== undefined) || !["collect", "import", "export"].includes(command ?? "")) {
+		throw new Error("Use collect DIRECTORY, import DIRECTORY SNAPSHOT.json, or export DIRECTORY.");
+	}
 	if (command === "collect") {
 		console.log(JSON.stringify(await collectMagistrateCourt({ directory })));
 	}
@@ -25,6 +29,8 @@ async function main() {
 }
 
 main().catch((error) => {
-	console.error(error instanceof Error ? error.message : "Magistrate Court management failed.");
+	console.error(error instanceof Error
+		? error.message
+		: "Magistrate Court management failed.");
 	process.exitCode = 1;
 });

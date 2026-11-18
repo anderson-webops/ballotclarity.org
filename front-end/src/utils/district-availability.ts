@@ -39,8 +39,11 @@ export function buildDistrictRepresentativeCountLabel(
 	district: DistrictDescriptorInput,
 	representativeCount: number
 ) {
-	if (representativeCount > 0)
-		return `${representativeCount} current representative${representativeCount === 1 ? "" : "s"}`;
+	if (representativeCount > 0) {
+		return `${representativeCount} current representative${representativeCount === 1
+			? ""
+			: "s"}`;
+	}
 
 	const kind = deriveDistrictPipelineKind(district);
 
@@ -51,8 +54,14 @@ export function buildDistrictRepresentativeCountLabel(
 }
 
 export function buildDistrictRepresentativeSection(district: DistrictDescriptorInput, mode: "guide" | "nationwide" = "nationwide") {
-	const kind = mode === "nationwide" ? deriveDistrictPipelineKind(district) : null;
-	const heading = kind === "county" ? "County officials" : kind === "city" ? "City officials" : "District representatives";
+	const kind = mode === "nationwide"
+		? deriveDistrictPipelineKind(district)
+		: null;
+	const heading = kind === "county"
+		? "County officials"
+		: kind === "city"
+			? "City officials"
+			: "District representatives";
 	return {
 		heading,
 		emptyNote: heading === "District representatives"
@@ -65,8 +74,13 @@ export function buildDistrictRepresentativeAvailabilityNote(
 	district: DistrictDescriptorInput,
 	representativeCount: number
 ) {
-	if (representativeCount > 0)
-		return `${representativeCount} current official${representativeCount === 1 ? "" : "s"} ${representativeCount === 1 ? "is" : "are"} linked to this district.`;
+	if (representativeCount > 0) {
+		return `${representativeCount} current official${representativeCount === 1
+			? ""
+			: "s"} ${representativeCount === 1
+			? "is"
+			: "are"} linked to this district.`;
+	}
 
 	const kind = deriveDistrictPipelineKind(district);
 

@@ -8,11 +8,30 @@ const fulton = configuredStateBallotSources.find(source => source.id === "ga-ful
 
 test("election records use the exact configured jurisdiction and election without a visitor search", () => {
 	assert.deepEqual(electionRecordSource(fulton.electionDate, jurisdiction, [fulton]), { stateCode: "GA", sourceId: fulton.id });
-	assert.deepEqual(electionRecordSource("2030-11-05", jurisdiction, [{ ...fulton, id: "ga-fulton-general-2030-11-05", electionDate: "2030-11-05" }]), { stateCode: "GA", sourceId: "ga-fulton-general-2030-11-05" });
+	assert.deepEqual(electionRecordSource("2030-11-05", jurisdiction, [
+		{ ...fulton, id: "ga-fulton-general-2030-11-05", electionDate: "2030-11-05" }
+	]), { stateCode: "GA", sourceId: "ga-fulton-general-2030-11-05" });
 });
 
 test("disabled, other-state, other-county and wrong-date sources never replace the requested election", () => {
-	for (const sources of [[], [{ ...fulton, ballotPreview: false as const }], [{ ...fulton, stateCode: "MO" }], [{ ...fulton, countyName: "DeKalb County" }], [{ ...fulton, electionDate: "2024-11-05" }], [{ ...fulton, placeName: "Atlanta" }]])
+	for (const sources of [
+		[],
+		[
+			{ ...fulton, ballotPreview: false as const }
+		],
+		[
+			{ ...fulton, stateCode: "MO" }
+		],
+		[
+			{ ...fulton, countyName: "DeKalb County" }
+		],
+		[
+			{ ...fulton, electionDate: "2024-11-05" }
+		],
+		[
+			{ ...fulton, placeName: "Atlanta" }
+		]
+	])
 		assert.equal(electionRecordSource(fulton.electionDate, jurisdiction, sources), undefined);
 	assert.equal(electionRecordSource(fulton.electionDate, undefined, [fulton]), undefined);
 });

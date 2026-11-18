@@ -25,20 +25,44 @@ function index(years = ["2026"], ballotYears = years) {
 	return `<html><head><title>Clerk Election Info - Boone County, Indiana</title></head><body>${years.map(year => `<h2>${year} General Election Candidates That Have Filed</h2><a href="${workbookUrl(year)}">${year} General Candidates</a>`).join("")}${ballotYears.map(year => `<a href="${ballotUrl(year)}">${year} General Election Sample Ballots</a>`).join("")}<a href="${booneOrigin}/offices/clerk/marriage-licenses/">File for a Marriage License</a><a href="${booneOrigin}/offices/clerk/marriage-licenses/">Marriage Licenses</a><p>Boone County Government. All Rights Reserved.</p></body></html>`;
 }
 function sheets(): StateBallotWorkbookSheet[] {
-	return [{ sheet: "Sheet1", data: [
-		["Candidate Name", null, "Office", "Party", "Address", "Contact"],
-		[null, null, "Assessor"],
-		["Alex Example", null, null, "R", "Private residence", "private@example.invalid"],
-		[null, null, "Clerk"],
-		["Blair Example", null, null, "D"],
-		[null, null, "Trustee (Center Twp.)"],
-		["Casey Example", null, "Do not put on ballot", "I"],
-		[null, null, "Western Boone"],
-		[null, null, "Clinton"],
-		["Drew Example"],
-		[null, null, "Jackson"],
-		["Drew Example"],
-	] }];
+	return [
+		{
+			sheet: "Sheet1",
+			data: [
+				[
+					"Candidate Name",
+					null,
+					"Office",
+					"Party",
+					"Address",
+					"Contact"
+				],
+				[null, null, "Assessor"],
+				[
+					"Alex Example",
+					null,
+					null,
+					"R",
+					"Private residence",
+					"private@example.invalid"
+				],
+				[null, null, "Clerk"],
+				["Blair Example", null, null, "D"],
+				[null, null, "Trustee (Center Twp.)"],
+				[
+					"Casey Example",
+					null,
+					"Do not put on ballot",
+					"I"
+				],
+				[null, null, "Western Boone"],
+				[null, null, "Clinton"],
+				["Drew Example"],
+				[null, null, "Jackson"],
+				["Drew Example"],
+			]
+		}
+	];
 }
 function ballotText(year: string) {
 	const days: Record<string, string> = { 2026: "3", 2027: "2", 2028: "7" };
@@ -55,16 +79,62 @@ function fixture(options: { year?: string; clock?: number; revision?: string; un
 		},
 		request: async (url: string) => {
 			requests.push(url);
-			if (url === `${booneOrigin}/robots.txt`) return { status: 200, body: Buffer.from(options.robots ?? robots), contentType: "text/plain", etag: undefined };
-			if (url === `${booneOrigin}/` || url === booneDiscoveryUrl) return { status: 200, body: Buffer.from(url === `${booneOrigin}/` ? options.home ?? index([year]) : index([year])), contentType: "text/html", etag: undefined };
-			const role = url === workbookUrl(year) ? "workbook" : url === ballotUrl(year) ? "ballots" : null;
+			if (url === `${booneOrigin}/robots.txt`) {
+				return {
+					status: 200,
+					body: Buffer.from(options.robots ?? robots),
+					contentType: "text/plain",
+					etag: undefined
+				};
+			}
+			if (url === `${booneOrigin}/` || url === booneDiscoveryUrl) {
+				return {
+					status: 200,
+					body: Buffer.from(url === `${booneOrigin}/`
+						? options.home ?? index([year])
+						: index([year])),
+					contentType: "text/html",
+					etag: undefined
+				};
+			}
+			const role = url === workbookUrl(year)
+				? "workbook"
+				: url === ballotUrl(year)
+					? "ballots"
+					: null;
 			assert(role, url);
-			if (options.unavailable === role) return { status: 404, body: Buffer.from("<html><body>Publication not found</body></html>"), contentType: "text/html", etag: undefined };
-			return { status: 200, body: role === "workbook" ? Buffer.concat([Buffer.from([0x50, 0x4B, 0x03, 0x04]), Buffer.from(year + (options.revision ?? "initial"))]) : Buffer.from(`%PDF-${year}`), contentType: role === "workbook" ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/pdf", etag: undefined };
+			if (options.unavailable === role) {
+				return {
+					status: 404,
+					body: Buffer.from("<html><body>Publication not found</body></html>"),
+					contentType: "text/html",
+					etag: undefined
+				};
+			}
+			return {
+				status: 200,
+				body: role === "workbook"
+					? Buffer.concat([
+							Buffer.from([0x50, 0x4B, 0x03, 0x04]),
+							Buffer.from(year + (options.revision ?? "initial"))
+						])
+					: Buffer.from(`%PDF-${year}`),
+				contentType: role === "workbook"
+					? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+					: "application/pdf",
+				etag: undefined
+			};
 		},
 		readWorkbook: async (_bytes: Buffer, profile?: "standard" | "boone-candidates") => {
 			assert.equal(profile, "boone-candidates");
-			return options.empty ? [{ sheet: "Sheet1", data: [sheets()[0]!.data[0]!] }] : options.rows ?? sheets();
+			return options.empty
+				? [
+						{
+							sheet: "Sheet1",
+							data: [sheets()[0]!.data[0]!]
+						}
+					]
+				: options.rows ?? sheets();
 		},
 		extractBallots: async () => ballotText(year)
 	};
@@ -73,12 +143,32 @@ function fixture(options: { year?: string; clock?: number; revision?: string; un
 async function capture(options: Parameters<typeof fixture>[0] = {}) {
 	const input = fixture(options);
 	const discovery = await fetchBooneCycleDiscovery(input.settings);
-	const identity = options?.year === "2028" ? booneSource("2028-11-07") : source;
+	const identity = options?.year === "2028"
+		? booneSource("2028-11-07")
+		: source;
 	const body = await fetchBooneCandidateCapture(identity, { discovery, now: input.settings.now });
-	return { ...input, source: identity, discovery, body };
+	return {
+		...input,
+		source: identity,
+		discovery,
+		body
+	};
 }
 function flat(result: ReturnType<typeof parseBooneCandidateCapture>, identity = source) {
-	return { schemaVersion: 1, stateCode: identity.stateCode, sourceId: identity.id, electionDate: identity.electionDate, sourceUrl: identity.pageUrl, retrievalPolicy: "automatic", retrievedAt: result.retrievedAt, sourceSha256: result.sha256, recordCount: result.records.length, records: result.records, documents: result.documents, collectionIndexSha256: result.collectionIndexSha256 };
+	return {
+		schemaVersion: 1,
+		stateCode: identity.stateCode,
+		sourceId: identity.id,
+		electionDate: identity.electionDate,
+		sourceUrl: identity.pageUrl,
+		retrievalPolicy: "automatic",
+		retrievedAt: result.retrievedAt,
+		sourceSha256: result.sha256,
+		recordCount: result.records.length,
+		records: result.records,
+		documents: result.documents,
+		collectionIndexSha256: result.collectionIndexSha256
+	};
 }
 
 test("Boone registration is county-limited and retains its exact reviewed publisher", () => {
@@ -93,9 +183,26 @@ test("Boone registration is county-limited and retains its exact reviewed publis
 });
 
 test("Boone discovery uses actually offered controls rather than guessing document URLs", () => {
-	assert.deepEqual(readBooneCandidateIndex(index()), [{ year: "2026", workbookUrl: workbookUrl("2026"), ballotUrl: ballotUrl("2026") }]);
-	assert.deepEqual(readBooneCandidateIndex(index(["2028"], [])), [{ year: "2028", workbookUrl: workbookUrl("2028") }]);
-	for (const changed of [index().replace(workbookUrl("2026"), "https://untrusted.example/2026.xlsx"), index().replace("2026 General Candidates</a>", "2028 General Candidates</a>"), index().replace("</body>", `<a href="${workbookUrl("2026")}">2026 General Candidates</a></body>`), index().replace("<h2>", "<h2 hidden>"), index().replace("<body>", "<body><div hidden>").replace("</body>", "</div></body>")]) {
+	assert.deepEqual(readBooneCandidateIndex(index()), [
+		{
+			year: "2026",
+			workbookUrl: workbookUrl("2026"),
+			ballotUrl: ballotUrl("2026")
+		}
+	]);
+	assert.deepEqual(readBooneCandidateIndex(index(["2028"], [])), [
+		{
+			year: "2028",
+			workbookUrl: workbookUrl("2028")
+		}
+	]);
+	for (const changed of [
+		index().replace(workbookUrl("2026"), "https://untrusted.example/2026.xlsx"),
+		index().replace("2026 General Candidates</a>", "2028 General Candidates</a>"),
+		index().replace("</body>", `<a href="${workbookUrl("2026")}">2026 General Candidates</a></body>`),
+		index().replace("<h2>", "<h2 hidden>"),
+		index().replace("<body>", "<body><div hidden>").replace("</body>", "</div></body>")
+	]) {
 		assert.throws(() => readBooneCandidateIndex(changed));
 	}
 });
@@ -103,15 +210,37 @@ test("Boone discovery uses actually offered controls rather than guessing docume
 test("Boone dates come from consistent official ballot headers and respect existing bounds", () => {
 	assert.equal(readBooneBallotDate(ballotText("2026"), "2026"), "2026-11-03");
 	assert.equal(readBooneBallotDate(ballotText("2028"), "2028"), "2028-11-07");
-	for (const changed of [ballotText("2026").replace("BOONE", "OTHER"), ballotText("2026").replace("GENERAL ELECTION", "PRIMARY ELECTION"), ballotText("2028"), ballotText("2026").replace("NOVEMBER 3", "NOVEMBER 10"), ballotText("2026").replace("NOVEMBER", "OCTOBER"), ballotText("2026") + ballotText("2028"), " ".repeat(4 * 1024 * 1024 + 1)]) assert.throws(() => readBooneBallotDate(changed, "2026"));
+	for (const changed of [
+		ballotText("2026").replace("BOONE", "OTHER"),
+		ballotText("2026").replace("GENERAL ELECTION", "PRIMARY ELECTION"),
+		ballotText("2028"),
+		ballotText("2026").replace("NOVEMBER 3", "NOVEMBER 10"),
+		ballotText("2026").replace("NOVEMBER", "OCTOBER"),
+		ballotText("2026") + ballotText("2028"),
+		" ".repeat(4 * 1024 * 1024 + 1)
+	]) assert.throws(() => readBooneBallotDate(changed, "2026"));
 });
 
 test("Boone acquisition honors both reviewed wildcard groups and stops before unsafe collection", async () => {
 	const input = await capture();
-	assert.deepEqual(input.requests, [`${booneOrigin}/robots.txt`, `${booneOrigin}/`, booneDiscoveryUrl, workbookUrl("2026"), ballotUrl("2026")]);
+	assert.deepEqual(input.requests, [
+		`${booneOrigin}/robots.txt`,
+		`${booneOrigin}/`,
+		booneDiscoveryUrl,
+		workbookUrl("2026"),
+		ballotUrl("2026")
+	]);
 	assert.equal(input.delays.length, 4);
 	assert(input.delays.every(milliseconds => milliseconds >= 1000));
-	for (const settings of [{ robots: `${robots}\nDisallow: /` }, { home: index().replace("</body>", "<a href=\"/terms/\">Terms of use</a></body>") }, { home: index().replace("</body>", "<p>Automated access is prohibited.</p></body>") }]) {
+	for (const settings of [
+		{ robots: `${robots}\nDisallow: /` },
+		{
+			home: index().replace("</body>", "<a href=\"/terms/\">Terms of use</a></body>")
+		},
+		{
+			home: index().replace("</body>", "<p>Automated access is prohibited.</p></body>")
+		}
+	]) {
 		const denied = fixture(settings);
 		await assert.rejects(fetchBooneCycleDiscovery(denied.settings));
 		assert(denied.requests.length <= 2);
@@ -146,7 +275,10 @@ test("Boone snapshot freshness uses the oldest real document clock rather than a
 		return request(url);
 	};
 	const discovery = await fetchBooneCycleDiscovery(input.settings);
-	const body = await fetchBooneCandidateCapture(source, { discovery, now: () => clock });
+	const body = await fetchBooneCandidateCapture(source, {
+		discovery,
+		now: () => clock
+	});
 	const result = parseBooneCandidateCapture(source, body, createStateCandidateRecord, clock);
 	assert.notEqual(result.documents[0]!.retrievedAt, result.documents[1]!.retrievedAt);
 	assert.equal(result.retrievedAt, result.documents[0]!.retrievedAt);
@@ -156,7 +288,10 @@ test("Boone snapshot freshness uses the oldest real document clock rather than a
 test("Boone previously accepted data is never replaced by an older captured publication", async () => {
 	const earlier = await capture();
 	const later = await capture({ clock: now + 10000 });
-	const accepted = { source, ...parseBooneCandidateCapture(source, later.body, createStateCandidateRecord, now + 10000) };
+	const accepted = {
+		source,
+		...parseBooneCandidateCapture(source, later.body, createStateCandidateRecord, now + 10000)
+	};
 	assert.throws(() => parseBooneCandidateCapture(source, earlier.body, createStateCandidateRecord, now + 10000, accepted));
 });
 
@@ -184,7 +319,10 @@ test("Boone snapshot loading rejects invented qualification, publisher clocks an
 
 test("Boone future publications wait without manufacturing dates or empty successful imports", async () => {
 	const clock = Date.parse("2028-10-01T12:00:00.000Z");
-	for (const options of [{ year: "2028", clock, unavailable: "workbook" as const }, { year: "2028", clock, empty: true }]) {
+	for (const options of [
+		{ year: "2028", clock, unavailable: "workbook" as const },
+		{ year: "2028", clock, empty: true }
+	]) {
 		const input = await capture(options);
 		const catalog = discoverStateBallotElectionCycles(input.discovery, source.id, clock);
 		assert.equal(stateBallotCycleSources(catalog, clock)[0]!.id, "in-boone-general-2028-11-07");
@@ -199,7 +337,13 @@ test("Boone managed imports are durable, repeatable and readable without publish
 	const directory = await mkdtemp(join(tmpdir(), "boone-automation-"));
 	try {
 		const input = await capture();
-		const options = { familyId: source.id, catalogPath: join(directory, "cycles.json"), dataDirectory: join(directory, "records"), fetchDiscovery: async () => input.discovery, now: () => now };
+		const options = {
+			familyId: source.id,
+			catalogPath: join(directory, "cycles.json"),
+			dataDirectory: join(directory, "records"),
+			fetchDiscovery: async () => input.discovery,
+			now: () => now
+		};
 		const first = await syncStateBallotCycles(options);
 		assert.equal(first.results[0]!.imported, true);
 		assert.equal(first.results[0]!.records, 5);
@@ -207,10 +351,15 @@ test("Boone managed imports are durable, repeatable and readable without publish
 		assert.equal(repeated.catalogChanged, false);
 		assert.equal(repeated.results[0]!.imported, false);
 		let upstream = 0;
-		const repository = createStateBallotRepository({ sources: [source], dataDirectory: options.dataDirectory, now: () => now + 9 * 3600000, fetchText: async () => {
-			upstream++;
-			throw new Error("Public readers must stay offline");
-		} });
+		const repository = createStateBallotRepository({
+			sources: [source],
+			dataDirectory: options.dataDirectory,
+			now: () => now + 9 * 3600000,
+			fetchText: async () => {
+				upstream++;
+				throw new Error("Public readers must stay offline");
+			}
+		});
 		const snapshot = await repository.getSnapshot("IN", source.id);
 		assert.equal(snapshot?.records.length, 5);
 		assert.equal(snapshot?.retrievedAt, new Date(now).toISOString());
@@ -225,7 +374,13 @@ test("Boone future empty publications persist waiting state and import automatic
 		const clock = Date.parse("2028-10-01T12:00:00.000Z");
 		const future = booneSource("2028-11-07");
 		const pending = await capture({ year: "2028", clock, empty: true });
-		const options = { familyId: source.id, catalogPath: join(directory, "cycles.json"), dataDirectory: join(directory, "records"), fetchDiscovery: async () => pending.discovery, now: () => clock };
+		const options = {
+			familyId: source.id,
+			catalogPath: join(directory, "cycles.json"),
+			dataDirectory: join(directory, "records"),
+			fetchDiscovery: async () => pending.discovery,
+			now: () => clock
+		};
 		const waiting = await syncStateBallotCycles(options);
 		assert.equal(waiting.results[0]!.status, "awaiting-records");
 		assert.equal(waiting.results[0]!.imported, false);
@@ -233,11 +388,18 @@ test("Boone future empty publications persist waiting state and import automatic
 		assert(await storage.readPending(future, clock));
 		assert.equal(await storage.read(future), null);
 		const available = await capture({ year: "2028", clock, revision: "available" });
-		const populated = await syncStateBallotCycles({ ...options, fetchDiscovery: async () => available.discovery });
+		const populated = await syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => available.discovery
+		});
 		assert.equal(populated.results[0]!.status, "available");
 		assert.equal(populated.results[0]!.imported, true);
 		assert.equal((await storage.read(future))?.records.length, 5);
-		const restarted = createStateBallotRepository({ sources: [future], dataDirectory: options.dataDirectory, now: () => clock });
+		const restarted = createStateBallotRepository({
+			sources: [future],
+			dataDirectory: options.dataDirectory,
+			now: () => clock
+		});
 		assert.equal((await restarted.getSnapshot("IN", future.id))?.records.length, 5);
 		assert.equal(restarted.isAwaitingRecords?.(future.id), false);
 	}
@@ -248,29 +410,56 @@ test("Boone changed membership and vanished current publications retain accepted
 	const directory = await mkdtemp(join(tmpdir(), "boone-retained-"));
 	try {
 		const input = await capture();
-		const options = { familyId: source.id, catalogPath: join(directory, "cycles.json"), dataDirectory: join(directory, "records"), fetchDiscovery: async () => input.discovery, now: () => now };
+		const options = {
+			familyId: source.id,
+			catalogPath: join(directory, "cycles.json"),
+			dataDirectory: join(directory, "records"),
+			fetchDiscovery: async () => input.discovery,
+			now: () => now
+		};
 		await syncStateBallotCycles(options);
-		const before = await createStateBallotRepository({ sources: [source], dataDirectory: options.dataDirectory, now: () => now }).getSnapshot("IN", source.id);
+		const before = await createStateBallotRepository({
+			sources: [source],
+			dataDirectory: options.dataDirectory,
+			now: () => now
+		}).getSnapshot("IN", source.id);
 		assert(before);
 		const removed = sheets();
 		removed[0]!.data.splice(2, 1);
 		const changed = await capture({ rows: removed, revision: "removed" });
-		const failed = await syncStateBallotCycles({ ...options, fetchDiscovery: async () => changed.discovery });
+		const failed = await syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => changed.discovery
+		});
 		assert.equal(failed.results[0]!.imported, false);
-		const retained = await createStateBallotRepository({ sources: [source], dataDirectory: options.dataDirectory, now: () => now }).getSnapshot("IN", source.id);
+		const retained = await createStateBallotRepository({
+			sources: [source],
+			dataDirectory: options.dataDirectory,
+			now: () => now
+		}).getSnapshot("IN", source.id);
 		assert.deepEqual(retained, before);
 		const reversedRows = sheets();
 		reversedRows[0]!.data[6]![2] = null;
 		const reversed = await capture({ rows: reversedRows, revision: "reactivated" });
-		const reversal = await syncStateBallotCycles({ ...options, fetchDiscovery: async () => reversed.discovery });
+		const reversal = await syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => reversed.discovery
+		});
 		assert.equal(reversal.results[0]!.imported, false);
-		assert.deepEqual(await createStateBallotRepository({ sources: [source], dataDirectory: options.dataDirectory, now: () => now }).getSnapshot("IN", source.id), before);
+		assert.deepEqual(await createStateBallotRepository({
+			sources: [source],
+			dataDirectory: options.dataDirectory,
+			now: () => now
+		}).getSnapshot("IN", source.id), before);
 		const vanished = JSON.parse(input.discovery);
 		vanished.index.body = index([], []);
 		vanished.index.sha256 = booneHash(vanished.index.body);
 		vanished.documents = [];
 		const catalogBefore = await readFile(options.catalogPath);
-		await assert.rejects(syncStateBallotCycles({ ...options, fetchDiscovery: async () => JSON.stringify(vanished) }), /disappeared/u);
+		await assert.rejects(syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => JSON.stringify(vanished)
+		}), /disappeared/u);
 		assert.deepEqual(await readFile(options.catalogPath), catalogBefore);
 	}
 	finally { await rm(directory, { recursive: true, force: true }); }

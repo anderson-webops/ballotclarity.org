@@ -22,8 +22,16 @@ const read = (filename: string) => readFileSync(new URL(`../src/${filename}`, im
 
 test("official ballot calls to action use existing safe documents without inventing availability", () => {
 	assert.equal(recordPublications(source).find(isSampleBallotDocument)?.url, source.documentLinks![0]!.url);
-	assert.equal(recordPublications({ ...source, documentLinks: source.documentLinks!.slice(1) }).find(isSampleBallotDocument), undefined);
-	assert.deepEqual(recordPublications({ ...source, documentLinks: [{ label: "Sample ballot", url: "javascript:alert(1)" }] }), []);
+	assert.equal(recordPublications({
+		...source,
+		documentLinks: source.documentLinks!.slice(1)
+	}).find(isSampleBallotDocument), undefined);
+	assert.deepEqual(recordPublications({
+		...source,
+		documentLinks: [
+			{ label: "Sample ballot", url: "javascript:alert(1)" }
+		]
+	}), []);
 	assert.deepEqual(recordPublications(), []);
 	const button = read("components/OfficialSampleBallot.vue");
 	assert.match(button, /v-if="target"/u);
@@ -59,7 +67,12 @@ test("collection timestamps move to the footer while operational dates remain av
 	assert.match(updated, /v-else-if="!footer"/u);
 	const footer = read("components/AppFooter.vue");
 	assert.match(footer, /id="page-data-updated" class="text-right"/u);
-	for (const filename of ["pages/record-sources.vue", "pages/record/[state]/[id].vue", "pages/ballot-record/[source]/[id].vue", "components/BallotContentPreviews.vue"])
+	for (const filename of [
+		"pages/record-sources.vue",
+		"pages/record/[state]/[id].vue",
+		"pages/ballot-record/[source]/[id].vue",
+		"components/BallotContentPreviews.vue"
+	])
 		assert.doesNotMatch(read(filename), /Retrieved\s*\{\{/u);
 	assert.match(read("pages/privacy.vue"), /<UpdatedAt label="Effective"/u);
 	assert.match(read("pages/admin/index.vue"), /label="Last run"/u);

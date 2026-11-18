@@ -2,7 +2,9 @@ import type { FultonMunicipalEvidence } from "../../src/fulton-municipal-evidenc
 import { fultonMunicipalRenderBox, fultonMunicipalRenderFields } from "../../src/fulton-municipal-evidence.js";
 
 export function municipalNativeFixture(date = "December 02, 2025") {
-	const field = (top: number, left: number, text: string, font: number, bold = false) => `<text top="${top}" left="${left}" width="150" height="20" font="${font}">${bold ? `<b>${text}</b>` : text}</text>`;
+	const field = (top: number, left: number, text: string, font: number, bold = false) => `<text top="${top}" left="${left}" width="150" height="20" font="${font}">${bold
+		? `<b>${text}</b>`
+		: text}</text>`;
 	return `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE pdf2xml SYSTEM "pdf2xml.dtd"><pdf2xml><page number="1" width="918" height="1512">
 	<fontspec id="1" size="18" family="ABCDEF+Arial" color="#231f20"/><fontspec id="2" size="17" family="ABCDEF+ArialNarrow" color="#231f20"/>
 	<fontspec id="3" size="14" family="ABCDEF+ArialMT" color="#231f20"/><fontspec id="4" size="15" family="ABCDEF+ArialNarrow" color="#231f20"/>
@@ -20,10 +22,71 @@ export function municipalNativeFixture(date = "December 02, 2025") {
 export function municipalRenderedFixture(printedDate = "December 02, 2025"): FultonMunicipalEvidence {
 	const xml = municipalNativeFixture(printedDate);
 	const fields = fultonMunicipalRenderFields(xml);
-	const boxes = fields.map(field => ({ ...fultonMunicipalRenderBox(field), pngSha256: "a".repeat(64) }));
+	const boxes = fields.map(field => ({
+		...fultonMunicipalRenderBox(field),
+		pngSha256: "a".repeat(64)
+	}));
 	const header = "level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext";
-	const row = (level: number, page: number, left: number, top: number, width: number, height: number, text = "", confidence = -1) => [level, page, 1, 1, 1, 1, left, top, width, height, confidence, text].join("\t");
-	const ocr = `${header}\n${boxes.map((box, index) => [row(1, index + 1, 0, 0, box.width, box.height), row(5, index + 1, 2, 2, box.width - 4, box.height - 4, fields[index]!.text, 95)].join("\n")).join("\n")}\n`;
+	const row = (level: number, page: number, left: number, top: number, width: number, height: number, text = "", confidence = -1) => [
+		level,
+		page,
+		1,
+		1,
+		1,
+		1,
+		left,
+		top,
+		width,
+		height,
+		confidence,
+		text
+	].join("\t");
+	const ocr = `${header}\n${boxes.map((box, index) => [
+		row(1, index + 1, 0, 0, box.width, box.height),
+		row(5, index + 1, 2, 2, box.width - 4, box.height - 4, fields[index]!.text, 95)
+	].join("\n")).join("\n")}\n`;
 	const full = `${header}\n${row(1, 1, 0, 0, 2550, 4200)}\n${boxes.map((box, index) => row(5, 1, box.left + 2, box.top + 2, box.width - 4, box.height - 4, fields[index]!.text, 95)).join("\n")}\n`;
-	return { schemaVersion: 1, type: "fulton-municipal-rendered-evidence", source: { url: "https://www.fultoncountyga.gov/-/media/elections/runoff.pdf", sha256: "b".repeat(64), bytes: 100, retrievedAt: "2026-11-13T20:38:39.838Z" }, xml, objects: JSON.stringify({ pages: [{ object: "1 0 R" }], qpdf: [{}, { "obj:1 0 R": { value: { "/Type": "/Page", "/MediaBox": [0, 0, 612, 1008] } } }] }), page: { width: 2550, height: 4200, dpi: 300, pngSha256: "c".repeat(64), ocr: full }, fields: boxes, ocr, tools: { xmlSha256: "d".repeat(64), rendererSha256: "e".repeat(64), inspectorSha256: "f".repeat(64), readerSha256: "a".repeat(64), readerVersion: "tesseract 5.5.4" } };
+	return {
+		schemaVersion: 1,
+		type: "fulton-municipal-rendered-evidence",
+		source: {
+			url: "https://www.fultoncountyga.gov/-/media/elections/runoff.pdf",
+			sha256: "b".repeat(64),
+			bytes: 100,
+			retrievedAt: "2026-11-13T20:38:39.838Z"
+		},
+		xml,
+		objects: JSON.stringify({
+			pages: [
+				{ object: "1 0 R" }
+			],
+			qpdf: [
+				{},
+				{
+					"obj:1 0 R": {
+						value: {
+							"/Type": "/Page",
+							"/MediaBox": [0, 0, 612, 1008]
+						}
+					}
+				}
+			]
+		}),
+		page: {
+			width: 2550,
+			height: 4200,
+			dpi: 300,
+			pngSha256: "c".repeat(64),
+			ocr: full
+		},
+		fields: boxes,
+		ocr,
+		tools: {
+			xmlSha256: "d".repeat(64),
+			rendererSha256: "e".repeat(64),
+			inspectorSha256: "f".repeat(64),
+			readerSha256: "a".repeat(64),
+			readerVersion: "tesseract 5.5.4"
+		}
+	};
 }

@@ -27,10 +27,40 @@ test("Oregon reconciles the full official state statement and both county candid
 	assert.deepEqual([0, 1, 2].map(index => extracted.claims.filter(claim => claim.documentIndex === index).length), [183, 109, 46]);
 	const records = parseStateCandidateRecords(source, body);
 	assert.equal(records.length, 279);
-	assert.deepEqual(Object.fromEntries(["statewide", "congressional", "state-senate", "state-house", "local"].map(scope => [scope, records.filter(record => record.scope === scope).length])), { "statewide": 7, "congressional": 14, "state-senate": 32, "state-house": 114, "local": 112 });
+	assert.deepEqual(Object.fromEntries([
+		"statewide",
+		"congressional",
+		"state-senate",
+		"state-house",
+		"local"
+	].map(scope => [scope, records.filter(record => record.scope === scope).length])), {
+		"statewide": 7,
+		"congressional": 14,
+		"state-senate": 32,
+		"state-house": 114,
+		"local": 112
+	});
 	assert.equal(new Set(records.filter(record => record.scope === "congressional").map(record => record.district)).size, 6);
 	assert.equal(new Set(records.filter(record => record.scope === "state-house").map(record => record.district)).size, 60);
-	assert.deepEqual([...new Set(records.filter(record => record.scope === "state-senate").map(record => Number(record.district)))], [3, 4, 6, 7, 8, 10, 11, 13, 15, 16, 17, 19, 20, 24, 26]);
+	assert.deepEqual([
+		...new Set(records.filter(record => record.scope === "state-senate").map(record => Number(record.district)))
+	], [
+		3,
+		4,
+		6,
+		7,
+		8,
+		10,
+		11,
+		13,
+		15,
+		16,
+		17,
+		19,
+		20,
+		24,
+		26
+	]);
 	assert.ok(records.every(record => record.status === "listed" && !record.candidateUrl));
 });
 
@@ -121,15 +151,37 @@ test("Oregon preview only adds verified legislative types, never similarly numbe
 	assert.match(zip.disclaimer, /County-filed contests outside Multnomah County/u);
 	assert.doesNotMatch(zip.disclaimer, /Filing does not establish/u);
 	const districtMatches: LocationDistrictMatch[] = [
-		{ id: "cd:3", districtCode: "3", districtType: "congressional", label: "Congressional 3", sourceSystem: "Controlled fixture" },
-		{ id: "senate:24", districtCode: "24", districtType: "state-senate", label: "Senate 24", sourceSystem: "Controlled fixture" },
-		{ id: "house:44", districtCode: "44", districtType: "state-house", label: "House 44", sourceSystem: "Controlled fixture" },
+		{
+			id: "cd:3",
+			districtCode: "3",
+			districtType: "congressional",
+			label: "Congressional 3",
+			sourceSystem: "Controlled fixture"
+		},
+		{
+			id: "senate:24",
+			districtCode: "24",
+			districtType: "state-senate",
+			label: "Senate 24",
+			sourceSystem: "Controlled fixture"
+		},
+		{
+			id: "house:44",
+			districtCode: "44",
+			districtType: "state-house",
+			label: "House 44",
+			sourceSystem: "Controlled fixture"
+		},
 	];
 	const address = buildStateBallotPreview(snapshot, { districtMatches })!;
 	assert.equal(address.candidateCount, 12);
 	assert.equal(address.contestCount, 5);
 	assert.ok(address.contests.every(contest => !/Circuit|Attorney|City of|County|Water|PUD/u.test(contest.title)));
-	const collision = buildStateBallotPreview(snapshot, { districtMatches: [{ ...districtMatches[2]!, districtCode: "4" }] })!;
+	const collision = buildStateBallotPreview(snapshot, {
+		districtMatches: [
+			{ ...districtMatches[2]!, districtCode: "4" }
+		]
+	})!;
 	assert.ok(collision.contests.every(contest => !/Circuit|District Attorney|Councilor/u.test(contest.title)));
 });
 
@@ -145,10 +197,13 @@ test("Oregon manual snapshot preserves all original document hashes and dates wi
 	assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify(changed)), /provenance/u);
 	let now = Date.parse("2026-10-21T12:00:00Z");
 	let requests = 0;
-	const repository = (await createReviewedFixtureRepository(context, { now: () => now, fetchText: async () => {
-		requests += 1;
-		throw new Error("No external transport");
-	} }));
+	const repository = (await createReviewedFixtureRepository(context, {
+		now: () => now,
+		fetchText: async () => {
+			requests += 1;
+			throw new Error("No external transport");
+		}
+	}));
 	assert.equal((await repository.getSnapshot("OR"))?.retrievedAt, snapshot.retrievedAt);
 	now += 5 * 60 * 60 * 1000;
 	assert.equal((await repository.getSnapshot("OR"))?.retrievedAt, snapshot.retrievedAt);
@@ -173,5 +228,11 @@ test("Oregon canonical candidate and source-claim transfers preserve exact accep
 	const result = reconcileOregonBallots(body);
 	const expected = new Map(result.records.flatMap((record, index) => record.claimIndexes.map(claim => [claim, snapshot.records[index]!.id] as const)));
 	assert.equal(evidence.length, result.claims.length);
-	for (const [index, claim] of result.claims.entries()) assert.deepEqual(evidence[index], { type: "ballot-candidate-claim", candidateId: expected.get(index), ...JSON.parse(JSON.stringify(claim)) });
+	for (const [index, claim] of result.claims.entries()) {
+		assert.deepEqual(evidence[index], {
+			type: "ballot-candidate-claim",
+			candidateId: expected.get(index),
+			...JSON.parse(JSON.stringify(claim))
+		});
+	}
 });

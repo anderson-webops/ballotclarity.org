@@ -4,8 +4,18 @@ import test from "node:test";
 import { electionDocumentRobotsPolicy } from "../src/election-document-collection.js";
 import { reviewedWildcardRobotsAgents, reviewedWildcardRobotsGroup } from "../src/election-document-robots-layout.js";
 
-const layout = { sharedWildcardAgents: ["AI2Bot", "GPTBot", "ClaudeBot", "AdsBot-Google"] };
-const prefix = [...layout.sharedWildcardAgents.map(agent => `User-agent: ${agent}`), "User-agent: *"].join("\n");
+const layout = {
+	sharedWildcardAgents: [
+		"AI2Bot",
+		"GPTBot",
+		"ClaudeBot",
+		"AdsBot-Google"
+	]
+};
+const prefix = [
+	...layout.sharedWildcardAgents.map(agent => `User-agent: ${agent}`),
+	"User-agent: *"
+].join("\n");
 const body = `${prefix}\nDisallow: /account/\nDisallow: /*?format=json\nAllow: /account/public$\nCrawl-delay: 20\n`;
 
 test("explicit shared-agent groups preserve the wildcard restrictions for every listed agent", () => {
@@ -20,13 +30,25 @@ test("explicit shared-agent groups preserve the wildcard restrictions for every 
 });
 
 test("a separate restrictive AI group can never be collapsed into wildcard permission", () => {
-	for (const changed of [body.replace("User-agent: GPTBot", "User-agent: GPTBot\nDisallow: /"), `${body}\nUser-agent: GPTBot\nDisallow: /\n`, body.replace("User-agent: *", "Disallow: /\nUser-agent: *"), body.replace("User-agent: GPTBot", "User-agent: UnknownBot"), body.replace("User-agent: *", "User-agent: GPTBot")]) assert.throws(() => electionDocumentRobotsPolicy(Buffer.from(changed), [], [], undefined, undefined, layout), /robots-shared-group-changed/u);
+	for (const changed of [
+		body.replace("User-agent: GPTBot", "User-agent: GPTBot\nDisallow: /"),
+		`${body}\nUser-agent: GPTBot\nDisallow: /\n`,
+		body.replace("User-agent: *", "Disallow: /\nUser-agent: *"),
+		body.replace("User-agent: GPTBot", "User-agent: UnknownBot"),
+		body.replace("User-agent: *", "User-agent: GPTBot")
+	]) assert.throws(() => electionDocumentRobotsPolicy(Buffer.from(changed), [], [], undefined, undefined, layout), /robots-shared-group-changed/u);
 	const denied = electionDocumentRobotsPolicy(Buffer.from(`${prefix}\nDisallow: /\n`), [], [], undefined, undefined, layout);
 	assert.equal(denied.allowed("https://example.org/about"), false);
 });
 
 test("only the exact reviewed consecutive group is supported, not a broadened agent allowlist", () => {
-	for (const changed of [body.replace("AI2Bot", "AI3Bot"), body.replace("AI2Bot", "GPTBot"), body.replace("User-agent: AI2Bot\n", ""), body.replace("User-agent: AI2Bot", "Sitemap: https://example.org/sitemap.xml\nUser-agent: AI2Bot"), body.replace("User-agent: AI2Bot\nUser-agent: GPTBot", "User-agent: GPTBot\nUser-agent: AI2Bot")]) assert.throws(() => reviewedWildcardRobotsGroup(changed, layout), /shared-group-changed/u);
+	for (const changed of [
+		body.replace("AI2Bot", "AI3Bot"),
+		body.replace("AI2Bot", "GPTBot"),
+		body.replace("User-agent: AI2Bot\n", ""),
+		body.replace("User-agent: AI2Bot", "Sitemap: https://example.org/sitemap.xml\nUser-agent: AI2Bot"),
+		body.replace("User-agent: AI2Bot\nUser-agent: GPTBot", "User-agent: GPTBot\nUser-agent: AI2Bot")
+	]) assert.throws(() => reviewedWildcardRobotsGroup(changed, layout), /shared-group-changed/u);
 	assert.throws(() => electionDocumentRobotsPolicy(Buffer.from(body), ["otherbot"], [], undefined, undefined, layout), /group-review-required/u);
 	assert.throws(() => electionDocumentRobotsPolicy(Buffer.from(body), [], [], true, undefined, layout), /group-review-required/u);
 	assert.throws(() => electionDocumentRobotsPolicy(Buffer.from(body), [], [], undefined, true, layout), /group-review-required/u);
@@ -40,6 +62,18 @@ test("comments and line endings do not remove directive or review checks", () =>
 });
 
 test("layout configuration is bounded, unique and free of wildcard or directive injection", () => {
-	for (const agents of [[], ["GPTBot", "gptbot"], ["*"], ["GPTBot\nAllow: /"], ["Unknown*"], Array.from({ length: 51 }, (_, index) => `bot${index}`)]) assert.throws(() => reviewedWildcardRobotsAgents({ sharedWildcardAgents: agents }), /shared-group-review-required/u);
-	assert.deepEqual(reviewedWildcardRobotsAgents(layout), ["ai2bot", "gptbot", "claudebot", "adsbot-google"]);
+	for (const agents of [
+		[],
+		["GPTBot", "gptbot"],
+		["*"],
+		["GPTBot\nAllow: /"],
+		["Unknown*"],
+		Array.from({ length: 51 }, (_, index) => `bot${index}`)
+	]) assert.throws(() => reviewedWildcardRobotsAgents({ sharedWildcardAgents: agents }), /shared-group-review-required/u);
+	assert.deepEqual(reviewedWildcardRobotsAgents(layout), [
+		"ai2bot",
+		"gptbot",
+		"claudebot",
+		"adsbot-google"
+	]);
 });

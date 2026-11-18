@@ -11,11 +11,41 @@ import { stateBallotSources } from "../src/state-ballot-sources.js";
 import { createReviewedFixtureRepository, readReviewedStateFixture, readReviewedTransferFixture } from "./helpers/reviewed-state-fixtures.js";
 
 const expected = [
-	{ state: "MO", file: "missouri", count: 425, statewide: 4, documents: 1 },
-	{ state: "NE", file: "nebraska", count: 141, statewide: 21, documents: 2 },
-	{ state: "DC", file: "district-of-columbia", count: 90, statewide: 33, documents: 3 },
-	{ state: "NJ", file: "new-jersey", count: 39, statewide: 4, documents: 3 },
-	{ state: "AL", file: "alabama", count: 300, statewide: 27, documents: 4 },
+	{
+		state: "MO",
+		file: "missouri",
+		count: 425,
+		statewide: 4,
+		documents: 1
+	},
+	{
+		state: "NE",
+		file: "nebraska",
+		count: 141,
+		statewide: 21,
+		documents: 2
+	},
+	{
+		state: "DC",
+		file: "district-of-columbia",
+		count: 90,
+		statewide: 33,
+		documents: 3
+	},
+	{
+		state: "NJ",
+		file: "new-jersey",
+		count: 39,
+		statewide: 4,
+		documents: 3
+	},
+	{
+		state: "AL",
+		file: "alabama",
+		count: 300,
+		statewide: 27,
+		documents: 4
+	},
 ];
 
 function source(state: string) {
@@ -29,7 +59,13 @@ function body(file: string) {
 }
 
 function district(districtType: string, districtCode: string): LocationDistrictMatch {
-	return { id: `${districtType}:${districtCode}`, districtType, districtCode, label: districtCode, sourceSystem: "Controlled geography fixture" };
+	return {
+		id: `${districtType}:${districtCode}`,
+		districtType,
+		districtCode,
+		label: districtCode,
+		sourceSystem: "Controlled geography fixture"
+	};
 }
 
 test("reviewed PDF datasets load offline, retain each capture, and survive cache expiry without relabeling", async (context) => {
@@ -94,8 +130,16 @@ test("Missouri and Nebraska retention questions remain individual, with regional
 	assert.equal(new Set(judges.map(record => record.office)).size, 48);
 	assert.ok(judges.every(record => /^Shall Judge .+ be retained in office\?$/u.test(record.office)));
 	assert.equal(judges.filter(record => record.scope === "statewide").length, 2);
-	assert.equal(buildStateBallotPreview(nebraska, { districtMatches: [district("state-senate", "2")] })?.candidateCount, 23);
-	assert.equal(buildStateBallotPreview(nebraska, { districtMatches: [district("state-house", "2")] })?.candidateCount, 21);
+	assert.equal(buildStateBallotPreview(nebraska, {
+		districtMatches: [
+			district("state-senate", "2")
+		]
+	})?.candidateCount, 23);
+	assert.equal(buildStateBallotPreview(nebraska, {
+		districtMatches: [
+			district("state-house", "2")
+		]
+	})?.candidateCount, 21);
 });
 
 test("DC preserves ANC withdrawals and write-ins without confusing wards or shadow representation", async (context) => {
@@ -108,7 +152,11 @@ test("DC preserves ANC withdrawals and write-ins without confusing wards or shad
 	assert.equal(snapshot.records.filter(record => record.status === "write-in").length, 44);
 	assert.ok(snapshot.records.filter(record => /shadow delegation/u.test(record.office)).every(record => record.scope === "statewide"));
 	assert.ok(snapshot.records.filter(record => /Ward |Neighborhood/u.test(record.office)).every(record => record.scope === "local"));
-	const preview = buildStateBallotPreview(snapshot, { districtMatches: [district("state-house", "1")] });
+	const preview = buildStateBallotPreview(snapshot, {
+		districtMatches: [
+			district("state-house", "1")
+		]
+	});
 	assert.equal(preview?.candidateCount, 33);
 	assert.match(preview!.disclaimer, /U\.S\. citizenship/u);
 });
@@ -118,7 +166,11 @@ test("New Jersey reconciles amended congressional nominees without importing oth
 	assert.equal(snapshot.records.filter(record => record.scope === "statewide").length, 4);
 	assert.equal(snapshot.records.filter(record => record.scope === "congressional").length, 35);
 	assert.deepEqual(snapshot.records.filter(record => record.district === "7").map(record => record.name), ["THOMAS H. KEAN JR.", "REBECCA BENNETT", "SEAMUS PATRICK O'TOOLE"]);
-	const preview = buildStateBallotPreview(snapshot, { districtMatches: [district("congressional", "07")] });
+	const preview = buildStateBallotPreview(snapshot, {
+		districtMatches: [
+			district("congressional", "07")
+		]
+	});
 	assert.equal(preview?.candidateCount, 7);
 	assert.match(preview!.disclaimer, /Federal candidates only/u);
 });
@@ -134,8 +186,16 @@ test("Alabama includes current certifications, keeps places separate and exclude
 	assert.ok(snapshot.records.some(record => record.name === "Donald J. Mottern" && record.district === "11"));
 	assert.ok(snapshot.records.some(record => record.name === "Linda Braye Bulls" && record.office === "District Court Judge, Macon County, Place 1"));
 	assert.ok(snapshot.records.every(record => !/Executive Committee/u.test(record.office)));
-	assert.equal(buildStateBallotPreview(snapshot, { districtMatches: [district("state-house", "7")] })?.candidateCount, 30);
-	assert.equal(buildStateBallotPreview(snapshot, { districtMatches: [district("state-senate", "25")] })?.candidateCount, 29);
+	assert.equal(buildStateBallotPreview(snapshot, {
+		districtMatches: [
+			district("state-house", "7")
+		]
+	})?.candidateCount, 30);
+	assert.equal(buildStateBallotPreview(snapshot, {
+		districtMatches: [
+			district("state-senate", "25")
+		]
+	})?.candidateCount, 29);
 	assert.match(buildStateBallotPreview(snapshot, { districtMatches: [] })!.disclaimer, /printed ballots/u);
 });
 

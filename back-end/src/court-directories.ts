@@ -77,7 +77,11 @@ function policyInventory(root: StateHtmlNode, base: string) {
 
 export function verifyCourtDirectoryPolicy(body: string, index: number) {
 	const policy = courtDirectoryPublication.policies[index];
-	if (!policy || Buffer.byteLength(body) > courtDirectoryPublication.maximumDocumentBytes || digest(policy.region === "bytes" ? body : clean(stateHtmlText(content(parseStateHtml(body))))) !== policy.sha256) throw new Error("The court publisher policy requires review.");
+	if (!policy || Buffer.byteLength(body) > courtDirectoryPublication.maximumDocumentBytes || digest(policy.region === "bytes"
+		? body
+		: clean(stateHtmlText(content(parseStateHtml(body))))) !== policy.sha256) {
+		throw new Error("The court publisher policy requires review.");
+	}
 }
 
 export function parseCourtDirectory(body: string): CourtDirectoryJudge[] {
@@ -88,7 +92,10 @@ export function parseCourtDirectory(body: string): CourtDirectoryJudge[] {
 	if (headings.length !== 1 || clean(stateHtmlText(headings[0]!)).toLowerCase() !== "the judges" || !clean(stateHtmlText(main)).includes("State Court of Fulton County")) throw new Error("The court roster identity requires review.");
 	const menus = stateHtmlDescendants(root, node => node.nodeName === "ul" && stateHtmlAttribute(node, "id") === "primary-menu");
 	if (menus.length !== 1) throw new Error("The court navigation requires review.");
-	const menu = stateHtmlDescendants(menus[0]!, node => node.nodeName === "a").map(node => ({ text: clean(stateHtmlText(node)), href: stateHtmlAttribute(node, "href") })).filter(link => /^(?:Chief )?Judge /u.test(link.text));
+	const menu = stateHtmlDescendants(menus[0]!, node => node.nodeName === "a").map(node => ({
+		text: clean(stateHtmlText(node)),
+		href: stateHtmlAttribute(node, "href")
+	})).filter(link => /^(?:Chief )?Judge /u.test(link.text));
 	const people: CourtDirectoryJudge[] = [];
 	function walk(node: StateHtmlNode, ancestors: StateHtmlNode[]) {
 		if (node.nodeName === "h3") {
@@ -105,7 +112,12 @@ export function parseCourtDirectory(body: string): CourtDirectoryJudge[] {
 			const details = clean(stateHtmlText(card)).slice(label.length).trim();
 			const division = /^(CHIEF JUDGE \| )?Division ([A-Z]) \| \d[A-Z] view profile →$/iu.exec(details);
 			if (!division || Boolean(division[1]) !== (identity[1] === "Chief Judge")) throw new Error("The court judge role or division requires review.");
-			people.push({ name: identity[2], role: identity[1] as CourtDirectoryJudge["role"], division: division[2]!.toUpperCase(), profileUrl });
+			people.push({
+				name: identity[2],
+				role: identity[1] as CourtDirectoryJudge["role"],
+				division: division[2]!.toUpperCase(),
+				profileUrl
+			});
 		}
 		for (const child of node.childNodes ?? []) walk(child, [...ancestors, node]);
 	}
@@ -124,14 +136,47 @@ export function verifyCourtDirectoryProfile(body: string, judge: CourtDirectoryJ
 }
 
 export function validateCourtDirectorySnapshot(value: unknown, now = Date.now()): asserts value is CourtDirectorySnapshot {
-	if (!Number.isFinite(now) || !value || typeof value !== "object" || Array.isArray(value) || !exact(value, ["schemaVersion", "type", "sourceId", "slug", "title", "countyFips", "url", "retrievedAt", "sourceSha256", "documents", "judges"])) throw new Error("The court snapshot fields are invalid.");
+	if (!Number.isFinite(now) || !value || typeof value !== "object" || Array.isArray(value) || !exact(value, [
+		"schemaVersion",
+		"type",
+		"sourceId",
+		"slug",
+		"title",
+		"countyFips",
+		"url",
+		"retrievedAt",
+		"sourceSha256",
+		"documents",
+		"judges"
+	])) {
+		throw new Error("The court snapshot fields are invalid.");
+	}
 	const snapshot = value as CourtDirectorySnapshot;
-	if (snapshot.schemaVersion !== 1 || snapshot.type !== "court-directory" || ["sourceId", "slug", "title", "countyFips", "url"].some(key => snapshot[key as keyof CourtDirectorySnapshot] !== courtDirectoryPublication[key as keyof typeof courtDirectoryPublication]) || !Array.isArray(snapshot.documents) || !Array.isArray(snapshot.judges) || snapshot.judges.length < 2 || snapshot.judges.length > 100) throw new Error("The court snapshot identity is invalid.");
+	if (snapshot.schemaVersion !== 1 || snapshot.type !== "court-directory" || [
+		"sourceId",
+		"slug",
+		"title",
+		"countyFips",
+		"url"
+	].some(key => snapshot[key as keyof CourtDirectorySnapshot] !== courtDirectoryPublication[key as keyof typeof courtDirectoryPublication]) || !Array.isArray(snapshot.documents) || !Array.isArray(snapshot.judges) || snapshot.judges.length < 2 || snapshot.judges.length > 100) {
+		throw new Error("The court snapshot identity is invalid.");
+	}
 	for (const judge of snapshot.judges) {
-		if (!judge || !exact(judge, ["name", "role", "division", "profileUrl"]) || !validName(judge.name) || !["Judge", "Chief Judge"].includes(judge.role) || typeof judge.division !== "string" || !/^[A-Z]$/u.test(judge.division) || typeof judge.profileUrl !== "string" || officialProfileUrl(judge.profileUrl) !== judge.profileUrl) throw new Error("The court judge is invalid.");
+		if (!judge || !exact(judge, [
+			"name",
+			"role",
+			"division",
+			"profileUrl"
+		]) || !validName(judge.name) || !["Judge", "Chief Judge"].includes(judge.role) || typeof judge.division !== "string" || !/^[A-Z]$/u.test(judge.division) || typeof judge.profileUrl !== "string" || officialProfileUrl(judge.profileUrl) !== judge.profileUrl) {
+			throw new Error("The court judge is invalid.");
+		}
 	}
 	if (snapshot.judges.filter(judge => judge.role === "Chief Judge").length !== 1 || ["name", "division", "profileUrl"].some(key => new Set(snapshot.judges.map(judge => canonicalName(judge[key as keyof CourtDirectoryJudge]))).size !== snapshot.judges.length)) throw new Error("The court snapshot inventory is invalid.");
-	const urls = [...courtDirectoryPublication.policies.map(policy => policy.url), courtDirectoryPublication.url, ...snapshot.judges.map(judge => judge.profileUrl)];
+	const urls = [
+		...courtDirectoryPublication.policies.map(policy => policy.url),
+		courtDirectoryPublication.url,
+		...snapshot.judges.map(judge => judge.profileUrl)
+	];
 	if (snapshot.documents.length !== urls.length) throw new Error("The court snapshot evidence is incomplete.");
 	for (const [index, document] of snapshot.documents.entries()) {
 		if (!document || !exact(document, ["url", "capturedAt", "sha256"]) || document.url !== urls[index] || typeof document.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(document.sha256) || typeof document.capturedAt !== "string" || !Number.isFinite(Date.parse(document.capturedAt)) || new Date(document.capturedAt).toISOString() !== document.capturedAt || Date.parse(document.capturedAt) > now) throw new Error("The court snapshot provenance is invalid.");
@@ -150,7 +195,19 @@ export function prepareCourtDirectory(capture: CourtDirectoryCapture, now = Date
 	for (const [index, judge] of judges.entries()) verifyCourtDirectoryProfile(capture.documents[index + 5]!.body, judge);
 	const documents = capture.documents.map(({ url, capturedAt, sha256 }) => ({ url, capturedAt, sha256 }));
 	const { sourceId, slug, title, countyFips, url } = courtDirectoryPublication;
-	const snapshot: CourtDirectorySnapshot = { schemaVersion: 1, type: "court-directory", sourceId, slug, title, countyFips, url, retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.capturedAt)))).toISOString(), sourceSha256: digest(JSON.stringify(documents)), documents, judges };
+	const snapshot: CourtDirectorySnapshot = {
+		schemaVersion: 1,
+		type: "court-directory",
+		sourceId,
+		slug,
+		title,
+		countyFips,
+		url,
+		retrievedAt: new Date(Math.min(...documents.map(document => Date.parse(document.capturedAt)))).toISOString(),
+		sourceSha256: digest(JSON.stringify(documents)),
+		documents,
+		judges
+	};
 	validateCourtDirectorySnapshot(snapshot, now);
 	return snapshot;
 }

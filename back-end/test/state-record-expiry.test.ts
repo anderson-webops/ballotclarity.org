@@ -14,14 +14,31 @@ import { registerStateRecordRoutes } from "../src/state-records.js";
 const source = configuredStateBallotSources.find(source => source.id === "ak-doe-2026")!;
 const cutoff = Date.parse("2026-11-05T00:00:00.000Z");
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
-const snapshot: StateBallotSnapshot = { source, sha256: hash("synthetic Alaska data"), retrievedAt: "2026-10-26T01:00:00.000Z", records: Array.from({ length: 155 }, (_, index) => ({ id: hash(`synthetic-${index}`).slice(0, 24), name: `Synthetic Candidate ${index}`, office: "United States Senator", district: "", scope: "statewide", status: "listed" })) };
+const snapshot: StateBallotSnapshot = {
+	source,
+	sha256: hash("synthetic Alaska data"),
+	retrievedAt: "2026-10-26T01:00:00.000Z",
+	records: Array.from({ length: 155 }, (_, index) => ({
+		id: hash(`synthetic-${index}`).slice(0, 24),
+		name: `Synthetic Candidate ${index}`,
+		office: "United States Senator",
+		district: "",
+		scope: "statewide",
+		status: "listed"
+	}))
+};
 async function serve(clock: () => number, data = snapshot, read?: StateBallotRepository["getSnapshot"]) {
 	const reads: (string | undefined)[] = [];
-	const repository: StateBallotRepository = { sources: [data.source], async getSnapshot(state, id) {
-		reads.push(id);
-		if (read) return read(state, id);
-		return id !== undefined || stateBallotSourceIsCurrent(data.source, clock()) ? data : null;
-	} };
+	const repository: StateBallotRepository = {
+		sources: [data.source],
+		async getSnapshot(state, id) {
+			reads.push(id);
+			if (read) return read(state, id);
+			return id !== undefined || stateBallotSourceIsCurrent(data.source, clock())
+				? data
+				: null;
+		}
+	};
 	const app = express();
 	registerStateRecordRoutes(app, repository, undefined, clock);
 	registerStateRecordDetailRoutes(app, repository, null, undefined, clock);
@@ -29,11 +46,22 @@ async function serve(clock: () => number, data = snapshot, read?: StateBallotRep
 	await once(server, "listening");
 	const address = server.address();
 	assert.ok(address && typeof address === "object");
-	return { origin: `http://127.0.0.1:${address.port}`, reads, close: () => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())) };
+	return {
+		origin: `http://127.0.0.1:${address.port}`,
+		reads,
+		close: () => new Promise<void>((resolve, reject) => server.close(error => error
+			? reject(error)
+			: resolve()))
+	};
 }
 
 test("The actual state-records route honors the exact cutoff while explicit historical selection retains all 155 records", async () => {
-	for (const clock of [cutoff - 1, cutoff, cutoff + 1, Date.parse("2026-11-07T12:00:00Z")]) {
+	for (const clock of [
+		cutoff - 1,
+		cutoff,
+		cutoff + 1,
+		Date.parse("2026-11-07T12:00:00Z")
+	]) {
 		const server = await serve(() => clock);
 		try {
 			const current = await fetch(`${server.origin}/api/state-records/AK?scope=all&limit=100`);
@@ -41,9 +69,15 @@ test("The actual state-records route honors the exact cutoff while explicit hist
 			assert.equal(current.headers.get("cache-control"), "no-store");
 			const data = await current.json();
 			assert.equal(data.available, clock < cutoff);
-			assert.equal(data.total, clock < cutoff ? 155 : 0);
-			assert.equal(data.records.length, clock < cutoff ? 100 : 0);
-			assert.deepEqual(server.reads, clock < cutoff ? [undefined] : []);
+			assert.equal(data.total, clock < cutoff
+				? 155
+				: 0);
+			assert.equal(data.records.length, clock < cutoff
+				? 100
+				: 0);
+			assert.deepEqual(server.reads, clock < cutoff
+				? [undefined]
+				: []);
 			const archived = await (await fetch(`${server.origin}/api/state-records/AK?scope=all&limit=100&source=${source.id}`)).json();
 			assert.equal(archived.available, true);
 			assert.equal(archived.total, 155);
@@ -58,7 +92,9 @@ test("Default candidate detail expires at the cutoff while explicit historical d
 		const server = await serve(() => clock);
 		try {
 			const url = `${server.origin}/api/state-records/AK/${snapshot.records[0]!.id}`;
-			assert.equal((await fetch(url)).status, clock < cutoff ? 200 : 404);
+			assert.equal((await fetch(url)).status, clock < cutoff
+				? 200
+				: 404);
 			assert.equal((await fetch(`${url}?source=${source.id}`)).status, 200);
 		}
 		finally { await server.close(); }
@@ -66,7 +102,9 @@ test("Default candidate detail expires at the cutoff while explicit historical d
 });
 
 test("Default route lookup never promotes a null current read to an explicit archive read", async () => {
-	const server = await serve(() => cutoff - 1, snapshot, async (_state, id) => id === undefined ? null : snapshot);
+	const server = await serve(() => cutoff - 1, snapshot, async (_state, id) => id === undefined
+		? null
+		: snapshot);
 	try {
 		const data = await (await fetch(`${server.origin}/api/state-records/AK`)).json();
 		assert.equal(data.available, false);
@@ -83,8 +121,12 @@ test("The directory preserves historical source choices without advertising an e
 			const directory = await (await fetch(`${server.origin}/api/state-records`)).json();
 			const alaska = directory.states.find((state: { stateCode: string }) => state.stateCode === "AK");
 			assert.equal(alaska.configured, true);
-			assert.equal(alaska.electionDate, clock < cutoff ? source.electionDate : undefined);
-			assert.deepEqual(alaska.sources, [{ id: source.id, label: source.label, electionDate: source.electionDate }]);
+			assert.equal(alaska.electionDate, clock < cutoff
+				? source.electionDate
+				: undefined);
+			assert.deepEqual(alaska.sources, [
+				{ id: source.id, label: source.label, electionDate: source.electionDate }
+			]);
 		}
 		finally { await server.close(); }
 	}
@@ -106,12 +148,27 @@ test("Expiry crossed during an asynchronous current lookup cannot return histori
 
 test("Personal results reject expired snapshots even when a repository returns one, and clear saved expired previews", async () => {
 	for (const clock of [cutoff - 1, cutoff, cutoff + 1]) {
-		const lookup = { result: "resolved", inputKind: "zip", detectedFromIp: false, location: { state: "AK" }, districtMatches: [], representativeMatches: [], actions: [], guideAvailability: "not-published", guideContent: null } as unknown as LocationLookupResponse;
-		const repository: StateBallotRepository = { sources: [source], async getSnapshot() {
-			return snapshot;
-		} };
+		const lookup = {
+			result: "resolved",
+			inputKind: "zip",
+			detectedFromIp: false,
+			location: { state: "AK" },
+			districtMatches: [],
+			representativeMatches: [],
+			actions: [],
+			guideAvailability: "not-published",
+			guideContent: null
+		} as unknown as LocationLookupResponse;
+		const repository: StateBallotRepository = {
+			sources: [source],
+			async getSnapshot() {
+				return snapshot;
+			}
+		};
 		await attachStateBallotPreview(lookup, repository, undefined, () => clock);
-		assert.equal(lookup.ballotContentPreviews?.length ?? 0, clock < cutoff ? 1 : 0);
+		assert.equal(lookup.ballotContentPreviews?.length ?? 0, clock < cutoff
+			? 1
+			: 0);
 		if (clock < cutoff) {
 			await attachStateBallotPreview(lookup, null, undefined, () => cutoff);
 			assert.deepEqual(lookup.ballotContentPreviews, []);
@@ -121,10 +178,18 @@ test("Personal results reject expired snapshots even when a repository returns o
 
 test("Personal lookup rechecks expiry after awaiting a candidate snapshot", async () => {
 	let clock = cutoff - 1;
-	const lookup = { result: "resolved", inputKind: "zip", location: { state: "AK" }, districtMatches: [] } as unknown as LocationLookupResponse;
-	await attachStateBallotPreview(lookup, { sources: [source], async getSnapshot() {
-		clock = cutoff;
-		return snapshot;
-	} }, undefined, () => clock);
+	const lookup = {
+		result: "resolved",
+		inputKind: "zip",
+		location: { state: "AK" },
+		districtMatches: []
+	} as unknown as LocationLookupResponse;
+	await attachStateBallotPreview(lookup, {
+		sources: [source],
+		async getSnapshot() {
+			clock = cutoff;
+			return snapshot;
+		}
+	}, undefined, () => clock);
 	assert.equal(lookup.ballotContentPreviews?.length ?? 0, 0);
 });

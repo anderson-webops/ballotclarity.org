@@ -4,7 +4,9 @@ export function resolveFetchTimeoutMs(
 	value: number | string | null | undefined,
 	fallback = defaultFetchTimeoutMs
 ) {
-	const parsed = typeof value === "number" ? value : Number(value);
+	const parsed = typeof value === "number"
+		? value
+		: Number(value);
 	const normalized = Math.floor(parsed);
 
 	return Number.isSafeInteger(normalized) && normalized > 0

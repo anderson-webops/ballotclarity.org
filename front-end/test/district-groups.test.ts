@@ -53,8 +53,11 @@ test("district groups keep empty categories in place when only one level is avai
 		const record = district("single-district", jurisdiction);
 		const groups = groupDistrictSummaries([record]);
 		assert.equal(groups.length, 3);
-		for (const group of groups)
-			assert.deepEqual(group.districts, group.jurisdiction === jurisdiction ? [record] : []);
+		for (const group of groups) {
+			assert.deepEqual(group.districts, group.jurisdiction === jurisdiction
+				? [record]
+				: []);
+		}
 	}
 });
 

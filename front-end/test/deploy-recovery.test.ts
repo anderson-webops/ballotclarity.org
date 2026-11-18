@@ -23,7 +23,9 @@ function createStorage(seedEntries: Array<[string, string]> = []) {
 			return entries.get(key) ?? null;
 		},
 		key(index: number) {
-			return [...entries.keys()][index] ?? null;
+			return [
+				...entries.keys()
+			][index] ?? null;
 		},
 		get length() {
 			return entries.size;
@@ -59,7 +61,9 @@ test("deploy recovery reads and compares build ids", () => {
 	const fakeDocument = {
 		documentElement: {
 			getAttribute(name: string) {
-				return name === "data-app-build" ? "build-123" : null;
+				return name === "data-app-build"
+					? "build-123"
+					: null;
 			}
 		},
 		querySelector() {
@@ -75,8 +79,14 @@ test("deploy recovery reads and compares build ids", () => {
 
 test("deploy recovery stores the current client build id and clears stale reload markers", () => {
 	const storage = createStorage([
-		[recoveryReloadKey("build-a"), "1"],
-		[recoveryReloadKey("build-b"), "1"],
+		[
+			recoveryReloadKey("build-a"),
+			"1"
+		],
+		[
+			recoveryReloadKey("build-b"),
+			"1"
+		],
 		["unrelated", "keep"],
 	]);
 

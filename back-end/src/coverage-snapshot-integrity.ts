@@ -122,7 +122,7 @@ function parseJournal(raw: unknown, targetPath: string): CoveragePromotionJourna
 	}
 
 	if (typeof raw.previousSnapshotPresent !== "boolean" || typeof raw.previousMetadataPresent !== "boolean")
-		throw new Error("Coverage promotion journal is missing prior-pair presence state.");
+		throw new TypeError("Coverage promotion journal is missing prior-pair presence state.");
 
 	if (
 		(raw.previousSnapshotPresent && (typeof raw.previousSnapshotSha256 !== "string" || !SHA256_PATTERN.test(raw.previousSnapshotSha256)))
@@ -350,9 +350,13 @@ export function replaceCoverageSnapshotPair(
 			newMetadataSha256: sha256File(paths.newMetadata),
 			newSnapshotSha256: sha256File(paths.newSnapshot),
 			previousMetadataPresent,
-			previousMetadataSha256: previousMetadataPresent ? sha256File(paths.previousMetadata) : undefined,
+			previousMetadataSha256: previousMetadataPresent
+				? sha256File(paths.previousMetadata)
+				: undefined,
 			previousSnapshotPresent,
-			previousSnapshotSha256: previousSnapshotPresent ? sha256File(paths.previousSnapshot) : undefined,
+			previousSnapshotSha256: previousSnapshotPresent
+				? sha256File(paths.previousSnapshot)
+				: undefined,
 			targetPath: resolvedTargetPath,
 			transactionDirectory,
 			version: 1,

@@ -18,20 +18,28 @@ export function hasLongMeasureOptions(measure: Pick<Measure, "ballotOptions"> | 
 
 export function measureDetailPath(measure: Pick<Measure, "slug" | "electionSlug">, electionSlug?: string) {
 	const path = `/measure/${encodeURIComponent(measure.slug)}`;
-	return electionSlug && measure.electionSlug && electionSlug !== measure.electionSlug ? `${path}?election=${encodeURIComponent(electionSlug)}` : path;
+	return electionSlug && measure.electionSlug && electionSlug !== measure.electionSlug
+		? `${path}?election=${encodeURIComponent(electionSlug)}`
+		: path;
 }
 
 export function measureDecisionLabel(measure: Pick<Measure, "ballotOptions">, decision: PlannedMeasureDecision) {
-	return decision === "review" ? "Marked for review" : `Marked ${measure.ballotOptions?.[decision] ?? decision.toUpperCase()}`;
+	return decision === "review"
+		? "Marked for review"
+		: `Marked ${measure.ballotOptions?.[decision] ?? decision.toUpperCase()}`;
 }
 
 export function measureDecisionEffectLabel(measure: Pick<Measure, "decisionEffect">) {
-	return measure.decisionEffect === "advisory" ? "Non-binding advisory vote" : "";
+	return measure.decisionEffect === "advisory"
+		? "Non-binding advisory vote"
+		: "";
 }
 
 export function measureGuideLink(measure: Pick<Measure, "electionSlug"> | null | undefined) {
 	const slug = measure?.electionSlug?.trim();
-	return slug ? { label: "Ballot guide", to: `/ballot/${encodeURIComponent(slug)}` } : null;
+	return slug
+		? { label: "Ballot guide", to: `/ballot/${encodeURIComponent(slug)}` }
+		: null;
 }
 
 export function measureContent(measure: Measure | null | undefined) {
@@ -39,8 +47,13 @@ export function measureContent(measure: Measure | null | undefined) {
 	const sources = new Map<string, Source>();
 	const sections: { href: string; label: string }[] = [];
 	if (!measure) return { summaries, sources: [], sections };
-	const seen = new Set([normalized(measure.summary)]);
-	for (const [title, text] of [["Official ballot summary", measure.ballotSummary], ["Explanation", measure.plainLanguageExplanation]]) {
+	const seen = new Set([
+		normalized(measure.summary)
+	]);
+	for (const [title, text] of [
+		["Official ballot summary", measure.ballotSummary],
+		["Explanation", measure.plainLanguageExplanation]
+	]) {
 		if (!present(text!) || seen.has(normalized(text!))) continue;
 		summaries.push({ title: title!, text: text! });
 		seen.add(normalized(text!));
@@ -52,7 +65,13 @@ export function measureContent(measure: Measure | null | undefined) {
 	const entries: [string, string, boolean][] = [
 		["fiscal", "Fiscal impact", present(measure.fiscalContextNote) || measure.fiscalSummary.length > 0 || measure.potentialImpacts.length > 0 || measure.argumentsAndConsiderations.length > 0],
 		["limitations", "Limitations", measure.whatWeDoNotKnow.length > 0],
-		["outcomes", hasLongMeasureOptions(measure) ? "Vote options" : `${options.yes} / ${options.no}`, present(measure.yesMeaning) || present(measure.noMeaning) || measure.yesHighlights.length > 0 || measure.noHighlights.length > 0],
+		[
+			"outcomes",
+			hasLongMeasureOptions(measure)
+				? "Vote options"
+				: `${options.yes} / ${options.no}`,
+			present(measure.yesMeaning) || present(measure.noMeaning) || measure.yesHighlights.length > 0 || measure.noHighlights.length > 0
+		],
 		["at-a-glance", "Summary", summaries.length > 0],
 		["baseline", baselineLabel, present(measure.currentLawOverview) || measure.currentPractice.length > 0 || measure.proposedChanges.length > 0],
 		["implementation", "Timeline", present(measure.implementationOverview) || measure.implementationTimeline.length > 0],
@@ -61,8 +80,25 @@ export function measureContent(measure: Measure | null | undefined) {
 	sections.push(...entries.filter(([, , visible]) => visible).map(([id, label]) => ({ href: `#${id}`, label })));
 	for (const source of [
 		...measure.sources,
-		...[...measure.currentPractice, ...measure.proposedChanges, ...measure.implementationTimeline, ...measure.fiscalSummary, ...measure.potentialImpacts, ...measure.supportArguments, ...measure.opposeArguments, ...measure.argumentsAndConsiderations, ...measure.whatWeKnow, ...measure.whatWeDoNotKnow].flatMap(item => item.sources),
+		...[
+			...measure.currentPractice,
+			...measure.proposedChanges,
+			...measure.implementationTimeline,
+			...measure.fiscalSummary,
+			...measure.potentialImpacts,
+			...measure.supportArguments,
+			...measure.opposeArguments,
+			...measure.argumentsAndConsiderations,
+			...measure.whatWeKnow,
+			...measure.whatWeDoNotKnow
+		].flatMap(item => item.sources),
 	]) sources.set(source.id, source);
 	if (sources.size || measure.whatWeKnow.length || present(measure.freshness.contentLastVerifiedAt)) sections.push({ href: "#sources", label: "Sources" });
-	return { summaries, sources: [...sources.values()], sections };
+	return {
+		summaries,
+		sources: [
+			...sources.values()
+		],
+		sections
+	};
 }

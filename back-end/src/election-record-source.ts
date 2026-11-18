@@ -6,16 +6,28 @@ import { stateRecordSupplementSources } from "./state-ballot-supplements.js";
 
 export function electionRecordSource(date: string, jurisdiction: Pick<JurisdictionSummary, "name" | "state" | "jurisdictionType"> | null | undefined, sources: readonly StateBallotSource[]) {
 	if (!jurisdiction) return undefined;
-	const stateCode = /^[A-Z]{2}$/u.test(jurisdiction.state) ? jurisdiction.state : getStateAbbreviationForName(jurisdiction.state);
+	const stateCode = /^[A-Z]{2}$/u.test(jurisdiction.state)
+		? jurisdiction.state
+		: getStateAbbreviationForName(jurisdiction.state);
 	const name = jurisdiction.name.normalize("NFKC").trim().toLowerCase();
 	const kind = jurisdiction.jurisdictionType.toLowerCase();
 	const matches = sources.filter((source) => {
 		if (source.stateCode !== stateCode || source.electionDate !== date || source.ballotPreview === false) return false;
-		const countyName = source.countyName ?? (source.stateCode === "GA" && /^ga-fulton-(?:\d{4}|(?:general|primary|special)-\d{4}-\d{2}-\d{2})$/u.test(source.id) ? "Fulton County" : undefined);
+		const countyName = source.countyName ?? (source.stateCode === "GA" && /^ga-fulton-(?:\d{4}|(?:general|primary|special)-\d{4}-\d{2}-\d{2})$/u.test(source.id)
+			? "Fulton County"
+			: undefined);
 		if (kind === "county") return countyName?.normalize("NFKC").trim().toLowerCase() === name && !source.placeName;
 		if (kind === "city") return source.placeName?.normalize("NFKC").trim().toLowerCase() === name;
 		return false;
 	});
 	const source = orderStateBallotSources(matches)[0];
-	return source ? { stateCode: source.stateCode, sourceId: source.id, ...(stateRecordSupplementSources(source, sources).length ? { includeSupplements: true as const } : {}) } : undefined;
+	return source
+		? {
+				stateCode: source.stateCode,
+				sourceId: source.id,
+				...(stateRecordSupplementSources(source, sources).length
+					? { includeSupplements: true as const }
+					: {})
+			}
+		: undefined;
 }

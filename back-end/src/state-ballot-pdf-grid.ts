@@ -44,8 +44,12 @@ function filledRectangleRules(tokens: string[], point: (horizontal: number, vert
 		}
 		if (tokens.length - cursor < 13 || tokens[cursor] !== "M" || [3, 6, 9].some(offset => tokens[cursor + offset] !== "L") || tokens[cursor + 12] !== "Z") return false;
 		const corners = [0, 3, 6, 9].map(offset => point(Number(tokens[cursor + offset + 1]), Number(tokens[cursor + offset + 2])));
-		const horizontal = [...new Set(corners.map(corner => corner[0]))];
-		const vertical = [...new Set(corners.map(corner => corner[1]))];
+		const horizontal = [
+			...new Set(corners.map(corner => corner[0]))
+		];
+		const vertical = [
+			...new Set(corners.map(corner => corner[1]))
+		];
 		if (horizontal.length !== 2 || vertical.length !== 2 || new Set(corners.map(corner => corner.join(","))).size !== 4 || corners.some((corner, index) => corner[0] !== corners[(index + 1) % 4]![0] && corner[1] !== corners[(index + 1) % 4]![1])) return false;
 		const rectangleWidth = Math.abs(horizontal[0]! - horizontal[1]!);
 		const rectangleHeight = Math.abs(vertical[0]! - vertical[1]!);
@@ -69,13 +73,21 @@ function svgRectangles(body: string, width: number, height: number, minimumCells
 	for (const path of paths) {
 		const stroke = stateHtmlAttribute(path, "stroke") || /(?:^|;)\s*stroke:\s*([^;]+)/u.exec(stateHtmlAttribute(path, "style"))?.[1];
 		const fill = stateHtmlAttribute(path, "fill") || /(?:^|;)\s*fill:\s*([^;]+)/u.exec(stateHtmlAttribute(path, "style"))?.[1];
-		const filled = (!stroke || stroke === "none") && allowFilledRules && ["black", "#000", "#000000", "rgb(0%, 0%, 0%)", "rgb(0, 0, 0)"].includes(fill ?? "") && ["", "1"].includes(stateHtmlAttribute(path, "fill-opacity"));
+		const filled = (!stroke || stroke === "none") && allowFilledRules && [
+			"black",
+			"#000",
+			"#000000",
+			"rgb(0%, 0%, 0%)",
+			"rgb(0, 0, 0)"
+		].includes(fill ?? "") && ["", "1"].includes(stateHtmlAttribute(path, "fill-opacity"));
 		if ((!stroke || stroke === "none") && !filled) continue;
 		const definition = stateHtmlAttribute(path, "d");
 		if (!/^[MLZ\s,\deE.+-]+$/u.test(definition)) continue;
 		if (stateHtmlAttribute(roots[0]!, "transform") || inheritedTransforms.has(path)) throw new Error("The ballot grid has an unsupported ancestor transform.");
 		const transformText = stateHtmlAttribute(path, "transform");
-		const transform = transformText ? /^matrix\(([^)]+)\)$/u.exec(transformText)?.[1]?.split(/[,\s]+/u).filter(Boolean).map(Number) : [1, 0, 0, 1, 0, 0];
+		const transform = transformText
+			? /^matrix\(([^)]+)\)$/u.exec(transformText)?.[1]?.split(/[,\s]+/u).filter(Boolean).map(Number)
+			: [1, 0, 0, 1, 0, 0];
 		if (!transform || transform.length !== 6 || transform.some(value => !Number.isFinite(value) || Math.abs(value) > 10000)) throw new Error("The ballot grid transform is invalid.");
 		const point = (horizontal: number, vertical: number) => {
 			const result = [transform[0]! * horizontal + transform[2]! * vertical + transform[4]!, transform[1]! * horizontal + transform[3]! * vertical + transform[5]!] as const;
@@ -91,8 +103,22 @@ function svgRectangles(body: string, width: number, height: number, minimumCells
 		const segment = (end: readonly [number, number]) => {
 			if (previous) {
 				const [startX, startY] = previous;
-				if (Math.abs(end[1] - startY) < 0.05 && Math.abs(end[0] - startX) > 10) edges.push({ axis: "h", position: (startY + end[1]) / 2, start: Math.min(startX, end[0]), end: Math.max(startX, end[0]) });
-				if (Math.abs(end[0] - startX) < 0.05 && Math.abs(end[1] - startY) > 10) edges.push({ axis: "v", position: (startX + end[0]) / 2, start: Math.min(startY, end[1]), end: Math.max(startY, end[1]) });
+				if (Math.abs(end[1] - startY) < 0.05 && Math.abs(end[0] - startX) > 10) {
+					edges.push({
+						axis: "h",
+						position: (startY + end[1]) / 2,
+						start: Math.min(startX, end[0]),
+						end: Math.max(startX, end[0])
+					});
+				}
+				if (Math.abs(end[0] - startX) < 0.05 && Math.abs(end[1] - startY) > 10) {
+					edges.push({
+						axis: "v",
+						position: (startX + end[0]) / 2,
+						start: Math.min(startY, end[1]),
+						end: Math.max(startY, end[1])
+					});
+				}
 			}
 			previous = end;
 			if (edges.length > 4000) throw new Error("The ballot grid has too many line segments.");
@@ -154,7 +180,12 @@ function svgRectangles(body: string, width: number, height: number, minimumCells
 					operations += 1;
 					if (operations > stateBallotPdfGridContract.maximumGridOperations) throw new Error("The ballot grid geometry exceeds its operation budget.");
 					if (right.start <= top.position + 3 && right.end >= bottom.position - 3 && top.end >= right.position - 3 && bottom.end >= right.position - 3) {
-						cells.push([left.position, top.position, right.position, bottom.position]);
+						cells.push([
+							left.position,
+							top.position,
+							right.position,
+							bottom.position
+						]);
 						found = true;
 						break;
 					}
@@ -188,8 +219,21 @@ function readWordPages(body: string) {
 		const width = Number(stateHtmlAttribute(page, "width"));
 		const height = Number(stateHtmlAttribute(page, "height"));
 		if (!Number.isFinite(width) || !Number.isFinite(height) || width < 600 || width > 1600 || height < 400 || height > 1200) throw new Error("The ballot grid page dimensions require review.");
-		const words = stateHtmlDescendants(page, node => node.nodeName === "word").map(word => ({ text: stateHtmlText(word).normalize("NFKC"), left: Number(stateHtmlAttribute(word, "xmin")), right: Number(stateHtmlAttribute(word, "xmax")), top: Number(stateHtmlAttribute(word, "ymin")), bottom: Number(stateHtmlAttribute(word, "ymax")) }));
-		if (words.length < 50 || words.length > 10000 || words.some(word => !word.text || word.text.length > 2000 || [word.left, word.right, word.top, word.bottom].some(value => !Number.isFinite(value)) || word.left < 0 || word.top < 0 || word.right > width + 1 || word.bottom > height + 1 || word.left >= word.right || word.top >= word.bottom)) throw new Error("The ballot grid word coordinates are invalid.");
+		const words = stateHtmlDescendants(page, node => node.nodeName === "word").map(word => ({
+			text: stateHtmlText(word).normalize("NFKC"),
+			left: Number(stateHtmlAttribute(word, "xmin")),
+			right: Number(stateHtmlAttribute(word, "xmax")),
+			top: Number(stateHtmlAttribute(word, "ymin")),
+			bottom: Number(stateHtmlAttribute(word, "ymax"))
+		}));
+		if (words.length < 50 || words.length > 10000 || words.some(word => !word.text || word.text.length > 2000 || [
+			word.left,
+			word.right,
+			word.top,
+			word.bottom
+		].some(value => !Number.isFinite(value)) || word.left < 0 || word.top < 0 || word.right > width + 1 || word.bottom > height + 1 || word.left >= word.right || word.top >= word.bottom)) {
+			throw new Error("The ballot grid word coordinates are invalid.");
+		}
 		return { width, height, words };
 	});
 }
@@ -202,14 +246,28 @@ export function readStateBallotPdfGrid(wordCorpus: string, drawings: string[], o
 	const pages = readWordPages(wordCorpus);
 	if (drawings.length !== pages.length) throw new Error("The ballot grid drawing set is incomplete.");
 	return pages.map(({ width, height, words }, index) => {
-		const entries = svgRectangles(drawings[index]!, width, height, options.allowSmallCandidateGrids || options.allowQuestionPages ? 3 : 30).map((bounds) => {
+		const entries = svgRectangles(drawings[index]!, width, height, options.allowSmallCandidateGrids || options.allowQuestionPages
+			? 3
+			: 30).map((bounds) => {
 			const inside = words.filter(word => (word.left + word.right) / 2 > bounds[0] - 0.2 && (word.left + word.right) / 2 < bounds[2] + 0.2 && (word.top + word.bottom) / 2 > bounds[1] - 0.2 && (word.top + word.bottom) / 2 < bounds[3] + 0.2);
-			return { bounds, text: lines(inside), logicalText: inside.map(word => word.text).join(" "), tags: inside.filter(word => /^\d{1,2}[A-Z]$/u.test(word.text)).map(word => ({ text: word.text, top: word.top, bottom: word.bottom })) };
+			return {
+				bounds,
+				text: lines(inside),
+				logicalText: inside.map(word => word.text).join(" "),
+				tags: inside.filter(word => /^\d{1,2}[A-Z]$/u.test(word.text)).map(word => ({ text: word.text, top: word.top, bottom: word.bottom }))
+			};
 		});
 		const anchors = entries.filter(cell => /office/iu.test(cell.text) && /party/iu.test(cell.text) && cell.text.length < 100);
 		const pageText = lines(words);
 		if (options.instructionPageTextSha256 && createHash("sha256").update(pageText).digest("hex") === options.instructionPageTextSha256) {
-			return { number: index + 1, width, height, pageKind: "instructions-only", headerText: pageText, cells: [] };
+			return {
+				number: index + 1,
+				width,
+				height,
+				pageKind: "instructions-only",
+				headerText: pageText,
+				cells: []
+			};
 		}
 		if (!anchors.length && options.allowQuestionPages && /Questions\s+Continued/iu.test(lines(words))) {
 			const questions = entries.filter(cell => /^\d+\.\s*["“]?Shall\b/iu.test(cell.text) && /\bYES\b/u.test(cell.text) && /\bNO\b/u.test(cell.text) && !cell.tags.length);
@@ -222,16 +280,49 @@ export function readStateBallotPdfGrid(wordCorpus: string, drawings: string[], o
 			for (const word of words.filter(word => (word.top + word.bottom) / 2 >= firstQuestion)) {
 				if (footer.includes(word)) continue;
 				const matches = cells.filter(cell => (word.left + word.right) / 2 > cell.bounds[0] - 0.2 && (word.left + word.right) / 2 < cell.bounds[2] + 0.2 && (word.top + word.bottom) / 2 > cell.bounds[1] - 0.2 && (word.top + word.bottom) / 2 < cell.bounds[3] + 0.2);
-				if (matches.length !== 1) throw new Error("The continued-question page has unaccounted or ambiguous text.", { cause: { page: index + 1, word: word.text, bounds: [word.left, word.top, word.right, word.bottom], matches: matches.length } });
+				if (matches.length !== 1) {
+					throw new Error("The continued-question page has unaccounted or ambiguous text.", {
+						cause: {
+							page: index + 1,
+							word: word.text,
+							bounds: [
+								word.left,
+								word.top,
+								word.right,
+								word.bottom
+							],
+							matches: matches.length
+						}
+					});
+				}
 			}
-			return { number: index + 1, width, height, pageKind: "questions-only", headerText: lines(words.filter(word => word.bottom < firstQuestion + 0.5)), cells };
+			return {
+				number: index + 1,
+				width,
+				height,
+				pageKind: "questions-only",
+				headerText: lines(words.filter(word => word.bottom < firstQuestion + 0.5)),
+				cells
+			};
 		}
-		if (anchors.length !== 1) throw new Error("The ballot grid has no unique Office/Party anchor.", { cause: { page: index + 1, header: lines(words).slice(0, 200) } });
+		if (anchors.length !== 1) {
+			throw new Error("The ballot grid has no unique Office/Party anchor.", {
+				cause: {
+					page: index + 1,
+					header: lines(words).slice(0, 200)
+				}
+			});
+		}
 		const anchor = anchors[0]!;
 		const frames = entries.filter(cell => cell !== anchor && cell.bounds[0] <= anchor.bounds[0] && cell.bounds[1] < anchor.bounds[1] && entries.filter(other => other !== cell && other.bounds[0] >= cell.bounds[0] - 0.1 && other.bounds[1] >= cell.bounds[1] - 0.1 && other.bounds[2] <= cell.bounds[2] + 0.1 && other.bounds[3] <= cell.bounds[3] + 0.1).length >= 30);
 		const eligible = entries.filter(cell => !frames.includes(cell));
 		const selected = new Set([anchor]);
-		const corners = (rectangle: Rectangle) => [[rectangle[0], rectangle[1]], [rectangle[2], rectangle[1]], [rectangle[0], rectangle[3]], [rectangle[2], rectangle[3]]];
+		const corners = (rectangle: Rectangle) => [
+			[rectangle[0], rectangle[1]],
+			[rectangle[2], rectangle[1]],
+			[rectangle[0], rectangle[3]],
+			[rectangle[2], rectangle[3]]
+		];
 		for (const current of selected) {
 			for (const cell of eligible) {
 				if (!selected.has(cell) && corners(current.bounds).some(first => corners(cell.bounds).some(second => Math.abs(first[0]! - second[0]!) < 1 && Math.abs(first[1]! - second[1]!) < 1))) selected.add(cell);
@@ -244,9 +335,25 @@ export function readStateBallotPdfGrid(wordCorpus: string, drawings: string[], o
 		}
 		for (const word of words.filter(word => /^\d{1,2}[A-Z]$/u.test(word.text) && (word.top + word.bottom) / 2 > anchor.bounds[3])) {
 			const matches = cells.filter(cell => (word.left + word.right) / 2 > cell.bounds[0] - 0.2 && (word.left + word.right) / 2 < cell.bounds[2] + 0.2 && (word.top + word.bottom) / 2 > cell.bounds[1] - 0.2 && (word.top + word.bottom) / 2 < cell.bounds[3] + 0.2);
-			if (matches.length !== 1) throw new Error("A ballot position is outside or ambiguous within the connected grid.", { cause: { page: index + 1, position: word.text, x: (word.left + word.right) / 2, y: (word.top + word.bottom) / 2, matchedCells: matches.map(cell => cell.bounds) } });
+			if (matches.length !== 1) {
+				throw new Error("A ballot position is outside or ambiguous within the connected grid.", {
+					cause: {
+						page: index + 1,
+						position: word.text,
+						x: (word.left + word.right) / 2,
+						y: (word.top + word.bottom) / 2,
+						matchedCells: matches.map(cell => cell.bounds)
+					}
+				});
+			}
 		}
-		return { number: index + 1, width, height, headerText: lines(words.filter(word => word.bottom < anchor.bounds[1] + 0.5)), cells };
+		return {
+			number: index + 1,
+			width,
+			height,
+			headerText: lines(words.filter(word => word.bottom < anchor.bounds[1] + 0.5)),
+			cells
+		};
 	});
 }
 
@@ -256,11 +363,21 @@ export function readStateBallotPdfTables(wordCorpus: string, drawings: string[])
 	return pages.map(({ width, height, words }, index) => {
 		const entries = svgRectangles(drawings[index]!, width, height, 0, true).map((bounds) => {
 			const inside = words.filter(word => (word.left + word.right) / 2 > bounds[0] - 0.2 && (word.left + word.right) / 2 < bounds[2] + 0.2 && (word.top + word.bottom) / 2 > bounds[1] - 0.2 && (word.top + word.bottom) / 2 < bounds[3] + 0.2);
-			return { bounds, text: lines(inside), logicalText: inside.map(word => word.text).join(" ") };
+			return {
+				bounds,
+				text: lines(inside),
+				logicalText: inside.map(word => word.text).join(" ")
+			};
 		});
 		const cells = entries.filter(cell => entries.filter(other => other !== cell && other.bounds[0] >= cell.bounds[0] - 0.1 && other.bounds[1] >= cell.bounds[1] - 0.1 && other.bounds[2] <= cell.bounds[2] + 0.1 && other.bounds[3] <= cell.bounds[3] + 0.1).length < 2);
 		if (cells.some(cell => cell.text.length > 3000 || cell.logicalText.length > 3000)) throw new Error("The ballot table cell exceeds its bounds.");
-		return { number: index + 1, width, height, text: lines(words), cells };
+		return {
+			number: index + 1,
+			width,
+			height,
+			text: lines(words),
+			cells
+		};
 	});
 }
 

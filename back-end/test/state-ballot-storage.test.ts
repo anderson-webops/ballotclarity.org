@@ -20,7 +20,16 @@ const snapshot: StateBallotSnapshot = {
 	source: automatic,
 	retrievedAt: new Date(now).toISOString(),
 	sha256: createHash("sha256").update(body).digest("hex"),
-	records: [{ id: "a".repeat(24), name: "Example Candidate", office: "US Senate", district: "", scope: "statewide", status: "listed" }],
+	records: [
+		{
+			id: "a".repeat(24),
+			name: "Example Candidate",
+			office: "US Senate",
+			district: "",
+			scope: "statewide",
+			status: "listed"
+		}
+	],
 };
 
 test("state ingestion configuration accepts explicit controls and rejects invalid settings", () => {
@@ -41,7 +50,12 @@ test("atomic storage binds public records to source configuration without raw fi
 	assert.deepEqual(await storage.read(automatic), snapshot);
 	assert.deepEqual(await readdir(directory), [`${automatic.id}.json`]);
 	await assert.rejects(storage.read({ ...automatic, url: "https://different.example.test/candidates.csv" }), /configured source/u);
-	await assert.rejects(storage.write({ ...snapshot, records: [{ ...snapshot.records[0]!, email: "excluded@example.test" } as never] }), /layout/u);
+	await assert.rejects(storage.write({
+		...snapshot,
+		records: [
+			{ ...snapshot.records[0]!, email: "excluded@example.test" } as never
+		]
+	}), /layout/u);
 	assert.deepEqual(await storage.read(automatic), snapshot);
 	const path = join(directory, `${automatic.id}.json`);
 	await rm(path);
@@ -55,10 +69,14 @@ test("a fresh persisted automatic snapshot survives restart without a provider r
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	await createStateBallotStorage(directory).write(snapshot);
 	let requests = 0;
-	const repository = createStateBallotRepository({ dataDirectory: directory, now: () => now + 1000, fetchText: async () => {
-		requests += 1;
-		throw new Error("Network must not be used.");
-	} });
+	const repository = createStateBallotRepository({
+		dataDirectory: directory,
+		now: () => now + 1000,
+		fetchText: async () => {
+			requests += 1;
+			throw new Error("Network must not be used.");
+		}
+	});
 	assert.deepEqual(await repository.getSnapshot("NC"), snapshot);
 	assert.equal(requests, 0);
 	assert.equal(buildStateBallotPreview((await repository.getSnapshot("NC"))!, { districtMatches: [] })?.candidateCount, 1);
@@ -70,10 +88,15 @@ test("expired persisted data is not silently served when its provider is unavail
 	const storage = createStateBallotStorage(directory);
 	await storage.write(snapshot);
 	let requests = 0;
-	const repository = createStateBallotRepository({ dataDirectory: directory, now: () => now + 2000, ttlMs: 1000, fetchText: async () => {
-		requests += 1;
-		throw new Error("Unavailable");
-	} });
+	const repository = createStateBallotRepository({
+		dataDirectory: directory,
+		now: () => now + 2000,
+		ttlMs: 1000,
+		fetchText: async () => {
+			requests += 1;
+			throw new Error("Unavailable");
+		}
+	});
 	assert.equal(await repository.getSnapshot("NC"), null);
 	assert.equal(await repository.getSnapshot("NC"), null);
 	assert.equal(requests, 1);
@@ -84,11 +107,18 @@ test("successful automatic refresh persists sanitized facts and supports concurr
 	const directory = await mkdtemp(join(tmpdir(), "ballot-state-fetch-"));
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	let requests = 0;
-	const repository = createStateBallotRepository({ dataDirectory: directory, now: () => now, fetchText: async () => {
-		requests += 1;
-		return body;
-	} });
-	const [first, second] = await Promise.all([repository.getSnapshot("NC"), repository.getSnapshot("NC")]);
+	const repository = createStateBallotRepository({
+		dataDirectory: directory,
+		now: () => now,
+		fetchText: async () => {
+			requests += 1;
+			return body;
+		}
+	});
+	const [first, second] = await Promise.all([
+		repository.getSnapshot("NC"),
+		repository.getSnapshot("NC")
+	]);
 	assert.ok(first);
 	assert.equal(first, second);
 	assert.equal(requests, 1);
@@ -103,8 +133,16 @@ test("future cache dates and post-election records are rejected without a provid
 	const forbiddenFetch = async () => {
 		throw new Error("Must not request provider.");
 	};
-	assert.equal(await createStateBallotRepository({ dataDirectory: directory, now: () => now - 1, fetchText: forbiddenFetch }).getSnapshot("NC"), null);
-	assert.equal(await createStateBallotRepository({ dataDirectory: directory, now: () => Date.parse("2026-11-05T00:00:00Z"), fetchText: forbiddenFetch }).getSnapshot("NC"), null);
+	assert.equal(await createStateBallotRepository({
+		dataDirectory: directory,
+		now: () => now - 1,
+		fetchText: forbiddenFetch
+	}).getSnapshot("NC"), null);
+	assert.equal(await createStateBallotRepository({
+		dataDirectory: directory,
+		now: () => Date.parse("2026-11-05T00:00:00Z"),
+		fetchText: forbiddenFetch
+	}).getSnapshot("NC"), null);
 });
 
 test("legacy reviewed regression fixtures are served only after explicit external imports with exact dates and no crawling", async (context) => {
@@ -118,10 +156,14 @@ test("legacy reviewed regression fixtures are served only after explicit externa
 		originals.push(original);
 	}
 	let requests = 0;
-	const repository = createStateBallotRepository({ dataDirectory: directory, now: () => now, fetchText: async () => {
-		requests += 1;
-		throw new Error("No crawling permitted.");
-	} });
+	const repository = createStateBallotRepository({
+		dataDirectory: directory,
+		now: () => now,
+		fetchText: async () => {
+			requests += 1;
+			throw new Error("No crawling permitted.");
+		}
+	});
 	for (const original of originals)
 		assert.deepEqual(await repository.getSnapshot(original.source.stateCode), original);
 	assert.equal(requests, 0);
@@ -132,7 +174,10 @@ test("invalid external reviewed data fails closed instead of relabeling bundled 
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	const source = stateBallotSources.find(source => source.stateCode === "IL")!;
 	await writeFile(join(directory, `${source.id}.json`), "{}");
-	const repository = createStateBallotRepository({ dataDirectory: directory, now: () => now });
+	const repository = createStateBallotRepository({
+		dataDirectory: directory,
+		now: () => now
+	});
 	assert.equal(await repository.getSnapshot("IL"), null);
 });
 
@@ -141,10 +186,15 @@ test("every reviewed source requires external data regardless of its retained le
 	const sources = stateBallotSources.filter(source => source.retrievalPolicy === "manual-snapshot");
 	assert.equal(sources.length, 33);
 	assert.ok(sources.some(source => source.id === "co-sos-2026"));
-	const repository = createStateBallotRepository({ sources, dataDirectory: null, now: () => now, fetchText: async () => {
-		requests += 1;
-		throw new Error("Reviewed sources cannot download.");
-	} });
+	const repository = createStateBallotRepository({
+		sources,
+		dataDirectory: null,
+		now: () => now,
+		fetchText: async () => {
+			requests += 1;
+			throw new Error("Reviewed sources cannot download.");
+		}
+	});
 	for (const source of sources) {
 		assert.equal(await repository.getSnapshot(source.stateCode), null);
 		await assert.rejects(loadBundledStateSnapshot(source), /No bundled/u);
@@ -158,10 +208,15 @@ test("explicit stored-source reads retain historical supplements without making 
 	const snapshot = loadReviewedStateFixture("IL");
 	await createStateBallotStorage(directory).write(snapshot);
 	let requests = 0;
-	const repository = createStateBallotRepository({ sources: [snapshot.source], dataDirectory: directory, now: () => Date.parse("2026-12-01T12:00:00Z"), fetchText: async () => {
-		requests += 1;
-		throw new Error("Historical reads never collect.");
-	} });
+	const repository = createStateBallotRepository({
+		sources: [snapshot.source],
+		dataDirectory: directory,
+		now: () => Date.parse("2026-12-01T12:00:00Z"),
+		fetchText: async () => {
+			requests += 1;
+			throw new Error("Historical reads never collect.");
+		}
+	});
 	assert.ok(repository.getStoredSnapshots);
 	assert.deepEqual(await repository.getStoredSnapshots("IL"), []);
 	assert.deepEqual(await repository.getStoredSnapshots("IL", [snapshot.source.id]), [snapshot]);
@@ -175,14 +230,30 @@ test("reviewed imports and replacements appear immediately without a restart or 
 	const original = loadReviewedStateFixture("IL");
 	const storage = createStateBallotStorage(directory);
 	let requests = 0;
-	const repository = createStateBallotRepository({ sources: [original.source], dataDirectory: directory, now: () => now, fetchText: async () => {
-		requests += 1;
-		throw new Error("No publisher request permitted.");
-	} });
+	const repository = createStateBallotRepository({
+		sources: [original.source],
+		dataDirectory: directory,
+		now: () => now,
+		fetchText: async () => {
+			requests += 1;
+			throw new Error("No publisher request permitted.");
+		}
+	});
 	assert.equal(await repository.getSnapshot("IL"), null);
 	await storage.write(original);
 	assert.deepEqual(await repository.getSnapshot("IL"), original);
-	const replacement = { ...original, retrievedAt: new Date(now).toISOString(), sha256: createHash("sha256").update("controlled reviewed update").digest("hex"), records: original.records.map((record, index) => index ? record : { ...record, name: "Controlled revised candidate", id: createHash("sha256").update("controlled revised candidate").digest("hex").slice(0, 24) }) };
+	const replacement = {
+		...original,
+		retrievedAt: new Date(now).toISOString(),
+		sha256: createHash("sha256").update("controlled reviewed update").digest("hex"),
+		records: original.records.map((record, index) => index
+			? record
+			: {
+					...record,
+					name: "Controlled revised candidate",
+					id: createHash("sha256").update("controlled revised candidate").digest("hex").slice(0, 24)
+				})
+	};
 	await storage.write(replacement);
 	assert.deepEqual(await repository.getSnapshot("IL"), replacement);
 	assert.equal(requests, 0);
@@ -205,7 +276,10 @@ test("malformed and future reviewed data fail closed and a restored import recov
 	assert.deepEqual(await repository.getSnapshot("IL"), original);
 	await writeFile(join(directory, `${original.source.id}.json`), "{}");
 	assert.equal(await repository.getSnapshot("IL"), null);
-	await storage.write({ ...original, retrievedAt: new Date(now + 1).toISOString() });
+	await storage.write({
+		...original,
+		retrievedAt: new Date(now + 1).toISOString()
+	});
 	assert.equal(await repository.getSnapshot("IL"), null);
 	await storage.write(original);
 	assert.deepEqual(await repository.getSnapshot("IL"), original);
@@ -218,9 +292,21 @@ test("the management command imports reviewed facts and refuses manual refresh",
 	const file = join(directory, "reviewed-fixture.json");
 	await writeFile(file, readReviewedStateFixture("IL"));
 	const environment = { ...process.env, STATE_BALLOT_DATA_DIR: directory, STATE_BALLOT_ENABLED_STATES: "IL" };
-	const output = execFileSync(process.execPath, ["--import", "tsx", script, "import", file], { env: environment, encoding: "utf8" });
+	const output = execFileSync(process.execPath, [
+		"--import",
+		"tsx",
+		script,
+		"import",
+		file
+	], { env: environment, encoding: "utf8" });
 	assert.equal(JSON.parse(output).action, "imported");
-	assert.throws(() => execFileSync(process.execPath, ["--import", "tsx", script, "refresh", "IL"], { env: environment, stdio: "pipe" }));
+	assert.throws(() => execFileSync(process.execPath, [
+		"--import",
+		"tsx",
+		script,
+		"refresh",
+		"IL"
+	], { env: environment, stdio: "pipe" }));
 	const stored = await readFile(join(directory, "il-sbe-2026.json"), "utf8");
 	assert.equal(JSON.parse(JSON.parse(stored).snapshot).retrievedAt, "2026-10-21T04:59:46.328Z");
 });

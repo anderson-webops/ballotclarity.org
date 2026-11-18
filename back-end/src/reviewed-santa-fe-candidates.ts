@@ -14,14 +14,25 @@ const candidateText = (row: Row) => joined(row.words.filter(word => word.left >=
 const start = /^(?:UNITED STATES(?: SENATOR)?|GOVERNOR &|SECRETARY OF STATE|ATTORNEY GENERAL|STATE (?:AUDITOR|TREASURER|REPRESENTATIVE)|COMMISSIONER OF|JUDGE OF THE COURT OF|DISTRICT COURT JUDGE,|MAGISTRATE JUDGE,|COUNTY(?: SHEIRFF| SHERIFF| ASSESSOR)?|PROBATE JUDGE|JUDICIAL RETENTION,)$/u;
 
 function wordPages(body: string) {
-	if (Buffer.byteLength(body) > 4 * 1024 * 1024 || /<!ENTITY|<!DOCTYPE[^>]*\[/iu.test(body) || !body.trimEnd().endsWith("</html>") || [...body.matchAll(/<page\b/gu)].length !== [...body.matchAll(/<\/page>/gu)].length) throw new Error("The Santa Fe master text is incomplete or exceeds its bounds.");
+	if (Buffer.byteLength(body) > 4 * 1024 * 1024 || /<!ENTITY|<!DOCTYPE[^>]*\[/iu.test(body) || !body.trimEnd().endsWith("</html>") || [
+		...body.matchAll(/<page\b/gu)
+	].length !== [
+		...body.matchAll(/<\/page>/gu)
+	].length) {
+		throw new Error("The Santa Fe master text is incomplete or exceeds its bounds.");
+	}
 	const pages = descendants(parseStateHtml(body), node => node.nodeName === "page");
 	if (!pages.length || pages.length > 100) throw new Error("The Santa Fe master page count requires review.");
 	return pages.map((page, index) => {
 		if (Number(attribute(page, "width")) !== 612 || Number(attribute(page, "height")) !== 792) throw new Error("The Santa Fe master page dimensions changed.");
 		const words = descendants(page, node => node.nodeName === "word").map((node) => {
 			if (["xmin", "xmax", "ymin"].some(name => !/^\d+(?:\.\d+)?$/u.test(attribute(node, name)))) throw new Error("The Santa Fe master coordinates require review.");
-			return { left: Number(attribute(node, "xmin")), right: Number(attribute(node, "xmax")), top: Number(attribute(node, "ymin")), value: stateHtmlText(node) };
+			return {
+				left: Number(attribute(node, "xmin")),
+				right: Number(attribute(node, "xmax")),
+				top: Number(attribute(node, "ymin")),
+				value: stateHtmlText(node)
+			};
 		});
 		if (!words.length || words.length > 15000 || words.some(word => word.left < 0 || word.right < word.left || word.right > 613 || word.top > 793 || containsControlCharacters(word.value))) throw new Error("The Santa Fe master word geometry requires review.");
 		const rows: Row[] = [];
@@ -47,16 +58,37 @@ function officeFields(printed: string): Pick<StateCandidateRecord, "office" | "d
 	};
 	if (fixed[printed]) return { office: fixed[printed], district: "", scope: "statewide" };
 	let match = /^(UNITED STATES|STATE) REPRESENTATIVE DISTRICT ([1-9]\d?)$/u.exec(printed);
-	if (match) return { office: `${match[1] === "STATE" ? "State" : "United States"} Representative District ${match[2]}`, district: match[2]!, scope: match[1] === "STATE" ? "state-house" : "congressional" };
+	if (match) {
+		return {
+			office: `${match[1] === "STATE"
+				? "State"
+				: "United States"} Representative District ${match[2]}`,
+			district: match[2]!,
+			scope: match[1] === "STATE"
+				? "state-house"
+				: "congressional"
+		};
+	}
 	match = /^JUDGE OF THE COURT OF APPEALS POSITION ([1-9]\d?)$/u.exec(printed);
 	if (match) return { office: `Judge of the Court of Appeals Position ${match[1]}`, district: "", scope: "statewide" };
 	match = /^DISTRICT COURT JUDGE, FIRST JUDICIAL DISTRICT, DIVISION (0?[1-9]\d?)$/u.exec(printed);
-	if (match) return { office: `District Court Judge, First Judicial District, Division ${match[1]}`, district: String(Number(match[1])), scope: "local" };
+	if (match) {
+		return {
+			office: `District Court Judge, First Judicial District, Division ${match[1]}`,
+			district: String(Number(match[1])),
+			scope: "local"
+		};
+	}
 	match = /^MAGISTRATE JUDGE, DIVISION ([1-9]\d?)$/u.exec(printed);
 	if (match) return { office: `Magistrate Judge, Division ${match[1]}`, district: match[1]!, scope: "local" };
 	match = /^COUNTY COMM?ISSIONER, DISTRICT ([1-9]\d?)$/u.exec(printed);
 	if (match) return { office: `County Commissioner District ${match[1]}`, district: match[1]!, scope: "local" };
-	const local: Record<string, string> = { "COUNTY SHEIRFF": "County Sheriff", "COUNTY SHERIFF": "County Sheriff", "COUNTY ASSESSOR": "County Assessor", "PROBATE JUDGE": "Probate Judge" };
+	const local: Record<string, string> = {
+		"COUNTY SHEIRFF": "County Sheriff",
+		"COUNTY SHERIFF": "County Sheriff",
+		"COUNTY ASSESSOR": "County Assessor",
+		"PROBATE JUDGE": "Probate Judge"
+	};
 	if (local[printed]) return { office: local[printed], district: "", scope: "local" };
 	throw new Error("The Santa Fe master office requires review.");
 }
@@ -71,7 +103,9 @@ export function readReviewedSantaFeCandidates(body: string, electionDate: string
 	const pages = wordPages(body);
 	const first = pages[0]!;
 	const heading = joined(first.filter(row => row.top < 175).flatMap(row => row.words));
-	const dates = [...heading.matchAll(/ELECTION DAY- Tuesday November ([1-9]\d?), (20\d{2})/gu)];
+	const dates = [
+		...heading.matchAll(/ELECTION DAY- Tuesday November ([1-9]\d?), (20\d{2})/gu)
+	];
 	if (!heading.includes(`SANTA FE COUNTY CLERK’S OFFICE ${electionDate.slice(0, 4)} GENERAL ELECTION MASTER BALLOT LIST`) || dates.length !== 1 || `${dates[0]![2]}-11-${dates[0]![1]!.padStart(2, "0")}` !== electionDate) throw new Error("The Santa Fe master printed publisher or election date changed.");
 	const headers = first.filter(row => leftText(row) === "RACE");
 	const style = first.find(row => joined(row.words) === "STYLE" && row.words[0]!.left > 370 && row.words[0]!.left < 380);
@@ -106,9 +140,19 @@ export function readReviewedSantaFeCandidates(body: string, electionDate: string
 			const role = question[2]!;
 			const district = /^District Court Judge, Division ([1-9]\d?)$/u.exec(role)?.[1];
 			if (!district && !["Justice of the Supreme Court", "Judge of the Court of Appeals"].includes(role)) throw new Error("The Santa Fe retention office requires review.");
-			const label = district ? `DISTRICT COURT JUDGE, DIVISION ${district}` : role === "Justice of the Supreme Court" ? "SUPREME COURT" : "COURT OF APPEALS";
+			const label = district
+				? `DISTRICT COURT JUDGE, DIVISION ${district}`
+				: role === "Justice of the Supreme Court"
+					? "SUPREME COURT"
+					: "COURT OF APPEALS";
 			if (!printed.startsWith(`JUDICIAL RETENTION, ${label} Shall `)) throw new Error("The Santa Fe retention heading disagrees with its question.");
-			values.push({ name, office: `Retain ${name} as ${role}`, district: district ?? "", scope: district ? "local" : "statewide", sourceStatus: "Named judicial retention question" });
+			values.push({
+				name,
+				office: `Retain ${name} as ${role}`,
+				district: district ?? "",
+				scope: district ? "local" : "statewide",
+				sourceStatus: "Named judicial retention question"
+			});
 		}
 		else {
 			const fields = officeFields(printed);
@@ -117,15 +161,39 @@ export function readReviewedSantaFeCandidates(body: string, electionDate: string
 			while (remainder) {
 				const match = /^(.+?) \((D|R|FWD)\)(?: |$)/u.exec(remainder);
 				if (!match) throw new Error("The Santa Fe candidate/party column requires review.");
-				values.push({ name: person(match[1]!), party: parties[match[2]!]!, ...fields, sourceStatus: "County master ballot list" });
+				values.push({
+					name: person(match[1]!),
+					party: parties[match[2]!]!,
+					...fields,
+					sourceStatus: "County master ballot list"
+				});
 				remainder = remainder.slice(match[0].length);
 			}
 		}
 		if (!values.length) throw new Error("The Santa Fe candidate office is empty.");
 		for (const value of values) {
-			const jurisdiction = value.scope === "local" ? "Santa Fe County, New Mexico" : undefined;
-			const id = createHash("sha256").update(JSON.stringify(["NM", value.office, value.district, value.name, value.party ?? "", jurisdiction ?? ""])).digest("hex").slice(0, 24);
-			evidence.push({ record: { id, ...value, status: "listed", ...(jurisdiction ? { jurisdiction } : {}) }, page: block.page });
+			const jurisdiction = value.scope === "local"
+				? "Santa Fe County, New Mexico"
+				: undefined;
+			const id = createHash("sha256").update(JSON.stringify([
+				"NM",
+				value.office,
+				value.district,
+				value.name,
+				value.party ?? "",
+				jurisdiction ?? ""
+			])).digest("hex").slice(0, 24);
+			evidence.push({
+				record: {
+					id,
+					...value,
+					status: "listed",
+					...(jurisdiction
+						? { jurisdiction }
+						: {})
+				},
+				page: block.page
+			});
 		}
 	}
 	if (evidence.length > 5000 || new Set(evidence.map(item => item.record.id)).size !== evidence.length) throw new Error("The Santa Fe master has duplicated or excessive identities.");

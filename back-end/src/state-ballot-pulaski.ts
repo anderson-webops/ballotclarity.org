@@ -9,7 +9,12 @@ interface Word { text: string; left: number; right: number; top: number; bottom:
 interface Line { top: number; words: Word[] }
 const clean = (value: string) => value.replace(/\s+/gu, " ").trim();
 const joined = (words: Word[]) => clean(words.map(word => word.text).join(" "));
-const parties: Record<string, string> = { DEM: "Democratic", REP: "Republican", LIB: "Libertarian", IND: "Independent" };
+const parties: Record<string, string> = {
+	DEM: "Democratic",
+	REP: "Republican",
+	LIB: "Libertarian",
+	IND: "Independent"
+};
 const cityPattern = "Alexander|Jacksonville|Little Rock|Maumelle|N\\. Little Rock|North Little Rock|Sherwood|Wrightsville|Cammack Village";
 const heading = new RegExp(`^(?:U\\.S\\. Senate|U\\.S\\. Congress District [1-9]\\d{0,2}|Governor|Lieutenant Governor|Secretary of State|Commissioner of State Lands|Attorney General|Auditor of State|State Treasurer|State Senate District [1-9]\\d{0,2}|State Representative District [1-9]\\d{0,2}|Pulaski County (?:Judge|Sheriff|Circuit/County Clerk|Treasurer|Assessor)|Justice of the Peace District [1-9]\\d{0,2}|Constable [\\p{L} .'-]+ Township|(?:${cityPattern}) [\\p{L}\\d /.-]+)$`, "u");
 
@@ -26,7 +31,9 @@ function lines(words: Word[]) {
 function pages(body: string) {
 	if (Buffer.byteLength(body) > 4 * 1024 * 1024 || containsControlCharacters(body.replace(/[\r\n\t\f]/gu, ""))) throw new Error("The Pulaski PDF text exceeds its bounds.");
 	const document = parseStateHtml(body);
-	const pending = [{ node: document, depth: 0 }];
+	const pending = [
+		{ node: document, depth: 0 }
+	];
 	let visited = 0;
 	while (pending.length) {
 		const item = pending.pop()!;
@@ -38,26 +45,66 @@ function pages(body: string) {
 	let total = 0;
 	return result.map((page) => {
 		if (Number(attribute(page, "width")) !== 612 || Number(attribute(page, "height")) !== 1008) throw new Error("The Pulaski notice dimensions require review.");
-		const words = descendants(page, node => node.nodeName === "word").map(node => ({ text: clean(stateHtmlText(node)), left: Number(attribute(node, "xmin")), right: Number(attribute(node, "xmax")), top: Number(attribute(node, "ymin")), bottom: Number(attribute(node, "ymax")) }));
+		const words = descendants(page, node => node.nodeName === "word").map(node => ({
+			text: clean(stateHtmlText(node)),
+			left: Number(attribute(node, "xmin")),
+			right: Number(attribute(node, "xmax")),
+			top: Number(attribute(node, "ymin")),
+			bottom: Number(attribute(node, "ymax"))
+		}));
 		total += words.length;
-		if (!words.length || total > 60000 || words.some(word => !word.text || word.text.length > 500 || [word.left, word.right, word.top, word.bottom].some(value => !Number.isFinite(value)) || word.left < 0 || word.right > 613 || word.top < 0 || word.bottom > 1009 || word.right <= word.left || word.bottom <= word.top || word.bottom - word.top > 35)) throw new Error("The Pulaski notice word geometry requires review.");
+		if (!words.length || total > 60000 || words.some(word => !word.text || word.text.length > 500 || [
+			word.left,
+			word.right,
+			word.top,
+			word.bottom
+		].some(value => !Number.isFinite(value)) || word.left < 0 || word.right > 613 || word.top < 0 || word.bottom > 1009 || word.right <= word.left || word.bottom <= word.top || word.bottom - word.top > 35)) {
+			throw new Error("The Pulaski notice word geometry requires review.");
+		}
 		return words;
 	});
 }
 function geography(office: string) {
 	const district = /^(?:U\.S\. Congress|State Senate|State Representative) District (\d+)$/u.exec(office)?.[1] ?? "";
-	const scope: StateCandidateRecord["scope"] = office.startsWith("U.S. Congress") ? "congressional" : office.startsWith("State Senate") ? "state-senate" : office.startsWith("State Representative") ? "state-house" : /^(?:U\.S\. Senate|Governor|Lieutenant Governor|Secretary of State|Commissioner of State Lands|Attorney General|Auditor of State|State Treasurer)$/u.test(office) ? "statewide" : "local";
+	const scope: StateCandidateRecord["scope"] = office.startsWith("U.S. Congress")
+		? "congressional"
+		: office.startsWith("State Senate")
+			? "state-senate"
+			: office.startsWith("State Representative")
+				? "state-house"
+				: /^(?:U\.S\. Senate|Governor|Lieutenant Governor|Secretary of State|Commissioner of State Lands|Attorney General|Auditor of State|State Treasurer)$/u.test(office)
+					? "statewide"
+					: "local";
 	const city = new RegExp(`^(${cityPattern}) `, "u").exec(office)?.[1];
-	return { district, scope, jurisdiction: city ? `${city === "N. Little Rock" ? "North Little Rock" : city}, Arkansas` : scope === "local" ? "Pulaski County, Arkansas" : "Arkansas" };
+	return {
+		district,
+		scope,
+		jurisdiction: city
+			? `${city === "N. Little Rock"
+				? "North Little Rock"
+				: city}, Arkansas`
+			: scope === "local"
+				? "Pulaski County, Arkansas"
+				: "Arkansas"
+	};
 }
 
 export function readPulaskiCandidateNotice(source: StateBallotSource, body: string) {
 	const wordPages = pages(body);
 	const date = new Date(`${source.electionDate}T00:00:00Z`);
 	if (!Number.isFinite(date.getTime()) || source.stateCode !== "AR" || source.electionDate !== date.toISOString().slice(0, 10)) throw new Error("The Pulaski election identity requires review.");
-	const label = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(date);
+	const label = new Intl.DateTimeFormat("en-US", {
+		month: "long",
+		day: "numeric",
+		year: "numeric",
+		timeZone: "UTC"
+	}).format(date);
 	const day = date.getUTCDate();
-	const ordinal = day === 3 ? "rd" : day === 2 ? "nd" : "th";
+	const ordinal = day === 3
+		? "rd"
+		: day === 2
+			? "nd"
+			: "th";
 	const footer = `November ${day}${ordinal} General Election`;
 	const first = lines(wordPages[0]!.filter(word => word.top < 110)).map(line => joined(line.words));
 	if (!first.includes("NOTICE OF ELECTION") && !first.includes("AMENDED NOTICE OF ELECTION")) throw new Error("The Pulaski notice title requires review.");
@@ -78,7 +125,11 @@ export function readPulaskiCandidateNotice(source: StateBallotSource, body: stri
 	let unopposed = false;
 	let markers = 0;
 	for (let page = start.page; page <= end.page; page++) {
-		const words = wordPages[page]!.filter(word => word.top >= (page === start.page ? start.top : 0) && word.top < (page === end.page ? end.top : 975));
+		const words = wordPages[page]!.filter(word => word.top >= (page === start.page
+			? start.top
+			: 0) && word.top < (page === end.page
+			? end.top
+			: 975));
 		if (!words.length || words.some(word => ![36, 228, 420].some(left => word.left >= left - 1 && word.left < left + 183 && word.right <= left + 184))) throw new Error("The Pulaski candidate columns require review.");
 		for (const [column, left] of [36, 228, 420].entries()) {
 			let office = "";
@@ -94,7 +145,13 @@ export function readPulaskiCandidateNotice(source: StateBallotSource, body: stri
 				if (heading.test(value)) {
 					if (pending || (group && !group.candidates)) throw new Error("The Pulaski office group is incomplete.");
 					office = value;
-					group = { office, page: page + 1, column: column + 1, candidates: 0, unopposed };
+					group = {
+						office,
+						page: page + 1,
+						column: column + 1,
+						candidates: 0,
+						unopposed
+					};
 					groups.push(group);
 					continue;
 				}
@@ -109,8 +166,37 @@ export function readPulaskiCandidateNotice(source: StateBallotSource, body: stri
 				if (!group || name.length < 4 || name.length > 250 || !/^[\p{L}\p{M}\d .,'’“”"&/-]+$/u.test(name) || /\b(?:email|telephone|https?|street|ballot)\b/iu.test(name)) throw new Error("The Pulaski candidate name requires review.");
 				const party = parties[candidate[2]!]!;
 				const fields = geography(office);
-				const identity = [source.id, source.stateCode, source.electionDate, ...[name, office, party, fields.district, fields.scope, fields.jurisdiction, ""].map(value => value.toLocaleLowerCase("en-US"))];
-				const record: StateCandidateRecord = { id: createHash("sha256").update(JSON.stringify(identity)).digest("hex").slice(0, 24), name, office, ...fields, party, status: "listed", ...(unopposed ? { sourceStatus: "Unopposed" } : {}), ...(fields.district ? { sourceDistrictLabel: `District ${fields.district}` } : {}), ...(fields.scope === "local" ? { sourceAreaLabel: office } : {}) };
+				const identity = [
+					source.id,
+					source.stateCode,
+					source.electionDate,
+					...[
+						name,
+						office,
+						party,
+						fields.district,
+						fields.scope,
+						fields.jurisdiction,
+						""
+					].map(value => value.toLocaleLowerCase("en-US"))
+				];
+				const record: StateCandidateRecord = {
+					id: createHash("sha256").update(JSON.stringify(identity)).digest("hex").slice(0, 24),
+					name,
+					office,
+					...fields,
+					party,
+					status: "listed",
+					...(unopposed
+						? { sourceStatus: "Unopposed" }
+						: {}),
+					...(fields.district
+						? { sourceDistrictLabel: `District ${fields.district}` }
+						: {}),
+					...(fields.scope === "local"
+						? { sourceAreaLabel: office }
+						: {})
+				};
 				records.push(record);
 				claims.push({ recordId: record.id, page: page + 1, column: column + 1 });
 				group.candidates++;
@@ -120,5 +206,11 @@ export function readPulaskiCandidateNotice(source: StateBallotSource, body: stri
 		}
 	}
 	if (!records.length || records.length > 5000 || new Set(records.map(record => record.id)).size !== records.length || groups.some(group => !group.candidates)) throw new Error("The Pulaski candidate identity inventory requires review.");
-	return { records, claims, pageCount: wordPages.length, namedOfficeGroups: groups.length, unopposedAsPrinted: records.filter(record => record.sourceStatus === "Unopposed").length };
+	return {
+		records,
+		claims,
+		pageCount: wordPages.length,
+		namedOfficeGroups: groups.length,
+		unopposedAsPrinted: records.filter(record => record.sourceStatus === "Unopposed").length
+	};
 }

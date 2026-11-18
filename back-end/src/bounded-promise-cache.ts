@@ -20,8 +20,12 @@ export function resolveBoundedCacheInteger(
 	value: number | string | null | undefined,
 	fallback: number,
 ) {
-	const parsed = typeof value === "number" ? value : Number(value);
-	return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
+	const parsed = typeof value === "number"
+		? value
+		: Number(value);
+	return Number.isSafeInteger(parsed) && parsed > 0
+		? parsed
+		: fallback;
 }
 
 export function createBoundedPromiseCache<Key, Value>({

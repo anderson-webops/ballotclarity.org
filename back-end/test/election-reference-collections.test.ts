@@ -22,9 +22,45 @@ const statewide = electionReferenceSources.find(source => source.id === "wa-stat
 const stevens = electionReferenceSources.find(source => source.id === "wa-stevens-statements-2026")!;
 
 function fixture(source: ElectionReferenceSource, prefix = "Profile") {
-	const documents = source.documents.map(document => ({ url: document.url, sha256: hash(document.url), capturedAt: retrievedAt, includedRecordCount: 1 }));
-	const records = source.documents.map((document, index) => ({ id: hash(`${source.id}/${index}`).slice(0, 24), name: `${prefix} ${index}`, office: source.washingtonLocality ? "Auditor" : source.id === congressional.id ? "U.S. Representative" : "State Representative", scope: source.washingtonLocality ? "local" : source.id === congressional.id ? "congressional" : "state-house", jurisdiction: source.washingtonLocality ? `${source.washingtonLocality.countyDisplay} County` : source.id === congressional.id ? "Congressional District 1" : "Legislative District 1", facts: [`Reported experience ${index}.`], sourceDocumentIndex: index }));
-	return parseElectionReferenceSnapshot(source, JSON.stringify({ schemaVersion: 1, type: "election-references", stateCode: source.stateCode, sourceId: source.id, electionDate: source.electionDate, retrievedAt, sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), recordCount: records.length, documents, records }));
+	const documents = source.documents.map(document => ({
+		url: document.url,
+		sha256: hash(document.url),
+		capturedAt: retrievedAt,
+		includedRecordCount: 1
+	}));
+	const records = source.documents.map((document, index) => ({
+		id: hash(`${source.id}/${index}`).slice(0, 24),
+		name: `${prefix} ${index}`,
+		office: source.washingtonLocality
+			? "Auditor"
+			: source.id === congressional.id
+				? "U.S. Representative"
+				: "State Representative",
+		scope: source.washingtonLocality
+			? "local"
+			: source.id === congressional.id
+				? "congressional"
+				: "state-house",
+		jurisdiction: source.washingtonLocality
+			? `${source.washingtonLocality.countyDisplay} County`
+			: source.id === congressional.id
+				? "Congressional District 1"
+				: "Legislative District 1",
+		facts: [`Reported experience ${index}.`],
+		sourceDocumentIndex: index
+	}));
+	return parseElectionReferenceSnapshot(source, JSON.stringify({
+		schemaVersion: 1,
+		type: "election-references",
+		stateCode: source.stateCode,
+		sourceId: source.id,
+		electionDate: source.electionDate,
+		retrievedAt,
+		sourceSha256: hash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+		recordCount: records.length,
+		documents,
+		records
+	}));
 }
 
 test("legislative collection is additive and pins two observed anonymous public races", () => {
@@ -36,7 +72,16 @@ test("legislative collection is additive and pins two observed anonymous public 
 		const url = new URL(document.url);
 		assert.equal(url.origin, "https://voter.votewa.gov");
 		assert.equal(url.pathname, "/elections/candidate.ashx");
-		assert.deepEqual([...url.searchParams], [["e", "899"], ["r", String(186957 + index)], ["b", "0"], ["la", "en"], ["c", ""]]);
+		assert.deepEqual([...url.searchParams], [
+			["e", "899"],
+			[
+				"r",
+				String(186957 + index)
+			],
+			["b", "0"],
+			["la", "en"],
+			["c", ""]
+		]);
 		assert.equal(document.pageUrl, `https://voter.votewa.gov/genericvoterguide.aspx?e=899&c=#/candidates/${186957 + index}`);
 		assert.equal(document.kind, "candidate-statement");
 		assert.equal(document.publishedDate, undefined);
@@ -47,29 +92,77 @@ test("combined pagination filters before slicing and preserves every source iden
 	const first = fixture(congressional, "Congressional");
 	const second = fixture(legislative, "Legislative");
 	second.records[0]!.id = first.records[0]!.id;
-	const collections = [{ source: congressional, snapshot: first }, { source: legislative, snapshot: second }];
-	const page = buildElectionReferencePages(collections, { search: "", scope: "all", offset: 9, limit: 3 });
+	const collections = [
+		{ source: congressional, snapshot: first },
+		{ source: legislative, snapshot: second }
+	];
+	const page = buildElectionReferencePages(collections, {
+		search: "",
+		scope: "all",
+		offset: 9,
+		limit: 3
+	});
 	assert.equal(page.total, 12);
 	assert.equal(page.matched, 12);
 	assert.deepEqual(page.records.map(record => record.name), ["Congressional 9", "Legislative 0", "Legislative 1"]);
 	assert.deepEqual(page.records.map(record => record.source.collectionId), [congressional.id, legislative.id, legislative.id]);
 	assert.equal(page.records[1]!.id, first.records[0]!.id);
 	assert.equal(page.records[1]!.source.url, legislative.documents[0]!.url);
-	const filtered = buildElectionReferencePages(collections, { search: "legislative", scope: "state-house", offset: 0, limit: 1 });
+	const filtered = buildElectionReferencePages(collections, {
+		search: "legislative",
+		scope: "state-house",
+		offset: 0,
+		limit: 1
+	});
 	assert.equal(filtered.total, 12);
 	assert.equal(filtered.matched, 2);
-	const named = buildElectionReferencePages(collections, { search: "legislative 1", scope: "state-house", offset: 99, limit: 1 });
+	const named = buildElectionReferencePages(collections, {
+		search: "legislative 1",
+		scope: "state-house",
+		offset: 99,
+		limit: 1
+	});
 	assert.equal(named.matched, 1);
 	assert.equal(named.offset, 0);
 	assert.equal(named.records[0]!.name, "Legislative 1");
-	assert.deepEqual(buildElectionReferencePage(congressional, first, { search: "", scope: "all", offset: 0, limit: 50 }), buildElectionReferencePages([collections[0]!], { search: "", scope: "all", offset: 0, limit: 50 }));
+	assert.deepEqual(buildElectionReferencePage(congressional, first, {
+		search: "",
+		scope: "all",
+		offset: 0,
+		limit: 50
+	}), buildElectionReferencePages([collections[0]!], {
+		search: "",
+		scope: "all",
+		offset: 0,
+		limit: 50
+	}));
 });
 
 test("aggregation refuses mixed states, elections and duplicate collections", () => {
-	const first = { source: congressional, snapshot: fixture(congressional) };
+	const first = {
+		source: congressional,
+		snapshot: fixture(congressional)
+	};
 	const otherState = { ...legislative, stateCode: "OR" };
 	const future = { ...legislative, electionDate: "2028-11-07" };
-	for (const second of [{ source: otherState, snapshot: fixture(otherState) }, { source: future, snapshot: fixture(future) }, first]) assert.throws(() => buildElectionReferencePages([first, second], { search: "", scope: "all", offset: 0, limit: 50 }), /same state and election/u);
+	for (const second of [
+		{
+			source: otherState,
+			snapshot: fixture(otherState)
+		},
+		{
+			source: future,
+			snapshot: fixture(future)
+		},
+		first
+	]) {
+		assert.throws(() => buildElectionReferencePages([first, second], {
+			search: "",
+			scope: "all",
+			offset: 0,
+			limit: 50
+		}), /same state and election/u);
+	}
 });
 
 test("readers retain healthy collections across missing, corrupt and restored imports", async (context) => {
@@ -78,7 +171,11 @@ test("readers retain healthy collections across missing, corrupt and restored im
 	const storage = createElectionReferenceStorage(directory);
 	const first = fixture(congressional);
 	const second = fixture(legislative);
-	const repository = createElectionReferenceRepository({ dataDirectory: directory, sources: [congressional, legislative], now: () => Date.parse("2026-10-21T00:00:00Z") });
+	const repository = createElectionReferenceRepository({
+		dataDirectory: directory,
+		sources: [congressional, legislative],
+		now: () => Date.parse("2026-10-21T00:00:00Z")
+	});
 	await storage.write(congressional, first);
 	assert.deepEqual(await repository.getSnapshots!("wa"), [first]);
 	await storage.write(legislative, second);
@@ -107,10 +204,22 @@ test("earliest active election is isolated from future and expired collections",
 	const next = fixture(future);
 	await storage.write(congressional, first);
 	await storage.write(future, next);
-	const options = { dataDirectory: directory, sources: [future, congressional] };
-	assert.deepEqual(await createElectionReferenceRepository({ ...options, now: () => Date.parse("2026-10-22T00:00:00Z") }).getSnapshots!("WA"), [first]);
-	assert.deepEqual(await createElectionReferenceRepository({ ...options, now: () => Date.parse("2026-11-05T00:00:00Z") }).getSnapshots!("WA"), [next]);
-	assert.deepEqual(await createElectionReferenceRepository({ ...options, now: () => Date.parse("2028-11-09T00:00:00Z") }).getSnapshots!("WA"), []);
+	const options = {
+		dataDirectory: directory,
+		sources: [future, congressional]
+	};
+	assert.deepEqual(await createElectionReferenceRepository({
+		...options,
+		now: () => Date.parse("2026-10-22T00:00:00Z")
+	}).getSnapshots!("WA"), [first]);
+	assert.deepEqual(await createElectionReferenceRepository({
+		...options,
+		now: () => Date.parse("2026-11-05T00:00:00Z")
+	}).getSnapshots!("WA"), [next]);
+	assert.deepEqual(await createElectionReferenceRepository({
+		...options,
+		now: () => Date.parse("2028-11-09T00:00:00Z")
+	}).getSnapshots!("WA"), []);
 	assert.deepEqual(await createElectionReferenceRepository({ dataDirectory: null }).getSnapshots!("WA"), []);
 });
 
@@ -120,12 +229,19 @@ test("optional Stevens imports preserve healthy collections and fingerprint the 
 	const storage = createElectionReferenceStorage(directory);
 	const first = fixture(congressional);
 	const local = fixture(stevens, "Stevens");
-	const repository = createElectionReferenceRepository({ dataDirectory: directory, sources: [congressional, stevens], now: () => Date.parse("2026-10-23T00:00:00Z") });
+	const repository = createElectionReferenceRepository({
+		dataDirectory: directory,
+		sources: [congressional, stevens],
+		now: () => Date.parse("2026-10-23T00:00:00Z")
+	});
 	await storage.write(congressional, first);
 	assert.deepEqual(await repository.getSnapshots!("WA"), [first]);
 	await storage.write(stevens, local);
 	assert.deepEqual(await repository.getSnapshots!("WA"), [first, local]);
-	await assert.rejects(storage.read({ ...stevens, washingtonLocality: { ...stevens.washingtonLocality!, countyDisplay: "Wahkiakum" } }), /configured collection/u);
+	await assert.rejects(storage.read({
+		...stevens,
+		washingtonLocality: { ...stevens.washingtonLocality!, countyDisplay: "Wahkiakum" }
+	}), /configured collection/u);
 	assert.deepEqual(await storage.read(stevens), local);
 	await writeFile(join(directory, `references-${stevens.id}.json`), "{}");
 	assert.deepEqual(await repository.getSnapshots!("WA"), [first]);
@@ -155,7 +271,13 @@ test("public aggregation exposes partial availability without hiding healthy pro
 	const complete = await (await fetch(origin)).json();
 	assert.equal(complete.total, 137);
 	assert.equal(complete.incomplete, undefined);
-	assert.deepEqual(complete.collections, [congressional.id, legislative.id, statewide.id, "openstates-wa-service-2026", stevens.id]);
+	assert.deepEqual(complete.collections, [
+		congressional.id,
+		legislative.id,
+		statewide.id,
+		"openstates-wa-service-2026",
+		stevens.id
+	]);
 	assert.equal(new Set(complete.records.map((record: { source: { collectionId: string } }) => record.source.collectionId)).size, 3);
 	const page = await (await fetch(`${origin}?offset=9&limit=3`)).json();
 	assert.equal(page.records.length, 3);
@@ -179,7 +301,10 @@ test("public aggregation exposes partial availability without hiding healthy pro
 	assert.equal(unavailable.status, 503);
 	assert.deepEqual(await unavailable.json(), { message: "Candidate information is temporarily unavailable." });
 	fail = false;
-	snapshots = [first, fixture({ ...legislative, stateCode: "ME", id: "not-configured-for-wa" })];
+	snapshots = [
+		first,
+		fixture({ ...legislative, stateCode: "ME", id: "not-configured-for-wa" })
+	];
 	assert.equal((await fetch(origin)).status, 503);
 });
 
@@ -192,7 +317,15 @@ test("ambiguous state export requires a pinned collection without changing legac
 	const cache = join(directory, `references-${congressional.id}.json`);
 	const before = await readFile(cache, "utf8");
 	const script = fileURLToPath(new URL("../src/manage-election-references.ts", import.meta.url));
-	const command = (...args: string[]) => spawnSync(process.execPath, ["--import", import.meta.resolve("tsx"), script, ...args], { env: { PATH: process.env.PATH, HOME: process.env.HOME, STATE_BALLOT_DATA_DIR: directory }, encoding: "utf8" });
+	const command = (...args: string[]) => spawnSync(process.execPath, [
+		"--import",
+		import.meta.resolve("tsx"),
+		script,
+		...args
+	], {
+		env: { PATH: process.env.PATH, HOME: process.env.HOME, STATE_BALLOT_DATA_DIR: directory },
+		encoding: "utf8"
+	});
 	const ambiguous = command("export", "WA");
 	assert.notEqual(ambiguous.status, 0);
 	assert.match(ambiguous.stderr, /provide --source/u);

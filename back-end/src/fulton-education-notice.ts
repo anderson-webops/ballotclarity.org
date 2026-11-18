@@ -26,7 +26,9 @@ function date(text: string) {
 export function discoverFultonEducationNotices(body: string) {
 	if (!body.trim() || Buffer.byteLength(body) > 3 * 1024 * 1024 || body.includes("\uFFFD")) throw new Error("The education-notice index exceeds its bounds.");
 	const tree = parseStateHtml(body);
-	const pending = [{ node: tree, depth: 0 }];
+	const pending = [
+		{ node: tree, depth: 0 }
+	];
 	let count = 0;
 	while (pending.length) {
 		const { node, depth } = pending.pop()!;
@@ -41,12 +43,17 @@ export function discoverFultonEducationNotices(body: string) {
 	if (!sections.length || sections.length > 10) throw new Error("The education-notice publication inventory requires review.");
 	const notices = sections.map((section) => {
 		const text = clean(stateHtmlText(section));
-		const dates = [...text.matchAll(/NOTICE IS HEREBY GIVEN that on ([A-Za-z]+ [1-9]\d?, 20\d{2}), an election will be held in all of the election districts of Fulton County/gu)];
+		const dates = [
+			...text.matchAll(/NOTICE IS HEREBY GIVEN that on ([A-Za-z]+ [1-9]\d?, 20\d{2}), an election will be held in all of the election districts of Fulton County/gu)
+		];
 		const links = stateHtmlDescendants(section, node => node.nodeName === "a").map(node => new URL(stateHtmlAttribute(node, "href"), fultonEducationNoticeIndexUrl)).filter(url => url.pathname.endsWith(".pdf"));
 		if (dates.length !== 1 || links.length !== 1) throw new Error("The education notice must have one explicit election and offered PDF.");
 		const url = links[0]!;
 		if (url.origin !== "https://fultoncountyga.gov" || url.href.length > 2048 || url.username || url.password || url.port || url.search || url.hash || !/^\/-\/media\/[\w/-]+\.pdf$/u.test(url.pathname)) throw new Error("The education notice must retain its exact public HTTPS address.");
-		return { electionDate: date(dates[0]![1]!), url: url.href };
+		return {
+			electionDate: date(dates[0]![1]!),
+			url: url.href
+		};
 	});
 	if (new Set(notices.map(notice => notice.electionDate)).size !== notices.length || new Set(notices.map(notice => notice.url)).size !== notices.length) throw new Error("The education-notice editions are ambiguous.");
 	return notices.sort((first, second) => first.electionDate.localeCompare(second.electionDate));
@@ -57,7 +64,10 @@ export function readFultonEducationNotice(text: string, electionDate: string) {
 	const pages = text.split("\f");
 	if (!pages.at(-1)?.trim()) pages.pop();
 	if (!pages.length || pages.length > 20) throw new Error("The education-notice page inventory exceeds its bounds.");
-	const rows = pages.flatMap((page, index) => page.split(/\r?\n/u).map(value => ({ text: clean(value), page: index + 1 })).filter(row => row.text && row.text !== String(row.page)));
+	const rows = pages.flatMap((page, index) => page.split(/\r?\n/u).map(value => ({
+		text: clean(value),
+		page: index + 1
+	})).filter(row => row.text && row.text !== String(row.page)));
 	const opening = clean(pages[0]!);
 	const identity = /NOTICE IS HEREBY GIVEN that on ([A-Za-z]+ [1-9]\d?, 20\d{2}), an election will be held in all of the election districts of Fulton County/u.exec(opening);
 	if (!opening.includes("NOTICE OF CALL FOR SPECIAL ELECTION TO THE QUALIFIED VOTERS OF FULTON COUNTY TO CONSIDER A SPECIAL ONE PERCENT SALES AND USE TAX") || !opening.includes("special one percent (1%)") || !identity || date(identity[1]!) !== electionDate) throw new Error("The education-notice identity or election date changed.");
@@ -84,13 +94,32 @@ export function readFultonEducationNotice(text: string, electionDate: string) {
 	if (words.indexOf(interest[1]!) !== Number(interest[2]) || !Number(interest[2])) throw new Error("The education-notice printed interest limits disagree.");
 	const schedule = debtRows.flatMap((row) => {
 		const match = new RegExp(`^(20\\d{2}) \\$${amounts}$`, "u").exec(row.text);
-		return match ? [{ year: Number(match[1]), maximumPrincipalCents: cents(match[2]!), printedAmount: `$${match[2]}`, page: row.page }] : [];
+		return match
+			? [
+					{
+						year: Number(match[1]),
+						maximumPrincipalCents: cents(match[2]!),
+						printedAmount: `$${match[2]}`,
+						page: row.page
+					}
+				]
+			: [];
 	});
 	if (!debtText.includes("Year: Principal Amount:") || !schedule.length || schedule.length > 20 || schedule.some((row, index) => index > 0 && row.year !== schedule[index - 1]!.year + 1) || schedule.reduce((sum, row) => sum + row.maximumPrincipalCents, 0) !== cents(principal) || cents(fcsMaximum) + cents(apsMaximum) !== cents(total)) throw new Error("The education-notice allocation or principal schedule does not reconcile.");
 	const projects: { id: string; system: string; category: string; subject: string; condition: string; pages: number[]; fundingGuaranteed: false }[] = [];
 	const project = (system: string, category: string, subject: string, condition: string, sourcePages: number[]) => {
 		if (subject.length < 5 || subject.length > 250 || !/^\p{L}/u.test(subject)) throw new Error("The education-notice named project requires review.");
-		projects.push({ id: hash(`${electionDate}\n${system}\n${category}\n${subject}`).slice(0, 24), system, category, subject, condition, pages: [...new Set(sourcePages)], fundingGuaranteed: false });
+		projects.push({
+			id: hash(`${electionDate}\n${system}\n${category}\n${subject}`).slice(0, 24),
+			system,
+			category,
+			subject,
+			condition,
+			pages: [
+				...new Set(sourcePages)
+			],
+			fundingGuaranteed: false
+		});
 	};
 	const list = (section: typeof rows, start: string, end: string) => {
 		const first = section.findIndex(row => row.text.endsWith(start));
@@ -112,7 +141,10 @@ export function readFultonEducationNotice(text: string, electionDate: string) {
 		const numbered = /^\(([1-9]\d?)\) (.+)$/u.exec(row.text);
 		if (numbered) {
 			if (Number(numbered[1]) !== named.length + 1) throw new Error("The education-notice numbered project inventory changed.");
-			named.push({ subject: numbered[2]!, pages: [row.page] });
+			named.push({
+				subject: numbered[2]!,
+				pages: [row.page]
+			});
 		}
 		else if (named.length) {
 			named.at(-1)!.subject += ` ${row.text}`;
@@ -124,5 +156,27 @@ export function readFultonEducationNotice(text: string, electionDate: string) {
 	}
 	for (const item of named) project("Atlanta Independent School System", "school-reconfiguration", item.subject, "as needed", item.pages);
 	if (!named.length || projects.length > 200 || new Set(projects.map(row => row.id)).size !== projects.length) throw new Error("The education-notice project inventory exceeds its bounds or contains duplicates.");
-	return { schemaVersion: 1, type: "fulton-education-notice-research", electionDate, taxRatePercent: 1, taxStartDate: date(required(opening, /beginning ([A-Za-z]+ [1-9]\d?, 20\d{2})/u)[1]!), maximumCalendarQuarters: Number(required(opening, /not to exceed ([1-9]\d?) calendar quarters/u)[1]), maximumCollectionsCents: cents(total), fcsMaximumProjectCostCents: cents(fcsMaximum), apsMaximumProjectCostCents: cents(apsMaximum), maximumBondPrincipalCents: cents(principal), maximumAnnualInterestPercent: Number(interest[2]), schedule, projects, principalScheduleReconciled: true, schoolProjectCostCapsReconciled: true, actualInterestRateKnown: false, projectInventoryComplete: false, electionOutcomeVerified: false, personalApplicabilityVerified: false, publicationApproved: false, automaticImportApproved: false };
+	return {
+		schemaVersion: 1,
+		type: "fulton-education-notice-research",
+		electionDate,
+		taxRatePercent: 1,
+		taxStartDate: date(required(opening, /beginning ([A-Za-z]+ [1-9]\d?, 20\d{2})/u)[1]!),
+		maximumCalendarQuarters: Number(required(opening, /not to exceed ([1-9]\d?) calendar quarters/u)[1]),
+		maximumCollectionsCents: cents(total),
+		fcsMaximumProjectCostCents: cents(fcsMaximum),
+		apsMaximumProjectCostCents: cents(apsMaximum),
+		maximumBondPrincipalCents: cents(principal),
+		maximumAnnualInterestPercent: Number(interest[2]),
+		schedule,
+		projects,
+		principalScheduleReconciled: true,
+		schoolProjectCostCapsReconciled: true,
+		actualInterestRateKnown: false,
+		projectInventoryComplete: false,
+		electionOutcomeVerified: false,
+		personalApplicabilityVerified: false,
+		publicationApproved: false,
+		automaticImportApproved: false
+	};
 }

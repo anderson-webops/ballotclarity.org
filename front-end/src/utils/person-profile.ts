@@ -73,7 +73,9 @@ export function buildPersonSummaryItems(options: {
 			note: options.hasInfluence
 				? "Lobbying, donor, or disclosure context is attached below."
 				: options.influenceStatusSummary,
-			value: options.hasInfluence ? `${options.influenceNoteCount} notes` : "Unavailable"
+			value: options.hasInfluence
+				? `${options.influenceNoteCount} notes`
+				: "Unavailable"
 		}
 	];
 }

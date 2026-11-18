@@ -17,7 +17,14 @@ async function manageStateBallotData() {
 		const source = configuration.sources.find(source => source.id === sourceId);
 		if (!source || !path || extra.length || source.retrievalPolicy === "manual-snapshot") throw new Error("Use import-native ENABLED_AUTOMATIC_SOURCE SNAPSHOT.json.");
 		const snapshot = await importNativeStateBallotSnapshot(source, await readBoundedStateData(path), configuration.dataDirectory);
-		console.log(JSON.stringify({ state: source.stateCode, sourceId: source.id, action: "imported", records: snapshot.records.length, questions: snapshot.ballotQuestions?.length ?? 0, retrievedAt: snapshot.retrievedAt }));
+		console.log(JSON.stringify({
+			state: source.stateCode,
+			sourceId: source.id,
+			action: "imported",
+			records: snapshot.records.length,
+			questions: snapshot.ballotQuestions?.length ?? 0,
+			retrievedAt: snapshot.retrievedAt
+		}));
 		return;
 	}
 	if (command === "import") {
@@ -27,14 +34,24 @@ async function manageStateBallotData() {
 			const body = await readBoundedStateData(path);
 			const metadata = JSON.parse(body);
 			const enabled = configuration.sources.find(item => item.id === metadata.sourceId);
-			const source = enabled?.retrievalPolicy === "manual-snapshot" ? enabled : enabled ? legacyReviewedStateBallotSource(enabled) : null;
+			const source = enabled?.retrievalPolicy === "manual-snapshot"
+				? enabled
+				: enabled
+					? legacyReviewedStateBallotSource(enabled)
+					: null;
 			if (!source)
 				throw new Error("Every imported snapshot must match an enabled reviewed source.");
 			const snapshot = parseBundledStateSnapshot(source, body);
 			if (Date.parse(snapshot.retrievedAt) > Date.now())
 				throw new Error("A reviewed snapshot cannot have a future capture time.");
 			await storage.write(snapshot);
-			console.log(JSON.stringify({ state: source.stateCode, sourceId: source.id, action: "imported", records: snapshot.records.length, retrievedAt: snapshot.retrievedAt }));
+			console.log(JSON.stringify({
+				state: source.stateCode,
+				sourceId: source.id,
+				action: "imported",
+				records: snapshot.records.length,
+				retrievedAt: snapshot.retrievedAt
+			}));
 		}
 		return;
 	}
@@ -52,7 +69,13 @@ async function manageStateBallotData() {
 	});
 	for (const source of sources) {
 		const snapshot = await repository.getSnapshot(source.stateCode, source.id);
-		console.log(JSON.stringify({ state: source.stateCode, sourceId: source.id, action: snapshot ? "available" : "unavailable", records: snapshot?.records.length ?? 0, retrievedAt: snapshot?.retrievedAt ?? null }));
+		console.log(JSON.stringify({
+			state: source.stateCode,
+			sourceId: source.id,
+			action: snapshot ? "available" : "unavailable",
+			records: snapshot?.records.length ?? 0,
+			retrievedAt: snapshot?.retrievedAt ?? null
+		}));
 		if (!snapshot || (await repository.inspectSources!()).find(item => item.id === source.id)?.failure) process.exitCode = 1;
 	}
 }
@@ -65,6 +88,8 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-	console.error(error instanceof Error ? error.message : "State ballot data management failed.");
+	console.error(error instanceof Error
+		? error.message
+		: "State ballot data management failed.");
 	process.exitCode = 1;
 });

@@ -77,7 +77,9 @@ export function validateIowaSampleAppearance(
 			&& Number(page.glyphs) >= Math.ceil(characters / 2)
 			&& Number(page.glyphs) <= characters
 			&& integer(page.ruleContacts, Number(page.glyphs) * 32)
-			&& integer(page.watermarkLayers, county === "Monona" ? 1 : 0)
+			&& integer(page.watermarkLayers, county === "Monona"
+				? 1
+				: 0)
 			&& integer(page.images, 4)
 			&& typeof page.minimumContrast === "number"
 			&& Number.isFinite(page.minimumContrast)

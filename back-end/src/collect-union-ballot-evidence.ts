@@ -28,7 +28,9 @@ export async function collectUnionBallotEvidence(path: string, options: { collec
 		const stored = new Set<string>();
 		async function onCapture(capture: UnionBallotCapture) {
 			if (unionCandidateHash(capture.body) !== capture.sha256 || inputs.some(input => input.role === capture.role || input.url === capture.url)) throw new Error("Union sample-ballot capture identity changed.");
-			const name = `${capture.sha256}.${capture.body.subarray(0, 5).toString() === "%PDF-" ? "pdf" : "txt"}`;
+			const name = `${capture.sha256}.${capture.body.subarray(0, 5).toString() === "%PDF-"
+				? "pdf"
+				: "txt"}`;
 			if (!stored.has(name)) {
 				await persist(outputDirectory, name, capture.body);
 				stored.add(name);
@@ -38,16 +40,36 @@ export async function collectUnionBallotEvidence(path: string, options: { collec
 			await persist(outputDirectory, `${capture.role}.metadata.json`, `${JSON.stringify(input, null, 2)}\n`);
 			inputs.push(input);
 		}
-		const collected = window ? await (options.collectWindow ?? collectUnionSampleWindow)(plan.windowOffset, plan.accessReview, plan.catalogSha256, { ...options.collection, onCapture }) : await (options.collect ?? collectUnionSampleBatch)(plan.forms, plan.accessReview, plan.catalogSha256, { ...options.collection, onCapture });
+		const collected = window
+			? await (options.collectWindow ?? collectUnionSampleWindow)(plan.windowOffset, plan.accessReview, plan.catalogSha256, { ...options.collection, onCapture })
+			: await (options.collect ?? collectUnionSampleBatch)(plan.forms, plan.accessReview, plan.catalogSha256, { ...options.collection, onCapture });
 		if (inputs.length !== collected.captures.length || inputs.length !== collected.selected.length + 7) throw new Error("Union sample-ballot capture inventory is incomplete.");
-		const body = `${JSON.stringify({ schemaVersion: 1, type: "union-sample-ballot-capture", catalog: collected.catalog, selected: collected.selected, accessReview: plan.accessReview, inputs, imported: false, publicationApproved: false, personalApplicabilityVerified: false }, null, 2)}\n`;
+		const body = `${JSON.stringify({
+			schemaVersion: 1,
+			type: "union-sample-ballot-capture",
+			catalog: collected.catalog,
+			selected: collected.selected,
+			accessReview: plan.accessReview,
+			inputs,
+			imported: false,
+			publicationApproved: false,
+			personalApplicabilityVerified: false
+		}, null, 2)}\n`;
 		await persist(outputDirectory, "capture.json", body);
 		const handle = await open(outputDirectory, "r");
 		try {
 			await handle.sync();
 		}
 		finally { await handle.close(); }
-		return { outputDirectory, catalogSha256: collected.catalog.sha256, forms: collected.selected.map(document => document.form), completeCatalogDocuments: collected.catalog.documents.length, captureSha256: unionCandidateHash(body), imported: false, publicationApproved: false };
+		return {
+			outputDirectory,
+			catalogSha256: collected.catalog.sha256,
+			forms: collected.selected.map(document => document.form),
+			completeCatalogDocuments: collected.catalog.documents.length,
+			captureSha256: unionCandidateHash(body),
+			imported: false,
+			publicationApproved: false
+		};
 	}
 	finally { await lock.release(); }
 }
@@ -60,7 +82,9 @@ if (process.argv[1]?.endsWith("collect-union-ballot-evidence.ts") || process.arg
 	}
 	else {
 		collectUnionBallotEvidence(path).then(result => console.log(JSON.stringify(result))).catch((error: unknown) => {
-			console.error(error instanceof Error ? error.message : "Union sample-ballot collection failed.");
+			console.error(JSON.stringify(error instanceof Error
+				? error.message
+				: "Union sample-ballot collection failed."));
 			process.exitCode = 1;
 		});
 	}

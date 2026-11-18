@@ -20,7 +20,29 @@ async function fixture(context: TestContext) {
 	const path = join(directory, "reviewed.pdf");
 	const body = Buffer.from("%PDF-1.7\nSynthetic reviewed source bytes\n%%EOF\n");
 	await writeFile(path, body);
-	const plan = { schemaVersion: 1, type: "reviewed-candidate-preparation", sourceId: source.id, sourceConfigurationSha256: hash(JSON.stringify(source)), input: { path, sha256: hash(body), format: "cambridge-candidates-pdf" }, documents: [{ url: source.url, path, sha256: hash(body), capturedAt: "2026-10-21T11:49:39.783Z", pageCount: 3, reviewedPages: [1, 2] }], outputDirectory: join(directory, "out"), outputName: "cambridge-native" };
+	const plan = {
+		schemaVersion: 1,
+		type: "reviewed-candidate-preparation",
+		sourceId: source.id,
+		sourceConfigurationSha256: hash(JSON.stringify(source)),
+		input: {
+			path,
+			sha256: hash(body),
+			format: "cambridge-candidates-pdf"
+		},
+		documents: [
+			{
+				url: source.url,
+				path,
+				sha256: hash(body),
+				capturedAt: "2026-10-21T11:49:39.783Z",
+				pageCount: 3,
+				reviewedPages: [1, 2]
+			}
+		],
+		outputDirectory: join(directory, "out"),
+		outputName: "cambridge-native"
+	};
 	const planPath = join(directory, "plan.json");
 	const save = () => writeFile(planPath, JSON.stringify(plan));
 	await save();
@@ -30,11 +52,13 @@ async function fixture(context: TestContext) {
 test("Cambridge native preparation uses only pinned local bytes and keeps outputs unapproved", async (context) => {
 	const input = await fixture(context);
 	let extracted = 0;
-	const result = await prepareReviewedCandidateFiles(input.planPath, now, { extractCambridgePdf: async (body) => {
-		assert.equal(hash(body), input.plan.input.sha256);
-		extracted++;
-		return cambridgeFixture();
-	} });
+	const result = await prepareReviewedCandidateFiles(input.planPath, now, {
+		extractCambridgePdf: async (body) => {
+			assert.equal(hash(body), input.plan.input.sha256);
+			extracted++;
+			return cambridgeFixture();
+		}
+	});
 	assert.equal(extracted, 1);
 	assert.equal(result.recordCount, 8);
 	assert.equal(result.publisherRequests, 0);
@@ -50,7 +74,15 @@ test("Cambridge native preparation uses only pinned local bytes and keeps output
 });
 
 test("Cambridge native preparation rejects wrong identity, bytes, page review or extraction before output", async (context) => {
-	for (const kind of ["format", "source", "path", "hash", "count", "review", "text"]) {
+	for (const kind of [
+		"format",
+		"source",
+		"path",
+		"hash",
+		"count",
+		"review",
+		"text"
+	]) {
 		const input = await fixture(context);
 		if (kind === "format") input.plan.input.format = "unreviewed-native-format";
 		if (kind === "source") {
@@ -62,7 +94,11 @@ test("Cambridge native preparation rejects wrong identity, bytes, page review or
 		if (kind === "count") input.plan.documents[0]!.pageCount = 4;
 		if (kind === "review") input.plan.documents[0]!.reviewedPages = [1];
 		await input.save();
-		await assert.rejects(prepareReviewedCandidateFiles(input.planPath, now, { extractCambridgePdf: async () => kind === "text" ? "Broken publication" : cambridgeFixture() }));
+		await assert.rejects(prepareReviewedCandidateFiles(input.planPath, now, {
+			extractCambridgePdf: async () => kind === "text"
+				? "Broken publication"
+				: cambridgeFixture()
+		}));
 		await assert.rejects(access(input.plan.outputDirectory), /ENOENT/u);
 	}
 });

@@ -13,7 +13,21 @@ test("explicit archived sources retain records across restart without refreshing
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	const source = stateBallotSources.find(source => source.stateCode === "NC")!;
 	const capturedAt = "2026-11-01T00:00:00.000Z";
-	const snapshot: StateBallotSnapshot = { source, retrievedAt: capturedAt, sha256: "a".repeat(64), records: [{ id: "b".repeat(24), name: "Archived Candidate", office: "US SENATE", scope: "statewide", district: "", status: "listed" }] };
+	const snapshot: StateBallotSnapshot = {
+		source,
+		retrievedAt: capturedAt,
+		sha256: "a".repeat(64),
+		records: [
+			{
+				id: "b".repeat(24),
+				name: "Archived Candidate",
+				office: "US SENATE",
+				scope: "statewide",
+				district: "",
+				status: "listed"
+			}
+		]
+	};
 	const storage = createStateBallotStorage(directory);
 	await storage.write(snapshot);
 	let publisherRequests = 0;
@@ -28,7 +42,10 @@ test("explicit archived sources retain records across restart without refreshing
 		},
 		onUnavailable: () => { failures++; },
 	});
-	for (const repository of [makeRepository(), makeRepository()]) {
+	for (const repository of [
+		makeRepository(),
+		makeRepository()
+	]) {
 		assert.equal(await repository.getSnapshot("NC"), null);
 		assert.equal((await repository.getSnapshot("NC", source.id))!.records[0]!.name, "Archived Candidate");
 		assert.equal(await repository.getSnapshot("NC", "unknown-source"), null);

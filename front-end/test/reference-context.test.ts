@@ -3,7 +3,12 @@ import test from "node:test";
 import { referenceJurisdiction } from "../src/utils/reference-context.ts";
 
 test("reference context omits district labels already present in the office title", () => {
-	for (const office of ["State Senate District 6", "State House - District 6", "State Assembly, DISTRICT 6", "District 6"]) {
+	for (const office of [
+		"State Senate District 6",
+		"State House - District 6",
+		"State Assembly, DISTRICT 6",
+		"District 6"
+	]) {
 		assert.equal(referenceJurisdiction({ office, jurisdiction: "District 6" }), undefined);
 	}
 	assert.equal(referenceJurisdiction({ office: "State Senate   District 6 ", jurisdiction: " District 6 " }), undefined);

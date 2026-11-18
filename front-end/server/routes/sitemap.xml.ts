@@ -47,7 +47,9 @@ function unique<T>(values: T[]) {
 }
 
 async function fetchPublicApiJson<T>(apiBase: string, path: string, timeout: number): Promise<T | null> {
-	const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+	const normalizedPath = path.startsWith("/")
+		? path
+		: `/${path}`;
 
 	try {
 		return await $fetch<unknown>(`${apiBase}${normalizedPath}`, { timeout }) as T;

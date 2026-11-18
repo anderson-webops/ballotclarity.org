@@ -11,7 +11,11 @@ const faqFiles = new Set<string>();
 function vueFiles(directory: string): string[] {
 	return readdirSync(directory).flatMap((name) => {
 		const path = join(directory, name);
-		return statSync(path).isDirectory() ? vueFiles(path) : name.endsWith(".vue") ? [path] : [];
+		return statSync(path).isDirectory()
+			? vueFiles(path)
+			: name.endsWith(".vue")
+				? [path]
+				: [];
 	});
 }
 

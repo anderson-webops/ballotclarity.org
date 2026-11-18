@@ -5,7 +5,7 @@ import type {
 	LocationLookupSelectionOption,
 	NationwideLookupResultContext
 } from "~/types/civic";
-import { useNow } from "@vueuse/core";
+import { useIntervalFn, useNow } from "@vueuse/core";
 import { calendarDaysUntil, describeDaysAway } from "~/utils/election-timeline";
 import { buildPublishedGuideDestination } from "~/utils/location-lookup";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
@@ -39,15 +39,25 @@ const featuredElection = computed(() => electionsData.value?.elections[0] ?? nul
 const { displayTimeZone, formatDate } = useFormatters();
 // The API keeps snapshot order, so pick the soonest election that has not passed yet.
 // Ticks each minute so the banner drops a passed election without a reload.
-const now = useNow({ interval: 60_000 });
+const now = useNow({
+	scheduler: callback => useIntervalFn(callback, 60_000)
+});
 const upcomingElection = computed(() => {
 	const upcoming = (electionsData.value?.elections ?? [])
 		.filter(election => election.date)
-		.map(election => ({ ...election, daysAway: calendarDaysUntil(election.date, now.value, displayTimeZone.value) }))
+		.map(election => ({
+			...election,
+			daysAway: calendarDaysUntil(election.date, now.value, displayTimeZone.value)
+		}))
 		.filter(election => election.daysAway >= 0)
 		.sort((left, right) => left.daysAway - right.daysAway)[0];
 
-	return upcoming ? { ...upcoming, relativeLabel: describeDaysAway(upcoming.daysAway) } : null;
+	return upcoming
+		? {
+				...upcoming,
+				relativeLabel: describeDaysAway(upcoming.daysAway)
+			}
+		: null;
 });
 
 usePageSeo({
@@ -126,7 +136,9 @@ async function selectHomeLookupOption(option: LocationLookupSelectionOption) {
 			await navigateTo(buildPublishedGuideDestination(response) ?? `/elections/${response.electionSlug}`);
 	}
 	catch (error) {
-		homeLookupSelectionError.value = error instanceof Error ? error.message : "Unable to load that matched area right now.";
+		homeLookupSelectionError.value = error instanceof Error
+			? error.message
+			: "Unable to load that matched area right now.";
 	}
 }
 </script>

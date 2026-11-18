@@ -5,7 +5,17 @@ import { createStateCandidateRecord } from "../src/state-ballot-records.js";
 import { readWinnebagoCandidateDocument } from "../src/state-ballot-winnebago.js";
 import { winnebagoField, winnebagoFixture } from "./helpers/winnebago-fixture.js";
 
-const source: StateBallotSource = { id: "il-winnebago-2026", stateCode: "IL", label: "Winnebago County general-election candidates", electionDate: "2026-11-03", url: "https://wincoil.gov/media/attachments/2026/09/25/november-2026-candidate-list.pdf", pageUrl: "https://wincoil.gov/departments/clerks-office/election-information", format: "reviewed-pdf", retrievalPolicy: "manual-snapshot", snapshotStorage: "external" };
+const source: StateBallotSource = {
+	id: "il-winnebago-2026",
+	stateCode: "IL",
+	label: "Winnebago County general-election candidates",
+	electionDate: "2026-11-03",
+	url: "https://wincoil.gov/media/attachments/2026/09/25/november-2026-candidate-list.pdf",
+	pageUrl: "https://wincoil.gov/departments/clerks-office/election-information",
+	format: "reviewed-pdf",
+	retrievalPolicy: "manual-snapshot",
+	snapshotStorage: "external"
+};
 const read = (body = winnebagoFixture()) => readWinnebagoCandidateDocument(source, body, createStateCandidateRecord);
 
 test("Winnebago native preparation preserves tickets, printed parties, regional scope and page evidence", () => {

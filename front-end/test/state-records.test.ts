@@ -3,10 +3,21 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { readStateRecordQuery, resolveStateRecordCode, stateRecordArea, stateRecordScopes, stateRecordStatusLabels, stateRecordSummary } from "../src/utils/state-records.ts";
 
-const states = [{ stateCode: "ME", stateName: "Maine", configured: true }, { stateCode: "NY", stateName: "New York", configured: true }];
+const states = [
+	{ stateCode: "ME", stateName: "Maine", configured: true },
+	{ stateCode: "NY", stateName: "New York", configured: true }
+];
 
 test("candidate summaries use the reported party without inferring missing affiliations", () => {
-	const record = { id: "example", name: "Example", office: "United States Senate", district: "", jurisdiction: "Georgia", scope: "statewide" as const, status: "listed" as const };
+	const record = {
+		id: "example",
+		name: "Example",
+		office: "United States Senate",
+		district: "",
+		jurisdiction: "Georgia",
+		scope: "statewide" as const,
+		status: "listed" as const
+	};
 	assert.equal(stateRecordSummary({ ...record, party: "Republican" }), "United States Senate · Georgia · Republican");
 	assert.equal(stateRecordSummary({ ...record, party: "Democrat" }), "United States Senate · Georgia · Democrat");
 	assert.equal(stateRecordSummary({ ...record, party: "Prefers Independent Party" }), "United States Senate · Georgia · Prefers Independent Party");
@@ -16,9 +27,27 @@ test("candidate summaries use the reported party without inferring missing affil
 });
 
 test("candidate summaries retain consequential statuses but omit the generic Listed label", () => {
-	const record = { id: "example", name: "Example", office: "Council", district: "", scope: "local" as const, party: "Independent" };
+	const record = {
+		id: "example",
+		name: "Example",
+		office: "Council",
+		district: "",
+		scope: "local" as const,
+		party: "Independent"
+	};
 	assert.equal(stateRecordSummary({ ...record, status: "listed" }), "Council · Independent");
-	for (const status of ["filed", "qualified", "write-in", "withdrawn", "disqualified", "defeated", "elected", "unopposed", "inactive", "unrecognized"] as const)
+	for (const status of [
+		"filed",
+		"qualified",
+		"write-in",
+		"withdrawn",
+		"disqualified",
+		"defeated",
+		"elected",
+		"unopposed",
+		"inactive",
+		"unrecognized"
+	] as const)
 		assert.equal(stateRecordSummary({ ...record, status }), `Council · Independent · ${stateRecordStatusLabels[status]}`);
 });
 
@@ -31,10 +60,28 @@ test("record links preserve state context without interpreting a ZIP as eligibil
 });
 
 test("record query defaults, scope and offsets remain bounded", () => {
-	assert.deepEqual(readStateRecordQuery({ state: "Maine", scope: "local", q: "Joseph", status: "all", offset: "50" }, states), { stateCode: "ME", scope: "local", search: "Joseph", status: "all", offset: 50 });
-	assert.equal(readStateRecordQuery({ scope: "ward", offset: "25001", q: ["private"] }, states).scope, "all");
+	assert.deepEqual(readStateRecordQuery({
+		state: "Maine",
+		scope: "local",
+		q: "Joseph",
+		status: "all",
+		offset: "50"
+	}, states), {
+		stateCode: "ME",
+		scope: "local",
+		search: "Joseph",
+		status: "all",
+		offset: 50
+	});
+	assert.equal(readStateRecordQuery({
+		scope: "ward",
+		offset: "25001",
+		q: ["private"]
+	}, states).scope, "all");
 	assert.equal(readStateRecordQuery({ offset: "-1" }, states).offset, 0);
-	assert.equal(readStateRecordQuery({ q: "x".repeat(200) }, states).search.length, 120);
+	assert.equal(readStateRecordQuery({
+		q: "x".repeat(200)
+	}, states).search.length, 120);
 	assert.equal(stateRecordScopes.length, 7);
 	assert(stateRecordScopes.some(scope => scope.value === "state-board-of-education" && scope.label === "State education"));
 	assert.equal(readStateRecordQuery({ scope: "state-board-of-education" }, []).scope, "state-board-of-education");
@@ -43,8 +90,13 @@ test("record query defaults, scope and offsets remain bounded", () => {
 
 test("source links retain explicit selection, including invalid inputs that must fail closed at the API", () => {
 	assert.equal(readStateRecordQuery({ state: "Maine", source: "example-county" }, states).sourceId, "example-county");
-	assert.equal(readStateRecordQuery({ state: "Maine", source: ["example-county"] }, states).sourceId, "");
-	assert.equal(readStateRecordQuery({ source: "x".repeat(200) }, states).sourceId?.length, 120);
+	assert.equal(readStateRecordQuery({
+		state: "Maine",
+		source: ["example-county"]
+	}, states).sourceId, "");
+	assert.equal(readStateRecordQuery({
+		source: "x".repeat(200)
+	}, states).sourceId?.length, 120);
 	assert.equal(readStateRecordQuery({ state: "Maine" }, states).sourceId, undefined);
 	const page = readFileSync(new URL("../src/components/CandidateDirectory.vue", import.meta.url), "utf8");
 	assert.match(page, /v-if="showSourceSelection \|\| unavailableSource"/u);
@@ -54,20 +106,44 @@ test("source links retain explicit selection, including invalid inputs that must
 });
 
 test("record context retains jurisdictions but omits repeated office labels", () => {
-	const record = { id: "example", name: "Example", office: "CITY COUNCIL", district: "", scope: "local" as const, status: "listed" as const, jurisdiction: "Bangor" };
+	const record = {
+		id: "example",
+		name: "Example",
+		office: "CITY COUNCIL",
+		district: "",
+		scope: "local" as const,
+		status: "listed" as const,
+		jurisdiction: "Bangor"
+	};
 	assert.equal(stateRecordArea(record), "Bangor");
 	assert.equal(stateRecordArea({ ...record, office: "BANGOR CITY COUNCIL" }), "");
 });
 
 test("county district summaries ignore punctuation-only duplication without merging distinct districts", () => {
-	const record = { id: "example", name: "Example", office: "Member, Macon County Commission, District 2", district: "2", scope: "local" as const, status: "listed" as const, jurisdiction: "Macon County Commission District 2" };
+	const record = {
+		id: "example",
+		name: "Example",
+		office: "Member, Macon County Commission, District 2",
+		district: "2",
+		scope: "local" as const,
+		status: "listed" as const,
+		jurisdiction: "Macon County Commission District 2"
+	};
 	assert.equal(stateRecordArea(record), "");
 	assert.equal(stateRecordArea({ ...record, jurisdiction: "Macon County Commission District 20" }), "Macon County Commission District 20");
 	assert.equal(stateRecordArea({ ...record, office: "Macon County Commission District 20" }), "Macon County Commission District 2");
 });
 
 test("record context retains a published district when the jurisdiction repeats the office", () => {
-	const record = { id: "example", name: "Example", office: "Public Service Commissioner", district: "2", scope: "local" as const, status: "listed" as const, jurisdiction: "Public Service Commissioner" };
+	const record = {
+		id: "example",
+		name: "Example",
+		office: "Public Service Commissioner",
+		district: "2",
+		scope: "local" as const,
+		status: "listed" as const,
+		jurisdiction: "Public Service Commissioner"
+	};
 	assert.equal(stateRecordArea(record), "District 2");
 	assert.equal(stateRecordArea({ ...record, jurisdiction: "Example County District 2" }), "Example County District 2");
 	assert.equal(stateRecordArea({ ...record, district: "CHITTENDEN-9", sourceDistrictLabel: "Chittenden-9" }), "Chittenden-9");
@@ -75,14 +151,32 @@ test("record context retains a published district when the jurisdiction repeats 
 });
 
 test("a printed district label suppresses a redundant internal matching code", () => {
-	const record = { id: "example", name: "Example", office: "State Representative, Grafton District 10", district: "GRAFTON-10", scope: "state-house" as const, status: "listed" as const, sourceDistrictLabel: "Grafton District 10", sourceAreaLabel: "Bristol sample ballot" };
+	const record = {
+		id: "example",
+		name: "Example",
+		office: "State Representative, Grafton District 10",
+		district: "GRAFTON-10",
+		scope: "state-house" as const,
+		status: "listed" as const,
+		sourceDistrictLabel: "Grafton District 10",
+		sourceAreaLabel: "Bristol sample ballot"
+	};
 	assert.equal(stateRecordArea(record), "");
 	assert.equal(stateRecordArea({ ...record, sourceAreaLabel: undefined }), "");
 	assert.equal(stateRecordArea({ ...record, office: "State Representative" }), "Grafton District 10");
 });
 
 test("publication labels remain evidence metadata rather than a person's geographic area", () => {
-	const record = { id: "example", name: "Nikema Williams", office: "United States House of Representatives - District 5", district: "5", scope: "congressional" as const, status: "listed" as const, party: "Democrat", sourceAreaLabel: "Fulton County consolidated sample ballot" };
+	const record = {
+		id: "example",
+		name: "Nikema Williams",
+		office: "United States House of Representatives - District 5",
+		district: "5",
+		scope: "congressional" as const,
+		status: "listed" as const,
+		party: "Democrat",
+		sourceAreaLabel: "Fulton County consolidated sample ballot"
+	};
 	const before = structuredClone(record);
 	assert.equal(stateRecordArea(record), "");
 	assert.doesNotMatch(stateRecordSummary(record), /sample ballot/iu);

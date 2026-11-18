@@ -31,7 +31,13 @@ test("Magistrate Court captures source identities without divisions, election ca
 test("Magistrate source cards and profile identity evidence remain exact, visible and publisher-linked", () => {
 	const { roster, people } = magistrateFixture();
 	assert.equal(parseMagistrateCourtRoster(roster).length, 2);
-	for (const changed of [roster.replace("data-headertext=", "hidden data-headertext="), roster.replace("Judge Morgan Current</h3>", "Judge Different Person</h3>"), roster.replace("EID=32", "EID=31"), roster.replace("<h1>Judges</h1>", "<h1>Staff</h1>"), roster.replace("<h1>Judges</h1>", "<h1>Judges</h1><h3 data-headertext=\"Judge Extra Person\">Judge Extra Person</h3>")]) assert.throws(() => parseMagistrateCourtRoster(changed));
+	for (const changed of [
+		roster.replace("data-headertext=", "hidden data-headertext="),
+		roster.replace("Judge Morgan Current</h3>", "Judge Different Person</h3>"),
+		roster.replace("EID=32", "EID=31"),
+		roster.replace("<h1>Judges</h1>", "<h1>Staff</h1>"),
+		roster.replace("<h1>Judges</h1>", "<h1>Judges</h1><h3 data-headertext=\"Judge Extra Person\">Judge Extra Person</h3>")
+	]) assert.throws(() => parseMagistrateCourtRoster(changed));
 	const judge = { name: "Jordan Example, II", role: "Judge" as const, profileUrl: people[0]!.url };
 	verifyMagistrateCourtProfile(magistrateContent("<h2>Jordan Example</h2><h3>Judges</h3><p>Judge Jordan Example II serves on the court.</p>"), judge);
 	assert.throws(() => verifyMagistrateCourtProfile(magistrateContent("<h2>Jordan Example</h2><h3>Judges</h3><p>Judge Jordan Example III serves on the court.</p>"), judge));
@@ -51,7 +57,13 @@ test("Magistrate policies preserve the named-AI robots boundary and every substa
 
 test("Magistrate profile transport admits only exact offered identities and a single same-ID canonical redirect", () => {
 	assert.equal(magistrateProfileRedirect("https://www.magistratefulton.org/directory.aspx?EID=52"), "/m/directory/employee?eid=52");
-	for (const url of ["https://example.com/Directory.aspx?EID=52", "http://www.magistratefulton.org/Directory.aspx?EID=52", "https://www.magistratefulton.org/Directory.aspx?EID=52&other=1", "https://www.magistratefulton.org/Directory.aspx?EID=%35%32", "https://www.magistratefulton.org/Directory.aspx?EID=52#profile"]) assert.throws(() => magistrateProfileUrl(url));
+	for (const url of [
+		"https://example.com/Directory.aspx?EID=52",
+		"http://www.magistratefulton.org/Directory.aspx?EID=52",
+		"https://www.magistratefulton.org/Directory.aspx?EID=52&other=1",
+		"https://www.magistratefulton.org/Directory.aspx?EID=%35%32",
+		"https://www.magistratefulton.org/Directory.aspx?EID=52#profile"
+	]) assert.throws(() => magistrateProfileUrl(url));
 	const changed = structuredClone(magistrateFixture().capture);
 	changed.documents[5]!.location = "/m/directory/employee?eid=99";
 	assert.throws(() => prepareMagistrateCourtDirectory(changed, magistrateTestTime));
@@ -88,7 +100,10 @@ test("Magistrate snapshot validation rejects missing evidence, altered identitie
 	const altered = structuredClone(magistrateFixture().capture);
 	altered.documents[3]!.body += "changed";
 	assert.throws(() => prepareMagistrateCourtDirectory(altered, magistrateTestTime));
-	assert.throws(() => validateMagistrateCourtSnapshot({ ...magistrateFixture().snapshot, electionDate: "2026-11-03" }, magistrateTestTime));
+	assert.throws(() => validateMagistrateCourtSnapshot({
+		...magistrateFixture().snapshot,
+		electionDate: "2026-11-03"
+	}, magistrateTestTime));
 });
 
 test("Magistrate imports preserve source clocks, exact predecessor and cold-restart records independently of State Court", async (context) => {
@@ -132,11 +147,28 @@ test("Magistrate recurring collection spaces requests, repeats without traffic a
 		requests.push(url);
 		const entry = fixture.capture.documents.find(entry => entry.url === url)!;
 		assert(entry);
-		return { status: entry.status, body: Buffer.from(entry.body), contentType: entry.status === 302 ? "" : url.endsWith("robots.txt") ? "text/plain" : "text/html", etag: undefined, ...(entry.location ? { location: entry.location } : {}) };
+		return {
+			status: entry.status,
+			body: Buffer.from(entry.body),
+			contentType: entry.status === 302
+				? ""
+				: url.endsWith("robots.txt")
+					? "text/plain"
+					: "text/html",
+			etag: undefined,
+			...(entry.location
+				? { location: entry.location }
+				: {})
+		};
 	};
-	const options = { directory: folder, now: () => now, request, pause: async (milliseconds: number) => {
-		pauses.push(milliseconds);
-	} };
+	const options = {
+		directory: folder,
+		now: () => now,
+		request,
+		pause: async (milliseconds: number) => {
+			pauses.push(milliseconds);
+		}
+	};
 	const first = await collectMagistrateCourt(options);
 	assert.equal(first.collected, true);
 	assert.equal(first.publisherRequests, 9);
@@ -147,9 +179,12 @@ test("Magistrate recurring collection spaces requests, repeats without traffic a
 	assert.equal(requests.length, 9);
 	assert.deepEqual(await readFile(join(folder, "ga-fulton-magistrate-court.json")), before);
 	now += 7 * 3600000;
-	await assert.rejects(() => collectMagistrateCourt({ ...options, request: async () => {
-		throw new Error("Publisher outage.");
-	} }));
+	await assert.rejects(() => collectMagistrateCourt({
+		...options,
+		request: async () => {
+			throw new Error("Publisher outage.");
+		}
+	}));
 	assert.deepEqual(await readFile(join(folder, "ga-fulton-magistrate-court.json")), before);
 	await assert.rejects(() => collectMagistrateCourt(options), /next permitted retry/u);
 	const inspection = await createMagistrateCourtRepository(folder)!.inspectSources();
@@ -161,10 +196,20 @@ test("Magistrate changed policy and cross-identity redirects stop collection bef
 	const folder = await directory(context);
 	const fixture = magistrateFixture();
 	const calls: string[] = [];
-	await assert.rejects(() => collectMagistrateCourt({ directory: folder, now: () => magistrateTestTime, pause: async () => {}, request: async (url) => {
-		calls.push(url);
-		const entry = fixture.capture.documents.find(entry => entry.url === url)!;
-		return { status: 200, body: Buffer.from(entry.body.replace("Disallow: /admin", "Disallow: /")), contentType: "text/plain", etag: undefined };
-	} }));
+	await assert.rejects(() => collectMagistrateCourt({
+		directory: folder,
+		now: () => magistrateTestTime,
+		pause: async () => {},
+		request: async (url) => {
+			calls.push(url);
+			const entry = fixture.capture.documents.find(entry => entry.url === url)!;
+			return {
+				status: 200,
+				body: Buffer.from(entry.body.replace("Disallow: /admin", "Disallow: /")),
+				contentType: "text/plain",
+				etag: undefined
+			};
+		}
+	}));
 	assert.deepEqual(calls, [magistrateCourtPublication.policies[0].url]);
 });

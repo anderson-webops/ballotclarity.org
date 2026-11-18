@@ -13,25 +13,108 @@ function fail(detail: string): never {
 	throw new Error(`The Winnebago ${detail} requires review.`);
 }
 const nameValue = (value: string) => value.length >= 4 && value.length <= 180 && value.includes(" ") && /^[\p{L}\p{M} .,'’\u0022-]+$/u.test(value) && !/\b(?:candidate|vacancy|requested|withdrawn)\b/iu.test(value);
-const numberWords = ["ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "ELEVEN", "TWELVE", "THIRTEEN", "FOURTEEN", "FIFTEEN", "SIXTEEN", "SEVENTEEN", "EIGHTEEN", "NINETEEN", "TWENTY"];
-const categories = ["FEDERAL", "STATE", "COUNTY WIDE", "COUNTY BOARD", "NON-PARTISAN CANDIDATES:"];
+const numberWords = [
+	"ONE",
+	"TWO",
+	"THREE",
+	"FOUR",
+	"FIVE",
+	"SIX",
+	"SEVEN",
+	"EIGHT",
+	"NINE",
+	"TEN",
+	"ELEVEN",
+	"TWELVE",
+	"THIRTEEN",
+	"FOURTEEN",
+	"FIFTEEN",
+	"SIXTEEN",
+	"SEVENTEEN",
+	"EIGHTEEN",
+	"NINETEEN",
+	"TWENTY"
+];
+const categories = [
+	"FEDERAL",
+	"STATE",
+	"COUNTY WIDE",
+	"COUNTY BOARD",
+	"NON-PARTISAN CANDIDATES:"
+];
 
 function geography(office: Office): StateCandidateValues & { ballotDesignation?: string } {
 	const label = office.label;
-	const base = { name: "", party: "", status: "listed", office: label, district: "", scope: "local", jurisdiction: "Winnebago County, Illinois", sourceDistrictLabel: label } satisfies StateCandidateValues;
-	if (["UNITED STATES SENATOR", "GOVERNOR/LIEUTENANT GOV.", "ATTORNEY GENERAL", "SECRETARY OF STATE", "STATE COMPTROLLER", "STATE TREASURER"].includes(label)) return { ...base, jurisdiction: "", sourceDistrictLabel: "", scope: "statewide" };
+	const base = {
+		name: "",
+		party: "",
+		status: "listed",
+		office: label,
+		district: "",
+		scope: "local",
+		jurisdiction: "Winnebago County, Illinois",
+		sourceDistrictLabel: label
+	} satisfies StateCandidateValues;
+	if ([
+		"UNITED STATES SENATOR",
+		"GOVERNOR/LIEUTENANT GOV.",
+		"ATTORNEY GENERAL",
+		"SECRETARY OF STATE",
+		"STATE COMPTROLLER",
+		"STATE TREASURER"
+	].includes(label)) {
+		return {
+			...base,
+			jurisdiction: "",
+			sourceDistrictLabel: "",
+			scope: "statewide"
+		};
+	}
 	const numbered = /^(\d{1,3})(?:ST|ND|RD|TH) (CONGRESSIONAL|SENATOR|REPRESENTATIVE)$/u.exec(label);
-	if (numbered && Number(numbered[1]) > 0) return { ...base, jurisdiction: "", scope: numbered[2] === "CONGRESSIONAL" ? "congressional" : numbered[2] === "SENATOR" ? "state-senate" : "state-house", district: String(Number(numbered[1])) };
+	if (numbered && Number(numbered[1]) > 0) {
+		return {
+			...base,
+			jurisdiction: "",
+			scope: numbered[2] === "CONGRESSIONAL"
+				? "congressional"
+				: numbered[2] === "SENATOR"
+					? "state-senate"
+					: "state-house",
+			district: String(Number(numbered[1]))
+		};
+	}
 	if (office.section === "COUNTY BOARD") {
 		const match = /^DISTRICT ([A-Z]+)(?: - UN-EXPIRED ([1-9]\d?)-YEAR TERM)?$/u.exec(label);
-		const district = match ? numberWords.indexOf(match[1]!) + 1 : 0;
+		const district = match
+			? numberWords.indexOf(match[1]!) + 1
+			: 0;
 		if (!district) return fail("county-board district");
-		return { ...base, office: `COUNTY BOARD DISTRICT ${district}`, jurisdiction: `Winnebago County, Illinois, County Board District ${district}`, ballotDesignation: match![2] ? `Unexpired ${match![2]}-year term` : "" };
+		return {
+			...base,
+			office: `COUNTY BOARD DISTRICT ${district}`,
+			jurisdiction: `Winnebago County, Illinois, County Board District ${district}`,
+			ballotDesignation: match![2]
+				? `Unexpired ${match![2]}-year term`
+				: ""
+		};
 	}
 	if (/^(?:BOONE-WINNEBAGO|LEE\/OGLE\/WHITESIDE|DeKALB) SUPERINTENDENT OF SCHOOLS$/u.test(label)) return { ...base, jurisdiction: `Illinois, ${label.replace(/ SUPERINTENDENT OF SCHOOLS$/u, "")} school region` };
-	if (/^[1-9]\d?(?:ST|ND|RD|TH) CIRCUIT - [1-9]\d?(?:ST|ND|RD|TH) SUB CIRCUIT [A-Z '’-]+ VACANCY$/u.test(label)) return { ...base, jurisdiction: `Illinois, ${label.split(" VACANCY")[0]}`, ballotDesignation: label.slice(label.indexOf("SUB CIRCUIT") + 12) };
+	if (/^[1-9]\d?(?:ST|ND|RD|TH) CIRCUIT - [1-9]\d?(?:ST|ND|RD|TH) SUB CIRCUIT [A-Z '’-]+ VACANCY$/u.test(label)) {
+		return {
+			...base,
+			jurisdiction: `Illinois, ${label.split(" VACANCY")[0]}`,
+			ballotDesignation: label.slice(label.indexOf("SUB CIRCUIT") + 12)
+		};
+	}
 	if (/^[1-9]\d?(?:ST|ND|RD|TH) (?:APPELLATE COURT JUDGE RETENTION|CIRCUIT COURT JUDGE RETENTIONS)$/u.test(label)) return { ...base, jurisdiction: `Illinois, ${label}`, ballotDesignation: "Judicial retention" };
-	if (["COUNTY CLERK", "TREASURER", "SHERIFF", "FOREST PRESERVE COMMISSIONER"].includes(label)) return base;
+	if ([
+		"COUNTY CLERK",
+		"TREASURER",
+		"SHERIFF",
+		"FOREST PRESERVE COMMISSIONER"
+	].includes(label)) {
+		return base;
+	}
 	return fail("office vocabulary");
 }
 
@@ -39,7 +122,9 @@ export function readWinnebagoCandidateDocument(source: StateBallotSource, body: 
 	if (source.stateCode !== "IL" || !/^20\d{2}-11-0[2-8]$/u.test(source.electionDate) || new Date(`${source.electionDate}T00:00:00Z`).getUTCDay() !== 2) return fail("election identity");
 	if (Buffer.byteLength(body) > 4 * 1024 * 1024 || containsControlCharacters(body.replace(/[\r\n\t]/gu, "")) || body.includes("\uFFFD") || !/^<\?xml[^>]+>\s*<!DOCTYPE pdf2xml SYSTEM "pdf2xml.dtd">/u.test(body) || !/<\/pdf2xml>\s*$/u.test(body)) return fail("native document envelope");
 	const document = parseStateHtml(body);
-	const pending = [{ node: document, depth: 0 }];
+	const pending = [
+		{ node: document, depth: 0 }
+	];
 	let visited = 0;
 	while (pending.length) {
 		const item = pending.pop()!;
@@ -47,7 +132,15 @@ export function readWinnebagoCandidateDocument(source: StateBallotSource, body: 
 		for (const child of item.node.childNodes ?? []) pending.push({ node: child, depth: item.depth + 1 });
 	}
 	const pages = descendants(document, node => node.nodeName === "page");
-	if (!pages.length || pages.length > 20 || descendants(document, node => ["image", "img", "script", "iframe", "object"].includes(node.nodeName)).length) return fail("page inventory");
+	if (!pages.length || pages.length > 20 || descendants(document, node => [
+		"image",
+		"img",
+		"script",
+		"iframe",
+		"object"
+	].includes(node.nodeName)).length) {
+		return fail("page inventory");
+	}
 	const records: StateCandidateRecord[] = [];
 	const claims: { recordId: string; page: number; officeLabel: string; partyLabel: string }[] = [];
 	const seen = new Set<string>();
@@ -56,12 +149,38 @@ export function readWinnebagoCandidateDocument(source: StateBallotSource, body: 
 	for (const [pageIndex, page] of pages.entries()) {
 		if (attribute(page, "number") !== String(pageIndex + 1) || attribute(page, "width") !== "918" || attribute(page, "height") !== "1188") return fail("page sequence or dimensions");
 		const fields: Field[] = descendants(page, node => node.nodeName === "text").map((node) => {
-			const field = { text: clean(stateHtmlText(node)), left: Number(attribute(node, "left")), top: Number(attribute(node, "top")), width: Number(attribute(node, "width")), height: Number(attribute(node, "height")), bold: descendants(node, child => child.nodeName === "b").length > 0 };
-			if ([field.left, field.top, field.width, field.height].some(value => !Number.isFinite(value)) || field.left < 0 || field.top < 0 || field.width < 0 || field.height <= 0 || field.left + field.width > 920 || field.top + field.height > 1190 || field.text.length > 500) return fail("text geometry");
+			const field = {
+				text: clean(stateHtmlText(node)),
+				left: Number(attribute(node, "left")),
+				top: Number(attribute(node, "top")),
+				width: Number(attribute(node, "width")),
+				height: Number(attribute(node, "height")),
+				bold: descendants(node, child => child.nodeName === "b").length > 0
+			};
+			if ([
+				field.left,
+				field.top,
+				field.width,
+				field.height
+			].some(value => !Number.isFinite(value)) || field.left < 0 || field.top < 0 || field.width < 0 || field.height <= 0 || field.left + field.width > 920 || field.top + field.height > 1190 || field.text.length > 500) {
+				return fail("text geometry");
+			}
 			return field;
 		}).filter(field => field.text);
 		if (fields.length < 15 || fields.length > 4000) return fail("native text inventory");
-		const required = [[434, 59, source.electionDate.slice(0, 4)], [346, 87, "GENERAL"], [456, 85, "ELECTION"], [372, 112, "List of Candidates"], [33, 167, "OFFICE"], [293, 167, "DEMOCRAT"], [681, 167, "REPUBLICAN"]] as const;
+		const required = [
+			[
+				434,
+				59,
+				source.electionDate.slice(0, 4)
+			],
+			[346, 87, "GENERAL"],
+			[456, 85, "ELECTION"],
+			[372, 112, "List of Candidates"],
+			[33, 167, "OFFICE"],
+			[293, 167, "DEMOCRAT"],
+			[681, 167, "REPUBLICAN"]
+		] as const;
 		if (required.some(([left, top, text]) => fields.filter(field => field.bold && field.left === left && field.top === top && field.text === text).length !== 1)) return fail("election or column headings");
 		if (fields.filter(field => field.text === `Page ${pageIndex + 1} of ${pages.length}` && field.top > 1100).length !== 1 || fields.filter(field => field.text === `Page ${pageIndex + 1}` && field.top < 80).length !== 1) return fail("printed page inventory");
 		const reportDates = fields.filter(field => field.left === 82 && field.top === 59 && /^\d{1,2}\/\d{1,2}\/20\d{2}$/u.test(field.text));
@@ -99,8 +218,13 @@ export function readWinnebagoCandidateDocument(source: StateBallotSource, body: 
 			const rows = content.filter(field => field.top >= office.top && field.top < end && field.left !== 33);
 			if (rows.some(field => field.bold && ![293, 681].includes(field.left))) return fail("candidate column alignment");
 			let count = 0;
-			for (const [left, label] of [[293, "DEMOCRAT"], [681, "REPUBLICAN"]] as const) {
-				let party = office.section === "NON-PARTISAN CANDIDATES:" ? "Nonpartisan" : label;
+			for (const [left, label] of [
+				[293, "DEMOCRAT"],
+				[681, "REPUBLICAN"]
+			] as const) {
+				let party = office.section === "NON-PARTISAN CANDIDATES:"
+					? "Nonpartisan"
+					: label;
 				const named = rows.filter(field => field.left === left && field.bold).sort((first, second) => first.top - second.top);
 				const contact = rows.filter(field => field.left === left && !field.bold);
 				if (contact.some(field => field.text !== "Redaction Requested" && !/^\d[\p{L}\p{N} .,'’@:/_()&+-]*$/u.test(field.text) && !/^[\p{L} .,'’-]+ II?L? \d{5}(?:-\d{4})?$/u.test(field.text) && !/^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/u.test(field.text) && !/^https?:\/\/\S+$/u.test(field.text)) || (contact.length > 0 && !named.length)) return fail("unclassified candidate or contact text");
@@ -121,16 +245,37 @@ export function readWinnebagoCandidateDocument(source: StateBallotSource, body: 
 				const ticket = office.label === "GOVERNOR/LIEUTENANT GOV.";
 				if (ticket && names.length && (names.length !== 2 || !names[0]!.endsWith(" /") || names[1]!.includes("/"))) return fail("printed joint ticket");
 				if (!ticket && office.section !== "NON-PARTISAN CANDIDATES:" && names.length > 1) return fail("multiple party candidates");
-				for (const name of ticket && names.length ? [[names[0]!.slice(0, -2), names[1]!].join(" / ")] : names) {
-					const candidateOffice = values.ballotDesignation === "Judicial retention" ? `${values.office.replace(/RETENTIONS$/u, "RETENTION")}: ${name}` : values.office;
-					const record = factory(source, { ...values, office: candidateOffice, name, party });
+				for (const name of ticket && names.length
+					? [
+							[
+								names[0]!.slice(0, -2),
+								names[1]!
+							].join(" / ")
+						]
+					: names) {
+					const candidateOffice = values.ballotDesignation === "Judicial retention"
+						? `${values.office.replace(/RETENTIONS$/u, "RETENTION")}: ${name}`
+						: values.office;
+					const record = factory(source, {
+						...values,
+						office: candidateOffice,
+						name,
+						party
+					});
 					if (!record || seen.has(record.id)) return fail("candidate identity");
 					record.sourceStatus = "Published general-election candidate";
 					if (values.ballotDesignation) record.ballotDesignation = values.ballotDesignation;
 					seen.add(record.id);
 					records.push(record);
 					count++;
-					claims.push({ recordId: record.id, page: pageIndex + 1, officeLabel: office.label, partyLabel: party === "Nonpartisan" ? "NON-PARTISAN CANDIDATES:" : party });
+					claims.push({
+						recordId: record.id,
+						page: pageIndex + 1,
+						officeLabel: office.label,
+						partyLabel: party === "Nonpartisan"
+							? "NON-PARTISAN CANDIDATES:"
+							: party
+					});
 				}
 			}
 			if (!count) return fail("empty candidate office");

@@ -7,7 +7,12 @@ const { data: candidate, error, pending } = await useCandidate(candidateSlug);
 const breadcrumbs = computed(() => [
 	{ label: "Home", to: "/" },
 	overviewLink.value,
-	{ label: candidate.value?.name ?? "Candidate profile", to: candidate.value ? `/candidate/${candidate.value.slug}` : undefined },
+	{
+		label: candidate.value?.name ?? "Candidate profile",
+		to: candidate.value
+			? `/candidate/${candidate.value.slug}`
+			: undefined
+	},
 	{ label: "Funding" }
 ]);
 
@@ -16,16 +21,29 @@ const summaryItems = computed(() => {
 		return [];
 
 	return [
-		{ label: "Total raised", note: "Current filing-window total.", value: formatCurrency(candidate.value.funding.totalRaised) },
-		{ label: "Cash on hand", value: formatCurrency(candidate.value.funding.cashOnHand) },
-		{ label: "Small-donor share", note: "Share attributed to smaller donors in the current summary.", value: formatPercent(candidate.value.funding.smallDonorShare) }
+		{
+			label: "Total raised",
+			note: "Current filing-window total.",
+			value: formatCurrency(candidate.value.funding.totalRaised)
+		},
+		{
+			label: "Cash on hand",
+			value: formatCurrency(candidate.value.funding.cashOnHand)
+		},
+		{
+			label: "Small-donor share",
+			note: "Share attributed to smaller donors in the current summary.",
+			value: formatPercent(candidate.value.funding.smallDonorShare)
+		}
 	];
 });
 
 usePageSeo({
 	description: candidate.value?.funding.summary ?? "Candidate funding page with campaign-finance summary, top funders, and source links.",
 	path: `/candidate/${candidateSlug.value}/funding`,
-	title: candidate.value ? `${candidate.value.name} Funding` : "Candidate funding"
+	title: candidate.value
+		? `${candidate.value.name} Funding`
+		: "Candidate funding"
 });
 </script>
 

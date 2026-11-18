@@ -37,25 +37,57 @@ test("Maine House ignores regenerating header clocks and retains stable identiti
 });
 
 test("Maine House reconciles all published counts and the complete district sequence", () => {
-	for (const body of [maineHouseFixture().replace("<h3>2</h3>", "<h3>3</h3>"), maineHouseFixture().replace("<h3>1</h3>", "<h3>0</h3>"), maineHouseFixture().replace("<h3>151</h3>", "<h3>150</h3>"), maineHouseFixture().replace("id=\"district-151\"", "id=\"district-150\""), maineHouseFixture().replace("2 Candidates", "1 Candidate"), maineHouseFixture().replace("District 151</h5>", "District 152</h5>")]) assert.throws(() => readMaineHouseCandidates(body), /review/u);
+	for (const body of [
+		maineHouseFixture().replace("<h3>2</h3>", "<h3>3</h3>"),
+		maineHouseFixture().replace("<h3>1</h3>", "<h3>0</h3>"),
+		maineHouseFixture().replace("<h3>151</h3>", "<h3>150</h3>"),
+		maineHouseFixture().replace("id=\"district-151\"", "id=\"district-150\""),
+		maineHouseFixture().replace("2 Candidates", "1 Candidate"),
+		maineHouseFixture().replace("District 151</h5>", "District 152</h5>")
+	]) assert.throws(() => readMaineHouseCandidates(body), /review/u);
 });
 
 test("Maine House rejects duplicate identities and contradictory or unknown party labels", () => {
-	for (const body of [maineHouseFixture().replace("Sample, Bert", "Example, Ada").replaceAll("Republican", "Democrat").replace(">R</span>", ">D</span>"), maineHouseFixture().replace(">D</span>", ">R</span>"), maineHouseFixture().replace("Democrat", "Unreviewed Party"), maineHouseFixture().replace(">D</span>", ">X</span>")]) assert.throws(() => readMaineHouseCandidates(body), /review/u);
+	for (const body of [
+		maineHouseFixture().replace("Sample, Bert", "Example, Ada").replaceAll("Republican", "Democrat").replace(">R</span>", ">D</span>"),
+		maineHouseFixture().replace(">D</span>", ">R</span>"),
+		maineHouseFixture().replace("Democrat", "Unreviewed Party"),
+		maineHouseFixture().replace(">D</span>", ">X</span>")
+	]) assert.throws(() => readMaineHouseCandidates(body), /review/u);
 });
 
 test("Maine House rejects hidden meaningful content and unknown candidate text instead of dropping it", () => {
-	for (const body of [maineHouseFixture().replace("<body>", "<body hidden>"), maineHouseFixture().replace("<strong>", "<strong style='display:none'>"), maineHouseFixture().replace("class=\"text-end\"", "class=\"text-end d-none\""), maineHouseFixture().replace("<strong>", "<strong aria-hidden='true'>"), maineHouseFixture().replace("</li>", "<span>Unexpected status</span></li>")]) assert.throws(() => readMaineHouseCandidates(body), /review/u);
+	for (const body of [
+		maineHouseFixture().replace("<body>", "<body hidden>"),
+		maineHouseFixture().replace("<strong>", "<strong style='display:none'>"),
+		maineHouseFixture().replace("class=\"text-end\"", "class=\"text-end d-none\""),
+		maineHouseFixture().replace("<strong>", "<strong aria-hidden='true'>"),
+		maineHouseFixture().replace("</li>", "<span>Unexpected status</span></li>")
+	]) assert.throws(() => readMaineHouseCandidates(body), /review/u);
 });
 
 test("Maine House holds changed attribution, certification, district ownership and candidate markup", () => {
-	for (const body of [maineHouseFixture().replace("133rd Legislature", "133st Legislature"), maineHouseFixture().replace("</li>", "<script>changed()</script></li>"), maineHouseFixture().replace("<li ", "<li onclick='changed()' "), maineHouseFixture().replace("is unofficial", "is certified"), maineHouseFixture().replace("Robert Hunt", "Other Publisher"), maineHouseFixture().replace("133rd Legislature", "District 133"), maineHouseFixture().replace("title='Incumbent'", "title='Winner'"), maineHouseFixture().replace("<strong>", "<strong>Unassigned</strong><strong>"), maineHouseFixture().replace("Example, Ada", "12345")]) assert.throws(() => readMaineHouseCandidates(body), /review/u);
+	for (const body of [
+		maineHouseFixture().replace("133rd Legislature", "133st Legislature"),
+		maineHouseFixture().replace("</li>", "<script>changed()</script></li>"),
+		maineHouseFixture().replace("<li ", "<li onclick='changed()' "),
+		maineHouseFixture().replace("is unofficial", "is certified"),
+		maineHouseFixture().replace("Robert Hunt", "Other Publisher"),
+		maineHouseFixture().replace("133rd Legislature", "District 133"),
+		maineHouseFixture().replace("title='Incumbent'", "title='Winner'"),
+		maineHouseFixture().replace("<strong>", "<strong>Unassigned</strong><strong>"),
+		maineHouseFixture().replace("Example, Ada", "12345")
+	]) assert.throws(() => readMaineHouseCandidates(body), /review/u);
 });
 
 test("Maine House bounds body and DOM complexity while preserving independent parties", () => {
 	assert.throws(() => readMaineHouseCandidates(" ".repeat(2 * 1024 * 1024 + 1)), /bounds/u);
 	assert.throws(() => readMaineHouseCandidates("<div>".repeat(70) + maineHouseFixture()), /DOM bounds/u);
-	for (const [code, party] of [["U", "Unenrolled"], ["I", "Independent"], ["N", "No Labels"]]) {
+	for (const [code, party] of [
+		["U", "Unenrolled"],
+		["I", "Independent"],
+		["N", "No Labels"]
+	]) {
 		const result = readMaineHouseCandidates(maineHouseFixture().replace(">D</span>", `>${code}</span>`).replace("Democrat", party!));
 		assert.equal(result.records[0]!.party, party);
 	}

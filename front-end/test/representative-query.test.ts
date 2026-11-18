@@ -15,7 +15,10 @@ test("representative fetch watches location values rather than recreated query o
 			captured.watch = options.watch;
 		}
 	};
-	const descriptors = Object.keys(globals).map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const);
+	const descriptors = Object.keys(globals).map(key => [
+		key,
+		Object.getOwnPropertyDescriptor(globalThis, key)
+	] as const);
 	Object.assign(globalThis, globals);
 	const scope = effectScope();
 	try {

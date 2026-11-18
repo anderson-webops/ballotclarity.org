@@ -25,7 +25,12 @@ function rectangles(body: string) {
 			corners.push([left, top]);
 		}
 		if (tokens[position++] !== "Z" || new Set(corners.map(point => point[0])).size !== 2 || new Set(corners.map(point => point[1])).size !== 2 || new Set(corners.map(point => point.join(","))).size !== 4 || corners.some((point, index) => point[0] !== corners[(index + 1) % 4]![0] && point[1] !== corners[(index + 1) % 4]![1])) return reject();
-		boxes.push([Math.min(...corners.map(point => point[0]!)), Math.min(...corners.map(point => point[1]!)), Math.max(...corners.map(point => point[0]!)), Math.max(...corners.map(point => point[1]!))]);
+		boxes.push([
+			Math.min(...corners.map(point => point[0]!)),
+			Math.min(...corners.map(point => point[1]!)),
+			Math.max(...corners.map(point => point[0]!)),
+			Math.max(...corners.map(point => point[1]!))
+		]);
 		if (boxes.length > 1000) return reject();
 	}
 	return boxes;
@@ -47,18 +52,42 @@ export function inspectChicagoVisual(xml: string, svg: string, page: number) {
 	if (new Set(identified.map(node => attribute(node, "id"))).size !== identified.length) return reject();
 	const definitions = new Map(identified.filter(node => attribute(node, "id").startsWith("glyph-")).map((node) => {
 		if (descendants(node, child => !["#text", "path"].includes(child.nodeName)).length || descendants(node, child => child.nodeName === "path").some(child => child.attrs?.some(item => item.name !== "d"))) return reject();
-		return [attribute(node, "id"), descendants(node, child => child.nodeName === "path").map(child => attribute(child, "d")).join(" ")];
+		return [
+			attribute(node, "id"),
+			descendants(node, child => child.nodeName === "path").map(child => attribute(child, "d")).join(" ")
+		];
 	}));
 	const clips = new Map(descendants(roots[0]!, node => node.nodeName.toLowerCase() === "clippath").map((node) => {
 		const paths = descendants(node, child => child.nodeName === "path");
 		if (paths.length !== 1) return reject();
 		const boxes = rectangles(attribute(paths[0]!, "d"));
 		if (boxes.length !== 1) return reject();
-		return [attribute(node, "id"), boxes[0]!];
+		return [
+			attribute(node, "id"),
+			boxes[0]!
+		];
 	}));
-	const fields = native.map(field => ({ ...field, left: field.left / 1.5, right: (field.left + field.width) / 1.5, top: field.top / 1.5, bottom: (field.top + field.height) / 1.5, count: 0 }));
-	const inkBounds = new Map([...definitions].map(([id, definition]) => [id, definition.trim() ? glyphBounds(definition) : [0, 0, 0, 0]]));
-	const pending = [{ node: roots[0]!, clipping: [] as string[], color: [0, 0, 0] }];
+	const fields = native.map(field => ({
+		...field,
+		left: field.left / 1.5,
+		right: (field.left + field.width) / 1.5,
+		top: field.top / 1.5,
+		bottom: (field.top + field.height) / 1.5,
+		count: 0
+	}));
+	const inkBounds = new Map([...definitions].map(([id, definition]) => [
+		id,
+		definition.trim()
+			? glyphBounds(definition)
+			: [0, 0, 0, 0]
+	]));
+	const pending = [
+		{
+			node: roots[0]!,
+			clipping: [] as string[],
+			color: [0, 0, 0]
+		}
+	];
 	let visited = 0;
 	let visibleGlyphs = 0;
 	let ruleRectangles = 0;
@@ -69,8 +98,19 @@ export function inspectChicagoVisual(xml: string, svg: string, page: number) {
 		const node = item.node;
 		if (++visited > 60000) return reject();
 		if (node.nodeName === "defs") continue;
-		if (!["svg", "g", "use", "path", "#text"].includes(node.nodeName) || ["style", "transform", "mask", "opacity", "filter", "stroke"].some(key => attribute(node, key)) || (attribute(node, "fill-opacity") && attribute(node, "fill-opacity") !== "1")) return reject();
-		const painted = attribute(node, "fill") ? color(attribute(node, "fill")) : item.color;
+		if (!["svg", "g", "use", "path", "#text"].includes(node.nodeName) || [
+			"style",
+			"transform",
+			"mask",
+			"opacity",
+			"filter",
+			"stroke"
+		].some(key => attribute(node, key)) || (attribute(node, "fill-opacity") && attribute(node, "fill-opacity") !== "1")) {
+			return reject();
+		}
+		const painted = attribute(node, "fill")
+			? color(attribute(node, "fill"))
+			: item.color;
 		const clipping = [...item.clipping];
 		const clip = attribute(node, "clip-path");
 		if (clip) {
@@ -88,9 +128,15 @@ export function inspectChicagoVisual(xml: string, svg: string, page: number) {
 				const matches = fields.filter(field => left >= field.left - 0.75 && left < field.right + 0.75 && top >= field.top - 0.75 && top <= field.bottom + 0.75);
 				if (matches.length !== 1) return reject();
 				const field = matches[0]!;
-				if (painted[0] !== 0 || painted[1] !== 0 || (field.color === "#000080" ? painted[2]! < 49 || painted[2]! > 51 : painted[2] !== 0)) return reject();
+				if (painted[0] !== 0 || painted[1] !== 0 || (field.color === "#000080"
+					? painted[2]! < 49 || painted[2]! > 51
+					: painted[2] !== 0)) {
+					return reject();
+				}
 				if (clipping.length) {
-					const ink = bounds.map((value, index) => value + (index % 2 ? top : left));
+					const ink = bounds.map((value, index) => value + (index % 2
+						? top
+						: left));
 					const enclosed = clipping.every((id) => {
 						const box = clips.get(id)!;
 						return ink[0]! >= box[0]! - 0.005 && ink[1]! >= box[1]! - 0.005 && ink[2]! <= box[2]! + 0.005 && ink[3]! <= box[3]! + 0.005;
@@ -112,8 +158,17 @@ export function inspectChicagoVisual(xml: string, svg: string, page: number) {
 				ruleRectangles++;
 			}
 		}
-		for (const child of [...(node.childNodes ?? [])].reverse()) pending.push({ node: child, clipping, color: painted });
+		for (const child of [
+			...(node.childNodes ?? [])
+		].reverse()) pending.push({ node: child, clipping, color: painted });
 	}
 	if (fields.some(field => field.count !== field.text.replace(/\s/gu, "").length)) return reject();
-	return { svgSha256: createHash("sha256").update(svg).digest("hex"), fields: fields.length, visibleGlyphs, ruleRectangles, clippedEditorialGlyphs, fullInkClips };
+	return {
+		svgSha256: createHash("sha256").update(svg).digest("hex"),
+		fields: fields.length,
+		visibleGlyphs,
+		ruleRectangles,
+		clippedEditorialGlyphs,
+		fullInkClips
+	};
 }

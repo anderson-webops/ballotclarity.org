@@ -716,7 +716,9 @@ export function parseContentHistoryRow(row: ContentHistoryRow): AdminContentHist
 
 	return {
 		changedAt: row.changed_at,
-		changedFields: Array.isArray(changedFields) ? changedFields.map(String) : [],
+		changedFields: Array.isArray(changedFields)
+			? changedFields.map(String)
+			: [],
 		contentId: row.content_id,
 		id: row.id,
 		next: parseContentSnapshot(row.next_snapshot),
@@ -755,10 +757,18 @@ export function snapshotToContentUpdateValues(snapshot: AdminContentSnapshot) {
 		publicBallotSummary: snapshot.publicBallotSummary?.trim() || null,
 		publicSummary: snapshot.publicSummary.trim(),
 		published: snapshot.published,
-		publishedAt: snapshot.published ? snapshot.publishedAt || null : null,
-		publishApprovedAt: snapshot.published ? snapshot.publishApprovedAt || null : null,
-		publishApprovedBy: snapshot.published ? snapshot.publishApprovedBy?.trim() || null : null,
-		publishApprovalNote: snapshot.published ? snapshot.publishApprovalNote?.trim() || null : null,
+		publishedAt: snapshot.published
+			? snapshot.publishedAt || null
+			: null,
+		publishApprovedAt: snapshot.published
+			? snapshot.publishApprovedAt || null
+			: null,
+		publishApprovedBy: snapshot.published
+			? snapshot.publishApprovedBy?.trim() || null
+			: null,
+		publishApprovalNote: snapshot.published
+			? snapshot.publishApprovalNote?.trim() || null
+			: null,
 		status: snapshot.status
 	};
 }
@@ -911,7 +921,9 @@ function auditRowWithoutHash(row: AuditRow): Omit<AuditRow, "event_hash"> {
 function normalizeAuditActor(actor: AdminAuditActor | undefined) {
 	const username = actor?.username?.trim().toLowerCase() || null;
 	const displayName = actor?.displayName?.trim() || username || "Admin API";
-	const role = actor?.role === "admin" || actor?.role === "editor" ? actor.role : null;
+	const role = actor?.role === "admin" || actor?.role === "editor"
+		? actor.role
+		: null;
 
 	return {
 		displayName,
@@ -977,12 +989,20 @@ function rowToGuidePackage(row: GuidePackageRow): GuidePackageWorkflow {
 
 export function defaultContentSeed(): AdminContentItem[] {
 	const candidateItems = demoCandidates.map((candidate) => {
-		const sourceCoverage = `${candidate.sources.length} attached staged source${candidate.sources.length === 1 ? "" : "s"} with ${candidate.whatWeKnow.length} documented knowledge checks; not approved for public candidate publication.`;
-		const priority: AdminPriority = candidate.slug === "sandra-patel" ? "medium" : "low";
-		const status: AdminReviewStatus = candidate.slug === "sandra-patel" ? "needs-sources" : "in-review";
+		const sourceCoverage = `${candidate.sources.length} attached staged source${candidate.sources.length === 1
+			? ""
+			: "s"} with ${candidate.whatWeKnow.length} documented knowledge checks; not approved for public candidate publication.`;
+		const priority: AdminPriority = candidate.slug === "sandra-patel"
+			? "medium"
+			: "low";
+		const status: AdminReviewStatus = candidate.slug === "sandra-patel"
+			? "needs-sources"
+			: "in-review";
 
 		return {
-			assignedTo: candidate.slug === "sandra-patel" ? "Research queue" : "Editorial review",
+			assignedTo: candidate.slug === "sandra-patel"
+				? "Research queue"
+				: "Editorial review",
 			blocker: candidate.slug === "sandra-patel"
 				? "Waiting on a source-backed Georgia legislative district crosswalk note."
 				: undefined,
@@ -1002,16 +1022,22 @@ export function defaultContentSeed(): AdminContentItem[] {
 	});
 
 	const measureItems = demoMeasures.map((measure, index) => ({
-		assignedTo: index === 0 ? "Managing editor" : "Editorial review",
+		assignedTo: index === 0
+			? "Managing editor"
+			: "Editorial review",
 		blocker: undefined,
 		entitySlug: measure.slug,
 		entityType: "measure" as const,
 		id: `content-${measure.slug}`,
-		priority: index === 0 ? "medium" as const : "low" as const,
+		priority: index === 0
+			? "medium" as const
+			: "low" as const,
 		publicBallotSummary: measure.ballotSummary,
 		publicSummary: measure.summary,
 		published: false,
-		sourceCoverage: `${measure.sources.length} attached staged source${measure.sources.length === 1 ? "" : "s"} with yes/no impact sections and fiscal notes; not approved for public measure publication.`,
+		sourceCoverage: `${measure.sources.length} attached staged source${measure.sources.length === 1
+			? ""
+			: "s"} with yes/no impact sections and fiscal notes; not approved for public measure publication.`,
 		status: "in-review" as const,
 		summary: measure.summary,
 		title: measure.title,
@@ -1756,8 +1782,12 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				? nextAdminCredentialTimestamp(current.credentials_updated_at || current.created_at)
 				: current.credentials_updated_at || current.created_at;
 			const nextUpdatedAt = shouldRotateCredentials ? nextCredentialsUpdatedAt : now;
-			const nextMfaSecret = patch.mfaReset === true ? null : current.mfa_secret;
-			const nextMfaEnabledAt = patch.mfaReset === true ? null : current.mfa_enabled_at;
+			const nextMfaSecret = patch.mfaReset === true
+				? null
+				: current.mfa_secret;
+			const nextMfaEnabledAt = patch.mfaReset === true
+				? null
+				: current.mfa_enabled_at;
 			const nextPasswordChangeRequiredAt = patch.password === undefined
 				? current.password_change_required_at
 				: patch.passwordChangeMode === "self-service"
@@ -2018,7 +2048,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			WHERE id = ?
 		`).get(id) as GuidePackageRow | undefined;
 
-		return row ? rowToGuidePackage(row) : null;
+		return row
+			? rowToGuidePackage(row)
+			: null;
 	}
 
 	function createGuidePackage(input: CreateGuidePackageInput) {
@@ -2094,7 +2126,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			WHERE entity_type = ? AND entity_slug = ?
 		`).get(entityType, entitySlug) as ContentRow | undefined;
 
-		return row ? rowToContent(row) : null;
+		return row
+			? rowToContent(row)
+			: null;
 	}
 
 	function getContentRow(id: string) {
@@ -2169,7 +2203,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			: patch.publishApprovalNote?.trim() || null;
 		const approvalChanged = patch.publishApprovedBy !== undefined || patch.publishApprovalNote !== undefined;
 		const nextPublishApprovedAt = nextPublishApprovedBy
-			? approvalChanged ? now : current.publish_approved_at || now
+			? approvalChanged
+				? now
+				: current.publish_approved_at || now
 			: null;
 
 		if (!nextPublishApprovedBy)
@@ -2193,8 +2229,14 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			const now = new Date().toISOString();
 			const nextPublished = patch.published ?? Boolean(current.published);
 			const nextStatus = patch.status
-				|| (nextPublished ? "published" : current.status === "published" ? "in-review" : current.status);
-			const nextPublishedAt = nextPublished ? current.published_at || now : null;
+				|| (nextPublished
+					? "published"
+					: current.status === "published"
+						? "in-review"
+						: current.status);
+			const nextPublishedAt = nextPublished
+				? current.published_at || now
+				: null;
 			const publishApproval = resolvePublishApproval(current, patch, nextPublished, now);
 			const nextPublicSummary = patch.publicSummary === undefined
 				? current.public_summary || ""
@@ -2208,7 +2250,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				: patch.publicBallotSummary?.trim() || null;
 			const nextSnapshot: AdminContentSnapshot = {
 				assignedTo: patch.assignedTo?.trim() || current.assigned_to,
-				blocker: patch.blocker === undefined ? current.blocker || undefined : patch.blocker?.trim() || undefined,
+				blocker: patch.blocker === undefined
+					? current.blocker || undefined
+					: patch.blocker?.trim() || undefined,
 				priority: patch.priority ?? current.priority,
 				publicBallotSummary: nextBallotSummary || undefined,
 				publicSummary: nextPublicSummary,
@@ -2485,7 +2529,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			);
 
 			logActivity(
-				nextStatus === "published" ? "publish" : "review",
+				nextStatus === "published"
+					? "publish"
+					: "review",
 				`Guide package ${current.election_slug} updated`,
 				`Guide package moved to ${nextStatus.replaceAll("_", " ")}.`
 			);
@@ -2618,7 +2664,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 			const { email, message, subject } = submission;
 			const now = new Date().toISOString();
 			const id = `correction-${randomUUID()}`;
-			const reportedBy = submission.name ? `${submission.name} <${email}>` : email;
+			const reportedBy = submission.name
+				? `${submission.name} <${email}>`
+				: email;
 			const summary = submission.sourceLinks
 				? `${message}\n\nSupporting links:\n${submission.sourceLinks}`
 				: message;
@@ -2648,7 +2696,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 				"policy",
 				submission.pageUrl || "General site feedback",
 				"new",
-				submission.submissionType === "correction" ? "high" : "medium",
+				submission.submissionType === "correction"
+					? "high"
+					: "medium",
 				now,
 				reportedBy,
 				summary,
@@ -2662,7 +2712,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 
 			logActivity(
 				"correction",
-				submission.submissionType === "correction" ? "Received correction submission" : "Received public feedback",
+				submission.submissionType === "correction"
+					? "Received correction submission"
+					: "Received public feedback",
 				`${subject} was submitted through the public contact form.`
 			);
 
@@ -2877,14 +2929,20 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 					helpText: "Candidate, measure, election, and guide-package records not yet marked published.",
 					id: "review-queue",
 					label: "Awaiting publish",
-					tone: (reviewQueue.length || packageQueue.length) ? "review" : "healthy",
+					tone: (reviewQueue.length || packageQueue.length)
+						? "review"
+						: "healthy",
 					value: String(reviewQueue.length + packageQueue.length)
 				},
 				{
 					helpText: "Manually recorded editorial notices, not live collector checks.",
 					id: "healthy-sources",
 					label: "Healthy sources",
-					tone: !sources.length ? "attention" : healthySourceCount === sources.length ? "healthy" : "review",
+					tone: !sources.length
+						? "attention"
+						: healthySourceCount === sources.length
+							? "healthy"
+							: "review",
 					value: `${healthySourceCount}/${sources.length}`
 				},
 				{
@@ -2895,7 +2953,9 @@ export function createSqliteAdminRepository(options: AdminRepositoryOptions = {}
 					value: String(dueChecks.length)
 				}
 			],
-			needsAttention: needsAttention.length ? needsAttention : ["No urgent blockers are currently open."],
+			needsAttention: needsAttention.length
+				? needsAttention
+				: ["No urgent blockers are currently open."],
 			recentActivity: listActivity(),
 			security
 		};

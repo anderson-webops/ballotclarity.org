@@ -46,11 +46,20 @@ test("Franklin's synthetic later election is read from both source documents, no
 test("Franklin's differing name spelling needs exact reviewed election and office evidence", () => {
 	const { candidates, notice } = fixture({ alias: true });
 	assert.throws(() => parse(candidates, notice), /cannot be reconciled/u);
-	const alias = { electionDate: "2026-11-03", name: "Emery Five", noticeName: "Emory Five", office: rows[3]!.office };
+	const alias = {
+		electionDate: "2026-11-03",
+		name: "Emery Five",
+		noticeName: "Emory Five",
+		office: rows[3]!.office
+	};
 	const result = readFranklinCandidateDocuments(source, candidates, notice, createStateCandidateRecord, [alias]);
 	assert.equal(result.records[3]!.name, "Emery Five");
 	assert.equal(result.records[3]!.status, "write-in");
-	for (const invalid of [{ ...alias, electionDate: "2028-11-07" }, { ...alias, office: "COUNTY AUDITOR" }, { ...alias, name: "Another Person" }])
+	for (const invalid of [
+		{ ...alias, electionDate: "2028-11-07" },
+		{ ...alias, office: "COUNTY AUDITOR" },
+		{ ...alias, name: "Another Person" }
+	])
 		assert.throws(() => readFranklinCandidateDocuments(source, candidates, notice, createStateCandidateRecord, [invalid]), /spelling evidence|cannot be reconciled/u);
 });
 
@@ -79,7 +88,11 @@ test("Franklin's explicit withdrawn notice entry stays separate and cannot overr
 
 test("Franklin's reader refuses unknown offices, parties, term dates and write-in states", () => {
 	const { candidates, notice } = fixture();
-	for (const body of [candidates.replace(">Democratic<", ">Unknown<"), candidates.replace(">02/09/2027<", ">02/31/2027<"), candidates.replace(">Yes<", ">Maybe<")])
+	for (const body of [
+		candidates.replace(">Democratic<", ">Unknown<"),
+		candidates.replace(">02/09/2027<", ">02/31/2027<"),
+		candidates.replace(">Yes<", ">Maybe<")
+	])
 		assert.throws(() => parse(body, notice));
 	assert.throws(() => parse(candidates.replace("GOVERNOR", "UNKNOWN"), notice), /office requires review/u);
 	assert.throws(() => parse(candidates.replace("October", "February").replace(">16,<", ">30,<"), notice), /revision/u);
@@ -101,5 +114,8 @@ test("Franklin's reader bounds geometry, input size, normalization and candidate
 	assert.throws(() => parse("x".repeat(4 * 1024 * 1024 + 1), notice), /bounds/u);
 	assert.throws(() => parse("<div>".repeat(65) + candidates + "</div>".repeat(65), notice), /structure/u);
 	assert.throws(() => readFranklinCandidateDocuments(source, candidates, notice, () => null), /normalization/u);
-	assert.throws(() => readFranklinCandidateDocuments(source, candidates, notice, (source, values) => ({ ...createStateCandidateRecord(source, values)!, id: "same" })), /identities/u);
+	assert.throws(() => readFranklinCandidateDocuments(source, candidates, notice, (source, values) => ({
+		...createStateCandidateRecord(source, values)!,
+		id: "same"
+	})), /identities/u);
 });

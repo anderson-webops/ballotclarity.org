@@ -75,8 +75,18 @@ async function profileCache(plan: OpenStatesProfileCollectionPlan, now: number) 
 async function readCapture(cache: string, plan: OpenStatesProfileCollectionPlan, now: number) {
 	const value = await readOpenStatesCollectionMetadata(join(cache, "current.json")) as ArchiveCapture | null;
 	if (!value) return null;
-	if (Object.keys(value).some(key => !["schemaVersion", "collectionPolicySha256", "commit", "sha256", "capturedAt", "checkedAt", "readmeSha256", "etag"].includes(key)) || value.schemaVersion !== 1 || value.collectionPolicySha256 !== openStatesProfileCollectionPolicySha256 || !validCommit(value.commit) || !validHash(value.sha256) || !validDate(value.capturedAt, now) || !validDate(value.checkedAt, now) || Date.parse(value.checkedAt) < Date.parse(value.capturedAt) || value.readmeSha256 !== plan.accessReview.readmeSha256 || (value.etag !== undefined && !validEtag(value.etag)))
+	if (Object.keys(value).some(key => ![
+		"schemaVersion",
+		"collectionPolicySha256",
+		"commit",
+		"sha256",
+		"capturedAt",
+		"checkedAt",
+		"readmeSha256",
+		"etag"
+	].includes(key)) || value.schemaVersion !== 1 || value.collectionPolicySha256 !== openStatesProfileCollectionPolicySha256 || !validCommit(value.commit) || !validHash(value.sha256) || !validDate(value.capturedAt, now) || !validDate(value.checkedAt, now) || Date.parse(value.checkedAt) < Date.parse(value.capturedAt) || value.readmeSha256 !== plan.accessReview.readmeSha256 || (value.etag !== undefined && !validEtag(value.etag))) {
 		throw new Error("The profile archive cache has invalid or incompatible provenance.");
+	}
 	const path = join(cache, "bodies", `${value.sha256}.tar.gz`);
 	if (digest(await readOpenStatesProfileArchive(path)) !== value.sha256) throw new Error("The cached profile archive does not match its fingerprint.");
 	return { metadata: value, path };
@@ -117,14 +127,26 @@ export async function seedOpenStatesProfileCollection(plan: OpenStatesProfileCol
 		if (!validCommit(archive.commit) || !validDate(archive.capturedAt, now) || digest(bytes) !== archive.sha256) throw new Error("The reviewed profile archive seed has invalid provenance.");
 		const directory = join(plan.collection.outputRoot, `profile-seed-${now}`);
 		await mkdir(directory);
-		const preparationPlan = { schemaVersion: 1, type: "openstates-profile-enrichment", archive, referenceFiles, outputDirectory: join(directory, "prepared") };
+		const preparationPlan = {
+			schemaVersion: 1,
+			type: "openstates-profile-enrichment",
+			archive,
+			referenceFiles,
+			outputDirectory: join(directory, "prepared")
+		};
 		const path = join(directory, "plan.json");
 		await writeFile(path, `${JSON.stringify(preparationPlan)}\n`, { flag: "wx" });
 		const prepared = await prepareOpenStatesProfileFiles(path, now);
 		if (prepared.archive.readmeSha256 !== plan.accessReview.readmeSha256) throw new Error("The profile seed's dedication differs from the reviewed publication.");
 		await writeFile(join(cache, "bodies", `${archive.sha256}.tar.gz`), bytes, { flag: "wx" });
 		const { path: archivePath, ...capture } = archive;
-		await writeOpenStatesCollectionMetadata(join(cache, "current.json"), { schemaVersion: 1, collectionPolicySha256: openStatesProfileCollectionPolicySha256, ...capture, readmeSha256: prepared.archive.readmeSha256, checkedAt: archive.capturedAt });
+		await writeOpenStatesCollectionMetadata(join(cache, "current.json"), {
+			schemaVersion: 1,
+			collectionPolicySha256: openStatesProfileCollectionPolicySha256,
+			...capture,
+			readmeSha256: prepared.archive.readmeSha256,
+			checkedAt: archive.capturedAt
+		});
 		return { seeded: true, publisherRequests: 0, outputDirectory: prepared.outputDirectory };
 	});
 }
@@ -139,7 +161,11 @@ export async function collectOpenStatesProfiles(plan: OpenStatesProfileCollectio
 		let cached = await readCapture(cache, plan, now());
 		let publisherRequests = 0;
 		async function hold(reason: string, status?: number): Promise<never> {
-			await writeOpenStatesCollectionMetadata(join(cache, "hold.json"), { reason, status, at: new Date(now()).toISOString() });
+			await writeOpenStatesCollectionMetadata(join(cache, "hold.json"), {
+				reason,
+				status,
+				at: new Date(now()).toISOString()
+			});
 			throw new Error(`Profile collection stopped for review: ${reason}.`);
 		}
 		async function request(url: string, key: string, accept: string, etag?: string) {
@@ -148,9 +174,23 @@ export async function collectOpenStatesProfiles(plan: OpenStatesProfileCollectio
 			if (previous && !validDate(previous.at, now())) throw new Error("Profile request-attempt provenance is invalid.");
 			if (previous && now() - Date.parse(previous.at) < openStatesProfilePublication.minimumRefreshIntervalMs) throw new Error("Profile request cooldown is active; accepted data is unchanged.");
 			await sleep(1000);
-			await writeOpenStatesCollectionMetadata(path, { at: new Date(now()).toISOString() });
+			await writeOpenStatesCollectionMetadata(path, {
+				at: new Date(now()).toISOString()
+			});
 			publisherRequests++;
-			const response = await fetchImpl(url, { headers: { "User-Agent": "BallotClarity-source-review/1.0 (+https://ballotclarity.org)", "X-GitHub-Api-Version": openStatesProfilePublication.apiVersion, "Accept": accept, ...(etag ? { "If-None-Match": etag } : {}) }, redirect: "manual", credentials: "omit", signal: AbortSignal.timeout(15_000) });
+			const response = await fetchImpl(url, {
+				headers: {
+					"User-Agent": "BallotClarity-source-review/1.0 (+https://ballotclarity.org)",
+					"X-GitHub-Api-Version": openStatesProfilePublication.apiVersion,
+					"Accept": accept,
+					...(etag
+						? { "If-None-Match": etag }
+						: {})
+				},
+				redirect: "manual",
+				credentials: "omit",
+				signal: AbortSignal.timeout(15_000)
+			});
 			if (response.redirected || [301, 303, 307, 308, 401, 403, 429].includes(response.status) || (response.status === 302 && !/^archive-[a-f0-9]{40}$/u.test(key))) {
 				await response.body?.cancel().catch(() => {});
 				return hold("publisher-denial-or-unexpected-redirect", response.status);
@@ -167,7 +207,10 @@ export async function collectOpenStatesProfiles(plan: OpenStatesProfileCollectio
 			if (response.status === 304) {
 				await response.body?.cancel().catch(() => {});
 				if (!cached?.metadata.etag) return hold("unexpected-not-modified", response.status);
-				nextCapture = { ...cached.metadata, checkedAt: new Date(now()).toISOString() };
+				nextCapture = {
+					...cached.metadata,
+					checkedAt: new Date(now()).toISOString()
+				};
 				status = "not-modified";
 			}
 			else {
@@ -189,7 +232,11 @@ export async function collectOpenStatesProfiles(plan: OpenStatesProfileCollectio
 				const etag = response.headers.get("etag") ?? undefined;
 				if (etag !== undefined && !validEtag(etag)) return hold("invalid-commit-validator");
 				if (commit === cached?.metadata.commit) {
-					nextCapture = { ...cached.metadata, checkedAt: new Date(now()).toISOString(), etag };
+					nextCapture = {
+						...cached.metadata,
+						checkedAt: new Date(now()).toISOString(),
+						etag
+					};
 					status = "same-commit";
 				}
 				else {
@@ -215,14 +262,34 @@ export async function collectOpenStatesProfiles(plan: OpenStatesProfileCollectio
 						await writeFile(path, bytes, { flag: "wx" });
 					}
 					catch (error) { if ((error as NodeJS.ErrnoException).code !== "EEXIST" || digest(await readOpenStatesProfileArchive(path)) !== sha256) throw error; }
-					nextCapture = { schemaVersion: 1, collectionPolicySha256: openStatesProfileCollectionPolicySha256, commit, sha256, capturedAt: new Date(now()).toISOString(), checkedAt: new Date(now()).toISOString(), readmeSha256: plan.accessReview.readmeSha256, etag };
+					nextCapture = {
+						schemaVersion: 1,
+						collectionPolicySha256: openStatesProfileCollectionPolicySha256,
+						commit,
+						sha256,
+						capturedAt: new Date(now()).toISOString(),
+						checkedAt: new Date(now()).toISOString(),
+						readmeSha256: plan.accessReview.readmeSha256,
+						etag
+					};
 					cached = { metadata: nextCapture, path };
 					status = "downloaded";
 				}
 			}
 		}
 		if (!cached || !nextCapture) throw new Error("No valid profile archive is available; accepted data is unchanged.");
-		const preparationPlan = { schemaVersion: 1, type: "openstates-profile-enrichment", archive: { path: cached.path, commit: nextCapture.commit, sha256: nextCapture.sha256, capturedAt: nextCapture.capturedAt }, referenceFiles, outputDirectory: join(directory, "profiles") };
+		const preparationPlan = {
+			schemaVersion: 1,
+			type: "openstates-profile-enrichment",
+			archive: {
+				path: cached.path,
+				commit: nextCapture.commit,
+				sha256: nextCapture.sha256,
+				capturedAt: nextCapture.capturedAt
+			},
+			referenceFiles,
+			outputDirectory: join(directory, "profiles")
+		};
 		const planPath = join(directory, "profile-enrichment-plan.json");
 		await writeFile(planPath, `${JSON.stringify(preparationPlan, null, 2)}\n`, { flag: "wx" });
 		let prepared: Awaited<ReturnType<typeof prepareOpenStatesProfileFiles>>;
@@ -236,7 +303,17 @@ export async function collectOpenStatesProfiles(plan: OpenStatesProfileCollectio
 			return hold("invalid-profile-archive-or-inputs");
 		}
 		await writeOpenStatesCollectionMetadata(join(cache, "current.json"), nextCapture);
-		const receipt = { schemaVersion: 1, type: "openstates-profile-collection-result", complete: collection.complete && prepared.complete, outputDirectory: prepared.outputDirectory, collection, archive: { ...nextCapture, status }, publisherRequests: collection.publisherRequests + publisherRequests, prepared, imported: false };
+		const receipt = {
+			schemaVersion: 1,
+			type: "openstates-profile-collection-result",
+			complete: collection.complete && prepared.complete,
+			outputDirectory: prepared.outputDirectory,
+			collection,
+			archive: { ...nextCapture, status },
+			publisherRequests: collection.publisherRequests + publisherRequests,
+			prepared,
+			imported: false
+		};
 		await writeFile(join(directory, "profile-collection-result.json"), `${JSON.stringify(receipt, null, 2)}\n`, { flag: "wx" });
 		return receipt;
 	});

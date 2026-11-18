@@ -14,9 +14,13 @@ export function readUnionBallotLocatedCells(body: string, layout: string, docume
 	if (Buffer.byteLength(body) > 4 * 1024 * 1024 || Buffer.byteLength(layout) > 4 * 1024 * 1024 || !/^20\d{2}-11-0[2-8]$/u.test(electionDate)) return reject();
 	const date = `NOVEMBER ${Number(electionDate.slice(8))}, ${electionDate.slice(0, 4)}`;
 	const visible = layout.normalize("NFKC").toLocaleUpperCase("en-US");
-	const forms = [...visible.matchAll(/\bFORM\s+(\d{1,2})\b/gu)].map(match => Number(match[1]));
+	const forms = [
+		...visible.matchAll(/\bFORM\s+(\d{1,2})\b/gu)
+	].map(match => Number(match[1]));
 	if (!forms.length || forms.some(form => form !== document.form) || !canonical(visible).includes(canonical("OFFICIAL GENERAL ELECTION SAMPLE BALLOT")) || !canonical(visible).includes(canonical(`USED ON ${date}`)) || !canonical(visible).includes("UNIONCOUNTYNEWJERSEY")) return reject();
-	const municipalities = [...new Set(document.claims.map(claim => claim.municipality))];
+	const municipalities = [
+		...new Set(document.claims.map(claim => claim.municipality))
+	];
 	if (municipalities.length !== 1 || !canonical(visible).includes(canonical(municipalities[0]!))) return reject();
 	const pages = descendants(parseStateHtml(body), node => node.nodeName === "page");
 	if (pages.length !== 1 || layout.split("\f").filter(page => page.trim()).length !== 1) return reject();
@@ -25,8 +29,21 @@ export function readUnionBallotLocatedCells(body: string, layout: string, docume
 	const height = Number(attribute(page, "height"));
 	if (width !== 1824 || height !== 1284) return reject();
 	const words = descendants(page, node => node.nodeName === "word").map((node): Word => {
-		const word = { value: stateHtmlText(node).trim(), left: Number(attribute(node, "xmin")), right: Number(attribute(node, "xmax")), top: Number(attribute(node, "ymin")), bottom: Number(attribute(node, "ymax")) };
-		if (!word.value || word.value.length > 500 || ![word.left, word.right, word.top, word.bottom].every(Number.isFinite) || word.left < 0 || word.right > width || word.top < 0 || word.bottom > height || word.left >= word.right || word.top >= word.bottom) return reject();
+		const word = {
+			value: stateHtmlText(node).trim(),
+			left: Number(attribute(node, "xmin")),
+			right: Number(attribute(node, "xmax")),
+			top: Number(attribute(node, "ymin")),
+			bottom: Number(attribute(node, "ymax"))
+		};
+		if (!word.value || word.value.length > 500 || ![
+			word.left,
+			word.right,
+			word.top,
+			word.bottom
+		].every(Number.isFinite) || word.left < 0 || word.right > width || word.top < 0 || word.bottom > height || word.left >= word.right || word.top >= word.bottom) {
+			return reject();
+		}
 		return word;
 	});
 	if (!words.length || words.length > 20000) return reject();
@@ -40,12 +57,26 @@ export function readUnionBallotLocatedCells(body: string, layout: string, docume
 		if (selected.some(word => !canonical(visible).includes(canonical(word.value)))) return reject();
 		const observedName = selected.map(word => word.value).join(" ");
 		if (observedName.length > 250) return reject();
-		cells.push({ page: 1, position: marker.value, observedName, nameWordCount: selected.length, left: marker.left, right: marker.right, top: marker.top, bottom: marker.bottom });
+		cells.push({
+			page: 1,
+			position: marker.value,
+			observedName,
+			nameWordCount: selected.length,
+			left: marker.left,
+			right: marker.right,
+			top: marker.top,
+			bottom: marker.bottom
+		});
 	}
 	return cells;
 }
 export function readUnionBallotCells(body: string, layout: string, document: UnionSampleDocument, electionDate: string): UnionBallotCell[] {
-	return readUnionBallotLocatedCells(body, layout, document, electionDate).map(({ page, position, observedName, nameWordCount }) => ({ page, position, observedName, nameWordCount }));
+	return readUnionBallotLocatedCells(body, layout, document, electionDate).map(({ page, position, observedName, nameWordCount }) => ({
+		page,
+		position,
+		observedName,
+		nameWordCount
+	}));
 }
 
 export function reconcileUnionBallotReferences(references: (UnionCandidateReference & { kind: "general" | "school"; electionDate: string })[], catalog: UnionSampleCatalog, samples: { form: number; cells: UnionBallotCell[]; sourceUrl: string; sourceSha256: string; capturedAt: string }[]) {
@@ -57,9 +88,35 @@ export function reconcileUnionBallotReferences(references: (UnionCandidateRefere
 		if (!relevant.length) return reject();
 		const positionEvidence = relevant.flatMap((document) => {
 			const sample = samples.find(sample => sample.form === document.form)!;
-			return sample.cells.filter(cell => cell.position === reference.position).map(cell => ({ form: document.form, page: cell.page, position: cell.position, observedName: cell.observedName, sourceUrl: sample.sourceUrl, sourceSha256: sample.sourceSha256, capturedAt: sample.capturedAt, publishedLabels: document.claims }));
+			return sample.cells.filter(cell => cell.position === reference.position).map(cell => ({
+				form: document.form,
+				page: cell.page,
+				position: cell.position,
+				observedName: cell.observedName,
+				sourceUrl: sample.sourceUrl,
+				sourceSha256: sample.sourceSha256,
+				capturedAt: sample.capturedAt,
+				publishedLabels: document.claims
+			}));
 		});
 		const witnesses = positionEvidence.filter(cell => canonical(cell.observedName) === canonical(reference.name));
-		return { reference, status: witnesses.length ? "name-and-position-corroborated" : "review-required", witnesses, reviewReason: witnesses.length ? null : positionEvidence.some(cell => cell.observedName) ? "different-visible-name-at-position" : "no-visible-name-at-position", positionEvidence: witnesses.length ? [] : positionEvidence, applicableSampleFormsReviewed: relevant.map(document => document.form), officeAndPartyVerified: false, qualificationVerified: false, personalApplicabilityVerified: false, publicationApproved: false };
+		return {
+			reference,
+			status: witnesses.length ? "name-and-position-corroborated" : "review-required",
+			witnesses,
+			reviewReason: witnesses.length
+				? null
+				: positionEvidence.some(cell => cell.observedName)
+					? "different-visible-name-at-position"
+					: "no-visible-name-at-position",
+			positionEvidence: witnesses.length
+				? []
+				: positionEvidence,
+			applicableSampleFormsReviewed: relevant.map(document => document.form),
+			officeAndPartyVerified: false,
+			qualificationVerified: false,
+			personalApplicabilityVerified: false,
+			publicationApproved: false
+		};
 	});
 }

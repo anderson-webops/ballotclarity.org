@@ -43,8 +43,18 @@ async function fixture(context: TestContext) {
 	const plan = {
 		schemaVersion: 1,
 		type: "kauai-disclosure-research-preparation",
-		publication: { path: join(directory, "packet.pdf"), sha256: kauaiDisclosureHash(publication), url: publicationUrl, capturedAt: clock },
-		index: { path: join(directory, "index.html"), sha256: kauaiDisclosureHash(index), url: kauaiEthicsIndexUrl, capturedAt: clock },
+		publication: {
+			path: join(directory, "packet.pdf"),
+			sha256: kauaiDisclosureHash(publication),
+			url: publicationUrl,
+			capturedAt: clock
+		},
+		index: {
+			path: join(directory, "index.html"),
+			sha256: kauaiDisclosureHash(index),
+			url: kauaiEthicsIndexUrl,
+			capturedAt: clock
+		},
 		outputDirectory: join(directory, "prepared"),
 	};
 	await writeFile(plan.publication.path, publication);
@@ -52,11 +62,20 @@ async function fixture(context: TestContext) {
 	const planPath = join(directory, "plan.json");
 	const save = () => writeFile(planPath, JSON.stringify(plan));
 	await save();
-	const options = { now: Date.parse(clock), extract: async (body: Buffer) => {
-		assert.deepEqual(body, publication);
-		return packet;
-	} };
-	return { directory, plan, planPath, save, options };
+	const options = {
+		now: Date.parse(clock),
+		extract: async (body: Buffer) => {
+			assert.deepEqual(body, publication);
+			return packet;
+		}
+	};
+	return {
+		directory,
+		plan,
+		planPath,
+		save,
+		options
+	};
 }
 
 test("Kauai research separates disclosure receipt and update dates from election qualification", () => {
@@ -67,14 +86,26 @@ test("Kauai research separates disclosure receipt and update dates from election
 	assert.equal(report.sourcePage, 3);
 	assert.equal(report.packetPages, 3);
 	assert.equal(report.records.length, 4);
-	assert.deepEqual(report.records.map(record => record.office), ["Mayor", "Mayor", "County Council", "County Council"]);
+	assert.deepEqual(report.records.map(record => record.office), [
+		"Mayor",
+		"Mayor",
+		"County Council",
+		"County Council"
+	]);
 	assert.equal(report.records[0]!.name, "Kaʻimi Example, Jr.");
 	assert.equal(report.records[1]!.name, "Bernard Carvahlo, Jr.");
 	assert.equal(report.records[2]!.disclosureReceived, "2028-03-30");
 	assert.equal(report.records[2]!.disclosureUpdated, "2028-05-01");
 	assert.equal(report.records[3]!.disclosureUpdated, null);
 	for (const record of report.records) {
-		assert.deepEqual(Object.keys(record).sort(), ["disclosureReceived", "disclosureUpdated", "id", "name", "office", "sourcePage"]);
+		assert.deepEqual(Object.keys(record).sort(), [
+			"disclosureReceived",
+			"disclosureUpdated",
+			"id",
+			"name",
+			"office",
+			"sourcePage"
+		]);
 		assert.match(record.id, /^[a-f\d]{24}$/u);
 	}
 	assert.doesNotMatch(JSON.stringify(report), /staff@example|900,000|ELLEN|Jane Example/u);
@@ -118,13 +149,29 @@ test("Kauai holds ambiguous same-date memoranda and bounds native extraction", (
 test("Kauai agenda binding preserves newer external publications without treating an older PDF as latest", () => {
 	const result = readKauaiDisclosureIndex(indexHtml, publicationUrl);
 	assert.deepEqual(result.publication, { url: publicationUrl, meetingDate: "2028-10-20" });
-	assert.deepEqual(result.newerOfferedPublications, [{ label: "BOE_2028_1117_Notice Agenda Packet", url: laterUrl, meetingDate: "2028-11-17" }]);
+	assert.deepEqual(result.newerOfferedPublications, [
+		{ label: "BOE_2028_1117_Notice Agenda Packet", url: laterUrl, meetingDate: "2028-11-17" }
+	]);
 	assert.deepEqual(readKauaiDisclosureIndex(indexHtml.replace(publicationUrl, new URL(publicationUrl).pathname), publicationUrl), result);
 });
 
 test("Kauai holds changed agenda identity, unsafe URLs and unoffered documents", () => {
-	for (const url of [publicationUrl.replace("www.kauai.gov", "other.example"), `${publicationUrl}?download=1`, `${publicationUrl}#page=3`, publicationUrl.replace("1020", "0230"), publicationUrl.replace("/v/1/", "/v/100/")]) assert.throws(() => kauaiDisclosurePublication(url));
-	for (const body of [indexHtml.replace("BOE_2028_1020", "BOE_2028_1021"), indexHtml.replace(publicationUrl, publicationUrl.replace("1020", "1021")), `${indexHtml}${indexHtml}`, indexHtml.replace(laterUrl, "http://unreviewed.example/agenda"), indexHtml.replace(laterUrl, "https://user:secret@example.test/agenda"), indexHtml.replace("</main>", `<a href="${publicationUrl}">BOE_2028_1020_Notice Agenda Packet</a></main>`), "a".repeat(3 * 1024 * 1024 + 1)]) assert.throws(() => readKauaiDisclosureIndex(body, publicationUrl));
+	for (const url of [
+		publicationUrl.replace("www.kauai.gov", "other.example"),
+		`${publicationUrl}?download=1`,
+		`${publicationUrl}#page=3`,
+		publicationUrl.replace("1020", "0230"),
+		publicationUrl.replace("/v/1/", "/v/100/")
+	]) assert.throws(() => kauaiDisclosurePublication(url));
+	for (const body of [
+		indexHtml.replace("BOE_2028_1020", "BOE_2028_1021"),
+		indexHtml.replace(publicationUrl, publicationUrl.replace("1020", "1021")),
+		`${indexHtml}${indexHtml}`,
+		indexHtml.replace(laterUrl, "http://unreviewed.example/agenda"),
+		indexHtml.replace(laterUrl, "https://user:secret@example.test/agenda"),
+		indexHtml.replace("</main>", `<a href="${publicationUrl}">BOE_2028_1020_Notice Agenda Packet</a></main>`),
+		"a".repeat(3 * 1024 * 1024 + 1)
+	]) assert.throws(() => readKauaiDisclosureIndex(body, publicationUrl));
 });
 
 test("Kauai preparation exports only research facts and repeatable CSV with original provenance", async (context) => {
@@ -191,9 +238,12 @@ test("Kauai preparation validates schema, capture clocks, original paths and out
 	await writeFile(input.planPath, JSON.stringify({ ...input.plan, execute: "unreviewed" }));
 	await assert.rejects(prepareKauaiDisclosures(input.planPath, input.options), /pinned/u);
 	await input.save();
-	await assert.rejects(prepareKauaiDisclosures(input.planPath, { ...input.options, extract: async () => {
-		throw new Error("Native extraction failed.");
-	} }), /Native extraction failed/u);
+	await assert.rejects(prepareKauaiDisclosures(input.planPath, {
+		...input.options,
+		extract: async () => {
+			throw new Error("Native extraction failed.");
+		}
+	}), /Native extraction failed/u);
 	await assert.rejects(access(input.plan.outputDirectory), /ENOENT/u);
 	await symlink(input.plan.publication.path, join(input.directory, "linked.pdf"));
 	input.plan.publication.path = join(input.directory, "linked.pdf");

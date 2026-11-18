@@ -44,17 +44,43 @@ export async function prepareOpenStatesProfileFiles(path: string, now = Date.now
 		const source = openStatesBulkSources.find(item => item.id === metadata?.sourceId);
 		if (!source || (stored && (Object.keys(envelope).sort().join(",") !== "snapshot,sourceConfigurationSha256" || envelope.sourceConfigurationSha256 !== digest(JSON.stringify(source)))))
 			throw new Error("Each profile input must match its configured Open States CSV collection.");
-		return { source, snapshot: parseElectionReferenceSnapshot(source, snapshotBody, now) };
+		return {
+			source,
+			snapshot: parseElectionReferenceSnapshot(source, snapshotBody, now)
+		};
 	}));
 	const capture: OpenStatesProfileCapture = { commit: plan.archive.commit, sha256: plan.archive.sha256, capturedAt: plan.archive.capturedAt };
 	const prepared = await enrichOpenStatesProfiles(await readOpenStatesProfileArchive(plan.archive.path), capture, collections, now);
-	const files = prepared.snapshots.map(({ source, snapshot }) => ({ name: `election-references-openstates-${source.stateCode.toLowerCase()}-profiles-${source.electionDate.slice(0, 4)}.json`, content: `${JSON.stringify(snapshot, null, 2)}\n`, sourceId: source.id, sourceConfigurationSha256: digest(JSON.stringify(source)), stateCode: source.stateCode, records: snapshot.recordCount, facts: snapshot.records.reduce((total, record) => total + record.facts.length, 0) }));
+	const files = prepared.snapshots.map(({ source, snapshot }) => ({
+		name: `election-references-openstates-${source.stateCode.toLowerCase()}-profiles-${source.electionDate.slice(0, 4)}.json`,
+		content: `${JSON.stringify(snapshot, null, 2)}\n`,
+		sourceId: source.id,
+		sourceConfigurationSha256: digest(JSON.stringify(source)),
+		stateCode: source.stateCode,
+		records: snapshot.recordCount,
+		facts: snapshot.records.reduce((total, record) => total + record.facts.length, 0)
+	}));
 	const manifest = {
 		schemaVersion: 1,
 		type: "openstates-profile-enrichment-result",
-		archive: { ...capture, url: `https://api.github.com/repos/openstates/people/tarball/${capture.commit}`, readmeSha256: prepared.readmeSha256, members: prepared.archiveMembers, expandedBytes: prepared.archiveExpandedBytes },
-		files: files.map(({ content, ...file }) => ({ ...file, sha256: digest(content) })),
-		inputs: collections.map(({ source, snapshot }) => ({ sourceId: source.id, sourceConfigurationSha256: digest(JSON.stringify(source)), sourceSha256: snapshot.sourceSha256, retrievedAt: snapshot.retrievedAt, records: snapshot.recordCount })),
+		archive: {
+			...capture,
+			url: `https://api.github.com/repos/openstates/people/tarball/${capture.commit}`,
+			readmeSha256: prepared.readmeSha256,
+			members: prepared.archiveMembers,
+			expandedBytes: prepared.archiveExpandedBytes
+		},
+		files: files.map(({ content, ...file }) => ({
+			...file,
+			sha256: digest(content)
+		})),
+		inputs: collections.map(({ source, snapshot }) => ({
+			sourceId: source.id,
+			sourceConfigurationSha256: digest(JSON.stringify(source)),
+			sourceSha256: snapshot.sourceSha256,
+			retrievedAt: snapshot.retrievedAt,
+			records: snapshot.recordCount
+		})),
 		profiles: files.reduce((total, file) => total + file.records, 0),
 		facts: files.reduce((total, file) => total + file.facts, 0),
 		roleStartDates: prepared.roleStartDates,
@@ -66,7 +92,11 @@ export async function prepareOpenStatesProfileFiles(path: string, now = Date.now
 		publisherRequests: 0,
 		imported: false,
 	};
-	const exports = [...files.map(({ name, content }) => ({ name, content })), { name: "openstates-profile-enrichment-result.json", content: `${JSON.stringify(manifest, null, 2)}\n` }, { name: "openstates-profile-enrichment-holds.jsonl", content: `${prepared.holds.map(hold => JSON.stringify(hold)).join("\n")}\n` }];
+	const exports = [
+		...files.map(({ name, content }) => ({ name, content })),
+		{ name: "openstates-profile-enrichment-result.json", content: `${JSON.stringify(manifest, null, 2)}\n` },
+		{ name: "openstates-profile-enrichment-holds.jsonl", content: `${prepared.holds.map(hold => JSON.stringify(hold)).join("\n")}\n` }
+	];
 	exports.push({ name: "openstates-profile-enrichment-SHA256SUMS", content: `${exports.map(file => `${digest(file.content)}  ${file.name}`).join("\n")}\n` });
 	await mkdir(plan.outputDirectory);
 	assertExternalStateDataDirectory(await realpath(plan.outputDirectory));

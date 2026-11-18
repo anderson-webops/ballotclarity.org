@@ -33,27 +33,49 @@ import { validateTuscolaDocumentUrl, validateTuscolaSource } from "./state-ballo
 import { containsControlCharacters } from "./text-validation.js";
 import { usStates } from "./us-states.js";
 
-const scopes = ["all", "statewide", "congressional", "state-senate", "state-house", "state-board-of-education", "local"];
+const scopes = [
+	"all",
+	"statewide",
+	"congressional",
+	"state-senate",
+	"state-house",
+	"state-board-of-education",
+	"local"
+];
 
 export function stateRecordDocumentLinks(source: StateBallotSource | undefined, snapshot?: StateBallotSnapshot) {
 	if (source?.format === "iowa-johnson-html" && snapshot?.documents) {
 		validateIowaJohnsonSource(source);
 		if (snapshot.source.id !== source.id) throw new Error("The Johnson County publication source is mismatched.");
-		validateJohnsonStoredDocuments(source, { documents: snapshot.documents, ballotQuestions: snapshot.ballotQuestions, sourceSha256: snapshot.sha256, collectionIndexSha256: snapshot.collectionIndexSha256 });
+		validateJohnsonStoredDocuments(source, {
+			documents: snapshot.documents,
+			ballotQuestions: snapshot.ballotQuestions,
+			sourceSha256: snapshot.sha256,
+			collectionIndexSha256: snapshot.collectionIndexSha256
+		});
 		const candidates = { label: "Candidate list", url: source.pageUrl };
 		if (snapshot.documents.length === 1) return [candidates];
-		const questions = [...new Set(snapshot.ballotQuestions?.map(question => question.sourceUrl))].map((url) => {
+		const questions = [
+			...new Set(snapshot.ballotQuestions?.map(question => question.sourceUrl))
+		].map((url) => {
 			if (!url || !snapshot.documents!.some(document => document.url === url)) throw new Error("The Johnson County question publication is missing.");
 			return { label: `Ballot style ${johnsonSampleStyle(url, source.electionDate)}`, url };
 		});
-		return [{ label: "Sample ballot lookup", url: johnsonBallotMapUrl }, candidates, ...questions];
+		return [
+			{ label: "Sample ballot lookup", url: johnsonBallotMapUrl },
+			candidates,
+			...questions
+		];
 	}
 	if (source?.format === "tuscola-pdf" && snapshot?.documents) {
 		validateTuscolaSource(source);
 		if (snapshot.source.id !== source.id || snapshot.documents.length !== 2) throw new Error("The Tuscola source publications require review.");
 		return snapshot.documents.map((document, index) => {
 			validateTuscolaDocumentUrl(document.url, index ? "samples" : "candidates", source.electionDate.slice(0, 4));
-			return { label: index ? "Sample ballot" : "Candidate list", url: document.url };
+			return {
+				label: index ? "Sample ballot" : "Candidate list",
+				url: document.url
+			};
 		});
 	}
 	if (source?.format === "franklin-pdf" && snapshot?.documents) {
@@ -69,25 +91,52 @@ export function stateRecordDocumentLinks(source: StateBallotSource | undefined, 
 		if (snapshot.source.id !== source.id || !snapshot.documents.length || snapshot.documents.length > 12) throw new Error("The Cassia source publications require review.");
 		return snapshot.documents.map((document, index) => {
 			validateCassiaDocumentUrl(document.url, source.electionDate);
-			return { label: index === 0 ? "Sample ballot" : /School/iu.test(document.url) ? "School ballot" : /Fire/iu.test(document.url) ? "Fire ballot" : "Supporting ballot", url: document.url };
+			return {
+				label: index === 0
+					? "Sample ballot"
+					: /School/iu.test(document.url)
+						? "School ballot"
+						: /Fire/iu.test(document.url)
+							? "Fire ballot"
+							: "Supporting ballot",
+				url: document.url
+			};
 		});
 	}
 	if (source?.format === "fulton-municipal-pdf" && snapshot?.documents) {
 		validateFultonMunicipalSource(source);
 		if (snapshot.documents.length !== 1) throw new Error("The municipal sample ballot requires review.");
-		return [{ label: "Sample ballot", url: fultonMunicipalDocumentUrl(snapshot.documents[0]!.url) }];
+		return [
+			{
+				label: "Sample ballot",
+				url: fultonMunicipalDocumentUrl(snapshot.documents[0]!.url)
+			}
+		];
 	}
 	if (source?.format === "fairbanks-pdf" && snapshot?.documents) {
 		validateFairbanksSource(source);
 		if (snapshot.documents.length !== 2 || snapshot.documents.some((document, index) => document.url !== source.documentUrls?.[index])) throw new Error("The Fairbanks source publications require review.");
-		return [{ label: "Sample ballot", url: snapshot.documents[1]!.url }, { label: "Election office", url: source.pageUrl }];
+		return [
+			{ label: "Sample ballot", url: snapshot.documents[1]!.url },
+			{ label: "Election office", url: source.pageUrl }
+		];
 	}
 	if (source?.format === "oklahoma-html") {
 		validateOklahomaSource(source);
-		return [{ label: "Candidate list", url: source.pageUrl }];
+		return [
+			{ label: "Candidate list", url: source.pageUrl }
+		];
 	}
-	if (source?.format === "iowa-county-pdf" && snapshot?.documents) return [{ label: "Sample ballots", url: source.pageUrl }];
-	if (source?.format === "everett-pdf" && snapshot?.documents) return [{ label: "Sample ballots", url: source.pageUrl }];
+	if (source?.format === "iowa-county-pdf" && snapshot?.documents) {
+		return [
+			{ label: "Sample ballots", url: source.pageUrl }
+		];
+	}
+	if (source?.format === "everett-pdf" && snapshot?.documents) {
+		return [
+			{ label: "Sample ballots", url: source.pageUrl }
+		];
+	}
 	if (source?.format === "bucks-pdf" && snapshot?.documents) {
 		return snapshot.documents.map((document) => {
 			validateBucksDocumentUrl(document.url, source.electionDate);
@@ -121,7 +170,10 @@ export function stateRecordDocumentLinks(source: StateBallotSource | undefined, 
 	if (source?.format === "pima-pdf" && snapshot?.documents) {
 		return snapshot.documents.map((document, index) => {
 			validatePimaDocumentUrl(document.url);
-			return { label: index ? "Write-ins" : "Candidates", url: document.url };
+			return {
+				label: index ? "Write-ins" : "Candidates",
+				url: document.url
+			};
 		});
 	}
 	if (source?.format === "goffstown-pdf" && snapshot?.documents) {
@@ -153,7 +205,7 @@ export function stateRecordDocumentLinks(source: StateBallotSource | undefined, 
 
 function singleQuery(value: unknown, fallback: string) {
 	if (value === undefined) return fallback;
-	if (typeof value !== "string") throw new Error("Each filter must have a single value.");
+	if (typeof value !== "string") throw new TypeError("Each filter must have a single value.");
 	return value;
 }
 
@@ -170,7 +222,13 @@ export function parseStateRecordFilters(query: Record<string, unknown>) {
 	const limit = Number(rawLimit);
 	const offset = Number(rawOffset);
 	if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100 || !Number.isSafeInteger(offset) || offset < 0 || offset > 25_000) throw new Error("The requested page is outside the supported range.");
-	return { search: search.toLowerCase(), scope, status, limit, offset };
+	return {
+		search: search.toLowerCase(),
+		scope,
+		status,
+		limit,
+		offset
+	};
 }
 
 export function reportedFultonIncumbency(record: StateCandidateRecord, source: StateBallotSource) {
@@ -178,7 +236,9 @@ export function reportedFultonIncumbency(record: StateCandidateRecord, source: S
 }
 
 export function publicStateCandidateRecord(record: StateCandidateRecord, source: StateBallotSource): PublicStateCandidateRecord {
-	const candidateUrl = record.candidateUrl ? normalizePublicHref(record.candidateUrl) : undefined;
+	const candidateUrl = record.candidateUrl
+		? normalizePublicHref(record.candidateUrl)
+		: undefined;
 	const fultonIncumbent = reportedFultonIncumbency(record, source);
 	return {
 		id: record.id,
@@ -188,13 +248,21 @@ export function publicStateCandidateRecord(record: StateCandidateRecord, source:
 		scope: record.scope,
 		status: record.status,
 		party: record.party,
-		incumbent: record.incumbent || fultonIncumbent ? true : undefined,
+		incumbent: record.incumbent || fultonIncumbent
+			? true
+			: undefined,
 		jurisdiction: record.jurisdiction,
 		sourceStatus: record.sourceStatus,
-		ballotDesignation: fultonIncumbent ? record.ballotDesignation!.replace(/^\(Incumbent\)?(?:; )?/u, "") || undefined : record.ballotDesignation,
-		candidateUrl: candidateUrl && /^https?:\/\//u.test(candidateUrl) ? candidateUrl : undefined,
+		ballotDesignation: fultonIncumbent
+			? record.ballotDesignation!.replace(/^\(Incumbent\)?(?:; )?/u, "") || undefined
+			: record.ballotDesignation,
+		candidateUrl: candidateUrl && /^https?:\/\//u.test(candidateUrl)
+			? candidateUrl
+			: undefined,
 		sourceDistrictLabel: record.sourceDistrictLabel,
-		sourceAreaLabel: source.format === "orange-pdf" ? undefined : record.sourceAreaLabel,
+		sourceAreaLabel: source.format === "orange-pdf"
+			? undefined
+			: record.sourceAreaLabel,
 		termYears: record.termYears,
 		termEnd: record.termEnd,
 		seats: record.seats,
@@ -205,8 +273,22 @@ export function publicStateCandidateRecord(record: StateCandidateRecord, source:
 export function buildStateRecordPage(snapshot: StateBallotSnapshot, filters: ReturnType<typeof parseStateRecordFilters>, recordSources?: ReadonlyMap<string, StateBallotSource>) {
 	const matching = snapshot.records.filter(record => (filters.status === "all" || isActiveStateCandidateRecord(record))
 		&& (filters.scope === "all" || record.scope === filters.scope)
-		&& (!filters.search || [record.name, record.office, record.party, record.incumbent || reportedFultonIncumbency(record, snapshot.source) ? "incumbent" : "", record.district, record.jurisdiction, record.sourceAreaLabel, record.sourceDistrictLabel, record.sourceStatus].join(" ").toLowerCase().includes(filters.search)));
-	const offset = filters.offset >= matching.length ? Math.max(0, Math.floor((matching.length - 1) / filters.limit) * filters.limit) : filters.offset;
+		&& (!filters.search || [
+			record.name,
+			record.office,
+			record.party,
+			record.incumbent || reportedFultonIncumbency(record, snapshot.source)
+				? "incumbent"
+				: "",
+			record.district,
+			record.jurisdiction,
+			record.sourceAreaLabel,
+			record.sourceDistrictLabel,
+			record.sourceStatus
+		].join(" ").toLowerCase().includes(filters.search)));
+	const offset = filters.offset >= matching.length
+		? Math.max(0, Math.floor((matching.length - 1) / filters.limit) * filters.limit)
+		: filters.offset;
 	return {
 		total: snapshot.records.length,
 		matched: matching.length,
@@ -215,7 +297,12 @@ export function buildStateRecordPage(snapshot: StateBallotSnapshot, filters: Ret
 		limit: filters.limit,
 		records: matching.slice(offset, offset + filters.limit).map((record) => {
 			const source = recordSources?.get(record.id) ?? snapshot.source;
-			return { ...publicStateCandidateRecord(record, source), ...(source.id !== snapshot.source.id ? { sourceId: source.id } : {}) };
+			return {
+				...publicStateCandidateRecord(record, source),
+				...(source.id !== snapshot.source.id
+					? { sourceId: source.id }
+					: {})
+			};
 		}),
 	};
 }
@@ -234,10 +321,18 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 	});
 	app.get("/api/state-records", (_request, response) => {
 		const sources = currentSources();
-		response.json({ states: usStates.map(([stateCode, stateName]) => {
-			const options = sources.filter(source => source.stateCode === stateCode);
-			return { stateCode, stateName, configured: Boolean(options.length), electionDate: options.find(source => stateBallotSourceIsCurrent(source, now()))?.electionDate, sources: options.map(({ id, label, electionDate }) => ({ id, label, electionDate })) };
-		}) });
+		response.json({
+			states: usStates.map(([stateCode, stateName]) => {
+				const options = sources.filter(source => source.stateCode === stateCode);
+				return {
+					stateCode,
+					stateName,
+					configured: Boolean(options.length),
+					electionDate: options.find(source => stateBallotSourceIsCurrent(source, now()))?.electionDate,
+					sources: options.map(({ id, label, electionDate }) => ({ id, label, electionDate }))
+				};
+			})
+		});
 	});
 	app.get("/api/state-records/:stateCode", async (request, response) => {
 		const sources = currentSources();
@@ -252,7 +347,11 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 			filters = parseStateRecordFilters(request.query);
 		}
 		catch (error) {
-			response.status(400).json({ message: error instanceof Error ? error.message : "The record filters are invalid." });
+			response.status(400).json({
+				message: error instanceof Error
+					? error.message
+					: "The record filters are invalid."
+			});
 			return;
 		}
 		let sourceId: string | undefined;
@@ -271,13 +370,28 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 			}
 		}
 		catch (error) {
-			response.status(400).json({ message: error instanceof Error ? error.message : "The selected candidate source is invalid." });
+			response.status(400).json({
+				message: error instanceof Error
+					? error.message
+					: "The selected candidate source is invalid."
+			});
 			return;
 		}
-		const source = sources.find(source => source.stateCode === stateCode && (sourceId === undefined ? stateBallotSourceIsCurrent(source, now()) : source.id === sourceId));
+		const source = sources.find(source => source.stateCode === stateCode && (sourceId === undefined
+			? stateBallotSourceIsCurrent(source, now())
+			: source.id === sourceId));
 		const payload: StateRecordsResponse = {
 			available: false,
-			source: { stateCode, stateName: state[1], configured: Boolean(source), id: source?.id, label: source?.label, url: source?.pageUrl, electionDate: source?.electionDate, scopeNotice: source?.scopeNotice },
+			source: {
+				stateCode,
+				stateName: state[1],
+				configured: Boolean(source),
+				id: source?.id,
+				label: source?.label,
+				url: source?.pageUrl,
+				electionDate: source?.electionDate,
+				scopeNotice: source?.scopeNotice
+			},
 			total: 0,
 			matched: 0,
 			inactive: 0,
@@ -287,17 +401,43 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 		};
 		try {
 			payload.source.documentLinks = stateRecordDocumentLinks(source);
-			const snapshot = source && repository ? await repository.getSnapshot(stateCode, sourceId) : null;
+			const snapshot = source && repository
+				? await repository.getSnapshot(stateCode, sourceId)
+				: null;
 			if (snapshot) {
 				const selected = sources.find(item => item.id === snapshot.source.id && item.stateCode === stateCode && item.electionDate === snapshot.source.electionDate && (sourceId === undefined || item.id === sourceId));
 				if (!selected || snapshot.source.stateCode !== stateCode || (sourceId === undefined && (!stateBallotSourceIsCurrent(selected, now()) || (source && snapshot.source.electionDate !== source.electionDate))))
 					throw new Error("The repository returned a mismatched candidate source.");
-				payload.source = { stateCode, stateName: state[1], configured: true, id: selected.id, label: selected.label, url: selected.pageUrl, electionDate: selected.electionDate, scopeNotice: selected.scopeNotice, documentLinks: stateRecordDocumentLinks(selected, snapshot), sourceAsOfDate: snapshot.sourceAsOfDate };
-				const retained = includeSupplements ? await readStateRecordSupplements(snapshot, repository!) : { snapshots: [], unavailable: false };
+				payload.source = {
+					stateCode,
+					stateName: state[1],
+					configured: true,
+					id: selected.id,
+					label: selected.label,
+					url: selected.pageUrl,
+					electionDate: selected.electionDate,
+					scopeNotice: selected.scopeNotice,
+					documentLinks: stateRecordDocumentLinks(selected, snapshot),
+					sourceAsOfDate: snapshot.sourceAsOfDate
+				};
+				const retained = includeSupplements
+					? await readStateRecordSupplements(snapshot, repository!)
+					: { snapshots: [], unavailable: false };
 				const supplements = applicableStateRecordSupplements(snapshot, retained.snapshots);
 				const recordSources = new Map(supplements.flatMap(item => item.records.map(record => [record.id, item.source] as const)));
-				Object.assign(payload, buildStateRecordPage({ ...snapshot, records: [...snapshot.records, ...supplements.flatMap(item => item.records)] }, filters, recordSources));
-				if (supplements.length) payload.source.documentLinks = [...(payload.source.documentLinks ?? []), ...supplements.flatMap(item => stateRecordDocumentLinks(item.source, item) ?? [])];
+				Object.assign(payload, buildStateRecordPage({
+					...snapshot,
+					records: [
+						...snapshot.records,
+						...supplements.flatMap(item => item.records)
+					]
+				}, filters, recordSources));
+				if (supplements.length) {
+					payload.source.documentLinks = [
+						...(payload.source.documentLinks ?? []),
+						...supplements.flatMap(item => stateRecordDocumentLinks(item.source, item) ?? [])
+					];
+				}
 				if (supplements.length) payload.supplementalSources = supplements.map(item => ({ id: item.source.id, retrievedAt: item.retrievedAt, sha256: item.sha256 }));
 				if (retained.unavailable) payload.supplementsUnavailable = true;
 				if (portraits) payload.records = await portraits(stateCode, payload.records);
@@ -326,14 +466,32 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 			return;
 		}
 		try {
-			const snapshot = repository ? await repository.getSnapshot(stateCode, sourceId) : null;
+			const snapshot = repository
+				? await repository.getSnapshot(stateCode, sourceId)
+				: null;
 			if (snapshot && (snapshot.source.id !== source.id || snapshot.source.stateCode !== stateCode || snapshot.source.electionDate !== source.electionDate)) throw new Error("The question source is mismatched.");
 			const payload: StateQuestionsResponse = {
 				available: Boolean(snapshot?.ballotQuestions?.length),
-				source: { stateCode, stateName: state[1], configured: true, id: source.id, label: source.label, url: source.pageUrl, electionDate: source.electionDate, retrievedAt: snapshot?.retrievedAt, sourceAsOfDate: snapshot?.sourceAsOfDate, ...(snapshot?.ballotQuestions?.length && snapshot.ballotQuestions.every(question => question.textKind === "notice") ? { questionKind: "notice" as const } : {}), documentLinks: stateRecordDocumentLinks(source, snapshot ?? undefined) },
+				source: {
+					stateCode,
+					stateName: state[1],
+					configured: true,
+					id: source.id,
+					label: source.label,
+					url: source.pageUrl,
+					electionDate: source.electionDate,
+					retrievedAt: snapshot?.retrievedAt,
+					sourceAsOfDate: snapshot?.sourceAsOfDate,
+					...(snapshot?.ballotQuestions?.length && snapshot.ballotQuestions.every(question => question.textKind === "notice")
+						? { questionKind: "notice" as const }
+						: {}),
+					documentLinks: stateRecordDocumentLinks(source, snapshot ?? undefined)
+				},
 				questions: snapshot?.ballotQuestions?.filter(question => id === undefined || question.id === id).map((question) => {
 					const publishedArea = publishedBallotQuestionArea(source, question);
-					return publishedArea ? { ...question, publishedArea } : question;
+					return publishedArea
+						? { ...question, publishedArea }
+						: question;
 				}) ?? [],
 			};
 			response.json(payload);

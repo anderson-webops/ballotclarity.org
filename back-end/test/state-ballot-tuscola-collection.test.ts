@@ -50,7 +50,10 @@ test("Tuscola discovery uses offered future controls, dates and original documen
 	const [future] = stateBallotCycleSources(catalog, clock);
 	assert.equal(future.id, "mi-tuscola-general-2028-11-07");
 	assert.equal(future.countyName, "Tuscola County");
-	const captured = await fetchTuscolaCandidateCapture(future, { discovery: JSON.stringify(value), now: () => clock });
+	const captured = await fetchTuscolaCandidateCapture(future, {
+		discovery: JSON.stringify(value),
+		now: () => clock
+	});
 	assert.equal(parseTuscolaCandidateCapture(future, captured, clock).records.length, 4);
 	const partial = tuscolaDiscoveryFixture();
 	partial.index.body = partial.index.body.replace(/<li><a href="[^"]+">Sample Ballots[^<]+<\/a><\/li>/u, "");
@@ -61,7 +64,10 @@ test("Tuscola discovery uses offered future controls, dates and original documen
 		async () =>
 			parseTuscolaCandidateCapture(
 				source,
-				await fetchTuscolaCandidateCapture(source, { discovery: JSON.stringify(partial), now: () => now }),
+				await fetchTuscolaCandidateCapture(source, {
+					discovery: JSON.stringify(partial),
+					now: () => now
+				}),
 				now
 			),
 		StateBallotAwaitingRecordsError
@@ -174,12 +180,18 @@ test("Tuscola legacy candidate inputs retain exact fingerprints after automatic 
 	const snapshot = serializeStoredStateSnapshot(original);
 	await writeFile(
 		path,
-		JSON.stringify({ snapshot, sourceConfigurationSha256: hash(JSON.stringify(original.source)) })
+		JSON.stringify({
+			snapshot,
+			sourceConfigurationSha256: hash(JSON.stringify(original.source))
+		})
 	);
 	const [result] = await readOpenStatesCandidateInputs([path], [source.id]);
 	assert.deepEqual(result.records, original.records);
 	assert.deepEqual(result.source, original.source);
-	await writeFile(path, JSON.stringify({ snapshot, sourceConfigurationSha256: hash(JSON.stringify(source)) }));
+	await writeFile(path, JSON.stringify({
+		snapshot,
+		sourceConfigurationSha256: hash(JSON.stringify(source))
+	}));
 	await assert.rejects(readOpenStatesCandidateInputs([path], [source.id]), /fingerprint/u);
 });
 
@@ -192,7 +204,13 @@ test("Tuscola failed reviewed backup preserves the accepted envelope", async (co
 	const filename = (await readdir(directory)).find(name => name.startsWith(source.id))!;
 	const before = await readFile(join(directory, filename), "utf8");
 	await writeFile(join(directory, `${filename}.legacy-${hash(before)}`), "Conflicting existing backup");
-	const result = await syncStateBallotCycles({ familyId: source.id, catalogPath: join(directory, "cycles.json"), dataDirectory: directory, now: () => now, fetchDiscovery: async () => JSON.stringify(tuscolaDiscoveryFixture()) });
+	const result = await syncStateBallotCycles({
+		familyId: source.id,
+		catalogPath: join(directory, "cycles.json"),
+		dataDirectory: directory,
+		now: () => now,
+		fetchDiscovery: async () => JSON.stringify(tuscolaDiscoveryFixture())
+	});
 	assert.equal(result.results[0]!.status, "persistence-failed");
 	assert.equal(await readFile(join(directory, filename), "utf8"), before);
 	assert.deepEqual((await storage.read(source))!.records, original.records);
@@ -202,6 +220,9 @@ test("Tuscola missing accepted identities require review rather than silently re
 	const value = tuscolaDiscoveryFixture();
 	value.documents[0]![0]!.text = value.documents[0]![0]!.text.replaceAll("Cassie Piché", "Different Person");
 	value.documents[0]![1]!.text = value.documents[0]![1]!.text.replaceAll("Cassie Piché", "Different Person");
-	const capture = await fetchTuscolaCandidateCapture(source, { discovery: JSON.stringify(value), now: () => now });
+	const capture = await fetchTuscolaCandidateCapture(source, {
+		discovery: JSON.stringify(value),
+		now: () => now
+	});
 	assert.throws(() => parseTuscolaCandidateCapture(source, capture, now, legacySnapshot().records), /accepted Tuscola candidate disappeared/u);
 });

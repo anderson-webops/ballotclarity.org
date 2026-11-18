@@ -16,7 +16,10 @@ test("location lookup slugs are normalized in a single bounded pass", () => {
 
 test("out-of-guide addresses retain a recognized state without putting the address in location labels", () => {
 	const coverage = buildCoverageResponse("empty", "2026-10-21T00:00:00Z", { mode: "disabled", canGuessOnLoad: false });
-	for (const [stateAbbreviation, stateName] of [["PA", "Pennsylvania"], ["WV", "West Virginia"]]) {
+	for (const [stateAbbreviation, stateName] of [
+		["PA", "Pennsylvania"],
+		["WV", "West Virginia"]
+	]) {
 		const result = buildLocationLookupResponse("100 Controlled Review St", null, [], null, undefined, "empty", coverage, { stateAbbreviation });
 		assert.equal(result.result, "resolved");
 		assert.equal(result.guideAvailability, "not-published");
@@ -31,7 +34,11 @@ test("out-of-guide addresses retain a recognized state without putting the addre
 
 test("out-of-guide address state is never inferred from submitted text or an unknown provider code", () => {
 	const coverage = buildCoverageResponse("empty", "2026-10-21T00:00:00Z", { mode: "disabled", canGuessOnLoad: false });
-	for (const geoContext of [undefined, {}, { stateAbbreviation: "ZZ", stateName: "Pennsylvania" }]) {
+	for (const geoContext of [
+		undefined,
+		{},
+		{ stateAbbreviation: "ZZ", stateName: "Pennsylvania" }
+	]) {
 		const result = buildLocationLookupResponse("100 Controlled Review St, Harrisburg, PA 17120", null, [], null, undefined, "empty", coverage, geoContext);
 		assert.equal(result.location, undefined);
 	}

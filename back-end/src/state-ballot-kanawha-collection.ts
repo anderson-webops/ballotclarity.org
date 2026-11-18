@@ -28,7 +28,17 @@ function page(value: unknown, url: string, now: number): Page {
 export function readKanawhaDiscovery(body: string, now = Date.now()) {
 	if (Buffer.byteLength(body) > 24 * 1024 * 1024) return reject();
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "robots", "home", "index", "policies", "documents"]) || value.schemaVersion !== 1 || value.type !== "kanawha-candidate-discovery" || !Array.isArray(value.policies) || value.policies.length !== kanawhaPolicies.length || !Array.isArray(value.documents)) return reject();
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"robots",
+		"home",
+		"index",
+		"policies",
+		"documents"
+	]) || value.schemaVersion !== 1 || value.type !== "kanawha-candidate-discovery" || !Array.isArray(value.policies) || value.policies.length !== kanawhaPolicies.length || !Array.isArray(value.documents)) {
+		return reject();
+	}
 	const robots = page(value.robots, `${kanawhaOrigin}/robots.txt`, now);
 	if (robots.sha256 !== kanawhaRobotsSha256) return reject();
 	const home = page(value.home, `${kanawhaOrigin}/`, now);
@@ -37,7 +47,18 @@ export function readKanawhaDiscovery(body: string, now = Date.now()) {
 	validateKanawhaPolicyLinks(index.body);
 	const policies = value.policies.map((item, position): Policy => {
 		const expected = kanawhaPolicies[position]!;
-		if (!exact(item, ["requestUrl", "url", "sha256", "textSha256", "retrievedAt", ...(item && typeof item === "object" && "redirectStatus" in item ? ["redirectStatus"] : [])]) || item.requestUrl !== expected.requestUrl || (item.url !== expected.requestUrl && item.url !== expected.url) || !digest(item.sha256) || item.textSha256 !== expected.textSha256 || !instant(item.retrievedAt, now) || (item.redirectStatus !== undefined && (item.redirectStatus !== 301 || item.url !== expected.url || item.url === item.requestUrl)) || (item.redirectStatus === undefined && item.url !== item.requestUrl)) return reject();
+		if (!exact(item, [
+			"requestUrl",
+			"url",
+			"sha256",
+			"textSha256",
+			"retrievedAt",
+			...(item && typeof item === "object" && "redirectStatus" in item
+				? ["redirectStatus"]
+				: [])
+		]) || item.requestUrl !== expected.requestUrl || (item.url !== expected.requestUrl && item.url !== expected.url) || !digest(item.sha256) || item.textSha256 !== expected.textSha256 || !instant(item.retrievedAt, now) || (item.redirectStatus !== undefined && (item.redirectStatus !== 301 || item.url !== expected.url || item.url === item.requestUrl)) || (item.redirectStatus === undefined && item.url !== item.requestUrl)) {
+			return reject();
+		}
 		return item as unknown as Policy;
 	});
 	const offers = readKanawhaCandidateIndex(index.body);
@@ -46,20 +67,45 @@ export function readKanawhaDiscovery(body: string, now = Date.now()) {
 	const documents = value.documents.map((item, position): Document => {
 		const offer = offers[position]!;
 		const available = Boolean(item && typeof item === "object" && item.status === 200);
-		if (!exact(item, ["year", "url", "status", "sha256", "retrievedAt", ...(available ? ["evidence"] : [])]) || item.year !== offer.year || item.url !== offer.url || (item.status !== 200 && item.status !== 404) || !digest(item.sha256) || !instant(item.retrievedAt, now)) return reject();
+		if (!exact(item, [
+			"year",
+			"url",
+			"status",
+			"sha256",
+			"retrievedAt",
+			...(available
+				? ["evidence"]
+				: [])
+		]) || item.year !== offer.year || item.url !== offer.url || (item.status !== 200 && item.status !== 404) || !digest(item.sha256) || !instant(item.retrievedAt, now)) {
+			return reject();
+		}
 		if (available) {
 			const evidence = item.evidence;
 			if (!exact(evidence, ["objects", "bbox", "text", "sha256"]) || evidence.sha256 !== item.sha256 || [evidence.objects, evidence.bbox, evidence.text].some(part => typeof part !== "string")) return reject();
 			const report = readKanawhaPreparedDocument(evidence as unknown as Awaited<ReturnType<typeof captureKanawhaTestDocument>>);
 			if (report.electionDate.slice(0, 4) !== offer.year || report.sourceAsOfDate > new Date(now + 14 * 3600000).toISOString().slice(0, 10)) return reject();
-			elections.push({ electionId: null, electionDate: report.electionDate, pageUrl: kanawhaDiscoveryUrl, kanawhaDocuments: [{ url: offer.url, sha256: item.sha256, sourceAsOfDate: report.sourceAsOfDate }] });
+			elections.push({
+				electionId: null,
+				electionDate: report.electionDate,
+				pageUrl: kanawhaDiscoveryUrl,
+				kanawhaDocuments: [
+					{ url: offer.url, sha256: item.sha256, sourceAsOfDate: report.sourceAsOfDate }
+				]
+			});
 		}
 		else if (item.sha256 !== kanawhaHash("")) {
 			return reject();
 		}
 		return item as unknown as Document;
 	});
-	return { robots, home, index, policies, documents, elections };
+	return {
+		robots,
+		home,
+		index,
+		policies,
+		documents,
+		elections
+	};
 }
 export async function fetchKanawhaCycleDiscovery(options: Options = {}) {
 	const request = options.request ?? fetchRemoteSourceDocument;
@@ -70,14 +116,27 @@ export async function fetchKanawhaCycleDiscovery(options: Options = {}) {
 			if (!policy.allowed(url)) return reject();
 			await (options.sleep ?? wait)(policy.delay);
 		}
-		const response = await request(url, { allowedHosts: ["kanawha.us"], maxBytes, timeoutMs: 30000 });
+		const response = await request(url, {
+			allowedHosts: ["kanawha.us"],
+			maxBytes,
+			timeoutMs: 30000
+		});
 		await options.onResponse?.(url, response);
 		return response;
 	}
 	async function capturePage(url: string): Promise<Page> {
 		const response = await get(url);
-		if (response.status !== 200 || response.contentType !== (url.endsWith("robots.txt") ? "text/plain" : "text/html")) return reject();
-		return { url, body: new TextDecoder("utf-8", { fatal: true }).decode(response.body), sha256: kanawhaHash(response.body), retrievedAt: new Date(now()).toISOString() };
+		if (response.status !== 200 || response.contentType !== (url.endsWith("robots.txt")
+			? "text/plain"
+			: "text/html")) {
+			return reject();
+		}
+		return {
+			url,
+			body: new TextDecoder("utf-8", { fatal: true }).decode(response.body),
+			sha256: kanawhaHash(response.body),
+			retrievedAt: new Date(now()).toISOString()
+		};
 	}
 	const robots = await capturePage(`${kanawhaOrigin}/robots.txt`);
 	if (robots.sha256 !== kanawhaRobotsSha256) return reject();
@@ -99,12 +158,25 @@ export async function fetchKanawhaCycleDiscovery(options: Options = {}) {
 		if (response.status !== 200 || response.contentType !== "text/html") return reject();
 		const textSha256 = kanawhaPolicyTextHash(new TextDecoder("utf-8", { fatal: true }).decode(response.body));
 		if (textSha256 !== expected.textSha256) return reject();
-		policies.push({ requestUrl: expected.requestUrl, url, sha256: kanawhaHash(response.body), textSha256, retrievedAt: new Date(now()).toISOString(), ...(redirectStatus ? { redirectStatus } : {}) });
+		policies.push({
+			requestUrl: expected.requestUrl,
+			url,
+			sha256: kanawhaHash(response.body),
+			textSha256,
+			retrievedAt: new Date(now()).toISOString(),
+			...(redirectStatus
+				? { redirectStatus }
+				: {})
+		});
 	}
 	const documents: Document[] = [];
 	for (const offer of readKanawhaCandidateIndex(index.body)) {
 		const response = await get(offer.url, 12 * 1024 * 1024);
-		const receipt = { ...offer, sha256: kanawhaHash(response.body), retrievedAt: new Date(now()).toISOString() };
+		const receipt = {
+			...offer,
+			sha256: kanawhaHash(response.body),
+			retrievedAt: new Date(now()).toISOString()
+		};
 		if (response.status === 404) {
 			documents.push({ ...receipt, status: 404 });
 		}
@@ -114,7 +186,15 @@ export async function fetchKanawhaCycleDiscovery(options: Options = {}) {
 		}
 		if (Buffer.byteLength(JSON.stringify(documents)) > 16 * 1024 * 1024) return reject();
 	}
-	const body = JSON.stringify({ schemaVersion: 1, type: "kanawha-candidate-discovery", robots, home, index, policies, documents });
+	const body = JSON.stringify({
+		schemaVersion: 1,
+		type: "kanawha-candidate-discovery",
+		robots,
+		home,
+		index,
+		policies,
+		documents
+	});
 	readKanawhaDiscovery(body, now());
 	return body;
 }
@@ -122,13 +202,25 @@ export async function fetchKanawhaCandidateCapture(source: StateBallotSource, op
 	validateKanawhaSource(source);
 	const discovery = options.discovery ?? await fetchKanawhaCycleDiscovery(options);
 	readKanawhaDiscovery(discovery, (options.now ?? Date.now)());
-	return JSON.stringify({ schemaVersion: 1, type: "kanawha-candidate-capture", electionDate: source.electionDate, discovery: JSON.parse(discovery) });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "kanawha-candidate-capture",
+		electionDate: source.electionDate,
+		discovery: JSON.parse(discovery)
+	});
 }
 export function parseKanawhaCandidateCapture(source: StateBallotSource, body: string, factory: typeof import("./state-ballot-records.js").createStateCandidateRecord, now = Date.now(), previous?: StateBallotSnapshot) {
 	validateKanawhaSource(source);
 	if (Buffer.byteLength(body) > 24 * 1024 * 1024) return reject();
 	const value: unknown = JSON.parse(body);
-	if (!exact(value, ["schemaVersion", "type", "electionDate", "discovery"]) || value.schemaVersion !== 1 || value.type !== "kanawha-candidate-capture" || value.electionDate !== source.electionDate) return reject();
+	if (!exact(value, [
+		"schemaVersion",
+		"type",
+		"electionDate",
+		"discovery"
+	]) || value.schemaVersion !== 1 || value.type !== "kanawha-candidate-capture" || value.electionDate !== source.electionDate) {
+		return reject();
+	}
 	const discovery = readKanawhaDiscovery(JSON.stringify(value.discovery), now);
 	const election = discovery.elections.find(item => item.electionDate === source.electionDate);
 	const document = discovery.documents.find(item => item.year === source.electionDate.slice(0, 4));
@@ -142,11 +234,51 @@ export function parseKanawhaCandidateCapture(source: StateBallotSource, body: st
 		throw new StateBallotAwaitingRecordsError(source.id);
 	}
 	const records = report.candidates.map((claim) => {
-		const record = factory(source, { name: claim.name, office: claim.office, party: claim.party ?? "", scope: claim.scope, district: claim.district, jurisdiction: claim.jurisdiction, status: "listed" });
+		const record = factory(source, {
+			name: claim.name,
+			office: claim.office,
+			party: claim.party ?? "",
+			scope: claim.scope,
+			district: claim.district,
+			jurisdiction: claim.jurisdiction,
+			status: "listed"
+		});
 		if (!record) return reject();
-		return { id: record.id, name: record.name, office: record.office, scope: record.scope, district: record.district, status: record.status, jurisdiction: claim.jurisdiction, ...(claim.party ? { party: claim.party } : {}), ...(claim.ballotDesignation ? { ballotDesignation: claim.ballotDesignation } : {}), ...(claim.sourceDivision ? { sourceDivision: claim.sourceDivision } : {}), voteLimit: claim.voteLimit };
+		return {
+			id: record.id,
+			name: record.name,
+			office: record.office,
+			scope: record.scope,
+			district: record.district,
+			status: record.status,
+			jurisdiction: claim.jurisdiction,
+			...(claim.party
+				? { party: claim.party }
+				: {}),
+			...(claim.ballotDesignation
+				? { ballotDesignation: claim.ballotDesignation }
+				: {}),
+			...(claim.sourceDivision
+				? { sourceDivision: claim.sourceDivision }
+				: {}),
+			voteLimit: claim.voteLimit
+		};
 	});
 	if (new Set(records.map(record => record.id)).size !== records.length || previous?.records.some(record => !records.some(item => item.id === record.id)) || (previous?.sourceAsOfDate && report.sourceAsOfDate < previous.sourceAsOfDate) || (previous && Date.parse(document.retrievedAt) < Date.parse(previous.retrievedAt))) return reject();
-	const documents = [{ url: document.url, sha256: document.sha256, retrievedAt: document.retrievedAt, includedRecordCount: records.length }];
-	return { records, documents, retrievedAt: document.retrievedAt, sha256: kanawhaHash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), collectionIndexSha256: kanawhaDocumentDigest(election.kanawhaDocuments), sourceAsOfDate: report.sourceAsOfDate };
+	const documents = [
+		{
+			url: document.url,
+			sha256: document.sha256,
+			retrievedAt: document.retrievedAt,
+			includedRecordCount: records.length
+		}
+	];
+	return {
+		records,
+		documents,
+		retrievedAt: document.retrievedAt,
+		sha256: kanawhaHash(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+		collectionIndexSha256: kanawhaDocumentDigest(election.kanawhaDocuments),
+		sourceAsOfDate: report.sourceAsOfDate
+	};
 }

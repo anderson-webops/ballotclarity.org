@@ -60,7 +60,16 @@ test("lookup-backed profiles preserve supplied website and portrait data", () =>
 	const context = structuredClone(nationwideLookupResult) as NationwideLookupResultContext;
 	const match = context.representativeMatches[0]!;
 	match.officialWebsiteUrl = "https://example.org/office";
-	match.profileImages = [{ url: "https://example.org/portrait.jpg", alt: match.name, priority: 10, sourceKind: "official", sourceLabel: "Official office", sourceSystem: "Official office" }];
+	match.profileImages = [
+		{
+			url: "https://example.org/portrait.jpg",
+			alt: match.name,
+			priority: 10,
+			sourceKind: "official",
+			sourceLabel: "Official office",
+			sourceSystem: "Official office"
+		}
+	];
 	const response = buildNationwidePersonProfileResponse(context, "mike-kennedy");
 	assert.ok(response);
 	assert.equal(response.person.officialWebsiteUrl, match.officialWebsiteUrl);

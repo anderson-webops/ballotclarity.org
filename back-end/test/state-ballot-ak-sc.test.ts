@@ -19,7 +19,9 @@ function source(state: string) {
 }
 
 function fixture(state: string) {
-	return readFileSync(new URL(`./fixtures/state-portals-${state === "AK" ? "alaska" : "south-carolina"}.json`, import.meta.url), "utf8");
+	return readFileSync(new URL(`./fixtures/state-portals-${state === "AK"
+		? "alaska"
+		: "south-carolina"}.json`, import.meta.url), "utf8");
 }
 
 function alaska() {
@@ -40,7 +42,9 @@ test("Alaska reconciles all three general-election pages rather than silently se
 	assert.equal(records.filter(record => record.scope === "state-house").length, 93);
 	assert.equal(records.filter(record => record.scope === "state-senate").length, 24);
 	assert.equal(records.filter(record => record.scope === "local").length, 20);
-	assert.deepEqual([...new Set(records.filter(record => record.scope === "state-house").map(record => Number(record.district)))].sort((left, right) => left - right), Array.from({ length: 40 }, (_, index) => index + 1));
+	assert.deepEqual([
+		...new Set(records.filter(record => record.scope === "state-house").map(record => Number(record.district)))
+	].sort((left, right) => left - right), Array.from({ length: 40 }, (_, index) => index + 1));
 	assert.ok(records.some(record => record.name.includes("Kreiss-Tomkins") && record.name.includes("Johnson") && record.party === "Registered Democrat / Nonpartisan"));
 	assert.ok(records.some(record => record.name.includes("DeWitt") && record.name.includes("Steere") && record.status === "write-in"));
 	assert.equal(records.filter(record => record.office === "SUPREME COURT, Judicial retention").length, 1);
@@ -66,9 +70,24 @@ test("Alaska requires the exact election, complete ordered pages, active pager a
 
 test("Alaska judicial regions do not attach to unrelated legislative district numbers", () => {
 	const records = parseStateCandidateRecords(source("AK"), fixture("AK"));
-	const snapshot = { source: source("AK"), records, sha256: "a".repeat(64), retrievedAt: "2026-10-21T08:55:38.035Z" };
+	const snapshot = {
+		source: source("AK"),
+		records,
+		sha256: "a".repeat(64),
+		retrievedAt: "2026-10-21T08:55:38.035Z"
+	};
 	assert.equal(buildStateBallotPreview(snapshot, { districtMatches: [] })?.candidateCount, 18);
-	const preview = buildStateBallotPreview(snapshot, { districtMatches: [{ id: "house:3", districtCode: "3", districtType: "state-house", label: "House 3", sourceSystem: "Controlled fixture" }] })!;
+	const preview = buildStateBallotPreview(snapshot, {
+		districtMatches: [
+			{
+				id: "house:3",
+				districtCode: "3",
+				districtType: "state-house",
+				label: "House 3",
+				sourceSystem: "Controlled fixture"
+			}
+		]
+	})!;
 	assert.ok(preview.candidateCount > 18);
 	assert.ok(preview.contests.every(contest => !/STATE (?:SUPERIOR|DISTRICT) COURT/u.test(contest.title)));
 	assert.match(preview.disclaimer, /Dated snapshot/u);
@@ -121,7 +140,12 @@ test("South Carolina preserves public general-election source identities while w
 	assert.equal(records.filter(record => record.scope === "local").length, 1030);
 	assert.equal(records.filter(record => record.candidateUrl).length, 1443);
 	assert.ok(records.every(record => new URL(record.candidateUrl!).hostname === "vrems.scvotes.sc.gov"));
-	const preview = buildStateBallotPreview({ source: source("SC"), records, sha256: "b".repeat(64), retrievedAt: "2026-10-21T08:55:33.813Z" }, { districtMatches: [] })!;
+	const preview = buildStateBallotPreview({
+		source: source("SC"),
+		records,
+		sha256: "b".repeat(64),
+		retrievedAt: "2026-10-21T08:55:33.813Z"
+	}, { districtMatches: [] })!;
 	assert.equal(preview.candidateCount, 23);
 	assert.equal(preview.contestCount, 8);
 	assert.equal(preview.contests.find(contest => contest.title === "Governor and Lieutenant Governor")?.candidates.length, 4);
@@ -135,7 +159,13 @@ test("South Carolina uses only the published anonymous unfiltered search contrac
 	const fields = new URLSearchParams(buildSouthCarolinaSearchForm(source("SC"), original.page));
 	assert.equal(fields.get("ElectionId"), "22596");
 	assert.equal(fields.get("SelectedOffice"), "-1");
-	for (const name of ["CandidateFirstName", "CandidateLastName", "SelectedCandidateStatus", "SelectedPoliticalParty", "SelectedFilingLocation"]) assert.equal(fields.get(name), "");
+	for (const name of [
+		"CandidateFirstName",
+		"CandidateLastName",
+		"SelectedCandidateStatus",
+		"SelectedPoliticalParty",
+		"SelectedFilingLocation"
+	]) assert.equal(fields.get(name), "");
 	assert.equal(fields.has("SelectedAssociatedCounties"), false);
 	const requests: Array<{ url: string; postBody?: string }> = [];
 	const body = await fetchStateBallotSourceText(source("SC"), async (url, options) => {
@@ -182,7 +212,12 @@ test("both new factual fixtures reproduce every transfer record without claiming
 	const manifest = JSON.parse(canonical.split("\n", 1)[0]!);
 	const snapshots: StateBallotSnapshot[] = manifest.states.map((metadata: { stateCode: string; retrievedAt: string; sourceSha256: string }) => {
 		if (metadata.stateCode === "AK") return parseBundledStateSnapshot(source("AK"), readReviewedStateFixture("alaska-2026.json"));
-		return { source: source(metadata.stateCode), records: parseStateCandidateRecords(source(metadata.stateCode), fixture(metadata.stateCode)), retrievedAt: metadata.retrievedAt, sha256: metadata.sourceSha256 };
+		return {
+			source: source(metadata.stateCode),
+			records: parseStateCandidateRecords(source(metadata.stateCode), fixture(metadata.stateCode)),
+			retrievedAt: metadata.retrievedAt,
+			sha256: metadata.sourceSha256
+		};
 	});
 	assert.equal(serializeStateBallotSnapshots(snapshots), canonical);
 	assert.equal(canonical.trim().split("\n").length, 1599);

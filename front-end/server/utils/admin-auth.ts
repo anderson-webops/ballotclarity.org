@@ -101,7 +101,9 @@ function isAdminConfigured(config: AdminConfig) {
 }
 
 function normalizeHeaderValue(value: string | string[] | undefined) {
-	return Array.isArray(value) ? value.join(", ") : value;
+	return Array.isArray(value)
+		? value.join(", ")
+		: value;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -109,7 +111,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function parseAdminUsername(value: unknown) {
-	const username = typeof value === "string" ? value.trim().toLowerCase() : "";
+	const username = typeof value === "string"
+		? value.trim().toLowerCase()
+		: "";
 
 	if (!adminUsernamePattern.test(username)) {
 		throw createError({
@@ -122,7 +126,9 @@ export function parseAdminUsername(value: unknown) {
 }
 
 export function parseAdminPassword(value: unknown, fieldLabel: string) {
-	const password = typeof value === "string" ? value : "";
+	const password = typeof value === "string"
+		? value
+		: "";
 
 	if (!password || password.length > 256 || password.includes("\0")) {
 		throw createError({
@@ -138,7 +144,9 @@ export function parseAdminMfaCode(value: unknown, options: { required?: boolean 
 	if ((value === undefined || value === "") && !options.required)
 		return undefined;
 
-	const code = typeof value === "string" ? value.replace(/\s+/gu, "") : "";
+	const code = typeof value === "string"
+		? value.replace(/\s+/gu, "")
+		: "";
 
 	if (!/^\d{6}$/u.test(code)) {
 		throw createError({
@@ -151,7 +159,9 @@ export function parseAdminMfaCode(value: unknown, options: { required?: boolean 
 }
 
 function parseAdminMfaSecret(value: unknown) {
-	const secret = typeof value === "string" ? value.trim().toUpperCase() : "";
+	const secret = typeof value === "string"
+		? value.trim().toUpperCase()
+		: "";
 
 	if (!/^[A-Z2-7]{32}$/u.test(secret)) {
 		throw createError({
@@ -165,14 +175,22 @@ function parseAdminMfaSecret(value: unknown) {
 
 function getForwardHeaders(event: H3Event, extraHeaders: Record<string, string> = {}) {
 	const request = event.node?.req;
-	const forwardedFor = request ? buildForwardedForHeader(request) : undefined;
+	const forwardedFor = request
+		? buildForwardedForHeader(request)
+		: undefined;
 	const userAgent = normalizeHeaderValue(request?.headers["user-agent"]);
 	const requestId = normalizeHeaderValue(request?.headers["x-request-id"]);
 
 	return {
-		...(forwardedFor ? { "x-forwarded-for": forwardedFor } : {}),
-		...(requestId ? { "x-request-id": requestId } : {}),
-		...(userAgent ? { "user-agent": userAgent } : {}),
+		...(forwardedFor
+			? { "x-forwarded-for": forwardedFor }
+			: {}),
+		...(requestId
+			? { "x-request-id": requestId }
+			: {}),
+		...(userAgent
+			? { "user-agent": userAgent }
+			: {}),
 		...extraHeaders
 	};
 }
@@ -498,7 +516,9 @@ export async function createAdminSession(event: H3Event, username: string, passw
 	try {
 		loginResponse = await $fetch<BackendLoginResponse>(`${config.apiBase}/admin/auth/login`, {
 			body: {
-				...(mfaCode ? { mfaCode } : {}),
+				...(mfaCode
+					? { mfaCode }
+					: {}),
 				password,
 				username
 			},

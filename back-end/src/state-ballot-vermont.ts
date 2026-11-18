@@ -160,7 +160,9 @@ export function validateVermontSource(source: StateBallotSource) {
 		|| source.postBody
 		|| source.pageUrl !== vermontDiscoveryUrl
 		|| source.documentUrls?.join("|") !== source.url
-		|| source.id !== (source.electionDate === "2026-11-03" ? "vt-sos-2026" : `vt-general-${source.electionDate}`)
+		|| source.id !== (source.electionDate === "2026-11-03"
+			? "vt-sos-2026"
+			: `vt-general-${source.electionDate}`)
 	) {
 		throw new Error("The Vermont source identity is not configured.");
 	}
@@ -224,12 +226,23 @@ function readCapture(body: string): {
 		throw new Error("The Vermont acquisition evidence exceeds its bounds.");
 	const value: unknown = JSON.parse(body);
 	if (
-		!exact(value, ["schemaVersion", "type", "policies", "index", "workbook"])
+		!exact(value, [
+			"schemaVersion",
+			"type",
+			"policies",
+			"index",
+			"workbook"
+		])
 		|| value.schemaVersion !== 1
 		|| value.type !== "vermont-election-discovery"
 		|| JSON.stringify(value.policies) !== JSON.stringify(vermontPolicyReceipts)
 		|| typeof value.index !== "string"
-		|| !exact(value.workbook, ["url", "sha256", "retrievedAt", "sheets"])
+		|| !exact(value.workbook, [
+			"url",
+			"sha256",
+			"retrievedAt",
+			"sheets"
+		])
 	) {
 		throw new Error("The Vermont acquisition evidence is invalid.");
 	}
@@ -279,7 +292,11 @@ function readCapture(body: string): {
 	) {
 		throw new Error("The Vermont workbook revision date is invalid.");
 	}
-	return { capture, election, rows: rows.slice(1) };
+	return {
+		capture,
+		election,
+		rows: rows.slice(1)
+	};
 }
 
 export function readVermontElectionDiscovery(body: string) {
@@ -312,11 +329,17 @@ export function parseVermontCandidateCapture(source: StateBallotSource, body: st
 		const area = field(1);
 		const name = field(2, 250);
 		const literalParty = field(4);
-		const party = literalParty === "UNKNOWN" ? undefined : literalParty;
+		const party = literalParty === "UNKNOWN"
+			? undefined
+			: literalParty;
 		const scope = scopes[office];
 		const termYears = row[13];
 		const voteLimit
-			= typeof row[14] === "number" ? row[14] : typeof row[14] === "string" ? voteWords.indexOf(row[14]) : 0;
+			= typeof row[14] === "number"
+				? row[14]
+				: typeof row[14] === "string"
+					? voteWords.indexOf(row[14])
+					: 0;
 		if (
 			!scope
 			|| (scope === "statewide") !== (area === "N/A")
@@ -331,7 +354,9 @@ export function parseVermontCandidateCapture(source: StateBallotSource, body: st
 			throw new Error("The Vermont office, district, term or vote limit requires review.");
 		}
 		const district = "";
-		const jurisdiction = scope === "local" ? area : undefined;
+		const jurisdiction = scope === "local"
+			? area
+			: undefined;
 		const identity = [
 			source.stateCode,
 			source.electionDate,
@@ -339,28 +364,42 @@ export function parseVermontCandidateCapture(source: StateBallotSource, body: st
 			district,
 			name.toLowerCase(),
 			(party ?? "").toLowerCase(),
-			...(scope === "state-senate" || scope === "state-house" || jurisdiction ? [area.toLowerCase()] : [])
+			...(scope === "state-senate" || scope === "state-house" || jurisdiction
+				? [
+						area.toLowerCase()
+					]
+				: [])
 		];
 		let candidateUrl: string | undefined;
 		if (typeof row[12] === "string" && !row[12].includes("@")) {
 			const website = clean(row[12]);
 			candidateUrl
-				= normalizePublicHref(/^[a-z][a-z\d+.-]*:/iu.test(website) ? website : `https://${website}`) || undefined;
+				= normalizePublicHref(/^[a-z][a-z\d+.-]*:/iu.test(website)
+					? website
+					: `https://${website}`) || undefined;
 		}
 		return {
 			id: hash(JSON.stringify(identity)).slice(0, 24),
 			name,
 			office,
-			...(party ? { party } : {}),
+			...(party
+				? { party }
+				: {}),
 			district,
 			scope,
 			status: "listed",
 			sourceStatus: "Official general-election candidate list",
 			termYears,
 			voteLimit,
-			...(scope !== "statewide" ? { sourceDistrictLabel: area } : {}),
-			...(jurisdiction ? { jurisdiction } : {}),
-			...(candidateUrl ? { candidateUrl } : {})
+			...(scope !== "statewide"
+				? { sourceDistrictLabel: area }
+				: {}),
+			...(jurisdiction
+				? { jurisdiction }
+				: {}),
+			...(candidateUrl
+				? { candidateUrl }
+				: {})
 		};
 	});
 	if (new Set(records.map(record => record.id)).size !== records.length)
@@ -369,7 +408,9 @@ export function parseVermontCandidateCapture(source: StateBallotSource, body: st
 	return {
 		records,
 		retrievedAt: document.retrievedAt,
-		sha256: hash(JSON.stringify([{ url: document.url, sha256: document.sha256 }])),
+		sha256: hash(JSON.stringify([
+			{ url: document.url, sha256: document.sha256 }
+		])),
 		documents: [
 			{
 				url: document.url,
@@ -384,7 +425,10 @@ export function parseVermontCandidateCapture(source: StateBallotSource, body: st
 const queues = new Map<string, { started: number; tail: Promise<void> }>();
 async function spacedRequest<Value>(url: string, request: () => Promise<Value>) {
 	const host = new URL(url).hostname;
-	const queue = queues.get(host) ?? { started: 0, tail: Promise.resolve() };
+	const queue = queues.get(host) ?? {
+		started: 0,
+		tail: Promise.resolve()
+	};
 	queues.set(host, queue);
 	const result = queue.tail.then(async () => {
 		await wait(Math.max(0, 1000 - (Date.now() - queue.started)));

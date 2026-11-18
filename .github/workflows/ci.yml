@@ -24,14 +24,15 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24.18.1
+          node-version: 26.13.1
           cache: npm
 
-      - name: Pin npm version
+      - name: Prepare the verified locked build toolchain
         run: |
-          npm -v
-          npm i -g npm@12.0.2 --allow-scripts=npm
-          npm -v
+          printf '/.ai-work/\n' >> "$(git rev-parse --git-path info/exclude)"
+          bin="$(node scripts/build-toolchain.mjs --print-bin)"
+          printf '%s\n' "$bin" >> "$GITHUB_PATH"
+          "$bin/node" scripts/check-build-toolchain.mjs
 
       - name: Install deps
         run: npm ci --include=optional
@@ -48,13 +49,15 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24.18.1
+          node-version: 26.13.1
           cache: npm
 
-      - name: Pin npm version
+      - name: Prepare the verified locked build toolchain
         run: |
-          npm i -g npm@12.0.2 --allow-scripts=npm
-          npm -v
+          printf '/.ai-work/\n' >> "$(git rev-parse --git-path info/exclude)"
+          bin="$(node scripts/build-toolchain.mjs --print-bin)"
+          printf '%s\n' "$bin" >> "$GITHUB_PATH"
+          "$bin/node" scripts/check-build-toolchain.mjs
 
       - name: Install deps
         run: npm ci --include=optional
@@ -87,14 +90,16 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24.18.1
+          node-version: 26.13.1
           cache: npm
           registry-url: https://registry.npmjs.org/
 
-      - name: Pin npm version
+      - name: Prepare the verified locked build toolchain
         run: |
-          npm i -g npm@12.0.2 --allow-scripts=npm
-          npm -v
+          printf '/.ai-work/\n' >> "$(git rev-parse --git-path info/exclude)"
+          bin="$(node scripts/build-toolchain.mjs --print-bin)"
+          printf '%s\n' "$bin" >> "$GITHUB_PATH"
+          "$bin/node" scripts/check-build-toolchain.mjs
 
       - name: Install deps
         run: npm ci --include=optional
@@ -114,20 +119,37 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24.18.1
+          node-version: 26.13.1
           cache: npm
           registry-url: https://registry.npmjs.org/
 
-      - name: Pin npm version
+      - name: Prepare the verified locked build toolchain
         run: |
-          npm i -g npm@12.0.2 --allow-scripts=npm
-          npm -v
+          printf '/.ai-work/\n' >> "$(git rev-parse --git-path info/exclude)"
+          bin="$(node scripts/build-toolchain.mjs --print-bin)"
+          printf '%s\n' "$bin" >> "$GITHUB_PATH"
+          "$bin/node" scripts/check-build-toolchain.mjs
 
       - name: Install deps
         run: npm ci --include=optional
 
+      - name: Qualify the signed-source auto-import compiler
+        run: bash scripts/prepare-unimport-source.sh
+
+      - name: Audit the complete build toolchain
+        run: |
+          npm run audit:toolchain
+          npm run audit:toolchain -- --omit=dev
+          npm run check:toolchain-package
+
       - name: Verify standalone backend lockfile
         run: npm run verify:backend-lockfile
+
+      - name: Audit the standalone backend graph
+        run: |
+          npm audit --prefix back-end --workspaces=false --audit-level=low
+          npm audit --prefix back-end --workspaces=false --omit=dev --audit-level=low
+          npm audit signatures --prefix back-end --workspaces=false
 
       - name: Security audit policy
         run: npm run audit
@@ -147,14 +169,16 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24.18.1
+          node-version: 26.13.1
           cache: npm
           registry-url: https://registry.npmjs.org/
 
-      - name: Pin npm version
+      - name: Prepare the verified locked build toolchain
         run: |
-          npm i -g npm@12.0.2 --allow-scripts=npm
-          npm -v
+          printf '/.ai-work/\n' >> "$(git rev-parse --git-path info/exclude)"
+          bin="$(node scripts/build-toolchain.mjs --print-bin)"
+          printf '%s\n' "$bin" >> "$GITHUB_PATH"
+          "$bin/node" scripts/check-build-toolchain.mjs
 
       - name: Install deps
         run: npm ci --include=optional
@@ -171,14 +195,16 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24.18.1
+          node-version: 26.13.1
           cache: npm
           registry-url: https://registry.npmjs.org/
 
-      - name: Pin npm version
+      - name: Prepare the verified locked build toolchain
         run: |
-          npm i -g npm@12.0.2 --allow-scripts=npm
-          npm -v
+          printf '/.ai-work/\n' >> "$(git rev-parse --git-path info/exclude)"
+          bin="$(node scripts/build-toolchain.mjs --print-bin)"
+          printf '%s\n' "$bin" >> "$GITHUB_PATH"
+          "$bin/node" scripts/check-build-toolchain.mjs
 
       - name: Install deps
         run: npm ci --include=optional
@@ -196,13 +222,15 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24.18.1
+          node-version: 26.13.1
           cache: npm
 
-      - name: Pin npm version
+      - name: Prepare the verified locked build toolchain
         run: |
-          npm i -g npm@12.0.2 --allow-scripts=npm
-          npm -v
+          printf '/.ai-work/\n' >> "$(git rev-parse --git-path info/exclude)"
+          bin="$(node scripts/build-toolchain.mjs --print-bin)"
+          printf '%s\n' "$bin" >> "$GITHUB_PATH"
+          "$bin/node" scripts/check-build-toolchain.mjs
 
       - name: Install deps
         run: npm ci --include=optional
@@ -219,13 +247,15 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24.18.1
+          node-version: 26.13.1
           cache: npm
 
-      - name: Pin npm version
+      - name: Prepare the verified locked build toolchain
         run: |
-          npm i -g npm@12.0.2 --allow-scripts=npm
-          npm -v
+          printf '/.ai-work/\n' >> "$(git rev-parse --git-path info/exclude)"
+          bin="$(node scripts/build-toolchain.mjs --print-bin)"
+          printf '%s\n' "$bin" >> "$GITHUB_PATH"
+          "$bin/node" scripts/check-build-toolchain.mjs
 
       - name: Install deps
         run: npm ci --include=optional
@@ -265,13 +295,15 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24.18.1
+          node-version: 26.13.1
           cache: npm
 
-      - name: Pin npm version
+      - name: Prepare the verified locked build toolchain
         run: |
-          npm i -g npm@12.0.2 --allow-scripts=npm
-          npm -v
+          printf '/.ai-work/\n' >> "$(git rev-parse --git-path info/exclude)"
+          bin="$(node scripts/build-toolchain.mjs --print-bin)"
+          printf '%s\n' "$bin" >> "$GITHUB_PATH"
+          "$bin/node" scripts/check-build-toolchain.mjs
 
       - name: Install ARM64 dependencies
         run: npm ci --include=optional
@@ -308,6 +340,13 @@ jobs:
             "$PWD/.ai-work/runs/arm64-release/release-assets"
           archive=".ai-work/runs/arm64-release/release-assets/ballot-clarity-${GITHUB_SHA}-linux-arm64.tar.gz"
           printf 'archive_sha256=%s\n' "$(sha256sum "$archive" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+
+      - name: Verify the exact retained release with Node 26
+        env:
+          GH_TOKEN: ${{ github.token }}
+          POSTGRES_TEST_CONTAINER_ID: ${{ job.services.postgres.id }}
+          TEST_ADMIN_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/ballot_clarity_test
+        run: node scripts/verify-retained-release.mjs
 
       - name: Retain exact ARM64 release assets
         if: startsWith(github.ref, 'refs/tags/')

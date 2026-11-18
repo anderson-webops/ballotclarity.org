@@ -10,9 +10,27 @@ import { stateBallotSources } from "../src/state-ballot-sources.js";
 import { createReviewedFixtureRepository, readReviewedStateFixture, readReviewedTransferFixture } from "./helpers/reviewed-state-fixtures.js";
 
 const expected = [
-	{ state: "CA", file: "california", count: 388, statewide: 18, documents: 1 },
-	{ state: "IN", file: "indiana", count: 320, statewide: 10, documents: 1 },
-	{ state: "TX", file: "texas", count: 483, statewide: 57, documents: 2 },
+	{
+		state: "CA",
+		file: "california",
+		count: 388,
+		statewide: 18,
+		documents: 1
+	},
+	{
+		state: "IN",
+		file: "indiana",
+		count: 320,
+		statewide: 10,
+		documents: 1
+	},
+	{
+		state: "TX",
+		file: "texas",
+		count: 483,
+		statewide: 57,
+		documents: 2
+	},
 ];
 
 function source(state: string) {
@@ -26,7 +44,13 @@ function body(file: string) {
 }
 
 function district(districtType: string, districtCode: string): LocationDistrictMatch {
-	return { id: `${districtType}:${districtCode}`, districtType, districtCode, label: districtCode, sourceSystem: "Controlled geography fixture" };
+	return {
+		id: `${districtType}:${districtCode}`,
+		districtType,
+		districtCode,
+		label: districtCode,
+		sourceSystem: "Controlled geography fixture"
+	};
 }
 
 test("California, Indiana and Texas snapshots retain source dates offline, including workbook provenance", async (context) => {
@@ -71,10 +95,20 @@ test("California includes certified designations and individual retention questi
 	assert.ok(retention.filter(record => /Court of Appeal/u.test(record.office)).every(record => record.scope === "local"));
 	assert.ok(snapshot.records.filter(record => /Equalization/u.test(record.office)).every(record => record.scope === "local"));
 	assert.ok(snapshot.records.every(record => !/United States Senator/u.test(record.office)));
-	const preview = buildStateBallotPreview(snapshot, { districtMatches: [district("congressional", "01"), district("state-senate", "02"), district("state-house", "04")] })!;
+	const preview = buildStateBallotPreview(snapshot, {
+		districtMatches: [
+			district("congressional", "01"),
+			district("state-senate", "02"),
+			district("state-house", "04")
+		]
+	})!;
 	assert.equal(preview.candidateCount, 23);
 	assert.equal(preview.contests.flatMap(contest => contest.candidates).filter(candidate => candidate.ballotDesignation).length, 21);
-	assert.equal(buildStateBallotPreview(snapshot, { districtMatches: [district("state-senate", "01")] })?.candidateCount, 18);
+	assert.equal(buildStateBallotPreview(snapshot, {
+		districtMatches: [
+			district("state-senate", "01")
+		]
+	})?.candidateCount, 18);
 });
 
 test("Indiana retains undated filings, declared write-ins and unknown affiliations while deduplicating identical export rows", async (context) => {
@@ -95,7 +129,11 @@ test("Indiana retains undated filings, declared write-ins and unknown affiliatio
 	assert.equal(new Set(snapshot.records.filter(record => record.scope === "congressional").map(record => record.district)).size, 9);
 	assert.equal(new Set(snapshot.records.filter(record => record.scope === "state-senate").map(record => record.district)).size, 25);
 	assert.equal(new Set(snapshot.records.filter(record => record.scope === "state-house").map(record => record.district)).size, 100);
-	const preview = buildStateBallotPreview(snapshot, { districtMatches: [district("congressional", "08")] })!;
+	const preview = buildStateBallotPreview(snapshot, {
+		districtMatches: [
+			district("congressional", "08")
+		]
+	})!;
 	assert.equal(preview.candidateCount, 12);
 	assert.match(preview.disclaimer, /Filing does not establish ballot qualification/u);
 });
@@ -113,7 +151,11 @@ test("Texas deduplicates repeated county certifications without treating county 
 	assert.equal(snapshot.records.filter(record => record.status === "write-in").length, 17);
 	assert.ok(snapshot.records.some(record => record.name === "Leslie Timmons" && record.district === "31" && record.office.includes("UNEXPIRED TERM") && record.scope === "local"));
 	assert.ok(snapshot.records.some(record => record.name === "L.D. Howard" && record.status === "write-in" && record.scope === "state-house" && record.district === "124"));
-	const preview = buildStateBallotPreview(snapshot, { districtMatches: [district("state-senate", "31")] })!;
+	const preview = buildStateBallotPreview(snapshot, {
+		districtMatches: [
+			district("state-senate", "31")
+		]
+	})!;
 	assert.equal(preview.candidateCount, 59);
 	assert.match(preview.disclaimer, /Senate District 22 and House District 93 special-election candidates are not included/u);
 });

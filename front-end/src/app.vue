@@ -43,7 +43,9 @@ useHead(() => ({
 			name: "theme-color"
 		}
 	],
-	titleTemplate: title => title ? `${title} | ${appName}` : appName,
+	titleTemplate: title => title
+		? `${title} | ${appName}`
+		: appName,
 	script: [
 		{
 			innerHTML: serializeJsonLd(siteSchema),

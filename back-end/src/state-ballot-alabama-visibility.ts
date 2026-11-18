@@ -105,7 +105,11 @@ export function resolveAlabamaVisibility(content: AlabamaContent): AlabamaVisibl
 		);
 		glyph.backgroundProven = earlier.length === 0;
 		glyph.backgroundOperation = background?.operation ?? 0;
-		if (earlier.length) glyph.unresolvedBackgroundOperations = [...new Set(earlier.map(paint => paint.operation))];
+		if (earlier.length) {
+			glyph.unresolvedBackgroundOperations = [
+				...new Set(earlier.map(paint => paint.operation))
+			];
+		}
 		if (
 			glyph.fill === "white"
 			&& glyph.alpha === 1

@@ -12,7 +12,19 @@ import { parseMarylandQuestionPage, prepareMarylandQuestionReview } from "../src
 
 const now = Date.parse("2026-10-23T16:00:00Z");
 const hash = (body: string) => createHash("sha256").update(body).digest("hex");
-const review: MarylandQuestionReview = { electionDate: "2026-11-03", areas: [{ label: "SBE", questionIds: ["1"] }, { label: "Anne Arundel", questionIds: ["A"] }] };
+const review: MarylandQuestionReview = {
+	electionDate: "2026-11-03",
+	areas: [
+		{
+			label: "SBE",
+			questionIds: ["1"]
+		},
+		{
+			label: "Anne Arundel",
+			questionIds: ["A"]
+		}
+	]
+};
 const stateQuestion = "<h2>Question 1</h2><p>Constitutional Amendment</p><p>Require the proposed budget to include the specified employee compensation agreements.</p><ul><li>For the Constitutional Amendment - A vote FOR requires the stated proposed expenditures.</li><li>Against the Constitutional Amendment - A vote AGAINST retains the current requirements.</li></ul><div lang=\"es\"><h2>Pregunta 1</h2><p>Texto oficial de la pregunta.</p></div>";
 const localQuestion = "<h2>QUESTION A</h2><p>Charter Amendment</p><p>Permit the specified employee representatives to enter binding arbitration.</p><p>A vote FOR the amendment permits the stated arbitration.</p><p>A vote AGAINST the amendment retains the current rules.</p><ul><li>FOR Charter Amendment</li><li>AGAINST Charter Amendment</li></ul>";
 const page = `<main><section id="bodyMain"><h1>Ballot Questions for the November 3, 2026 Election</h1><p>All comment periods have now closed.</p><details><summary>SBE</summary><p>Updated translation is forthcoming for Question 1.</p>${stateQuestion}</details><details><summary>Anne Arundel</summary>${localQuestion}</details></section></main>`;
@@ -21,11 +33,31 @@ function fixture() {
 	const directory = mkdtempSync(join(tmpdir(), "maryland-review-test-"));
 	const capturePath = join(directory, "capture.html");
 	writeFileSync(capturePath, page);
-	const plan = { schemaVersion: 1, type: "maryland-question-review-preparation", electionDate: review.electionDate, expectedAreas: structuredClone(review.areas), capture: { path: capturePath, sha256: hash(page), url: "https://elections.maryland.gov/elections/2026/ballot_questions.html", capturedAt: "2026-10-23T12:00:00Z" }, outputDirectory: join(directory, "out"), outputName: "maryland-review" };
+	const plan = {
+		schemaVersion: 1,
+		type: "maryland-question-review-preparation",
+		electionDate: review.electionDate,
+		expectedAreas: structuredClone(review.areas),
+		capture: {
+			path: capturePath,
+			sha256: hash(page),
+			url: "https://elections.maryland.gov/elections/2026/ballot_questions.html",
+			capturedAt: "2026-10-23T12:00:00Z"
+		},
+		outputDirectory: join(directory, "out"),
+		outputName: "maryland-review"
+	};
 	const planPath = join(directory, "plan.json");
 	const save = () => writeFileSync(planPath, JSON.stringify(plan));
 	save();
-	return { directory, capturePath, plan, planPath, save, dispose: () => rmSync(directory, { recursive: true, force: true }) };
+	return {
+		directory,
+		capturePath,
+		plan,
+		planPath,
+		save,
+		dispose: () => rmSync(directory, { recursive: true, force: true })
+	};
 }
 
 test("Maryland extraction keeps local scope, printed labels and translated companions separate", () => {
@@ -45,16 +77,49 @@ test("Maryland extraction keeps local scope, printed labels and translated compa
 
 test("Baltimore City and Baltimore County never collapse into a common area", () => {
 	const body = page.replace("SBE", "Baltimore City").replace("Anne Arundel", "Baltimore County");
-	const areas = [{ label: "Baltimore City", questionIds: ["1"] }, { label: "Baltimore County", questionIds: ["A"] }];
+	const areas = [
+		{
+			label: "Baltimore City",
+			questionIds: ["1"]
+		},
+		{
+			label: "Baltimore County",
+			questionIds: ["A"]
+		}
+	];
 	const result = parseMarylandQuestionPage(Buffer.from(body), { ...review, areas });
-	assert.deepEqual(result.questions.map(question => [question.jurisdictionType, question.jurisdictionName]), [["city", "Baltimore City"], ["county", "Baltimore County"]]);
+	assert.deepEqual(result.questions.map(question => [question.jurisdictionType, question.jurisdictionName]), [
+		["city", "Baltimore City"],
+		["county", "Baltimore County"]
+	]);
 });
 
 test("election, groups, identities, languages and unknown labels are held rather than coerced", () => {
-	for (const body of [page.replaceAll("2026", "2028"), page.replace("All comment periods have now closed.", "Comments remain open."), page.replace("Anne Arundel", "Unknown County"), page.replace("QUESTION A", "QUESTION B"), page.replace("Pregunta 1", "Pregunta 2"), page.replace("lang=\"es\"", "lang=\"fr\""), page.replace("For the Constitutional Amendment", "Against the Constitutional Amendment"), page.replace("AGAINST Charter Amendment", "REJECT Charter Amendment"), page.replace("<h2>QUESTION A</h2>", "<h2>QUESTION A</h2><h2>QUESTION A</h2>"), page.replace("</section>", "<section id=\"bodyMain\"></section></section>"), page.replace("<p>Charter Amendment</p>", "<p>Charter Amendment<script>private data</script></p>")])
+	for (const body of [
+		page.replaceAll("2026", "2028"),
+		page.replace("All comment periods have now closed.", "Comments remain open."),
+		page.replace("Anne Arundel", "Unknown County"),
+		page.replace("QUESTION A", "QUESTION B"),
+		page.replace("Pregunta 1", "Pregunta 2"),
+		page.replace("lang=\"es\"", "lang=\"fr\""),
+		page.replace("For the Constitutional Amendment", "Against the Constitutional Amendment"),
+		page.replace("AGAINST Charter Amendment", "REJECT Charter Amendment"),
+		page.replace("<h2>QUESTION A</h2>", "<h2>QUESTION A</h2><h2>QUESTION A</h2>"),
+		page.replace("</section>", "<section id=\"bodyMain\"></section></section>"),
+		page.replace("<p>Charter Amendment</p>", "<p>Charter Amendment<script>private data</script></p>")
+	])
 		assert.throws(() => parseMarylandQuestionPage(Buffer.from(body), review));
-	for (const label of ["Unknown", "__proto__", "constructor"])
-		assert.throws(() => parseMarylandQuestionPage(Buffer.from(page), { ...review, areas: [{ label, questionIds: ["1"] }] }), /reviewed jurisdiction/u);
+	for (const label of ["Unknown", "__proto__", "constructor"]) {
+		assert.throws(() => parseMarylandQuestionPage(Buffer.from(page), {
+			...review,
+			areas: [
+				{
+					label,
+					questionIds: ["1"]
+				}
+			]
+		}), /reviewed jurisdiction/u);
+	}
 });
 
 test("pending translation notices bind the whole question identifier", () => {
@@ -88,7 +153,14 @@ test("offline preparation emits review-only source-pinned files and refuses over
 });
 
 test("capture drift, future dates, arbitrary sources, linked inputs and application output fail closed", async () => {
-	for (const mutation of ["digest", "future", "host", "scope", "link", "output"]) {
+	for (const mutation of [
+		"digest",
+		"future",
+		"host",
+		"scope",
+		"link",
+		"output"
+	]) {
 		const workspace = fixture();
 		try {
 			if (mutation === "digest") workspace.plan.capture.sha256 = "a".repeat(64);
@@ -114,10 +186,24 @@ test("source CLI is offline and rejects additional arguments", () => {
 	try {
 		const entry = fileURLToPath(new URL("../src/prepare-maryland-questions.ts", import.meta.url));
 		const root = fileURLToPath(new URL("../../", import.meta.url));
-		const result = spawnSync(process.execPath, ["--import", "tsx", entry, workspace.planPath], { cwd: root, encoding: "utf8" });
+		const result = spawnSync(process.execPath, [
+			"--import",
+			"tsx",
+			entry,
+			workspace.planPath
+		], { cwd: root, encoding: "utf8" });
 		assert.equal(result.status, 0, result.stderr);
 		assert.equal(JSON.parse(result.stdout).questions, 2);
-		assert.notEqual(spawnSync(process.execPath, ["--import", "tsx", entry, workspace.planPath, "extra"], { cwd: resolve(root), encoding: "utf8" }).status, 0);
+		assert.notEqual(spawnSync(process.execPath, [
+			"--import",
+			"tsx",
+			entry,
+			workspace.planPath,
+			"extra"
+		], {
+			cwd: resolve(root),
+			encoding: "utf8"
+		}).status, 0);
 	}
 	finally { workspace.dispose(); }
 });

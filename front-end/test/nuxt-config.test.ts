@@ -25,7 +25,9 @@ function collectVueFiles(directory: string): string[] {
 			if (stats.isDirectory())
 				return collectVueFiles(path);
 
-			return entry.endsWith(".vue") ? [path] : [];
+			return entry.endsWith(".vue")
+				? [path]
+				: [];
 		});
 }
 
@@ -35,7 +37,13 @@ test("nuxt config uses srcDir and expected civic modules", async () => {
 	assert.equal(config.srcDir, "src");
 	assert.deepEqual(
 		config.modules?.sort(),
-		["@nuxt/eslint", "@nuxtjs/color-mode", "@pinia/nuxt", "@unocss/nuxt", "@vueuse/nuxt"].sort()
+		[
+			"@nuxt/eslint",
+			"@nuxtjs/color-mode",
+			"@pinia/nuxt",
+			"@unocss/nuxt",
+			"@vueuse/nuxt"
+		].sort()
 	);
 	assert.equal(config.runtimeConfig?.public?.apiBase, "http://127.0.0.1:3001/api");
 	assert.equal(config.runtimeConfig?.public?.apiFetchTimeoutMs, 15_000);
@@ -217,7 +225,9 @@ test("new-tab links include opener isolation", () => {
 	const relPattern = /\brel=(["'])([^"']*)\1/;
 	const unsafeLinks = collectVueFiles(srcDirectory).flatMap((path) => {
 		const source = readFileSync(path, "utf8");
-		const matches = [...source.matchAll(anchorPattern)]
+		const matches = [
+			...source.matchAll(anchorPattern)
+		]
 			.filter(match => match[0].includes("target=\"_blank\"") || match[0].includes("target='_blank'"));
 
 		return matches.flatMap((match) => {
@@ -248,7 +258,9 @@ test("public data links use the centralized safe-link boundary", () => {
 			return [];
 
 		const source = readFileSync(path, "utf8");
-		return directDynamicAnchorPattern.test(source) ? [relativePath] : [];
+		return directDynamicAnchorPattern.test(source)
+			? [relativePath]
+			: [];
 	});
 
 	assert.deepEqual(unsafeBindings, []);

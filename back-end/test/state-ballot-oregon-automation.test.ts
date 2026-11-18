@@ -31,14 +31,23 @@ function urls(date: string) {
 	];
 }
 function electionPage(date: string, offered = true) {
-	return `<main><h1>${dateLabel(date)} General Election</h1>${offered ? urls(date).map((url, position) => `<a href="${url}">${position === 0 ? `Ballot Directive - ${dateLabel(date)} General` : `Ballot Content ${position === 2 ? "RCV " : ""}- Nov. ${date.slice(0, 4)}`}</a>`).join("") : ""}</main>${footer}`;
+	return `<main><h1>${dateLabel(date)} General Election</h1>${offered
+		? urls(date).map((url, position) => `<a href="${url}">${position === 0
+				? `Ballot Directive - ${dateLabel(date)} General`
+				: `Ballot Content ${position === 2
+					? "RCV "
+					: ""}- Nov. ${date.slice(0, 4)}`}</a>`).join("")
+		: ""}</main>${footer}`;
 }
 function discovery(dates = [source.electionDate], unpublished: string[] = []) {
 	return JSON.stringify({
 		schemaVersion: 1,
 		type: "oregon-county-discovery",
 		index: `<main><h1>Current and Upcoming Elections - Multnomah County Elections</h1>${dates.map(date => `<a href="${electionUrl(date)}">${dateLabel(date)} General Election</a>`).join("")}<a href="https://outside.example.invalid/primary">May 19, 2026 Primary Election</a></main>${footer}`,
-		pages: [...dates].sort().map(date => ({ url: electionUrl(date), body: electionPage(date, !unpublished.includes(date)) })),
+		pages: [...dates].sort().map(date => ({
+			url: electionUrl(date),
+			body: electionPage(date, !unpublished.includes(date))
+		})),
 		policies: oregonPolicyReceipts
 	});
 }
@@ -54,7 +63,17 @@ function layouts(date: string) {
 	];
 }
 function capture(entry = source, body = discovery([entry.electionDate])) {
-	return JSON.stringify({ schemaVersion: 1, type: "oregon-county-candidates", discovery: body, documents: layouts(entry.electionDate).map((text, position) => ({ url: entry.documentUrls![position], text, sha256: digest(text), retrievedAt: `${entry.electionDate.slice(0, 4)}-10-25T12:00:00.000Z` })) });
+	return JSON.stringify({
+		schemaVersion: 1,
+		type: "oregon-county-candidates",
+		discovery: body,
+		documents: layouts(entry.electionDate).map((text, position) => ({
+			url: entry.documentUrls![position],
+			text,
+			sha256: digest(text),
+			retrievedAt: `${entry.electionDate.slice(0, 4)}-10-25T12:00:00.000Z`
+		}))
+	});
 }
 
 test("Oregon automatic discovery selects offered complete general-election documents and preserves the reviewed source identity", () => {
@@ -79,7 +98,13 @@ test("Oregon automatic discovery selects offered complete general-election docum
 test("Oregon parses complete source pages, preserves fusion/overlap rules and separates ballot measures from candidates", () => {
 	const records = parseStateCandidateRecords(source, capture());
 	assert.equal(records.length, 5);
-	assert.deepEqual(records.map(item => item.name), ["Pat Example", "Lee Example", "Taylor Example", "Alex Sample", "Casey Sample"]);
+	assert.deepEqual(records.map(item => item.name), [
+		"Pat Example",
+		"Lee Example",
+		"Taylor Example",
+		"Alex Sample",
+		"Casey Sample"
+	]);
 	assert.equal(records.filter(item => item.scope === "local").length, 2);
 	assert.equal(records.find(item => item.name === "Taylor Example")!.district, "3");
 	assert.equal(records.find(item => item.name === "Alex Sample")!.jurisdiction, "City of Gresham");
@@ -161,7 +186,12 @@ test("Oregon captures only the three publisher-offered PDFs with normal bounded 
 			requested.push(url);
 			assert.deepEqual(options?.allowedHosts, ["multco.us"]);
 			assert.equal(options?.maxBytes, 12 * 1024 * 1024);
-			return { status: 200, body: Buffer.from(`%PDF-synthetic-${requested.length - 1}`), contentType: "application/pdf", etag: undefined };
+			return {
+				status: 200,
+				body: Buffer.from(`%PDF-synthetic-${requested.length - 1}`),
+				contentType: "application/pdf",
+				etag: undefined
+			};
 		},
 		extractor: async bytes => layouts(source.electionDate)[Number(bytes.toString().split("-").at(-1))]!
 	});
@@ -171,19 +201,24 @@ test("Oregon captures only the three publisher-offered PDFs with normal bounded 
 	const previous = process.env.STATE_BALLOT_PDFTOTEXT;
 	try {
 		process.env.STATE_BALLOT_PDFTOTEXT = "/missing/synthetic-pdftotext";
-		await assert.rejects(fetchOregonCandidateCapture(source, { requestText: async () => {
-			assert.fail("Missing capability must fail before publisher access");
-		} }), /unavailable/u);
+		await assert.rejects(fetchOregonCandidateCapture(source, {
+			requestText: async () => {
+				assert.fail("Missing capability must fail before publisher access");
+			}
+		}), /unavailable/u);
 	}
 	finally {
 		if (previous === undefined) delete process.env.STATE_BALLOT_PDFTOTEXT;
 		else process.env.STATE_BALLOT_PDFTOTEXT = previous;
 	}
 	let requests = 0;
-	await assert.rejects(fetchOregonCycleDiscovery({ requestText: async () => {
-		requests++;
-		return "User-agent: *\nDisallow: /\n";
-	}, wait: async () => {} }), /policy/u);
+	await assert.rejects(fetchOregonCycleDiscovery({
+		requestText: async () => {
+			requests++;
+			return "User-agent: *\nDisallow: /\n";
+		},
+		wait: async () => {}
+	}), /policy/u);
 	assert.equal(requests, 1);
 });
 
@@ -193,11 +228,18 @@ test("Oregon routine imports are cached, preserve failed-refresh data and retain
 		let current = now;
 		let requests = 0;
 		let failed = false;
-		const repository = createStateBallotRepository({ sources: [source], dataDirectory: directory, ttlMs: 60000, now: () => current, refreshReviewedLegacy: true, fetchText: async () => {
-			requests++;
-			if (failed) throw new Error("Synthetic policy change");
-			return capture();
-		} });
+		const repository = createStateBallotRepository({
+			sources: [source],
+			dataDirectory: directory,
+			ttlMs: 60000,
+			now: () => current,
+			refreshReviewedLegacy: true,
+			fetchText: async () => {
+				requests++;
+				if (failed) throw new Error("Synthetic policy change");
+				return capture();
+			}
+		});
 		const first = await repository.getSnapshot("OR", source.id);
 		assert.equal(first!.records.length, 5);
 		assert.equal(requests, 1);
@@ -211,10 +253,18 @@ test("Oregon routine imports are cached, preserve failed-refresh data and retain
 		const observation = (await repository.inspectSources!())[0]!;
 		assert.equal(observation.status, "error");
 		const legacyDirectory = join(directory, "legacy");
-		await createStateBallotStorage(legacyDirectory).write({ ...first!, source: legacyReviewedStateBallotSource(source)! });
-		const retained = createStateBallotRepository({ sources: [source], dataDirectory: legacyDirectory, now: () => now, fetchText: async () => {
-			assert.fail("A persisted reviewed snapshot must remain readable without a downloader");
-		} });
+		await createStateBallotStorage(legacyDirectory).write({
+			...first!,
+			source: legacyReviewedStateBallotSource(source)!
+		});
+		const retained = createStateBallotRepository({
+			sources: [source],
+			dataDirectory: legacyDirectory,
+			now: () => now,
+			fetchText: async () => {
+				assert.fail("A persisted reviewed snapshot must remain readable without a downloader");
+			}
+		});
 		assert.deepEqual((await retained.getSnapshot("OR", source.id))!.records, JSON.parse(JSON.stringify(first!.records)));
 	}
 	finally { await rm(directory, { recursive: true, force: true }); }
@@ -227,10 +277,17 @@ test("Oregon cycle sync persists offered future dates, reuses accepted imports a
 		const body = discovery(["2026-11-03", "2028-11-07"]);
 		let requests = 0;
 		let current = now;
-		const options = { familyId: source.id, catalogPath: path, dataDirectory: directory, now: () => current, fetchDiscovery: async () => body, fetchCandidates: async (entry: StateBallotSource) => {
-			requests++;
-			return capture(entry, body);
-		} };
+		const options = {
+			familyId: source.id,
+			catalogPath: path,
+			dataDirectory: directory,
+			now: () => current,
+			fetchDiscovery: async () => body,
+			fetchCandidates: async (entry: StateBallotSource) => {
+				requests++;
+				return capture(entry, body);
+			}
+		};
 		const first = await syncStateBallotCycles(options);
 		assert.equal(first.results.length, 2);
 		assert.equal(first.results[0]!.status, "available");
@@ -248,7 +305,10 @@ test("Oregon cycle sync persists offered future dates, reuses accepted imports a
 		assert.equal(cached.results[1]!.status, "available");
 		assert.equal(cached.results[1]!.imported, false);
 		const retained = await readFile(path, "utf8");
-		await assert.rejects(syncStateBallotCycles({ ...options, fetchDiscovery: async () => discovery() }), /disappeared/u);
+		await assert.rejects(syncStateBallotCycles({
+			...options,
+			fetchDiscovery: async () => discovery()
+		}), /disappeared/u);
 		assert.equal(await readFile(path, "utf8"), retained);
 	}
 	finally { await rm(directory, { recursive: true, force: true }); }

@@ -53,10 +53,19 @@ test("the restricted HTTP signature profile binds every request component and ex
 		authenticateHandoff(
 			headers,
 			handoffAudience,
-			new Map([[handoffKeyId(fixture.keys.publicKey), fixture.keys.publicKey]]),
+			new Map([
+				[
+					handoffKeyId(fixture.keys.publicKey),
+					fixture.keys.publicKey
+				]
+			]),
 			handoffNow
 		),
-		{ id, keyId: handoffKeyId(fixture.keys.publicKey), payloadSha256: handoffHash(fixture.body) }
+		{
+			id,
+			keyId: handoffKeyId(fixture.keys.publicKey),
+			payloadSha256: handoffHash(fixture.body)
+		}
 	);
 });
 
@@ -77,7 +86,12 @@ for (const name of [
 				authenticateHandoff(
 					changed,
 					handoffAudience,
-					new Map([[handoffKeyId(fixture.keys.publicKey), fixture.keys.publicKey]]),
+					new Map([
+						[
+							handoffKeyId(fixture.keys.publicKey),
+							fixture.keys.publicKey
+						]
+					]),
 					handoffNow
 				),
 			(error: unknown) => error instanceof HandoffError && error.status === 401
@@ -87,7 +101,12 @@ for (const name of [
 
 test("expired, future, compressed, unknown-key and duplicate-header requests fail closed", () => {
 	const fixture = handoffFixture();
-	const keys = new Map([[handoffKeyId(fixture.keys.publicKey), fixture.keys.publicKey]]);
+	const keys = new Map([
+		[
+			handoffKeyId(fixture.keys.publicKey),
+			fixture.keys.publicKey
+		]
+	]);
 	for (const timestamp of [handoffNow - 301000, handoffNow + 31000]) {
 		assert.throws(() =>
 			authenticateHandoff(
@@ -105,7 +124,10 @@ test("expired, future, compressed, unknown-key and duplicate-header requests fai
 	);
 	assert.throws(() =>
 		authenticateHandoff(
-			{ ...headers, signature: [headers.signature, headers.signature] },
+			{
+				...headers,
+				signature: [headers.signature, headers.signature]
+			},
 			handoffAudience,
 			keys,
 			handoffNow
@@ -183,7 +205,10 @@ const invalidPackets: [string, (fixture: ReturnType<typeof handoffFixture>) => v
 			changeHandoffFile(
 				fixture.envelope,
 				"DATA-DELTA.json",
-				JSON.stringify({ pendingFileCount: 1, archive: { created: true } })
+				JSON.stringify({
+					pendingFileCount: 1,
+					archive: { created: true }
+				})
 			);
 		}
 	],
@@ -234,7 +259,12 @@ test("pending archives are checksum-bound opaque custody, not extracted content"
 		"DATA-DELTA.json",
 		JSON.stringify({
 			pendingFileCount: 1,
-			archive: { created: true, fileCount: 1, bytes: zip.length, sha256: handoffHash(zip) }
+			archive: {
+				created: true,
+				fileCount: 1,
+				bytes: zip.length,
+				sha256: handoffHash(zip)
+			}
 		})
 	);
 	changeHandoffFile(
@@ -264,7 +294,12 @@ test("private custody survives restart, exact retries and conflicting reuse with
 		keyId: handoffKeyId(fixture.keys.publicKey),
 		payloadSha256: handoffHash(fixture.body)
 	};
-	const keys = new Map([[handoffKeyId(fixture.keys.publicKey), fixture.keys.publicKey]]);
+	const keys = new Map([
+		[
+			handoffKeyId(fixture.keys.publicKey),
+			fixture.keys.publicKey
+		]
+	]);
 	const proof = (body = fixture.body, identity = id) =>
 		captureHandoffEvidence(
 			signHandoff(body, handoffAudience, fixture.keys.privateKey, identity, handoffNow),
@@ -285,7 +320,10 @@ test("private custody survives restart, exact retries and conflicting reuse with
 		() =>
 			restarted.accept(
 				changed,
-				{ ...authentication, payloadSha256: handoffHash(changed) },
+				{
+					...authentication,
+					payloadSha256: handoffHash(changed)
+				},
 				handoffNow,
 				proof(changed)
 			),
@@ -301,7 +339,12 @@ test("capacity, interrupted locks, altered files and redirected paths preserve a
 	const directory = await handoffTemporary(context);
 	const fixture = handoffFixture();
 	const inboxDirectory = join(directory, "inbox");
-	const keys = new Map([[handoffKeyId(fixture.keys.publicKey), fixture.keys.publicKey]]);
+	const keys = new Map([
+		[
+			handoffKeyId(fixture.keys.publicKey),
+			fixture.keys.publicKey
+		]
+	]);
 	const inbox = await createHandoffInbox(inboxDirectory, handoffAudience, undefined, 1, keys);
 	const id = randomUUID();
 	const authentication = {
@@ -348,12 +391,20 @@ test("HTTP ingestion authenticates before staging and exposes neither files nor 
 		400
 	);
 	assert.deepEqual(await readdir(join(service.directory, "inbox")), []);
-	const accepted = await fetch(url, { method: "POST", headers, body: service.body.toString("utf8") });
+	const accepted = await fetch(url, {
+		method: "POST",
+		headers,
+		body: service.body.toString("utf8")
+	});
 	assert.equal(accepted.status, 201);
 	assert.equal(accepted.headers.get("cache-control"), "no-store");
 	assert.equal(((await accepted.json()) as { receipt: { custodyOnly: boolean } }).receipt.custodyOnly, true);
 	assert.equal((await fetch(`${url}/${headers["x-handoff-id"]}`)).status, 404);
-	assert.equal((await fetch(url, { method: "POST", headers, body: service.body.toString("utf8") })).status, 200);
+	assert.equal((await fetch(url, {
+		method: "POST",
+		headers,
+		body: service.body.toString("utf8")
+	})).status, 200);
 });
 
 test("sender rejects unsafe destinations and disabled or non-public verification keys", async (context) => {
@@ -370,7 +421,11 @@ test("sender rejects unsafe destinations and disabled or non-public verification
 	const directory = await handoffTemporary(context);
 	await assert.rejects(() => createHandoffReceiver({ directory, audience: handoffAudience, publicKeys: [] }));
 	await assert.rejects(() =>
-		createHandoffReceiver({ directory, audience: handoffAudience, publicKeys: [fixture.keys.privateKey] })
+		createHandoffReceiver({
+			directory,
+			audience: handoffAudience,
+			publicKeys: [fixture.keys.privateKey]
+		})
 	);
 	await assert.rejects(() => initializeHandoffClient(join(directory, ".ai-work", "keys"), handoffAudience));
 });
@@ -417,7 +472,10 @@ test("real sender retries a lost receipt safely and caches durable custody acros
 test("mismatched or oversized receipts never become successful delivery", async () => {
 	const fixture = handoffFixture();
 	let attempts = 0;
-	for (const responseBody of ["{\"duplicate\":false,\"receipt\":{}}", " ".repeat(17 * 1024)]) {
+	for (const responseBody of [
+		"{\"duplicate\":false,\"receipt\":{}}",
+		" ".repeat(17 * 1024)
+	]) {
 		await assert.rejects(() =>
 			deliverHandoff({
 				endpoint: `https://example.invalid${handoffPath}`,
@@ -449,7 +507,12 @@ test("real active directory packing is snapshot-bound and rejects arbitrary or r
 test("altered or incomplete stored packets never receive a duplicate custody acknowledgement", async (context) => {
 	const fixture = handoffFixture();
 	const directory = join(await handoffTemporary(context), "inbox");
-	const keys = new Map([[handoffKeyId(fixture.keys.publicKey), fixture.keys.publicKey]]);
+	const keys = new Map([
+		[
+			handoffKeyId(fixture.keys.publicKey),
+			fixture.keys.publicKey
+		]
+	]);
 	const inbox = await createHandoffInbox(directory, handoffAudience, undefined, undefined, keys);
 	const authentication = {
 		id: randomUUID(),
@@ -471,7 +534,10 @@ test("altered or incomplete stored packets never receive a duplicate custody ack
 		(error: unknown) => error instanceof HandoffError && error.status === 503
 	);
 	assert.deepEqual(await readFile(join(directory, authentication.id, "receipt.json")), receipt);
-	const incomplete = { ...authentication, id: randomUUID() };
+	const incomplete = {
+		...authentication,
+		id: randomUUID()
+	};
 	await mkdir(join(directory, incomplete.id), { mode: 0o700 });
 	await assert.rejects(() => inbox.accept(fixture.body, incomplete, handoffNow, proof(incomplete.id)));
 	assert.deepEqual(await readdir(join(directory, incomplete.id)), []);
@@ -483,7 +549,10 @@ test("declared oversized requests are rejected without creating staged content",
 	const status = await new Promise<number>((resolve, reject) => {
 		const request = httpRequest(
 			service.origin + handoffPath,
-			{ method: "POST", headers: { ...headers, "content-length": maximumHandoffBytes + 1 } },
+			{
+				method: "POST",
+				headers: { ...headers, "content-length": maximumHandoffBytes + 1 }
+			},
 			(response) => {
 				response.resume();
 				resolve(response.statusCode!);

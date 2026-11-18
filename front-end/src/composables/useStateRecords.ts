@@ -14,9 +14,19 @@ export function useStateRecords(input: MaybeRefOrGetter<{ stateCode: string; sou
 		() => `state-records:${JSON.stringify(filters.value)}`,
 		() => filters.value.stateCode
 			? api<StateRecordsResponse>(`/state-records/${filters.value.stateCode}`, {
-					query: { source: filters.value.sourceId, includeSupplements: filters.value.includeSupplements ? "true" : undefined, q: filters.value.search, scope: filters.value.scope, status: filters.value.status, offset: filters.value.offset, limit: 50 },
+					query: {
+						source: filters.value.sourceId,
+						includeSupplements: filters.value.includeSupplements ? "true" : undefined,
+						q: filters.value.search,
+						scope: filters.value.scope,
+						status: filters.value.status,
+						offset: filters.value.offset,
+						limit: 50
+					},
 				})
 			: Promise.resolve(null),
-		{ default: () => null },
+		{
+			default: () => null
+		},
 	);
 }

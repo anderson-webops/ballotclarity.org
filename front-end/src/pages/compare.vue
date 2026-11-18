@@ -9,7 +9,9 @@ const { backToLayerLink, layerBreadcrumbLink, openLayerLink } = useRouteLayerNav
 const { compareList, isHydrated } = storeToRefs(civicStore);
 
 const selectedSlugs = computed(() => parseCompareQuerySlugs(route.query.slugs));
-const cachedCompareSlugs = computed(() => normalizeCompareSlugs(isHydrated.value ? compareList.value : []));
+const cachedCompareSlugs = computed(() => normalizeCompareSlugs(isHydrated.value
+	? compareList.value
+	: []));
 const hasCanonicalSelection = computed(() => selectedSlugs.value.length > 0);
 const hasSavedCompareSelection = computed(() => !hasCanonicalSelection.value && cachedCompareSlugs.value.length >= 2);
 const resumeCompareHref = computed(() => buildCompareRoute(cachedCompareSlugs.value));
@@ -26,7 +28,9 @@ const showOnlyDifferences = ref(false);
 const showOnlyMutualResponses = ref(false);
 
 const sortedCandidates = computed(() => {
-	return [...(data.value?.candidates ?? [])].sort((left, right) => {
+	return [
+		...(data.value?.candidates ?? [])
+	].sort((left, right) => {
 		return left.comparison.ballotOrder - right.comparison.ballotOrder
 			|| left.comparison.displayName.localeCompare(right.comparison.displayName);
 	});

@@ -9,7 +9,12 @@ test("Orange County proof reconciles qualified candidates without importing incu
 	assert.equal(result.candidates.length, 4);
 	assert.equal(result.contests[0]!.candidateCount, 3);
 	assert.equal(result.contests[0]!.qualifiedCount, 2);
-	assert.deepEqual(result.candidates.map(candidate => candidate.name), ["PARTISAN ONE", "PARTISAN TWO", "LOCAL ONE", "LOCAL TWO"]);
+	assert.deepEqual(result.candidates.map(candidate => candidate.name), [
+		"PARTISAN ONE",
+		"PARTISAN TWO",
+		"LOCAL ONE",
+		"LOCAL TWO"
+	]);
 	assert.equal(result.candidates[0]!.party, "Republican");
 	assert.equal(result.candidates[1]!.party, "Democratic");
 	assert.equal(result.candidates[2]!.party, undefined);
@@ -27,12 +32,20 @@ test("Orange County proof preserves contest continuations, source identifiers an
 	assert.equal(result.contests[1]!.voteFor, 2);
 	assert.equal(result.candidates[0]!.sourceCandidateId, result.candidates[2]!.sourceCandidateId);
 	assert.notEqual(result.candidates[0]!.id, result.candidates[2]!.id);
-	assert.deepEqual(result.printedClocks, [{ page: 1, date: "2026-08-28", time: "15:47:35" }, { page: 2, date: "2026-08-28", time: "15:48:21" }]);
+	assert.deepEqual(result.printedClocks, [
+		{ page: 1, date: "2026-08-28", time: "15:47:35" },
+		{ page: 2, date: "2026-08-28", time: "15:48:21" }
+	]);
 });
 
 test("Orange County proof requires its explicit election date and keeps future examples synthetic", () => {
 	assert.equal(readOrangeCandidateProof(orangeProofFixture("2028"), "2028-11-07").electionDate, "2028-11-07");
-	for (const date of ["2026-11-04", "2026-02-30", "2026-11-3", "2028-11-07"]) assert.throws(() => readOrangeCandidateProof(orangeProofFixture(), date), /review/u);
+	for (const date of [
+		"2026-11-04",
+		"2026-02-30",
+		"2026-11-3",
+		"2028-11-07"
+	]) assert.throws(() => readOrangeCandidateProof(orangeProofFixture(), date), /review/u);
 	assert.throws(() => readOrangeCandidateProof(orangeProofFixture().replace("General Election -", "Primary Election -"), "2026-11-03"), /review/u);
 });
 

@@ -47,7 +47,9 @@ export function resolveAddressCacheMaxRows(
 	value: number | string | null | undefined = process.env.ADDRESS_CACHE_MAX_ROWS,
 	fallback = defaultAddressCacheMaxRows,
 ) {
-	const parsed = typeof value === "number" ? value : Number(value);
+	const parsed = typeof value === "number"
+		? value
+		: Number(value);
 	const normalized = Math.floor(parsed);
 
 	return Number.isSafeInteger(normalized) && normalized > 0

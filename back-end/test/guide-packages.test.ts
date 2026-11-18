@@ -20,10 +20,14 @@ const coverageRepository: CoverageRepository = {
 		return coverageSnapshot.candidates.filter(candidate => requested.has(candidate.slug));
 	},
 	getElectionBySlug(slug: string) {
-		return coverageSnapshot.election?.slug === slug ? coverageSnapshot.election : null;
+		return coverageSnapshot.election?.slug === slug
+			? coverageSnapshot.election
+			: null;
 	},
 	getJurisdictionBySlug(slug: string) {
-		return coverageSnapshot.jurisdiction?.slug === slug ? coverageSnapshot.jurisdiction : null;
+		return coverageSnapshot.jurisdiction?.slug === slug
+			? coverageSnapshot.jurisdiction
+			: null;
 	},
 	getMeasureBySlug(slug: string) {
 		return coverageSnapshot.measures.find(measure => measure.slug === slug) ?? null;

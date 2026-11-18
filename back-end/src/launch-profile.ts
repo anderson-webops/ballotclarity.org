@@ -163,7 +163,13 @@ export function buildCoverageResponse(
 					id: "nationwide-results",
 					label: "Lookup and results pages",
 					note: "District, representative, and person pages stay useful here even when a local guide is not active.",
-					routes: ["/results", "/districts", "/districts/<slug>", "/representatives", "/representatives/<slug>"],
+					routes: [
+						"/results",
+						"/districts",
+						"/districts/<slug>",
+						"/representatives",
+						"/representatives/<slug>"
+					],
 					status: "live-now",
 					summary: "These pages are the main public product when no local guide is active and use the selected area results."
 				},
@@ -174,7 +180,13 @@ export function buildCoverageResponse(
 					id: "published-guides",
 					label: "Published local guide pages",
 					note: "These pages stay secondary until a verified local guide is active.",
-					routes: ["/ballot", "/contest", "/candidate", "/measure", "/plan"],
+					routes: [
+						"/ballot",
+						"/contest",
+						"/candidate",
+						"/measure",
+						"/plan"
+					],
 					status: "guide-dependent",
 					summary: "Ballot guide, contest, candidate, measure, and plan pages remain optional deeper layers rather than the default experience."
 				},
@@ -186,7 +198,14 @@ export function buildCoverageResponse(
 					id: "person-modules",
 					label: "Person, funding, and influence pages",
 					note: "Funding and influence modules remain conditional on reliable person-level linkage and should not be presented as universal coverage yet.",
-					routes: ["/representatives/<slug>", "/representatives/<slug>/funding", "/representatives/<slug>/influence", "/candidate/<slug>", "/candidate/<slug>/funding", "/candidate/<slug>/influence"],
+					routes: [
+						"/representatives/<slug>",
+						"/representatives/<slug>/funding",
+						"/representatives/<slug>/influence",
+						"/candidate/<slug>",
+						"/candidate/<slug>/funding",
+						"/candidate/<slug>/influence"
+					],
 					status: "limited",
 					summary: "Person pages are live, but richer finance and influence coverage still depends on the underlying person or entity record."
 				},
@@ -198,7 +217,14 @@ export function buildCoverageResponse(
 					],
 					id: "public-reference",
 					label: "Public reference pages",
-					routes: ["/coverage", "/status", "/data-sources", "/corrections", "/help", "/methodology"],
+					routes: [
+						"/coverage",
+						"/status",
+						"/data-sources",
+						"/corrections",
+						"/help",
+						"/methodology"
+					],
 					status: "live-now",
 					summary: "These pages explain what is available and which public source layers are active."
 				}
@@ -236,7 +262,9 @@ export function buildCoverageResponse(
 		launchTarget,
 		guideContent: guideContent ?? null,
 		snapshotProvenance,
-		scopeNote: `${launchTarget.displayName} is the currently published election area. Active local guide package status: ${(snapshotProvenance?.status || "unknown").replaceAll("_", " ")}${snapshotProvenance?.sourceLabel ? ` (${snapshotProvenance.sourceLabel.replaceAll(/snapshot/gi, "package")})` : ""}. Official election tools remain the final authority for deadlines, precincts, polling places, and ballot confirmation.`,
+		scopeNote: `${launchTarget.displayName} is the currently published election area. Active local guide package status: ${(snapshotProvenance?.status || "unknown").replaceAll("_", " ")}${snapshotProvenance?.sourceLabel
+			? ` (${snapshotProvenance.sourceLabel.replaceAll(/snapshot/gi, "package")})`
+			: ""}. Official election tools remain the final authority for deadlines, precincts, polling places, and ballot confirmation.`,
 		currentState: publishedGuideSummary,
 		routeFamilies: [
 			{
@@ -248,7 +276,13 @@ export function buildCoverageResponse(
 				id: "nationwide-results",
 				label: "Lookup and results pages",
 				note: "These pages should remain useful even outside the current published guide area.",
-				routes: ["/results", "/districts", "/districts/<slug>", "/representatives", "/representatives/<slug>"],
+				routes: [
+					"/results",
+					"/districts",
+					"/districts/<slug>",
+					"/representatives",
+					"/representatives/<slug>"
+				],
 				status: "live-now",
 				summary: "Lookup results remain the cross-page context layer for district matches, representative records, and official tools."
 			},
@@ -266,7 +300,14 @@ export function buildCoverageResponse(
 					? "Guide pages are deeper reading layers when a verified local guide package is active."
 					: "Election overview and location hub pages are active now. Contest, candidate, measure, compare, and plan pages wait for verified local packaging.",
 				routes: hasVerifiedContestPackage
-					? ["/ballot", "/contest", "/candidate", "/measure", "/plan", "/compare"]
+					? [
+							"/ballot",
+							"/contest",
+							"/candidate",
+							"/measure",
+							"/plan",
+							"/compare"
+						]
 					: ["/elections", "/locations", "/ballot"],
 				status: hasVerifiedContestPackage ? "live-now" : "limited",
 				summary: hasVerifiedContestPackage
@@ -282,7 +323,14 @@ export function buildCoverageResponse(
 				id: "person-modules",
 				label: "Person, funding, and influence pages",
 				note: "Richer funding and influence coverage still depends on the underlying person/entity linkage rather than existing for every official automatically.",
-				routes: ["/representatives/<slug>", "/representatives/<slug>/funding", "/representatives/<slug>/influence", "/candidate/<slug>", "/candidate/<slug>/funding", "/candidate/<slug>/influence"],
+				routes: [
+					"/representatives/<slug>",
+					"/representatives/<slug>/funding",
+					"/representatives/<slug>/influence",
+					"/candidate/<slug>",
+					"/candidate/<slug>/funding",
+					"/candidate/<slug>/influence"
+				],
 				status: "limited",
 				summary: "Person pages are public records, but page depth varies by what finance, influence, and officeholder data is actually attached."
 			},
@@ -294,7 +342,14 @@ export function buildCoverageResponse(
 				],
 				id: "public-reference",
 				label: "Public reference pages",
-				routes: ["/coverage", "/status", "/data-sources", "/corrections", "/help", "/methodology"],
+				routes: [
+					"/coverage",
+					"/status",
+					"/data-sources",
+					"/corrections",
+					"/help",
+					"/methodology"
+				],
 				status: "live-now",
 				summary: "These pages explain what is available, what source checks are active, and what still needs verification."
 			}

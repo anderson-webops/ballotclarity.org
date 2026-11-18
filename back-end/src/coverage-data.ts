@@ -903,7 +903,15 @@ const candidates: Candidate[] = [
 			"This profile does not include tax returns, private meetings, or unpublished donor communications."
 		],
 		comparison: elenaTorresComparison,
-		sources: uniqueSources([officialCandidateList, federalQuestionnaire, torresFec, torresPolicy, metroGuide, methodologyBrief, districtEthics]),
+		sources: uniqueSources([
+			officialCandidateList,
+			federalQuestionnaire,
+			torresFec,
+			torresPolicy,
+			metroGuide,
+			methodologyBrief,
+			districtEthics
+		]),
 		updatedAt: "2026-03-30T14:00:00.000Z"
 	},
 	{
@@ -1016,7 +1024,15 @@ const candidates: Candidate[] = [
 			"Committee negotiations and informal amendments are not fully visible in the current release."
 		],
 		comparison: danielBrooksComparison,
-		sources: uniqueSources([officialCandidateList, federalQuestionnaire, brooksFec, brooksVotes, metroGuide, methodologyBrief, districtEthics]),
+		sources: uniqueSources([
+			officialCandidateList,
+			federalQuestionnaire,
+			brooksFec,
+			brooksVotes,
+			metroGuide,
+			methodologyBrief,
+			districtEthics
+		]),
 		updatedAt: "2026-03-30T14:00:00.000Z"
 	},
 	{
@@ -1128,7 +1144,15 @@ const candidates: Candidate[] = [
 			"No closed-door caucus negotiations or unreleased fiscal estimates are reflected here."
 		],
 		comparison: naomiParkComparison,
-		sources: uniqueSources([officialCandidateList, stateQuestionnaire, parkHousing, districtEthics, metroGuide, schoolQuestionnaire, methodologyBrief]),
+		sources: uniqueSources([
+			officialCandidateList,
+			stateQuestionnaire,
+			parkHousing,
+			districtEthics,
+			metroGuide,
+			schoolQuestionnaire,
+			methodologyBrief
+		]),
 		updatedAt: "2026-03-29T17:15:00.000Z"
 	},
 	{
@@ -1240,7 +1264,14 @@ const candidates: Candidate[] = [
 			"This record does not show constituent service requests or unpublished amendment drafts."
 		],
 		comparison: thomasBellComparison,
-		sources: uniqueSources([officialCandidateList, stateQuestionnaire, bellWaterBill, districtEthics, metroGuide, methodologyBrief]),
+		sources: uniqueSources([
+			officialCandidateList,
+			stateQuestionnaire,
+			bellWaterBill,
+			districtEthics,
+			metroGuide,
+			methodologyBrief
+		]),
 		updatedAt: "2026-03-29T17:15:00.000Z"
 	},
 	{
@@ -1340,7 +1371,13 @@ const candidates: Candidate[] = [
 			"This record does not include closed-session personnel matters or student-level data."
 		],
 		comparison: aliciaGreeneComparison,
-		sources: uniqueSources([officialCandidateList, schoolBudgetMinutes, schoolLiteracyReport, schoolQuestionnaire, methodologyBrief]),
+		sources: uniqueSources([
+			officialCandidateList,
+			schoolBudgetMinutes,
+			schoolLiteracyReport,
+			schoolQuestionnaire,
+			methodologyBrief
+		]),
 		updatedAt: "2026-03-28T18:00:00.000Z"
 	},
 	{
@@ -1431,7 +1468,13 @@ const candidates: Candidate[] = [
 			"Because Hill has not served on the board, this profile relies more heavily on published proposals and questionnaires than vote records."
 		],
 		comparison: marcusHillComparison,
-		sources: uniqueSources([officialCandidateList, schoolQuestionnaire, schoolLiteracyReport, metroGuide, methodologyBrief]),
+		sources: uniqueSources([
+			officialCandidateList,
+			schoolQuestionnaire,
+			schoolLiteracyReport,
+			metroGuide,
+			methodologyBrief
+		]),
 		updatedAt: "2026-03-28T18:00:00.000Z"
 	},
 	{
@@ -1522,7 +1565,12 @@ const candidates: Candidate[] = [
 			"Patel's profile relies on questionnaire responses, public budget materials, and stated management proposals rather than elected-office votes."
 		],
 		comparison: sandraPatelComparison,
-		sources: uniqueSources([officialCandidateList, schoolBudgetMinutes, schoolQuestionnaire, methodologyBrief]),
+		sources: uniqueSources([
+			officialCandidateList,
+			schoolBudgetMinutes,
+			schoolQuestionnaire,
+			methodologyBrief
+		]),
 		updatedAt: "2026-03-28T18:00:00.000Z"
 	}
 ];
@@ -1709,7 +1757,12 @@ const measures: Measure[] = [
 			trustBullet("measure4-unknown-1", "The final construction sequence would still depend on later county budgeting and project delivery decisions.", [transitCapital, transitFiscal], "A successful vote does not lock every project phase into a fixed calendar."),
 			trustBullet("measure4-unknown-2", "The current record does not include future grant awards or construction-cost changes that could alter timing.", [transitFiscal, methodologyBrief], "Later bid prices and grants can change the practical scope of a bond program.")
 		],
-		sources: uniqueSources([transitFiscal, transitCapital, metroGuide, methodologyBrief]),
+		sources: uniqueSources([
+			transitFiscal,
+			transitCapital,
+			metroGuide,
+			methodologyBrief
+		]),
 		updatedAt: "2026-03-30T11:00:00.000Z"
 	},
 	{
@@ -1893,7 +1946,12 @@ const measures: Measure[] = [
 			trustBullet("amendment-a-unknown-1", "Future staffing pressure would still depend on how many requests departments receive after the rule change.", [charterAudit, methodologyBrief], "Operational effects can vary by department and request volume."),
 			trustBullet("amendment-a-unknown-2", "The amendment would not resolve later disputes over which records remain exempt under state law.", [charterSummary, methodologyBrief], "Users should still read original legal language and county practice notes.")
 		],
-		sources: uniqueSources([charterAudit, charterSummary, metroGuide, methodologyBrief]),
+		sources: uniqueSources([
+			charterAudit,
+			charterSummary,
+			metroGuide,
+			methodologyBrief
+		]),
 		updatedAt: "2026-03-30T11:00:00.000Z"
 	}
 ];

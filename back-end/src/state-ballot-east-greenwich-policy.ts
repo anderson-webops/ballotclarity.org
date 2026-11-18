@@ -2,7 +2,30 @@ import { createHash } from "node:crypto";
 import { containsControlCharacters } from "./text-validation.js";
 
 export const eastGreenwichRobotsSha256 = "d3a2ea1f865ff83e219237f15c2c04bdf433c2eb8cc20582e597d29d5defb5eb";
-const applicableAgents = new Set(["*", "meta-webindexer", "meta-externalagent", "oai-searchbot", "gptbot", "claudebot", "claude-searchbot", "perplexitybot", "amazonbot", "bytespider", "ccbot", "cohere-ai", "reflectionbot", "linkupbot", "exasearchbot", "youbot", "duckassistbot", "serpstatbot", "ahrefsbot", "semrushbot", "mj12bot", "dotbot"]);
+const applicableAgents = new Set([
+	"*",
+	"meta-webindexer",
+	"meta-externalagent",
+	"oai-searchbot",
+	"gptbot",
+	"claudebot",
+	"claude-searchbot",
+	"perplexitybot",
+	"amazonbot",
+	"bytespider",
+	"ccbot",
+	"cohere-ai",
+	"reflectionbot",
+	"linkupbot",
+	"exasearchbot",
+	"youbot",
+	"duckassistbot",
+	"serpstatbot",
+	"ahrefsbot",
+	"semrushbot",
+	"mj12bot",
+	"dotbot"
+]);
 
 export function eastGreenwichRobotsPolicy(body: Uint8Array) {
 	const value = new TextDecoder("utf-8", { fatal: true }).decode(body).replace(/\r\n?/gu, "\n");
@@ -44,8 +67,11 @@ export function eastGreenwichRobotsPolicy(body: Uint8Array) {
 	if (!selected.some(item => item.agents.includes("*")) || !selected.some(item => item.agents.includes("gptbot") && item.agents.includes("oai-searchbot"))) throw new Error("The East Greenwich applicable groups require review.");
 	const denied = selected.flatMap(item => item.denied);
 	const delay = Math.max(11000, ...selected.map(item => item.delay));
-	return { delay, allowed(address: string) {
-		const url = new URL(address);
-		return url.protocol === "https:" && url.hostname === "www.eastgreenwichri.gov" && !url.port && !url.username && !url.password && !url.hash && !/[%\\]/u.test(url.pathname) && !denied.some(path => (url.pathname + url.search).startsWith(path));
-	} };
+	return {
+		delay,
+		allowed(address: string) {
+			const url = new URL(address);
+			return url.protocol === "https:" && url.hostname === "www.eastgreenwichri.gov" && !url.port && !url.username && !url.password && !url.hash && !/[%\\]/u.test(url.pathname) && !denied.some(path => (url.pathname + url.search).startsWith(path));
+		}
+	};
 }

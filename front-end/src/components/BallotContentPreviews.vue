@@ -9,14 +9,33 @@ const { formatDate } = useFormatters();
 const NuxtLinkComponent = resolveComponent("NuxtLink");
 function contestGroups(preview: BallotContentPreview) {
 	return [
-		{ label: "Federal", scopes: ["congressional"], senate: true },
-		{ label: "State", scopes: ["statewide", "state-house", "state-senate"], senate: false },
-		{ label: "Local", scopes: ["local"], senate: false },
+		{
+			label: "Federal",
+			scopes: ["congressional"],
+			senate: true
+		},
+		{
+			label: "State",
+			scopes: ["statewide", "state-house", "state-senate"],
+			senate: false
+		},
+		{
+			label: "Local",
+			scopes: ["local"],
+			senate: false
+		},
 		{ label: "Ballot", scopes: [], senate: false }
-	].map(group => ({ label: group.label, contests: preview.contests.filter((contest) => {
-		const senate = contest.scope === "statewide" && /^(?:United States|U\.?S\.?) Senate$/iu.test(contest.title.trim());
-		return group.senate ? senate || contest.scope === "congressional" : group.scopes.length ? !senate && Boolean(contest.scope && group.scopes.includes(contest.scope)) : !contest.scope;
-	}) })).filter(group => group.contests.length);
+	].map(group => ({
+		label: group.label,
+		contests: preview.contests.filter((contest) => {
+			const senate = contest.scope === "statewide" && /^(?:United States|U\.?S\.?) Senate$/iu.test(contest.title.trim());
+			return group.senate
+				? senate || contest.scope === "congressional"
+				: group.scopes.length
+					? !senate && Boolean(contest.scope && group.scopes.includes(contest.scope))
+					: !contest.scope;
+		})
+	})).filter(group => group.contests.length);
 }
 </script>
 

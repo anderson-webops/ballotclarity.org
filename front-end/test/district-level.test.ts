@@ -15,6 +15,16 @@ test("districts order from federal to local", () => {
 		{ districtType: "congressional", label: "Congressional District 5" }
 	].map(classifyDistrictLevel);
 
-	assert.deepEqual(levels.map(level => level.label), ["City or local", "County", "State", "Federal"]);
-	assert.deepEqual([...levels].sort((left, right) => left.order - right.order).map(level => level.label), ["Federal", "State", "County", "City or local"]);
+	assert.deepEqual(levels.map(level => level.label), [
+		"City or local",
+		"County",
+		"State",
+		"Federal"
+	]);
+	assert.deepEqual([...levels].sort((left, right) => left.order - right.order).map(level => level.label), [
+		"Federal",
+		"State",
+		"County",
+		"City or local"
+	]);
 });

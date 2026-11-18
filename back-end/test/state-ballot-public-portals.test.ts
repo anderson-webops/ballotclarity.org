@@ -18,11 +18,19 @@ function source(state: string) {
 }
 
 function fixture(state: string) {
-	return readFileSync(new URL(`./fixtures/state-portals-${state === "PA" ? "pennsylvania.html" : "west-virginia.json"}`, import.meta.url), "utf8");
+	return readFileSync(new URL(`./fixtures/state-portals-${state === "PA"
+		? "pennsylvania.html"
+		: "west-virginia.json"}`, import.meta.url), "utf8");
 }
 
 function district(districtType: string, districtCode: string): LocationDistrictMatch {
-	return { id: `${districtType}:${districtCode}`, districtType, districtCode, label: districtCode, sourceSystem: "Controlled geography fixture" };
+	return {
+		id: `${districtType}:${districtCode}`,
+		districtType,
+		districtCode,
+		label: districtCode,
+		sourceSystem: "Controlled geography fixture"
+	};
 }
 
 function paRows() {
@@ -54,7 +62,10 @@ test("reviewed portal snapshots load without network access and keep their origi
 			throw new Error("No network permitted.");
 		},
 	}));
-	for (const [state, count, statewide, documents] of [["PA", 442, 6, 1], ["WV", 564, 4, 2]] as const) {
+	for (const [state, count, statewide, documents] of [
+		["PA", 442, 6, 1],
+		["WV", 564, 4, 2]
+	] as const) {
 		const snapshot = (await repository.getSnapshot(state))!;
 		assert.ok(snapshot);
 		assert.equal(snapshot.records.length, count);
@@ -97,7 +108,12 @@ test("Pennsylvania filters explicit nominees and nomination papers instead of im
 	assert.ok(records.some(record => record.name === "SCOTT, GAIL R" && record.sourceStatus === "Approved; Substitute; primary winner"));
 	assert.ok(records.some(record => record.name === "CECIL, JACOB H" && record.status === "listed" && record.sourceStatus?.includes("Write-in")));
 	assert.ok(records.every(record => record.status !== "write-in" && record.status !== "defeated"));
-	const preview = buildStateBallotPreview({ source: source("PA"), records, retrievedAt: "2026-10-21T07:29:34.547Z", sha256: "a".repeat(64) }, { districtMatches: [] })!;
+	const preview = buildStateBallotPreview({
+		source: source("PA"),
+		records,
+		retrievedAt: "2026-10-21T07:29:34.547Z",
+		sha256: "a".repeat(64)
+	}, { districtMatches: [] })!;
 	assert.equal(preview.candidateCount, 6);
 	assert.equal(preview.contestCount, 2);
 	assert.ok(preview.contests.flatMap(contest => contest.candidates).every(candidate => !candidate.name.includes(" / ")));
@@ -152,9 +168,18 @@ test("West Virginia state-filed judicial races, source areas and divisions never
 	assert.equal(court.sourceDistrictLabel, "7TH CIRCUIT COURT DISTRICT - 2ND DIVISION");
 	assert.ok(court.office.includes("Division 2"));
 	assert.ok(records.filter(record => /COURT|MAGISTRATE|CLERK|COUNTY COMMISSION|BOARD OF EDUCATION/u.test(record.office)).every(record => record.scope === "local"));
-	const snapshot = { source: source("WV"), records, retrievedAt: "2026-10-21T00:00:00Z", sha256: "b".repeat(64) };
+	const snapshot = {
+		source: source("WV"),
+		records,
+		retrievedAt: "2026-10-21T00:00:00Z",
+		sha256: "b".repeat(64)
+	};
 	assert.equal(buildStateBallotPreview(snapshot, { districtMatches: [] })?.candidateCount, 4);
-	const preview = buildStateBallotPreview(snapshot, { districtMatches: [district("state-senate", "07")] })!;
+	const preview = buildStateBallotPreview(snapshot, {
+		districtMatches: [
+			district("state-senate", "07")
+		]
+	})!;
 	assert.ok(preview.candidateCount > 4);
 	assert.ok(preview.contests.every(contest => !/COURT|MAGISTRATE/u.test(contest.title)));
 });
@@ -186,7 +211,12 @@ test("West Virginia rejects missing result sets, partial pages, wrong election i
 });
 
 test("West Virginia imports safe published campaign links and excludes contact/residential fields", () => {
-	for (const href of ["javascript:alert(1)", "http://localhost/private", "https://user:password@example.org/", "https://metadata.internal/"]) {
+	for (const href of [
+		"javascript:alert(1)",
+		"http://localhost/private",
+		"https://user:password@example.org/",
+		"https://metadata.internal/"
+	]) {
 		const envelope = wvEnvelope();
 		const payload = JSON.parse(envelope.documents[0]!.body);
 		payload.data.candidates[0].website = href;
@@ -221,7 +251,12 @@ test("public portal repository failures stay unavailable rather than presenting 
 	envelope.documents[0]!.body = JSON.stringify(payload);
 	const repository = createStateBallotRepository({
 		dataDirectory: null,
-		sources: [{ ...source("WV"), retrievalPolicy: undefined }],
+		sources: [
+			{
+				...source("WV"),
+				retrievalPolicy: undefined
+			}
+		],
 		fetchText: async () => {
 			requests += 1;
 			return JSON.stringify(envelope);

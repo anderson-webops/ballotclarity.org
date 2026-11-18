@@ -12,5 +12,7 @@ export function buildSiteUrl(path = "") {
 	if (!path)
 		return siteUrl;
 
-	return `${siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
+	return `${siteUrl}${path.startsWith("/")
+		? path
+		: `/${path}`}`;
 }

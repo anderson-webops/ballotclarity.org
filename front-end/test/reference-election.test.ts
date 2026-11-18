@@ -7,7 +7,14 @@ test("explicit reference elections preserve valid dates and reject malformed req
 	assert.equal(readReferenceElection(undefined), undefined);
 	assert.equal(readReferenceElection("2026-11-03"), "2026-11-03");
 	assert.equal(readReferenceElection("2026-11-03", "hi-sos-2026"), "");
-	for (const value of ["", "2026-02-30", "2026-11-03T00:00:00Z", ["2026-11-03"], null, 2026]) assert.equal(readReferenceElection(value), "");
+	for (const value of [
+		"",
+		"2026-02-30",
+		"2026-11-03T00:00:00Z",
+		["2026-11-03"],
+		null,
+		2026
+	]) assert.equal(readReferenceElection(value), "");
 });
 
 test("one election control keeps profile selection distinct from official source identities", () => {
@@ -21,10 +28,10 @@ test("one election control keeps profile selection distinct from official source
 
 test("reference detail requests bind their source and directory controls reuse available stored dates", () => {
 	const detail = readFileSync(new URL("../src/pages/record/[state]/[id].vue", import.meta.url), "utf8");
-	assert.match(detail, /query: \{ source: sourceId.value, q: search.value/u);
+	assert.match(detail, /query:\s*\{\s*source:\s*sourceId.value,\s*q:\s*search.value/u);
 	const directory = readFileSync(new URL("../src/components/CandidateDirectory.vue", import.meta.url), "utf8");
 	assert.match(directory, /<optgroup v-if="referenceDates.length" label="Profiles">/u);
-	assert.match(directory, /referenceElection.value === undefined \? filters.value.stateCode : ""/u);
+	assert.match(directory, /referenceElection.value === undefined\s*\?\s*filters.value.stateCode\s*:\s*""/u);
 	assert.match(directory, /electionDate: referenceElection.value \?\? sourceElection.value/u);
 	assert.match(directory, /\.\.\.referenceElectionQuery\(selectedSource.value\)/u);
 	assert.doesNotMatch(directory, /watchEffect|show more|Past profiles are/u);

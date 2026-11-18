@@ -8,9 +8,43 @@ import { stateHtmlAttribute as attribute, stateHtmlDescendants as descendants, p
 
 const prefix = "ctl00$ContentPlaceHolder1$";
 const grid = `${prefix}grdCandidates`;
-const headers = ["District Type", "District", "Race", "Term Type", "Term Length", "Name", "Mailing Address", "Email", "Phone", "Filing Date", "Party Preference", "Status", "Election Status", "Ballot Order"];
-const filters = ["DistrictType", "Jurisdiction", "Race", "BallotName", "PetitionFilingDate", "PoliticalPartyID"];
-const localTypes = ["PUBLIC UTILITY", "COUNTYWIDE", "COMMISSIONER", "COUNTY", "COUNCIL", "PORT", "FIRE", "DISTRICT COURT", "CITY/TOWN", "CITY COUNCIL", "JUDICIAL"];
+const headers = [
+	"District Type",
+	"District",
+	"Race",
+	"Term Type",
+	"Term Length",
+	"Name",
+	"Mailing Address",
+	"Email",
+	"Phone",
+	"Filing Date",
+	"Party Preference",
+	"Status",
+	"Election Status",
+	"Ballot Order"
+];
+const filters = [
+	"DistrictType",
+	"Jurisdiction",
+	"Race",
+	"BallotName",
+	"PetitionFilingDate",
+	"PoliticalPartyID"
+];
+const localTypes = [
+	"PUBLIC UTILITY",
+	"COUNTYWIDE",
+	"COMMISSIONER",
+	"COUNTY",
+	"COUNCIL",
+	"PORT",
+	"FIRE",
+	"DISTRICT COURT",
+	"CITY/TOWN",
+	"CITY COUNCIL",
+	"JUDICIAL"
+];
 const clean = (node: StateHtmlNode) => stateHtmlText(node).replace(/\s+/gu, " ").trim();
 const hasClass = (node: StateHtmlNode, value: string) => attribute(node, "class").split(/\s+/u).includes(value);
 const hasAttribute = (node: StateHtmlNode, value: string) => Boolean(node.attrs?.some(item => item.name === value));
@@ -31,8 +65,11 @@ export function inspectWashingtonCandidatePage(source: StateBallotSource, body: 
 	const url = new URL(source.url);
 	const electionId = url.searchParams.get("e");
 	const electionTime = Date.parse(`${source.electionDate}T00:00:00Z`);
-	if (source.stateCode !== "WA" || url.origin !== "https://voter.votewa.gov" || url.username || url.password || url.pathname !== "/CandidateList.aspx" || !electionId || !/^\d+$/u.test(electionId) || [...url.searchParams.keys()].join(",") !== "e" || url.hash || !/^\d{4}-\d{2}-\d{2}$/u.test(source.electionDate) || !Number.isFinite(electionTime) || new Date(electionTime).toISOString().slice(0, 10) !== source.electionDate)
+	if (source.stateCode !== "WA" || url.origin !== "https://voter.votewa.gov" || url.username || url.password || url.pathname !== "/CandidateList.aspx" || !electionId || !/^\d+$/u.test(electionId) || [
+		...url.searchParams.keys()
+	].join(",") !== "e" || url.hash || !/^\d{4}-\d{2}-\d{2}$/u.test(source.electionDate) || !Number.isFinite(electionTime) || new Date(electionTime).toISOString().slice(0, 10) !== source.electionDate) {
 		throw new Error("The Washington public candidate source is not configured.");
+	}
 	if (Buffer.byteLength(body) > 2 * 1024 * 1024) throw new Error("The Washington candidate page exceeds its size limit.");
 	const document = parseStateHtml(body);
 	const forms = descendants(document, node => node.nodeName === "form");
@@ -44,7 +81,10 @@ export function inspectWashingtonCandidatePage(source: StateBallotSource, body: 
 	selectedOption(form, `${prefix}ddlElection`, electionId, `GENERAL ${year} (${month}/${day}/${year}) (General)`);
 	selectedOption(form, `${prefix}ddlCounty`, "", "");
 	selectedOption(form, "ctl00$ddlLanguages", "en-us", "English");
-	for (const [name, value] of [["hidElectionDate", `GENERAL ${year}`], ["hidElectionType", "General"]]) {
+	for (const [name, value] of [
+		["hidElectionDate", `GENERAL ${year}`],
+		["hidElectionType", "General"]
+	]) {
 		const inputs = descendants(form, node => node.nodeName === "input" && attribute(node, "name") === `${prefix}${name}` && attribute(node, "type") === "hidden");
 		if (inputs.length !== 1 || attribute(inputs[0]!, "value") !== value) throw new Error("The Washington public candidate election identity has changed.");
 	}
@@ -57,7 +97,9 @@ export function inspectWashingtonCandidatePage(source: StateBallotSource, body: 
 	const columns = descendants(table, node => node.nodeName === "th" && hasClass(node, "rgHeader")).map(clean);
 	if (columns.join("|") !== headers.join("|")) throw new Error("The Washington public candidate columns have changed.");
 	const info = descendants(table, node => hasClass(node, "rgInfoPart"));
-	const counts = info.length === 1 ? /^(\d+) items in (\d+) pages$/u.exec(clean(info[0]!)) : null;
+	const counts = info.length === 1
+		? /^(\d+) items in (\d+) pages$/u.exec(clean(info[0]!))
+		: null;
 	if (!counts) throw new Error("The Washington candidate pagination totals have changed.");
 	const totalRecords = Number(counts[1]);
 	const totalPages = Number(counts[2]);
@@ -72,16 +114,28 @@ export function inspectWashingtonCandidatePage(source: StateBallotSource, body: 
 	const records = rows.map((row) => {
 		const cells = (row.childNodes ?? []).filter(node => node.nodeName === "td");
 		if (cells.length !== headers.length) throw new Error("The Washington candidate row layout has changed.");
-		return { cells, values: cells.map(clean) };
+		return {
+			cells,
+			values: cells.map(clean)
+		};
 	});
-	return { form, table, electionId, totalRecords, totalPages, records };
+	return {
+		form,
+		table,
+		electionId,
+		totalRecords,
+		totalPages,
+		records
+	};
 }
 
 export function buildWashingtonPageForm(source: StateBallotSource, body: string, currentPage: number) {
 	const page = inspectWashingtonCandidatePage(source, body, currentPage);
 	if (currentPage >= page.totalPages) throw new Error("The Washington candidate list has no next page.");
 	const links = descendants(page.table, node => node.nodeName === "a" && clean(node) === String(currentPage + 1));
-	const target = links.length === 1 ? /^javascript:__doPostBack\('(ctl00\$ContentPlaceHolder1\$grdCandidates\$ctl00\$ctl03\$ctl01\$ctl\d+)',''\)$/u.exec(attribute(links[0]!, "href")) : null;
+	const target = links.length === 1
+		? /^javascript:__doPostBack\('(ctl00\$ContentPlaceHolder1\$grdCandidates\$ctl00\$ctl03\$ctl01\$ctl\d+)',''\)$/u.exec(attribute(links[0]!, "href"))
+		: null;
 	if (!target) throw new Error("The Washington public pagination control has changed.");
 	const fields = new URLSearchParams();
 	for (const input of descendants(page.form, node => node.nodeName === "input" && attribute(node, "type") === "hidden")) {
@@ -89,7 +143,13 @@ export function buildWashingtonPageForm(source: StateBallotSource, body: string,
 		if (!name || fields.has(name) || hasAttribute(input, "disabled")) throw new Error("The Washington public hidden controls have changed.");
 		fields.set(name, attribute(input, "value"));
 	}
-	for (const [name, value] of [["ctl00$ddlLanguages", "en-us"], ["ctl00$txtSearch", ""], [`${prefix}ddlElection`, page.electionId], [`${prefix}ddlCounty`, ""], [`${grid}$ctl00$ctl03$ctl01$PageSizeComboBox`, "100"]]) fields.set(name!, value!);
+	for (const [name, value] of [
+		["ctl00$ddlLanguages", "en-us"],
+		["ctl00$txtSearch", ""],
+		[`${prefix}ddlElection`, page.electionId],
+		[`${prefix}ddlCounty`, ""],
+		[`${grid}$ctl00$ctl03$ctl01$PageSizeComboBox`, "100"]
+	]) fields.set(name!, value!);
 	for (const filter of filters) fields.set(`${grid}$ctl00$ctl02$ctl03$FilterTextBox_${filter}`, "");
 	fields.set("__EVENTTARGET", target[1]!);
 	fields.set("__EVENTARGUMENT", "");
@@ -104,7 +164,15 @@ export async function fetchWashingtonCandidatePages(source: StateBallotSource, r
 	let totalPages = 1;
 	for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
 		if (pageNumber > 1) await pause();
-		const body = await request(source.url, { ...options, maxRedirects: 0, ...(pageNumber > 1 ? { postBody: buildWashingtonPageForm(source, pages.at(-1)!, pageNumber - 1) } : {}) });
+		const body = await request(source.url, {
+			...options,
+			maxRedirects: 0,
+			...(pageNumber > 1
+				? {
+						postBody: buildWashingtonPageForm(source, pages.at(-1)!, pageNumber - 1)
+					}
+				: {})
+		});
 		size += Buffer.byteLength(body);
 		if (size > options.maxBytes) throw new Error("The combined Washington candidate pages exceed their size limit.");
 		const page = inspectWashingtonCandidatePage(source, body, pageNumber);
@@ -134,11 +202,21 @@ export function parseWashingtonCandidateRecords(source: StateBallotSource, body:
 		const status = values[11]!;
 		const electionStatus = values[12]!;
 		const order = values[13]!;
-		if (!name || !title || !label || status !== "Active" || !["", "In General"].includes(electionStatus) || !["Regular", "Short & Full", "Unexpired", "Initial Full"].includes(termType!) || !/^[1-6]$/u.test(termLength!) || !/^[1-9]\d*$/u.test(order))
+		if (!name || !title || !label || status !== "Active" || !["", "In General"].includes(electionStatus) || ![
+			"Regular",
+			"Short & Full",
+			"Unexpired",
+			"Initial Full"
+		].includes(termType!) || !/^[1-6]$/u.test(termLength!) || !/^[1-9]\d*$/u.test(order)) {
 			throw new Error("The Washington candidate status, identity or term vocabulary has changed.");
+		}
 		const links = descendants(cells[5]!, node => node.nodeName === "a");
-		const href = links.length === 1 ? new URL(attribute(links[0]!, "href"), source.url) : null;
-		const candidate = href ? /^#\/candidates\/([1-9]\d*)\/([1-9]\d*)$/u.exec(href.hash) : null;
+		const href = links.length === 1
+			? new URL(attribute(links[0]!, "href"), source.url)
+			: null;
+		const candidate = href
+			? /^#\/candidates\/([1-9]\d*)\/([1-9]\d*)$/u.exec(href.hash)
+			: null;
 		if (!href || href.origin !== new URL(source.url).origin || href.pathname !== "/genericvoterguide.aspx" || href.search !== `?e=${page.electionId}&c=` || !candidate || clean(links[0]!) !== name)
 			throw new Error("The Washington public candidate identifiers have changed.");
 		const sourceCandidateId = `${candidate[1]}/${candidate[2]}`;
@@ -149,10 +227,21 @@ export function parseWashingtonCandidateRecords(source: StateBallotSource, body:
 		let office = title!;
 		const category = type!.toUpperCase();
 		if (category === "CONGRESSIONAL" || category === "LEGISLATIVE") {
-			const match = new RegExp(`^${category === "CONGRESSIONAL" ? "CONGRESSIONAL" : "LEGISLATIVE"} DISTRICT ([1-9]\\d*)$`, "u").exec(label!.toUpperCase());
-			if (!match || Number(match[1]) > (category === "CONGRESSIONAL" ? 10 : 49) || (category === "CONGRESSIONAL" ? title !== "U.S. Representative" : !/^(?:State Senator|State Representative Pos\. [12])$/u.test(title!)))
+			const match = new RegExp(`^${category === "CONGRESSIONAL"
+				? "CONGRESSIONAL"
+				: "LEGISLATIVE"} DISTRICT ([1-9]\\d*)$`, "u").exec(label!.toUpperCase());
+			if (!match || Number(match[1]) > (category === "CONGRESSIONAL"
+				? 10
+				: 49) || (category === "CONGRESSIONAL"
+				? title !== "U.S. Representative"
+				: !/^(?:State Senator|State Representative Pos\. [12])$/u.test(title!))) {
 				throw new Error("The Washington legislative or congressional district has changed.");
-			scope = category === "CONGRESSIONAL" ? "congressional" : title === "State Senator" ? "state-senate" : "state-house";
+			}
+			scope = category === "CONGRESSIONAL"
+				? "congressional"
+				: title === "State Senator"
+					? "state-senate"
+					: "state-house";
 			district = match[1]!;
 		}
 		else if (category === "JUDICIAL" && label === "Supreme Court") {
@@ -164,7 +253,19 @@ export function parseWashingtonCandidateRecords(source: StateBallotSource, body:
 			throw new Error("The Washington candidate district-type vocabulary has changed.");
 		}
 		if (termType !== "Regular") office += ` (${termType})`;
-		const record = factory(source, { name: name!, office, party, scope, district, jurisdiction: scope === "local" ? label : undefined, status, sourceCandidateId, sourceDistrictLabel: label });
+		const record = factory(source, {
+			name: name!,
+			office,
+			party,
+			scope,
+			district,
+			jurisdiction: scope === "local"
+				? label
+				: undefined,
+			status,
+			sourceCandidateId,
+			sourceDistrictLabel: label
+		});
 		if (!record) throw new Error("The Washington public list contains an incomplete candidate.");
 		record.sourceStatus = [status, electionStatus].filter(Boolean).join("; ");
 		record.ballotDesignation = `${termType}; listed term length: ${termLength}; ballot order: ${order}`;

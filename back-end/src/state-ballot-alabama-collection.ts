@@ -58,7 +58,9 @@ async function acquire(url: string, options: Options, maximumBytes = 3 * 1024 * 
 		const before = now();
 		if (lastRequestAt !== undefined) {
 			await (options.sleep ?? wait)(
-				before >= lastRequestAt ? Math.max(0, 20000 - (before - lastRequestAt)) : 20000
+				before >= lastRequestAt
+					? Math.max(0, 20000 - (before - lastRequestAt))
+					: 20000
 			);
 		}
 		lastRequestAt = now();
@@ -69,7 +71,11 @@ async function acquire(url: string, options: Options, maximumBytes = 3 * 1024 * 
 		});
 		await options.onResponse?.(url, response);
 		if (response.status !== 200 || response.body.length > maximumBytes) return reject();
-		return { response, sha256: alabamaHash(response.body), capturedAt: new Date(now()).toISOString() };
+		return {
+			response,
+			sha256: alabamaHash(response.body),
+			capturedAt: new Date(now()).toISOString()
+		};
 	}
 	finally {
 		release();
@@ -100,7 +106,12 @@ export async function fetchAlabamaCycleDiscovery(options: Options = {}) {
 		const item = await acquire(url, options);
 		if (!["text/html", "application/xhtml+xml"].includes(item.response.contentType)) return reject();
 		const body = utf8(item.response.body);
-		documents.push({ url, body, sha256: item.sha256, capturedAt: item.capturedAt });
+		documents.push({
+			url,
+			body,
+			sha256: item.sha256,
+			capturedAt: item.capturedAt
+		});
 		return body;
 	};
 	const index = await page(alabamaDiscoveryUrl);
@@ -138,7 +149,12 @@ export async function fetchAlabamaCandidateCapture(source: StateBallotSource, op
 	}
 	const native = await (options.verifyOriginal ?? verifyAlabamaOriginal)(
 		document.response.body,
-		{ county, electionDate: source.electionDate, sourceUrl: source.url, sourceSha256: document.sha256 },
+		{
+			county,
+			electionDate: source.electionDate,
+			sourceUrl: source.url,
+			sourceSha256: document.sha256
+		},
 		{ scratchDirectory: options.scratchDirectory ?? "", objectExecutable: options.objectExecutable }
 	);
 	const recheck = await acquire(election.pageUrl, options);
@@ -176,7 +192,14 @@ export function parseAlabamaCandidateCapture(
 	if (Buffer.byteLength(body) > 32 * 1024 * 1024) return reject();
 	const value: unknown = JSON.parse(body);
 	if (
-		!exact(value, ["schemaVersion", "type", "sourceConfigurationSha256", "discovery", "document", "native"])
+		!exact(value, [
+			"schemaVersion",
+			"type",
+			"sourceConfigurationSha256",
+			"discovery",
+			"document",
+			"native"
+		])
 		|| value.schemaVersion !== 1
 		|| value.type !== "alabama-candidate-capture"
 		|| value.sourceConfigurationSha256 !== alabamaHash(JSON.stringify(source))
@@ -265,7 +288,12 @@ export function parseAlabamaCandidateCapture(
 			|| claim.scope !== context.scope
 			|| claim.jurisdiction !== context.jurisdiction
 			|| !/^[\p{Lu}\p{Lt}][\p{L}\p{M} .,'’"()\-]+$/u.test(claim.name)
-			|| !["democrat", "republican", "independent", "libertarian"].includes(claim.party?.toLowerCase())
+			|| ![
+				"democrat",
+				"republican",
+				"independent",
+				"libertarian"
+			].includes(claim.party?.toLowerCase())
 		) {
 			return reject();
 		}
@@ -350,7 +378,12 @@ export function validateAlabamaStoredSnapshot(source: StateBallotSource, value: 
 			|| typeof record.office !== "string"
 			|| typeof record.district !== "string"
 			|| typeof record.party !== "string"
-			|| !["democrat", "republican", "independent", "libertarian"].includes(String(record.party).toLowerCase())
+			|| ![
+				"democrat",
+				"republican",
+				"independent",
+				"libertarian"
+			].includes(String(record.party).toLowerCase())
 		) {
 			return reject();
 		}

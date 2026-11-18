@@ -110,7 +110,9 @@ function readSnapshot(): CivicStoreSnapshot {
 			...defaultSnapshot(),
 			...parsed,
 			ballotPlan: normalizeStoredBallotPlan(parsed.ballotPlan),
-			ballotViewMode: parsed.ballotViewMode === "deep" ? "deep" : "quick",
+			ballotViewMode: parsed.ballotViewMode === "deep"
+				? "deep"
+				: "quick",
 			compareList: normalizeCompareSlugs(parsed.compareList ?? []),
 			selectedIssues: normalizeStoredStrings(parsed.selectedIssues),
 			nationwideLookupResult: sanitizeNationwideLookupResultForStorage(parsed.nationwideLookupResult),
@@ -224,8 +226,11 @@ export const useCivicStore = defineStore("civic", {
 			this.nationwideLookupResult = update.nationwideLookupResult;
 			this.selectedLocation = sanitizeLocationSelectionForStorage(update.selectedLocation);
 
-			if (election)
-				this.selectedElection = election.slug === response.electionSlug ? election : null;
+			if (election) {
+				this.selectedElection = election.slug === response.electionSlug
+					? election
+					: null;
+			}
 
 			this.persist();
 		},

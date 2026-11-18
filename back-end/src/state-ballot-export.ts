@@ -22,14 +22,18 @@ export function serializeStateBallotSnapshots(snapshots: readonly StateBallotSna
 			documents: snapshot.documents,
 		})),
 	};
-	const lines = [JSON.stringify(manifest)];
+	const lines = [
+		JSON.stringify(manifest)
+	];
 	for (const snapshot of snapshots) {
 		for (const record of snapshot.records) {
 			lines.push(JSON.stringify({
 				type: "candidate",
 				stateCode: snapshot.source.stateCode,
 				electionDate: snapshot.source.electionDate,
-				...(multipleSourcesPerState ? { sourceId: snapshot.source.id } : {}),
+				...(multipleSourcesPerState
+					? { sourceId: snapshot.source.id }
+					: {}),
 				id: record.id,
 				name: record.name,
 				party: record.party,

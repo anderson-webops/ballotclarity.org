@@ -33,7 +33,9 @@ export function buildProfileImage(image: ProfileImage | null | undefined): Profi
 		alt: image.alt.trim() || "Profile image",
 		attribution: normalizeProfileImageAttribution(image.attribution),
 		capturedAt: image.capturedAt?.trim() || undefined,
-		priority: Number.isFinite(image.priority) ? image.priority : 100,
+		priority: Number.isFinite(image.priority)
+			? image.priority
+			: 100,
 		sourceLabel: image.sourceLabel.trim() || image.sourceSystem.trim() || "Profile image source",
 		sourceSystem: image.sourceSystem.trim() || image.sourceLabel.trim() || "Profile image source",
 		sourceUrl: normalizeImageUrl(image.sourceUrl),
@@ -56,7 +58,9 @@ export function uniqueProfileImages(images: Array<ProfileImage | null | undefine
 			byUrl.set(image.url, image);
 	}
 
-	return [...byUrl.values()].sort((left, right) =>
+	return [
+		...byUrl.values()
+	].sort((left, right) =>
 		left.priority - right.priority
 		|| left.sourceLabel.localeCompare(right.sourceLabel)
 		|| left.url.localeCompare(right.url)

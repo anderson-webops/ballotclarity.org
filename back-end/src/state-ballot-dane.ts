@@ -8,11 +8,35 @@ import { containsControlCharacters } from "./text-validation.js";
 interface Word { text: string; left: number; top: number }
 interface Line { text: string; left: number; top: number; words: Word[] }
 const clean = (value: string) => value.replace(/\s+/gu, " ").trim();
-const parties = ["Republican", "Democratic", "Wisconsin Green", "Independent", "Libertarian", "Constitution", "Nonpartisan"];
-const offices = ["Governor / Lieutenant Governor", "Attorney General", "Secretary of State", "State Treasurer", "Representative in Congress", "State Senator", "Representative to the Assembly", "Sheriff", "Clerk of Circuit Court"];
+const parties = [
+	"Republican",
+	"Democratic",
+	"Wisconsin Green",
+	"Independent",
+	"Libertarian",
+	"Constitution",
+	"Nonpartisan"
+];
+const offices = [
+	"Governor / Lieutenant Governor",
+	"Attorney General",
+	"Secretary of State",
+	"State Treasurer",
+	"Representative in Congress",
+	"State Senator",
+	"Representative to the Assembly",
+	"Sheriff",
+	"Clerk of Circuit Court"
+];
 
 function pages(body: string): Line[][] {
-	if (Buffer.byteLength(body) > 4 * 1024 * 1024 || /<!ENTITY|<!DOCTYPE[^>]*\[/iu.test(body) || !body.trimEnd().endsWith("</html>") || [...body.matchAll(/<page\b/gu)].length !== [...body.matchAll(/<\/page>/gu)].length) throw new Error("The Dane PDF is incomplete or exceeds its bounds.");
+	if (Buffer.byteLength(body) > 4 * 1024 * 1024 || /<!ENTITY|<!DOCTYPE[^>]*\[/iu.test(body) || !body.trimEnd().endsWith("</html>") || [
+		...body.matchAll(/<page\b/gu)
+	].length !== [
+		...body.matchAll(/<\/page>/gu)
+	].length) {
+		throw new Error("The Dane PDF is incomplete or exceeds its bounds.");
+	}
 	const nodes = descendants(parseStateHtml(body), node => node.nodeName === "page");
 	if (nodes.length !== 2) throw new Error("The Dane PDF page count requires review.");
 	return nodes.map((page) => {
@@ -27,20 +51,67 @@ function pages(body: string): Line[][] {
 				if (values[0]! < bounds[0]! - 0.01 || values[1]! > bounds[1]! + 0.01 || values[2]! < bounds[2]! - 0.01 || values[3]! > bounds[3]! + 0.01) throw new Error("The Dane PDF line and word coordinates disagree.");
 			}
 			const visible = words.filter(word => Number(attribute(word, "ymax")) - Number(attribute(word, "ymin")) < 20);
-			return { text: clean(visible.map(stateHtmlText).join(" ")), left: Number(attribute(line, "xmin")), top: Number(attribute(line, "ymin")), words: visible.map(word => ({ text: stateHtmlText(word), left: Number(attribute(word, "xmin")), top: Number(attribute(word, "ymin")) })) };
+			return {
+				text: clean(visible.map(stateHtmlText).join(" ")),
+				left: Number(attribute(line, "xmin")),
+				top: Number(attribute(line, "ymin")),
+				words: visible.map(word => ({
+					text: stateHtmlText(word),
+					left: Number(attribute(word, "xmin")),
+					top: Number(attribute(word, "ymin"))
+				}))
+			};
 		}).filter(line => line.text).sort((first, second) => first.top - second.top || first.left - second.left);
 	});
 }
 function dateLabel(source: StateBallotSource) {
 	if (source.stateCode !== "WI" || !/^20\d{2}-11-0[2-8]$/u.test(source.electionDate) || new Date(`${source.electionDate}T00:00:00Z`).getUTCDay() !== 2 || Number(source.electionDate.slice(0, 4)) % 2) throw new Error("The Dane election date requires review.");
-	return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${source.electionDate}T00:00:00Z`));
+	return new Intl.DateTimeFormat("en-US", {
+		month: "long",
+		day: "numeric",
+		year: "numeric",
+		timeZone: "UTC"
+	}).format(new Date(`${source.electionDate}T00:00:00Z`));
 }
 function record(source: StateBallotSource, name: string, office: string, party: string, district: string): StateCandidateRecord {
 	const position = offices.indexOf(office);
-	if (position < 0 || !parties.includes(party) || !/^[\p{L}\p{M} .,'’/-]{3,180}$/u.test(name) || (office === offices[0] ? name.split(" / ").length !== 2 : name.includes("/"))) throw new Error("The Dane candidate or ticket requires review.");
-	const scope = position < 4 ? "statewide" : position === 4 ? "congressional" : position === 5 ? "state-senate" : position === 6 ? "state-house" : "local";
-	if (["congressional", "state-senate", "state-house"].includes(scope) ? !/^[1-9]\d{0,2}$/u.test(district) : district !== "") throw new Error("The Dane printed district requires review.");
-	return { id: createHash("sha256").update(JSON.stringify([source.id, name, office, scope, district])).digest("hex").slice(0, 24), name, office, party, scope, district, status: "listed", ...(scope === "local" ? { jurisdiction: "Dane County" } : {}) };
+	if (position < 0 || !parties.includes(party) || !/^[\p{L}\p{M} .,'’/-]{3,180}$/u.test(name) || (office === offices[0]
+		? name.split(" / ").length !== 2
+		: name.includes("/"))) {
+		throw new Error("The Dane candidate or ticket requires review.");
+	}
+	const scope = position < 4
+		? "statewide"
+		: position === 4
+			? "congressional"
+			: position === 5
+				? "state-senate"
+				: position === 6
+					? "state-house"
+					: "local";
+	if (["congressional", "state-senate", "state-house"].includes(scope)
+		? !/^[1-9]\d{0,2}$/u.test(district)
+		: district !== "") {
+		throw new Error("The Dane printed district requires review.");
+	}
+	return {
+		id: createHash("sha256").update(JSON.stringify([
+			source.id,
+			name,
+			office,
+			scope,
+			district
+		])).digest("hex").slice(0, 24),
+		name,
+		office,
+		party,
+		scope,
+		district,
+		status: "listed",
+		...(scope === "local"
+			? { jurisdiction: "Dane County" }
+			: {})
+	};
 }
 
 export function readDaneCandidateSample(source: StateBallotSource, body: string, style: "Lodi" | "Waunakee" | "Sauk") {
@@ -49,19 +120,33 @@ export function readDaneCandidateSample(source: StateBallotSource, body: string,
 	const parsed = pages(body);
 	for (const [index, page] of parsed.entries()) {
 		const text = page.map(line => line.text).join(" ");
-		const marker = style === "Sauk" ? index ? "Initials of inspectors who remade ballot" : "Continue voting at top of next column." : index ? "Page 2 of 2-sided ballot. Ballot begins on other side." : "Page 1 of 2-sided ballot. Ballot continues on other side.";
+		const marker = style === "Sauk"
+			? index ? "Initials of inspectors who remade ballot" : "Continue voting at top of next column."
+			: index ? "Page 2 of 2-sided ballot. Ballot begins on other side." : "Page 1 of 2-sided ballot. Ballot continues on other side.";
 		if (!text.includes("Official Ballot") || !text.includes(label) || !text.includes(marker) || containsControlCharacters(text)) throw new Error("The Dane sample identity, date or page order requires review.");
 	}
 	const reverse = parsed[1]!.map(line => line.text).join(" ");
-	if (!reverse.includes("T Dane Wd 1") || (style === "Sauk" ? /School District|Referendum \(cont\.\)/u.test(reverse) : !reverse.includes(style === "Lodi" ? "School District of Lodi" : "Waunakee Community School District"))) throw new Error("The Dane school-area reverse-side identity requires review.");
-	const secondary = [...parsed[1]!, ...parsed[0]!.filter(line => line.left >= 380)];
+	if (!reverse.includes("T Dane Wd 1") || (style === "Sauk"
+		? /School District|Referendum \(cont\.\)/u.test(reverse)
+		: !reverse.includes(style === "Lodi"
+				? "School District of Lodi"
+				: "Waunakee Community School District"))) {
+		throw new Error("The Dane school-area reverse-side identity requires review.");
+	}
+	const secondary = [
+		...parsed[1]!,
+		...parsed[0]!.filter(line => line.left >= 380)
+	];
 	if (secondary.some(line => /^Vote for [1-9]\d*$|^\([^()]+\)$/u.test(line.text))) throw new Error("The Dane secondary candidate regions require review.");
 	const first = parsed[0]!;
 	if (!first.some(line => line.text === "Referendum" && line.left > 380)) throw new Error("The Dane referendum boundary requires review.");
 	const records: StateCandidateRecord[] = [];
 	const seen = new Set<string>();
 	let partyRows = 0;
-	for (const [column, beginning] of [[0, offices[0]!], [1, offices[3]!]] as const) {
+	for (const [column, beginning] of [
+		[0, offices[0]!],
+		[1, offices[3]!]
+	] as const) {
 		const columnLines = first.flatMap((line) => {
 			const words = line.words.filter(word => word.left >= (column ? 240 : 100) && word.left < (column ? 380 : 240) && word.top < 680);
 			const groups: Word[][] = [];
@@ -70,7 +155,11 @@ export function readDaneCandidateSample(source: StateBallotSource, body: string,
 				if (!group) groups.push((group = []));
 				group.push(word);
 			}
-			return groups.map(group => ({ text: clean(group.sort((first, second) => first.left - second.left).map(word => word.text).join(" ")), left: group[0]!.left, top: group[0]!.top }));
+			return groups.map(group => ({
+				text: clean(group.sort((first, second) => first.left - second.left).map(word => word.text).join(" ")),
+				left: group[0]!.left,
+				top: group[0]!.top
+			}));
 		}).sort((first, second) => first.top - second.top || first.left - second.left);
 		const start = columnLines.findIndex(line => line.text === beginning);
 		if (start < 0 || columnLines.filter(line => line.text === beginning).length !== 1) throw new Error("The Dane candidate column heading requires review.");
@@ -88,7 +177,12 @@ export function readDaneCandidateSample(source: StateBallotSource, body: string,
 				voteLimit = false;
 				continue;
 			}
-			if (["Statewide", "Congressional", "Legislative", "County"].includes(line.text)) {
+			if ([
+				"Statewide",
+				"Congressional",
+				"Legislative",
+				"County"
+			].includes(line.text)) {
 				if (names.length || !count) throw new Error("The Dane category interrupts a candidate.");
 				continue;
 			}
@@ -124,7 +218,13 @@ export function readDaneCandidateSample(source: StateBallotSource, body: string,
 		if (names.length || !count || !voteLimit) throw new Error("The Dane candidate column is incomplete.");
 	}
 	if (!records.length || records.length > 100 || new Set(records.map(item => item.office)).size !== offices.length || partyRows !== first.filter(line => parties.some(party => line.text === `(${party})`)).length) throw new Error("The Dane sample candidate inventory requires review.");
-	return { records, pageCount: 2, namedPeople: records.reduce((sum, item) => sum + (item.office === offices[0] ? 2 : 1), 0) };
+	return {
+		records,
+		pageCount: 2,
+		namedPeople: records.reduce((sum, item) => sum + (item.office === offices[0]
+			? 2
+			: 1), 0)
+	};
 }
 
 export function readDaneCandidateNotice(source: StateBallotSource, body: string) {
@@ -134,8 +234,13 @@ export function readDaneCandidateNotice(source: StateBallotSource, body: string)
 	if (!text.includes("Notice of General Election and Sample Ballots") || !text.includes(label.replace(", ", ",")) || !text.includes("Office of the Dane County Clerk") || !text.includes("The sample ballots contain candidates for Assembly District") || containsControlCharacters(text)) throw new Error("The Dane notice identity or date requires review.");
 	const rows = parsed[1]!;
 	const records: StateCandidateRecord[] = [];
-	for (const [side, title, office] of [[0, "State Senator", "State Senator"], [1, "State Assembly", "Representative to the Assembly"]] as const) {
-		const column = rows.filter(line => side ? line.left > 300 : line.left < 300);
+	for (const [side, title, office] of [
+		[0, "State Senator", "State Senator"],
+		[1, "State Assembly", "Representative to the Assembly"]
+	] as const) {
+		const column = rows.filter(line => side
+			? line.left > 300
+			: line.left < 300);
 		const header = column.findIndex(line => new RegExp(`^${title} [–-] District [1-9]\\d{0,2}$`, "u").test(line.text));
 		if (header < 0) throw new Error("The Dane notice legislative heading requires review.");
 		const district = /District (\d+)$/u.exec(column[header]!.text)![1]!;

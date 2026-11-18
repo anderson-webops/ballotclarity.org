@@ -35,32 +35,86 @@ interface PreparationPlan {
 	outputName: string;
 }
 
-const columns = ["name", "office", "party", "district", "scope", "status", "jurisdiction", "ballotDesignation", "sourceStatus", "sourceDistrictLabel", "sourceAreaLabel", "documentUrl", "page"];
-const scopes = new Set(["statewide", "congressional", "state-senate", "state-house", "local"]);
-const statuses = new Set(["listed", "filed", "qualified", "write-in", "withdrawn", "disqualified", "defeated", "elected", "unopposed", "inactive", "unrecognized"]);
+const columns = [
+	"name",
+	"office",
+	"party",
+	"district",
+	"scope",
+	"status",
+	"jurisdiction",
+	"ballotDesignation",
+	"sourceStatus",
+	"sourceDistrictLabel",
+	"sourceAreaLabel",
+	"documentUrl",
+	"page"
+];
+const scopes = new Set([
+	"statewide",
+	"congressional",
+	"state-senate",
+	"state-house",
+	"local"
+]);
+const statuses = new Set([
+	"listed",
+	"filed",
+	"qualified",
+	"write-in",
+	"withdrawn",
+	"disqualified",
+	"defeated",
+	"elected",
+	"unopposed",
+	"inactive",
+	"unrecognized"
+]);
 const digest = (value: Uint8Array | string) => createHash("sha256").update(value).digest("hex");
 const objectValue = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === "object" && !Array.isArray(value);
 const exactKeys = (value: Record<string, unknown>, keys: string[]) => Object.keys(value).sort().join(",") === [...keys].sort().join(",");
 const sha256Value = (value: unknown): value is string => typeof value === "string" && /^[a-f\d]{64}$/u.test(value);
 const absolutePath = (value: unknown): value is string => typeof value === "string" && isAbsolute(value) && resolve(value) === value;
 const clean = (value: string) => value.replace(/\s+/gu, " ").trim();
-const quote = (value: string) => `"${(/^\s*[=+@-]/u.test(value) ? `'${value}` : value).replaceAll("\"", "\"\"")}"`;
+function quote(value: string) {
+	return `"${(/^\s*[=+@-]/u.test(value)
+		? `'${value}`
+		: value).replaceAll("\"", "\"\"")}"`;
+}
 
 function parsePlan(value: unknown, now: number): PreparationPlan {
-	if (!objectValue(value) || !exactKeys(value, ["schemaVersion", "type", "sourceId", "sourceConfigurationSha256", "input", "documents", "outputDirectory", "outputName"])
-		|| value.schemaVersion !== 1 || value.type !== "reviewed-candidate-preparation" || typeof value.sourceId !== "string" || !sha256Value(value.sourceConfigurationSha256)
-		|| !objectValue(value.input) || !exactKeys(value.input, ["santa-fe-master-pdf", "cambridge-candidates-pdf", "everett-ballots-pdf"].includes(String(value.input.format)) ? ["path", "sha256", "format"] : ["path", "sha256"]) || !absolutePath(value.input.path) || !sha256Value(value.input.sha256)
-		|| !absolutePath(value.outputDirectory) || typeof value.outputName !== "string" || !/^[a-z0-9][a-z0-9-]{0,99}$/u.test(value.outputName)
-		|| !Array.isArray(value.documents) || !value.documents.length || value.documents.length > 100 || !Number.isFinite(now)) {
+	if (!objectValue(value) || !exactKeys(value, [
+		"schemaVersion",
+		"type",
+		"sourceId",
+		"sourceConfigurationSha256",
+		"input",
+		"documents",
+		"outputDirectory",
+		"outputName"
+	])
+	|| value.schemaVersion !== 1 || value.type !== "reviewed-candidate-preparation" || typeof value.sourceId !== "string" || !sha256Value(value.sourceConfigurationSha256)
+	|| !objectValue(value.input) || !exactKeys(value.input, ["santa-fe-master-pdf", "cambridge-candidates-pdf", "everett-ballots-pdf"].includes(String(value.input.format))
+		? ["path", "sha256", "format"]
+		: ["path", "sha256"]) || !absolutePath(value.input.path) || !sha256Value(value.input.sha256)
+	|| !absolutePath(value.outputDirectory) || typeof value.outputName !== "string" || !/^[a-z0-9][a-z0-9-]{0,99}$/u.test(value.outputName)
+	|| !Array.isArray(value.documents) || !value.documents.length || value.documents.length > 100 || !Number.isFinite(now)) {
 		throw new Error("Candidate preparation requires an exact, pinned local review plan.");
 	}
 	for (const document of value.documents) {
-		if (!objectValue(document) || !exactKeys(document, ["url", "path", "sha256", "capturedAt", "pageCount", "reviewedPages"])
-			|| typeof document.url !== "string" || !absolutePath(document.path) || !sha256Value(document.sha256)
-			|| typeof document.capturedAt !== "string" || !Number.isFinite(Date.parse(document.capturedAt)) || Date.parse(document.capturedAt) > now
-			|| !Number.isSafeInteger(document.pageCount) || Number(document.pageCount) < 1 || Number(document.pageCount) > 2000
-			|| !Array.isArray(document.reviewedPages) || !document.reviewedPages.length || new Set(document.reviewedPages).size !== document.reviewedPages.length
-			|| document.reviewedPages.some(page => !Number.isSafeInteger(page) || page < 1 || page > Number(document.pageCount))) {
+		if (!objectValue(document) || !exactKeys(document, [
+			"url",
+			"path",
+			"sha256",
+			"capturedAt",
+			"pageCount",
+			"reviewedPages"
+		])
+		|| typeof document.url !== "string" || !absolutePath(document.path) || !sha256Value(document.sha256)
+		|| typeof document.capturedAt !== "string" || !Number.isFinite(Date.parse(document.capturedAt)) || Date.parse(document.capturedAt) > now
+		|| !Number.isSafeInteger(document.pageCount) || Number(document.pageCount) < 1 || Number(document.pageCount) > 2000
+		|| !Array.isArray(document.reviewedPages) || !document.reviewedPages.length || new Set(document.reviewedPages).size !== document.reviewedPages.length
+		|| document.reviewedPages.some(page => !Number.isSafeInteger(page) || page < 1 || page > Number(document.pageCount))) {
 			throw new Error("Candidate document provenance or reviewed pages are invalid.");
 		}
 	}
@@ -71,7 +125,9 @@ export async function prepareReviewedCandidateFiles(planPath: string, now = Date
 	if (!absolutePath(planPath)) throw new Error("Use an absolute candidate preparation plan path.");
 	const plan = parsePlan(JSON.parse((await readBoundedStateDataBytes(planPath)).toString("utf8")), now);
 	const configured = configuredStateBallotSources.find(source => source.id === plan.sourceId);
-	const source = configured ? legacyReviewedStateBallotSource(configured) ?? configured : undefined;
+	const source = configured
+		? legacyReviewedStateBallotSource(configured) ?? configured
+		: undefined;
 	if (!source || source.format !== "reviewed-pdf" || source.retrievalPolicy !== "manual-snapshot" || (source.snapshotStorage !== "external" && !(plan.input.format === "cambridge-candidates-pdf" && source.id === "ma-cambridge-2026"))
 		|| !source.documentUrls?.length || digest(JSON.stringify(source)) !== plan.sourceConfigurationSha256
 		|| plan.documents.map(document => document.url).join("\n") !== source.documentUrls.join("\n")) {
@@ -97,7 +153,10 @@ export async function prepareReviewedCandidateFiles(planPath: string, now = Date
 		if (source.stateCode !== "MA" || source.id !== `ma-cambridge-${source.electionDate.slice(0, 4)}` || plan.documents.length !== 1 || document.url !== source.url || document.path !== plan.input.path || document.sha256 !== plan.input.sha256 || document.url !== `https://www.cambridgema.gov/-/media/Files/electioncommission/${source.electionDate.slice(0, 4)}stateelection/candidatesincambridgedistricts.pdf`) throw new Error("Native Cambridge preparation requires its exact reviewed candidate PDF.");
 		const extract = options.extractCambridgePdf ?? (async (bytes: Buffer) => extractStateBallotPdfText(bytes, await resolveStateBallotPdfExtractor(), undefined, "layout", 30));
 		const parsed = readCambridgeCandidateDocument(source, await extract(input), createStateCandidateRecord);
-		native = { pageCount: parsed.pageCount, evidence: parsed.records.map((record, index) => ({ record, page: parsed.claims[index]!.page })) };
+		native = {
+			pageCount: parsed.pageCount,
+			evidence: parsed.records.map((record, index) => ({ record, page: parsed.claims[index]!.page }))
+		};
 		if (native.pageCount !== document.pageCount || native.evidence.some(item => !document.reviewedPages.includes(item.page))) throw new Error("The Cambridge publication requires the exact page count and reviewed candidate pages.");
 	}
 	else if (plan.input.format === "everett-ballots-pdf") {
@@ -105,7 +164,12 @@ export async function prepareReviewedCandidateFiles(planPath: string, now = Date
 		if (source.stateCode !== "MA" || source.id !== `ma-everett-${source.electionDate.slice(0, 4)}` || first.path !== plan.input.path || first.sha256 !== plan.input.sha256) throw new Error("Native Everett preparation requires the exact reviewed ballot set.");
 		const extract = options.extractEverettPdf ?? (async (bytes: Buffer) => ({ xml: await extractStateBallotPdfXml(bytes, await resolveStateBallotPdfXmlExtractor()), svg: await extractStateBallotPdfSvg(bytes, await resolveStateBallotPdfSvgExtractor(), 1) }));
 		const documents = [];
-		for (const document of plan.documents) documents.push({ url: document.url, ...await extract(await readBoundedStateDataBytes(document.path)) });
+		for (const document of plan.documents) {
+			documents.push({
+				url: document.url,
+				...await extract(await readBoundedStateDataBytes(document.path))
+			});
+		}
 		everett = readEverettCandidateDocuments(source, documents, createStateCandidateRecord);
 		if (plan.documents.some((document, index) => document.pageCount !== everett!.pageCounts[index] || !document.reviewedPages.includes(1))) throw new Error("The Everett ballots require exact page counts and reviewed candidate pages.");
 	}
@@ -121,49 +185,203 @@ export async function prepareReviewedCandidateFiles(planPath: string, now = Date
 		}) as Record<string, string>[];
 	if (!native && !everett && (!rows.length || rows.length > 25_000)) throw new Error("Candidate review CSV has an invalid record count.");
 	const evidence = everett
-		? everett.claims.map(item => ({ record: item.record, document: plan.documents[item.documentIndex]!, page: item.page, row: null }))
+		? everett.claims.map(item => ({
+				record: item.record,
+				document: plan.documents[item.documentIndex]!,
+				page: item.page,
+				row: null
+			}))
 		: native
 			? native.evidence.map(item => ({ ...item, document: plan.documents[0]!, row: null }))
 			: rows.map((row, index) => {
 					const document = plan.documents.find(document => document.url === row.documentUrl);
 					if (!document || !/^[1-9]\d{0,3}$/u.test(row.page!) || !document.reviewedPages.includes(Number(row.page))) throw new Error("Each candidate requires an exact reviewed source page.");
-					const values = Object.fromEntries(columns.map(column => [column, clean(row[column]!)]));
+					const values = Object.fromEntries(columns.map(column => [
+						column,
+						clean(row[column]!)
+					]));
 					if (!values.name || values.name.length > 250 || !values.office || values.office.length > 300 || values.district!.length > 40
 						|| !scopes.has(values.scope!) || !statuses.has(values.status!) || (values.scope === "statewide" && values.district)
-						|| columns.filter(column => !["name", "office", "district", "documentUrl", "page"].includes(column)).some(column => values[column]!.length > 300)) {
+						|| columns.filter(column => ![
+							"name",
+							"office",
+							"district",
+							"documentUrl",
+							"page"
+						].includes(column)).some(column => values[column]!.length > 300)) {
 						throw new Error("Candidate review rows require explicit bounded identity, scope and status fields.");
 					}
-					const identity = [source.id, source.stateCode, source.electionDate, ...[values.name, values.office, values.party, values.district, values.scope, values.jurisdiction, values.ballotDesignation].map(value => value!.toLocaleLowerCase("en-US"))];
-					const record: StateCandidateRecord = { id: digest(JSON.stringify(identity)).slice(0, 24), name: values.name, office: values.office, district: values.district!, scope: values.scope as StateCandidateRecord["scope"], status: values.status as StateCandidateRecord["status"] };
-					for (const column of ["party", "jurisdiction", "ballotDesignation", "sourceStatus", "sourceDistrictLabel", "sourceAreaLabel"] as const) {
+					const identity = [
+						source.id,
+						source.stateCode,
+						source.electionDate,
+						...[
+							values.name,
+							values.office,
+							values.party,
+							values.district,
+							values.scope,
+							values.jurisdiction,
+							values.ballotDesignation
+						].map(value => value!.toLocaleLowerCase("en-US"))
+					];
+					const record: StateCandidateRecord = {
+						id: digest(JSON.stringify(identity)).slice(0, 24),
+						name: values.name,
+						office: values.office,
+						district: values.district!,
+						scope: values.scope as StateCandidateRecord["scope"],
+						status: values.status as StateCandidateRecord["status"]
+					};
+					for (const column of [
+						"party",
+						"jurisdiction",
+						"ballotDesignation",
+						"sourceStatus",
+						"sourceDistrictLabel",
+						"sourceAreaLabel"
+					] as const) {
 						if (values[column]) record[column] = values[column];
 					}
-					return { record, document, page: Number(row.page), row: index + 1 };
+					return {
+						record,
+						document,
+						page: Number(row.page),
+						row: index + 1
+					};
 				});
 	const records = everett?.records ?? evidence.map(item => item.record);
 	if (new Set(records.map(record => record.id)).size !== records.length) throw new Error("Candidate review CSV has duplicate contest identities; review rather than silently merging them.");
-	const documents = plan.documents.map(document => ({ url: document.url, sha256: document.sha256, retrievedAt: document.capturedAt, includedRecordCount: evidence.filter(item => item.document === document && (!everett || evidence.find(candidate => candidate.record.id === item.record.id) === item)).length }));
+	const documents = plan.documents.map(document => ({
+		url: document.url,
+		sha256: document.sha256,
+		retrievedAt: document.capturedAt,
+		includedRecordCount: evidence.filter(item => item.document === document && (!everett || evidence.find(candidate => candidate.record.id === item.record.id) === item)).length
+	}));
 	const retrievedAt = new Date(Math.min(...documents.map(document => Date.parse(document.retrievedAt)))).toISOString();
-	const snapshot: StateBallotSnapshot = { source, retrievedAt, sha256: digest(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))), records, documents };
+	const snapshot: StateBallotSnapshot = {
+		source,
+		retrievedAt,
+		sha256: digest(JSON.stringify(documents.map(({ url, sha256 }) => ({ url, sha256 })))),
+		records,
+		documents
+	};
 	const snapshotBody = serializeStoredStateSnapshot(snapshot);
 	parseBundledStateSnapshot(source, snapshotBody);
 	assertExternalStateDataDirectory(plan.outputDirectory);
 	const parent = await realpath(dirname(plan.outputDirectory));
 	if (join(parent, basename(plan.outputDirectory)) !== plan.outputDirectory) throw new Error("Candidate output must use a canonical external directory without linked parents.");
 	assertExternalStateDataDirectory(parent);
-	const provenanceColumns = ["sourceId", "recordId", "name", "office", "district", "scope", "party", "jurisdiction", "ballotDesignation", "status", "sourceStatus", "sourceUrl", "pageUrl", "page", "documentSha256", "capturedAt", "personalAssignmentVerified"];
-	const provenance = evidence.map(item => [source.id, item.record.id, item.record.name, item.record.office, item.record.district, item.record.scope, item.record.party ?? "", item.record.jurisdiction ?? "", item.record.ballotDesignation ?? "", item.record.status, item.record.sourceStatus ?? "", item.document.url, `${item.document.url}#page=${item.page}`, String(item.page), item.document.sha256, item.document.capturedAt, "false"]);
-	const review = { schemaVersion: 1, type: "reviewed-candidate-preparation-review", sourceId: source.id, sourceConfigurationSha256: plan.sourceConfigurationSha256, electionDate: source.electionDate, createdAt: new Date(now).toISOString(), originalCaptureTimesRetained: true, recordCount: records.length, documents: plan.documents.map(document => ({ url: document.url, sha256: document.sha256, capturedAt: document.capturedAt, pageCount: document.pageCount, reviewedPages: document.reviewedPages })), claims: evidence.map(item => ({ recordId: item.record.id, sourceUrl: item.document.url, page: item.page, csvRow: item.row })), publicationApproved: false, automaticImportApproved: false, personalAssignmentVerified: false };
+	const provenanceColumns = [
+		"sourceId",
+		"recordId",
+		"name",
+		"office",
+		"district",
+		"scope",
+		"party",
+		"jurisdiction",
+		"ballotDesignation",
+		"status",
+		"sourceStatus",
+		"sourceUrl",
+		"pageUrl",
+		"page",
+		"documentSha256",
+		"capturedAt",
+		"personalAssignmentVerified"
+	];
+	const provenance = evidence.map(item => [
+		source.id,
+		item.record.id,
+		item.record.name,
+		item.record.office,
+		item.record.district,
+		item.record.scope,
+		item.record.party ?? "",
+		item.record.jurisdiction ?? "",
+		item.record.ballotDesignation ?? "",
+		item.record.status,
+		item.record.sourceStatus ?? "",
+		item.document.url,
+		`${item.document.url}#page=${item.page}`,
+		String(item.page),
+		item.document.sha256,
+		item.document.capturedAt,
+		"false"
+	]);
+	const review = {
+		schemaVersion: 1,
+		type: "reviewed-candidate-preparation-review",
+		sourceId: source.id,
+		sourceConfigurationSha256: plan.sourceConfigurationSha256,
+		electionDate: source.electionDate,
+		createdAt: new Date(now).toISOString(),
+		originalCaptureTimesRetained: true,
+		recordCount: records.length,
+		documents: plan.documents.map(document => ({
+			url: document.url,
+			sha256: document.sha256,
+			capturedAt: document.capturedAt,
+			pageCount: document.pageCount,
+			reviewedPages: document.reviewedPages
+		})),
+		claims: evidence.map(item => ({
+			recordId: item.record.id,
+			sourceUrl: item.document.url,
+			page: item.page,
+			csvRow: item.row
+		})),
+		publicationApproved: false,
+		automaticImportApproved: false,
+		personalAssignmentVerified: false
+	};
 	const contents = new Map([
 		[`${plan.outputName}.snapshot.json`, `${snapshotBody}\n`],
-		[`${plan.outputName}.records.ndjson`, serializeStateBallotSnapshots([snapshot])],
+		[
+			`${plan.outputName}.records.ndjson`,
+			serializeStateBallotSnapshots([snapshot])
+		],
 		[`${plan.outputName}.provenance.csv`, `${[provenanceColumns, ...provenance].map(row => row.map(quote).join(",")).join("\r\n")}\r\n`],
 		[`${plan.outputName}.review.json`, `${JSON.stringify(review, null, 2)}\n`],
 	]);
-	const manifest = { schemaVersion: 1, type: "reviewed-candidate-preparation-manifest", sourceId: source.id, sourceConfigurationSha256: plan.sourceConfigurationSha256, electionDate: source.electionDate, createdAt: new Date(now).toISOString(), retrievedAt, inputSha256: plan.input.sha256, recordCount: records.length, sourceSha256: snapshot.sha256, files: [...contents].map(([name, body]) => ({ name, sha256: digest(body), bytes: Buffer.byteLength(body) })), publicationApproved: false, automaticImportApproved: false, imported: false, published: false, publisherRequests: 0 };
+	const manifest = {
+		schemaVersion: 1,
+		type: "reviewed-candidate-preparation-manifest",
+		sourceId: source.id,
+		sourceConfigurationSha256: plan.sourceConfigurationSha256,
+		electionDate: source.electionDate,
+		createdAt: new Date(now).toISOString(),
+		retrievedAt,
+		inputSha256: plan.input.sha256,
+		recordCount: records.length,
+		sourceSha256: snapshot.sha256,
+		files: [...contents].map(([name, body]) => ({
+			name,
+			sha256: digest(body),
+			bytes: Buffer.byteLength(body)
+		})),
+		publicationApproved: false,
+		automaticImportApproved: false,
+		imported: false,
+		published: false,
+		publisherRequests: 0
+	};
 	contents.set(`${plan.outputName}.manifest.json`, `${JSON.stringify(manifest, null, 2)}\n`);
 	contents.set(`${plan.outputName}-SHA256SUMS`, `${[...contents].map(([name, body]) => `${digest(body)}  ${name}`).join("\n")}\n`);
 	await mkdir(plan.outputDirectory);
 	for (const [name, body] of contents) await writeFile(join(plan.outputDirectory, name), body, { flag: "wx" });
-	return { sourceId: source.id, recordCount: records.length, outputDirectory: plan.outputDirectory, files: [...contents.keys()], publicationApproved: false, automaticImportApproved: false, imported: false, published: false, publisherRequests: 0 };
+	return {
+		sourceId: source.id,
+		recordCount: records.length,
+		outputDirectory: plan.outputDirectory,
+		files: [
+			...contents.keys()
+		],
+		publicationApproved: false,
+		automaticImportApproved: false,
+		imported: false,
+		published: false,
+		publisherRequests: 0
+	};
 }

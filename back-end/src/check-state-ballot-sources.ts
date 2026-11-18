@@ -3,7 +3,12 @@ import { parseArgs } from "node:util";
 import { createStateBallotRepository, resolveStateBallotConfiguration } from "./state-ballot-repository.js";
 
 async function main() {
-	const { positionals, values } = parseArgs({ options: { source: { type: "string", multiple: true } }, allowPositionals: true });
+	const { positionals, values } = parseArgs({
+		options: {
+			source: { type: "string", multiple: true }
+		},
+		allowPositionals: true
+	});
 	const requestedStates = positionals.map(value => value.toUpperCase());
 	const configuration = resolveStateBallotConfiguration();
 	if (values.source?.some(id => !configuration.sources.some(source => source.id === id && (!requestedStates.length || requestedStates.includes(source.stateCode)))))
@@ -28,13 +33,19 @@ async function main() {
 			retrievedAt: snapshot?.retrievedAt,
 			sha256: snapshot?.sha256,
 			records: snapshot?.records.length,
-			statuses: snapshot ? Object.fromEntries([...new Set(snapshot.records.map(record => record.status))].map(status => [status, snapshot.records.filter(record => record.status === status).length])) : undefined,
+			statuses: snapshot
+				? Object.fromEntries([
+						...new Set(snapshot.records.map(record => record.status))
+					].map(status => [status, snapshot.records.filter(record => record.status === status).length]))
+				: undefined,
 		}));
 	}
 	process.exitCode = failed ? 1 : 0;
 }
 
 main().catch((error: unknown) => {
-	console.error(error instanceof Error ? error.message : "State source verification failed.");
+	console.error(error instanceof Error
+		? error.message
+		: "State source verification failed.");
 	process.exitCode = 1;
 });

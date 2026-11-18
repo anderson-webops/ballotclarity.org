@@ -30,13 +30,19 @@ function addressFamily(address: string): AddressFamily | null {
 function normalizeAddress(rawAddress: string | undefined) {
 	const address = rawAddress?.trim() ?? "";
 	const mappedIpv4 = address.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/iu)?.[1];
-	const normalized = mappedIpv4 && isIP(mappedIpv4) === 4 ? mappedIpv4 : address;
+	const normalized = mappedIpv4 && isIP(mappedIpv4) === 4
+		? mappedIpv4
+		: address;
 
-	return addressFamily(normalized) ? normalized : null;
+	return addressFamily(normalized)
+		? normalized
+		: null;
 }
 
 function normalizeHeaderValue(value: string | string[] | undefined) {
-	return Array.isArray(value) ? value.join(",") : value ?? "";
+	return Array.isArray(value)
+		? value.join(",")
+		: value ?? "";
 }
 
 function forwardedAddresses(request: ForwardedRequest) {
@@ -61,7 +67,9 @@ function isValidProxyRange(value: string) {
 		return true;
 
 	const parsedPrefix = Number(prefix);
-	const maximumPrefix = family === "ipv4" ? 32 : 128;
+	const maximumPrefix = family === "ipv4"
+		? 32
+		: 128;
 	return Number.isInteger(parsedPrefix) && parsedPrefix >= 0 && parsedPrefix <= maximumPrefix;
 }
 
@@ -131,7 +139,9 @@ function buildTrustedProxyList(ranges: string[]) {
 
 		const [rawAddress, rawPrefix] = range.split("/");
 		const address = normalizeAddress(rawAddress);
-		const family = address ? addressFamily(address) : null;
+		const family = address
+			? addressFamily(address)
+			: null;
 
 		if (!address || !family)
 			throw new Error("Trusted proxy address is invalid.");
@@ -152,7 +162,9 @@ export function buildForwardedForHeader(request: ForwardedRequest) {
 	if (directPeer && chain.at(-1) !== directPeer)
 		chain.push(directPeer);
 
-	return chain.length ? chain.join(", ") : undefined;
+	return chain.length
+		? chain.join(", ")
+		: undefined;
 }
 
 export function getTrustedClientAddress(
@@ -170,12 +182,17 @@ export function getTrustedClientAddress(
 		return directPeer;
 
 	const trustedProxies = buildTrustedProxyList(trustedRanges);
-	const addresses = [directPeer, ...forwardedAddresses(request).reverse()];
+	const addresses = [
+		directPeer,
+		...forwardedAddresses(request).reverse()
+	];
 	let addressIndex = 0;
 
 	while (addressIndex < addresses.length - 1) {
 		const address = addresses[addressIndex];
-		const family = address ? addressFamily(address) : null;
+		const family = address
+			? addressFamily(address)
+			: null;
 
 		if (!address || !family || !trustedProxies.check(address, family))
 			break;

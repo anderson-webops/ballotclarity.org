@@ -133,7 +133,12 @@ export const electionDocumentSources: readonly ElectionDocumentSource[] = [
 		dateMarkers: ["certified for the November 3, 2026 general election"],
 		policies: [
 			{ id: "robots", url: "https://www.sos.mo.gov/robots.txt", format: "robots" },
-			{ id: "privacy", url: "https://www.sos.mo.gov/ipolicy", format: "region", regionId: "main" },
+			{
+				id: "privacy",
+				url: "https://www.sos.mo.gov/ipolicy",
+				format: "region",
+				regionId: "main"
+			},
 		],
 		otherRobotsAgents: ["SemrushBot", "BLEXBot"],
 		documentPatterns: [
@@ -150,7 +155,12 @@ export const electionDocumentSources: readonly ElectionDocumentSource[] = [
 		dateMarkers: ["2026 August"],
 		policies: [
 			{ id: "robots", url: "https://www.nmlegis.gov/robots.txt", format: "robots" },
-			{ id: "privacy", url: "https://www.nmlegis.gov/PrivacyPolicy", format: "region", regionClass: "full-width" },
+			{
+				id: "privacy",
+				url: "https://www.nmlegis.gov/PrivacyPolicy",
+				format: "region",
+				regionClass: "full-width"
+			},
 		],
 		otherRobotsAgents: ["Googlebot", "AhrefsBot"],
 		documentPatterns: ["^/Publications/New_Mexico_State_Government/Constitutional_Amendment/Constitutional_Amendments_2026\\.pdf$"],
@@ -183,8 +193,18 @@ export const electionDocumentSources: readonly ElectionDocumentSource[] = [
 		policies: [
 			{ id: "robots", url: "https://elections.maryland.gov/robots.txt", format: "robots" },
 			{ id: "home-links", url: "https://elections.maryland.gov/", format: "links" },
-			{ id: "privacy", url: "https://elections.maryland.gov/privacy.html", format: "region", regionId: "bodyMain" },
-			{ id: "sbe-policies", url: "https://elections.maryland.gov/laws_and_regs/sbe_policy.html", format: "region", regionId: "bodyMain" },
+			{
+				id: "privacy",
+				url: "https://elections.maryland.gov/privacy.html",
+				format: "region",
+				regionId: "bodyMain"
+			},
+			{
+				id: "sbe-policies",
+				url: "https://elections.maryland.gov/laws_and_regs/sbe_policy.html",
+				format: "region",
+				regionId: "bodyMain"
+			},
 		],
 		documentPatterns: ["^/elections/2026/ballot_questions\\.html$"],
 		documentFormat: "html",
@@ -197,20 +217,40 @@ export const electionDocumentSources: readonly ElectionDocumentSource[] = [
 		electionDate: "2026-11-03",
 		host: "www.elections.virginia.gov",
 		indexUrl: "https://www.elections.virginia.gov/casting-a-ballot/candidate-list/",
-		dateMarkers: [kind === "candidates" ? "2026 November All Offices Candidate List" : "2026 November Proposed Constitutional Amendments and Local Referendums"],
+		dateMarkers: [
+			kind === "candidates"
+				? "2026 November All Offices Candidate List"
+				: "2026 November Proposed Constitutional Amendments and Local Referendums"
+		],
 		policies: [
 			{ id: "robots", url: "https://www.elections.virginia.gov/robots.txt", format: "robots" as const },
 			{ id: "home-links", url: "https://www.elections.virginia.gov/", format: "links" as const },
-			{ id: "privacy", url: "https://www.elections.virginia.gov/privacy-policy/", format: "region" as const, regionId: "content" },
+			{
+				id: "privacy",
+				url: "https://www.elections.virginia.gov/privacy-policy/",
+				format: "region" as const,
+				regionId: "content"
+			},
 			{ id: "policies", url: "https://www.elections.virginia.gov/about-us/policies-and-guidelines/", format: "main" as const },
-			{ id: "email-disclaimer", url: "https://www.elections.virginia.gov/about-us/policies-and-guidelines/e-mail-disclaimer/", format: "region" as const, regionId: "content" },
+			{
+				id: "email-disclaimer",
+				url: "https://www.elections.virginia.gov/about-us/policies-and-guidelines/e-mail-disclaimer/",
+				format: "region" as const,
+				regionId: "content"
+			},
 		],
 		relativeRobotsDisallows: ["*.json", "*.csv", "*.xls", "*.xlsx"],
-		documentPatterns: [kind === "candidates"
-			? "^/casting-a-ballot/candidate-list/november-3-2026-gen-elect-all-offices/$"
-			: "^/casting-a-ballot/candidate-list/november-2026-proposed-constitutional-amendments/$"],
+		documentPatterns: [
+			kind === "candidates"
+				? "^/casting-a-ballot/candidate-list/november-3-2026-gen-elect-all-offices/$"
+				: "^/casting-a-ballot/candidate-list/november-2026-proposed-constitutional-amendments/$"
+		],
 		documentFormat: "html" as const,
-		documentDateMarkers: [kind === "candidates" ? "November 3, 2026 - All Offices" : "November 2026 Proposed Constitutional Amendments and Local Referenda"],
+		documentDateMarkers: [
+			kind === "candidates"
+				? "November 3, 2026 - All Offices"
+				: "November 2026 Proposed Constitutional Amendments and Local Referenda"
+		],
 		maximumDocuments: 1,
 	})),
 	{
@@ -219,11 +259,21 @@ export const electionDocumentSources: readonly ElectionDocumentSource[] = [
 		electionDate: "2026-11-03",
 		host: "www.sos.wa.gov",
 		indexUrl: "https://www.sos.wa.gov/elections/voters/proposed-ballot-measure-information",
-		dateMarkers: ["2026 Certification of Measures to General Election", "Initiative No. IL26-001", "Initiative No. IL26-638", "Initiative No. IP26-645"],
+		dateMarkers: [
+			"2026 Certification of Measures to General Election",
+			"Initiative No. IL26-001",
+			"Initiative No. IL26-638",
+			"Initiative No. IP26-645"
+		],
 		policies: [
 			{ id: "robots", url: "https://www.sos.wa.gov/robots.txt", format: "robots" },
 			{ id: "home-links", url: "https://www.sos.wa.gov/", format: "links" },
-			{ id: "privacy-and-reuse", url: "https://www.sos.wa.gov/web-sites-privacy-policy", format: "region", regionClass: "region-content" },
+			{
+				id: "privacy-and-reuse",
+				url: "https://www.sos.wa.gov/web-sites-privacy-policy",
+				format: "region",
+				regionClass: "region-content"
+			},
 		],
 		documentPatterns: washingtonMeasureDocumentPaths.map(path => `^${path.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}$`),
 		encodedDocumentPaths: washingtonMeasureDocumentPaths.filter(path => path.includes("%")),
@@ -240,7 +290,12 @@ export const electionDocumentSources: readonly ElectionDocumentSource[] = [
 		policies: [
 			{ id: "robots", url: "https://woodward.okcounties.org/robots.txt", format: "robots" },
 			{ id: "home-links", url: "https://woodward.okcounties.org/", format: "links" },
-			{ id: "accessibility", url: "https://woodward.okcounties.org/accessibility", format: "region", regionClass: "card__small_plain" },
+			{
+				id: "accessibility",
+				url: "https://woodward.okcounties.org/accessibility",
+				format: "region",
+				regionClass: "card__small_plain"
+			},
 		],
 		documentPatterns: [
 			"^/media/view/general_election_sample_ballot_1288\\.pdf$",
@@ -263,7 +318,12 @@ export const electionDocumentSources: readonly ElectionDocumentSource[] = [
 			{ id: "privacy", url: "https://portal.ct.gov/Policies/State-Privacy-Policy", format: "main" },
 			{ id: "disclaimer", url: "https://portal.ct.gov/portal/policies/disclaimer/", format: "main" },
 		],
-		otherRobotsAgents: ["AhrefsBot", "AhrefsSiteAudit", "*semrush*", "AwarioBot"],
+		otherRobotsAgents: [
+			"AhrefsBot",
+			"AhrefsSiteAudit",
+			"*semrush*",
+			"AwarioBot"
+		],
 		repeatWildcardGroup: true,
 		documentPatterns: connecticutQuestionDocumentUrls.map(address => `^${new URL(address).pathname.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}$`),
 		reviewedDocumentUrls: connecticutQuestionDocumentUrls,
@@ -315,7 +375,12 @@ export const electionDocumentSources: readonly ElectionDocumentSource[] = [
 		policies: [
 			{ id: "robots", url: "https://www.boston.gov/robots.txt", format: "robots" },
 			{ id: "index-links", url: "https://www.boston.gov/news/2026-state-election-ballot-questions", format: "links" },
-			{ id: "terms-privacy", url: "https://www.boston.gov/government/cabinets/innovation-and-technology/terms-use-and-privacy-policy-city-boston-digital", format: "region", regionId: "content" },
+			{
+				id: "terms-privacy",
+				url: "https://www.boston.gov/government/cabinets/innovation-and-technology/terms-use-and-privacy-policy-city-boston-digital",
+				format: "region",
+				regionId: "content"
+			},
 		],
 		documentPatterns: ["^/sites/default/files/file/2026/10/2026-11-03-Statewide-Ballot-Questions-English\\.pdf$"],
 		minimumDocuments: 1,
@@ -330,9 +395,19 @@ export const electionDocumentSources: readonly ElectionDocumentSource[] = [
 		dateMarkers: ["November 3, 2026, General Election"],
 		policies: [
 			{ id: "robots", url: "https://elections.sbcounty.gov/robots.txt", format: "robots" },
-			{ id: "policy-robots", url: "https://main.sbcounty.gov/robots.txt", format: "robots", otherRobotsAgents: ["SemrushBot", "SemrushBot-SA"] },
+			{
+				id: "policy-robots",
+				url: "https://main.sbcounty.gov/robots.txt",
+				format: "robots",
+				otherRobotsAgents: ["SemrushBot", "SemrushBot-SA"]
+			},
 			{ id: "index-links", url: "https://elections.sbcounty.gov/voting/vig/", format: "links" },
-			{ id: "privacy", url: "https://main.sbcounty.gov/policy/", format: "region", regionId: "post-20397" },
+			{
+				id: "privacy",
+				url: "https://main.sbcounty.gov/policy/",
+				format: "region",
+				regionId: "post-20397"
+			},
 		],
 		documentPatterns: ["^/elections/2026/1103/measures/$"],
 		documentFormat: "html",
@@ -351,7 +426,12 @@ export const electionDocumentSources: readonly ElectionDocumentSource[] = [
 			{ id: "robots", url: "https://www.sos.ks.gov/robots.txt", format: "robots" },
 			{ id: "home-links", url: "https://www.sos.ks.gov/", format: "links" },
 			{ id: "index-links", url: "https://www.sos.ks.gov/elections/proposed-constitutional-amendments.html", format: "links" },
-			{ id: "open-records", url: "https://www.sos.ks.gov/general-services/kora-policy-statement.html", format: "region", regionClass: "page-content" },
+			{
+				id: "open-records",
+				url: "https://www.sos.ks.gov/general-services/kora-policy-statement.html",
+				format: "region",
+				regionClass: "page-content"
+			},
 		],
 		documentPatterns: ["^/elections/26elec/2026-General-Election-Constitutional-Amendment-Citizen-Clarification\\.pdf$"],
 		minimumDocuments: 1,
@@ -393,7 +473,12 @@ export const electionDocumentSources: readonly ElectionDocumentSource[] = [
 		policies: [
 			{ id: "robots", url: "https://votetravis.gov/robots.txt", format: "robots" },
 			{ id: "home-links", url: "https://votetravis.gov/", format: "links" },
-			{ id: "footer-copyright", url: "https://votetravis.gov/", format: "region", regionClass: "elementor-element-de68400" },
+			{
+				id: "footer-copyright",
+				url: "https://votetravis.gov/",
+				format: "region",
+				regionClass: "elementor-element-de68400"
+			},
 		],
 		documentPatterns: ["^/wp-content/uploads/G26-Bedsheet-Ballot-Corrected-Final2\\.pdf$"],
 		minimumDocuments: 1,
@@ -425,12 +510,23 @@ export const electionDocumentSources: readonly ElectionDocumentSource[] = [
 		policies: [
 			{ id: "robots", url: "https://www.votebrevard.gov/robots.txt", format: "robots" },
 			{ id: "home-links", url: "https://www.votebrevard.gov/", format: "links" },
-			{ id: "footer-notice", url: "https://www.votebrevard.gov/", format: "region", regionId: "footer" },
+			{
+				id: "footer-notice",
+				url: "https://www.votebrevard.gov/",
+				format: "region",
+				regionId: "footer"
+			},
 			{ id: "website-notice", url: "https://www.votebrevard.gov/Miscellaneous-Pages/Notice-of-Accessibility", format: "main" },
 		],
 		documentPatterns: ["^/Election-Information/2026-Amendments-and-Referenda$"],
 		documentFormat: "html",
-		documentDateMarkers: ["2026 Amendments and Referenda", "November 3, 2026 General Election", "State Constitutional Amendments", "Brevard County Referendum", "Palm Shores Referenda"],
+		documentDateMarkers: [
+			"2026 Amendments and Referenda",
+			"November 3, 2026 General Election",
+			"State Constitutional Amendments",
+			"Brevard County Referendum",
+			"Palm Shores Referenda"
+		],
 		minimumDocuments: 1,
 		maximumDocuments: 1,
 	},
@@ -510,10 +606,20 @@ export const electionDocumentSources: readonly ElectionDocumentSource[] = [
 		indexUrl: "https://sos.wyo.gov/Elections/2026ElectionInformation.aspx",
 		dateMarkers: ["2026 Election Information", "General Election: November 3, 2026", "2026 Statewide Ballot Propositions"],
 		policies: [
-			{ id: "robots", url: "https://sos.wyo.gov/robots.txt", format: "robots", otherRobotsAgents: ["googlebot"] },
+			{
+				id: "robots",
+				url: "https://sos.wyo.gov/robots.txt",
+				format: "robots",
+				otherRobotsAgents: ["googlebot"]
+			},
 			{ id: "home-links", url: "https://sos.wyo.gov/", format: "links" },
 			{ id: "privacy-robots", url: "https://sites.google.com/robots.txt", format: "robots" },
-			{ id: "privacy", url: "https://sites.google.com/a/wyo.gov/wy-ag/privacy", format: "region", regionId: "h.2a7fdfc9a085ee03_341" },
+			{
+				id: "privacy",
+				url: "https://sites.google.com/a/wyo.gov/wy-ag/privacy",
+				format: "region",
+				regionId: "h.2a7fdfc9a085ee03_341"
+			},
 		],
 		relativeRobotsDisallows: ["*.csi"],
 		documentPatterns: ["^/Elections/Docs/2026/2026_Statewide_Ballot_Propositions\\.pdf$", "^/Elections/Docs/2026/2026_Voter_Guide\\.pdf$"],
@@ -532,12 +638,42 @@ export const electionDocumentSources: readonly ElectionDocumentSource[] = [
 			{ id: "home-links", url: "https://sos.wv.gov/", format: "links" },
 			{ id: "state-robots", url: "https://www.wv.gov/robots.txt", format: "robots" },
 			{ id: "policy-links", url: "https://www.wv.gov/policies", format: "links" },
-			{ id: "legal", url: "https://www.wv.gov/policies/legal-notices", format: "region", regionId: "main-content" },
-			{ id: "disclaimer", url: "https://www.wv.gov/policies/disclaimer", format: "region", regionId: "main-content" },
-			{ id: "privacy", url: "https://www.wv.gov/privacy-policy", format: "region", regionId: "main-content" },
-			{ id: "security", url: "https://www.wv.gov/policies/security", format: "region", regionId: "main-content" },
-			{ id: "link-policy", url: "https://www.wv.gov/policies/link-policy", format: "region", regionId: "main-content" },
-			{ id: "accessibility", url: "https://www.wv.gov/policies/accessibility", format: "region", regionId: "main-content" },
+			{
+				id: "legal",
+				url: "https://www.wv.gov/policies/legal-notices",
+				format: "region",
+				regionId: "main-content"
+			},
+			{
+				id: "disclaimer",
+				url: "https://www.wv.gov/policies/disclaimer",
+				format: "region",
+				regionId: "main-content"
+			},
+			{
+				id: "privacy",
+				url: "https://www.wv.gov/privacy-policy",
+				format: "region",
+				regionId: "main-content"
+			},
+			{
+				id: "security",
+				url: "https://www.wv.gov/policies/security",
+				format: "region",
+				regionId: "main-content"
+			},
+			{
+				id: "link-policy",
+				url: "https://www.wv.gov/policies/link-policy",
+				format: "region",
+				regionId: "main-content"
+			},
+			{
+				id: "accessibility",
+				url: "https://www.wv.gov/policies/accessibility",
+				format: "region",
+				regionId: "main-content"
+			},
 		],
 		documentPatterns: ["^/article/secretary-warner-issues-public-notice-proposed-amendment-west-virginia-constitution-will$"],
 		documentFormat: "html",
@@ -569,8 +705,18 @@ export const electionDocumentSources: readonly ElectionDocumentSource[] = [
 		dateMarkers: ["Rick Jackson", "Governor"],
 		policies: [
 			{ id: "robots", url: "https://rickjackson.com/robots.txt", format: "robots" },
-			{ id: "privacy", url: "https://rickjackson.com/privacy-policy/", format: "region", regionClass: "entry-content" },
-			{ id: "messaging-terms", url: "https://rickjackson.com/terms-and-conditions/", format: "region", regionClass: "entry-content" },
+			{
+				id: "privacy",
+				url: "https://rickjackson.com/privacy-policy/",
+				format: "region",
+				regionClass: "entry-content"
+			},
+			{
+				id: "messaging-terms",
+				url: "https://rickjackson.com/terms-and-conditions/",
+				format: "region",
+				regionClass: "entry-content"
+			},
 		],
 		repeatWildcardGroup: true,
 		preambleCrawlDelay: true,

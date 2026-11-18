@@ -124,9 +124,14 @@ function contrast(first: Color, second: Color) {
 	const luminance = (values: Color) =>
 		values
 			.map(value => value / 255)
-			.map(value => (value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4))
+			.map(value => (value <= 0.04045
+				? value / 12.92
+				: ((value + 0.055) / 1.055) ** 2.4))
 			.reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index]!, 0);
-	const values = [luminance(first), luminance(second)].sort((first, second) => first - second);
+	const values = [
+		luminance(first),
+		luminance(second)
+	].sort((first, second) => first - second);
 	return (values[1]! + 0.05) / (values[0]! + 0.05);
 }
 function compose(parent: Matrix, value: string): Matrix {
@@ -160,7 +165,12 @@ function compose(parent: Matrix, value: string): Matrix {
 function transformed(box: Box, matrix: Matrix): Box {
 	const horizontal = [box[0] * matrix[0] + matrix[4], box[2] * matrix[0] + matrix[4]];
 	const vertical = [box[1] * matrix[3] + matrix[5], box[3] * matrix[3] + matrix[5]];
-	return [Math.min(...horizontal), Math.min(...vertical), Math.max(...horizontal), Math.max(...vertical)];
+	return [
+		Math.min(...horizontal),
+		Math.min(...vertical),
+		Math.max(...horizontal),
+		Math.max(...vertical)
+	];
 }
 function bounds(path: string): Box {
 	try {
@@ -207,7 +217,9 @@ function rectangularPath(commands: ReturnType<typeof orangePathCommands>) {
 }
 function boundedTree(body: string) {
 	const tree = parseStateHtml(body);
-	const pending = [{ node: tree, depth: 0 }];
+	const pending = [
+		{ node: tree, depth: 0 }
+	];
 	let count = 0;
 	while (pending.length) {
 		const current = pending.pop()!;
@@ -218,18 +230,33 @@ function boundedTree(body: string) {
 }
 function strokeTangents(start: number[], command: ReturnType<typeof orangePathCommands>[number], end: number[]) {
 	const points
-		= command.kind === "C" ? [start, command.values.slice(0, 2), command.values.slice(2, 4), end] : [start, end];
+		= command.kind === "C"
+			? [
+					start,
+					command.values.slice(0, 2),
+					command.values.slice(2, 4),
+					end
+				]
+			: [start, end];
 	const direction = (origin: number[], candidates: number[][], reverse: boolean) => {
 		const point = candidates.find(
 			point => Math.abs(point[0]! - origin[0]!) + Math.abs(point[1]! - origin[1]!) > 0.00001
 		);
 		if (!point) return reject("empty stroke segment");
-		const horizontal = (point[0]! - origin[0]!) * (reverse ? -1 : 1);
-		const vertical = (point[1]! - origin[1]!) * (reverse ? -1 : 1);
+		const horizontal = (point[0]! - origin[0]!) * (reverse
+			? -1
+			: 1);
+		const vertical = (point[1]! - origin[1]!) * (reverse
+			? -1
+			: 1);
 		if (Math.abs(horizontal) > 0.00001 && Math.abs(vertical) > 0.00001) return reject("stroke tangent");
 		return [
-			Math.abs(horizontal) > 0.00001 ? Math.sign(horizontal) : 0,
-			Math.abs(vertical) > 0.00001 ? Math.sign(vertical) : 0
+			Math.abs(horizontal) > 0.00001
+				? Math.sign(horizontal)
+				: 0,
+			Math.abs(vertical) > 0.00001
+				? Math.sign(vertical)
+				: 0
 		];
 	};
 	return {
@@ -287,7 +314,13 @@ export function inspectIowaSampleSvg(
 	const roots = descendants(tree, node => node.nodeName === "svg");
 	if (roots.length !== 1) return reject("root inventory");
 	const root = roots[0]!;
-	attributes(root, ["xmlns", "xlink", "width", "height", "viewBox"]);
+	attributes(root, [
+		"xmlns",
+		"xlink",
+		"width",
+		"height",
+		"viewBox"
+	]);
 	const width = geometry.cropBox[2]! - geometry.cropBox[0]!;
 	const height = geometry.cropBox[3]! - geometry.cropBox[1]!;
 	const viewBox = attribute(root, "viewBox").trim().split(/\s+/u).map(number);
@@ -302,7 +335,10 @@ export function inspectIowaSampleSvg(
 	const identified = descendants(root, node => Boolean(attribute(node, "id")));
 	if (identified.length > 10000 || new Set(identified.map(node => attribute(node, "id"))).size !== identified.length)
 		return reject("identifiers");
-	const byId = new Map(identified.map(node => [attribute(node, "id"), node]));
+	const byId = new Map(identified.map(node => [
+		attribute(node, "id"),
+		node
+	]));
 	const definitions = new Map(
 		identified
 			.filter(node => /^glyph-\d+-\d+$/u.test(attribute(node, "id")))
@@ -317,10 +353,18 @@ export function inspectIowaSampleSvg(
 					return reject("glyph definition");
 				}
 				for (const path of paths) attributes(path, ["d"]);
-				const path = paths[0] ? attribute(paths[0], "d") : "";
+				const path = paths[0]
+					? attribute(paths[0], "d")
+					: "";
 				return [
 					attribute(node, "id"),
-					{ path, box: path.trim() ? bounds(path) : null, sequence: approvals[digest(path)] }
+					{
+						path,
+						box: path.trim()
+							? bounds(path)
+							: null,
+						sequence: approvals[digest(path)]
+					}
 				] as const;
 			})
 	);
@@ -334,7 +378,13 @@ export function inspectIowaSampleSvg(
 				const child = children[0]!;
 				if (child.nodeName === "rect") {
 					attributes(child, ["x", "y", "width", "height"]);
-					return [attribute(node, "id"), { box: rectangle(child), rectangular: true }] as const;
+					return [
+						attribute(node, "id"),
+						{
+							box: rectangle(child),
+							rectangular: true
+						}
+					] as const;
 				}
 				if (child.nodeName !== "path") return reject("clip path");
 				attributes(child, ["clip-rule", "d"]);
@@ -356,7 +406,10 @@ export function inspectIowaSampleSvg(
 							(point, index) =>
 								point[0] === points[(index + 3) % 4]![0] || point[1] === points[(index + 3) % 4]![1]
 						);
-				return [attribute(node, "id"), { box, rectangular }] as const;
+				return [
+					attribute(node, "id"),
+					{ box, rectangular }
+				] as const;
 			})
 	);
 	for (const filter of identified.filter(node => node.nodeName === "filter")) {
@@ -392,7 +445,14 @@ export function inspectIowaSampleSvg(
 				const images = descendants(node, child => child.nodeName === "use");
 				if (rectangles.length === 1 && images.length === 0) {
 					const rectangleNode = rectangles[0]!;
-					attributes(rectangleNode, ["x", "y", "width", "height", "fill", "fill-opacity"]);
+					attributes(rectangleNode, [
+						"x",
+						"y",
+						"width",
+						"height",
+						"fill",
+						"fill-opacity"
+					]);
 					rectangle(rectangleNode);
 					if (
 						attribute(rectangleNode, "fill") !== "rgb(0%, 0%, 0%)"
@@ -406,7 +466,10 @@ export function inspectIowaSampleSvg(
 						if (attribute(group, "filter") !== "url(#filter-remove-color)")
 							return reject("watermark filter");
 					}
-					return [attribute(node, "id"), "watermark"] as const;
+					return [
+						attribute(node, "id"),
+						"watermark"
+					] as const;
 				}
 				if (
 					rectangles.length
@@ -427,7 +490,10 @@ export function inspectIowaSampleSvg(
 				) {
 					return reject("image mask reference");
 				}
-				return [attribute(node, "id"), "image"] as const;
+				return [
+					attribute(node, "id"),
+					"image"
+				] as const;
 			})
 	);
 	const glyphs: Glyph[] = [];
@@ -438,7 +504,12 @@ export function inspectIowaSampleSvg(
 	let visited = 0;
 	const initial: State = {
 		matrix: [1, 0, 0, 1, 0, 0],
-		clips: [{ box: [0, 0, width, height], rectangular: true }],
+		clips: [
+			{
+				box: [0, 0, width, height],
+				rectangular: true
+			}
+		],
 		color: [0, 0, 0],
 		fill: true,
 		alpha: 1,
@@ -447,7 +518,9 @@ export function inspectIowaSampleSvg(
 		filtered: false,
 		references: []
 	};
-	const pending = [{ node: root, state: initial }];
+	const pending = [
+		{ node: root, state: initial }
+	];
 	const addPaint = (
 		box: Box,
 		state: State,
@@ -464,8 +537,17 @@ export function inspectIowaSampleSvg(
 				Math.min(box[3], clip.box[3])
 			];
 		}
-		if (box[0] < box[2] && box[1] < box[3])
-			paints.push({ box, color: paintColor, alpha, paint: ++paint, stroke, overlay: state.overlay, ...detail });
+		if (box[0] < box[2] && box[1] < box[3]) {
+			paints.push({
+				box,
+				color: paintColor,
+				alpha,
+				paint: ++paint,
+				stroke,
+				overlay: state.overlay,
+				...detail
+			});
+		}
 	};
 	while (pending.length) {
 		const current = pending.pop()!;
@@ -481,13 +563,31 @@ export function inspectIowaSampleSvg(
 			if (node.value?.trim()) return reject("unassigned text");
 			continue;
 		}
-		if (!["svg", "g", "use", "path", "image", "rect"].includes(tag)) return reject("paint structure");
+		if (![
+			"svg",
+			"g",
+			"use",
+			"path",
+			"image",
+			"rect"
+		].includes(tag)) {
+			return reject("paint structure");
+		}
 		const state: State = {
 			...current.state,
 			matrix: compose(current.state.matrix, attribute(node, "transform")),
 			clips: [...current.state.clips]
 		};
-		if (tag === "g") attributes(node, ["id", "fill", "fill-opacity", "clip-path", "mask", "filter"]);
+		if (tag === "g") {
+			attributes(node, [
+				"id",
+				"fill",
+				"fill-opacity",
+				"clip-path",
+				"mask",
+				"filter"
+			]);
+		}
 		if (attribute(node, "fill")) {
 			state.fill = attribute(node, "fill") !== "none";
 			if (state.fill) state.color = color(attribute(node, "fill"));
@@ -504,13 +604,20 @@ export function inspectIowaSampleSvg(
 		}
 		if (attribute(node, "clip-path")) {
 			const match = /^url\(#([^()]+)\)$/u.exec(attribute(node, "clip-path"));
-			const clip = match ? clips.get(match[1]!) : undefined;
+			const clip = match
+				? clips.get(match[1]!)
+				: undefined;
 			if (!clip || state.clips.length >= 16) return reject("clip reference");
-			state.clips.push({ box: transformed(clip.box, state.matrix), rectangular: clip.rectangular });
+			state.clips.push({
+				box: transformed(clip.box, state.matrix),
+				rectangular: clip.rectangular
+			});
 		}
 		if (attribute(node, "mask")) {
 			const match = /^url\(#([^()]+)\)$/u.exec(attribute(node, "mask"));
-			const mask = match ? masks.get(match[1]!) : undefined;
+			const mask = match
+				? masks.get(match[1]!)
+				: undefined;
 			if (!mask || state.masked || state.overlay) return reject("mask reference");
 			if (mask === "watermark") {
 				if (++watermarkLayers > 1) return reject("watermark inventory");
@@ -521,7 +628,13 @@ export function inspectIowaSampleSvg(
 			}
 		}
 		if (tag === "use") {
-			attributes(node, ["href", "x", "y", "transform", "filter"]);
+			attributes(node, [
+				"href",
+				"x",
+				"y",
+				"transform",
+				"filter"
+			]);
 			const reference = attribute(node, "href");
 			if (!/^#[A-Za-z][\w-]*$/u.test(reference)) return reject("use reference");
 			const target = byId.get(reference.slice(1));
@@ -578,7 +691,14 @@ export function inspectIowaSampleSvg(
 			continue;
 		}
 		if (tag === "image") {
-			attributes(node, ["id", "x", "y", "width", "height", "href"]);
+			attributes(node, [
+				"id",
+				"x",
+				"y",
+				"width",
+				"height",
+				"href"
+			]);
 			const encoded = /^data:image\/png;base64,([A-Za-z\d+/=]+)$/u.exec(attribute(node, "href"));
 			if (!encoded || encoded[1]!.length > 4 * 1024 * 1024) return reject("image data");
 			const bytes = Buffer.from(encoded[1]!, "base64");
@@ -601,7 +721,14 @@ export function inspectIowaSampleSvg(
 		if (["path", "rect"].includes(tag) && (state.masked || state.overlay || state.filtered || state.alpha !== 1))
 			return reject("unverified paint effects");
 		if (tag === "rect") {
-			attributes(node, ["x", "y", "width", "height", "fill", "fill-opacity"]);
+			attributes(node, [
+				"x",
+				"y",
+				"width",
+				"height",
+				"fill",
+				"fill-opacity"
+			]);
 			if (state.fill) {
 				addPaint(transformed(rectangle(node), state.matrix), state, state.color, state.alpha, false, {
 					rectangular: true
@@ -635,7 +762,9 @@ export function inspectIowaSampleSvg(
 						state.alpha,
 						false,
 						{
-							ink: rectangularPath(group) ? undefined : iowaInkShape(group, state.matrix),
+							ink: rectangularPath(group)
+								? undefined
+								: iowaInkShape(group, state.matrix),
 							rectangular: rectangularPath(group)
 						}
 					);
@@ -657,7 +786,9 @@ export function inspectIowaSampleSvg(
 					let start = position;
 					const tangents: ReturnType<typeof strokeTangents>[] = [];
 					for (const command of group.slice(1)) {
-						const end = command.kind === "Z" ? start : command.values.slice(-2);
+						const end = command.kind === "Z"
+							? start
+							: command.values.slice(-2);
 						if (
 							Math.abs(end[0]! - position[0]!) + Math.abs(end[1]! - position[1]!) < 0.00001
 							&& command.kind !== "C"
@@ -665,12 +796,19 @@ export function inspectIowaSampleSvg(
 							continue;
 						}
 						tangents.push(strokeTangents(position, command, end));
-						const segment = `M ${position.join(" ")} ${command.kind === "Z" ? `L ${start.join(" ")}` : `${command.kind} ${command.values.join(" ")}`}`;
+						const segment = `M ${position.join(" ")} ${command.kind === "Z"
+							? `L ${start.join(" ")}`
+							: `${command.kind} ${command.values.join(" ")}`}`;
 						const box = transformed(bounds(segment), state.matrix);
 						const expansion
 							= (strokeWidth / 2) * Math.max(Math.abs(state.matrix[0]), Math.abs(state.matrix[3]));
 						addPaint(
-							[box[0] - expansion, box[1] - expansion, box[2] + expansion, box[3] + expansion],
+							[
+								box[0] - expansion,
+								box[1] - expansion,
+								box[2] + expansion,
+								box[3] + expansion
+							],
 							state,
 							strokeColor,
 							1,
@@ -688,7 +826,9 @@ export function inspectIowaSampleSvg(
 						position = end;
 						start = group[0]!.values;
 					}
-					for (let index = group.at(-1)?.kind === "Z" ? 0 : 1; index < tangents.length; index++) {
+					for (let index = group.at(-1)?.kind === "Z"
+						? 0
+						: 1; index < tangents.length; index++) {
 						const prior = tangents[(index + tangents.length - 1) % tangents.length]!.exit;
 						const next = tangents[index]!.entry;
 						if (prior[0]! * next[0]! + prior[1]! * next[1]! < 0) return reject("stroke reversal");
@@ -697,12 +837,16 @@ export function inspectIowaSampleSvg(
 			}
 			continue;
 		}
-		for (const child of [...(node.childNodes ?? [])].reverse()) pending.push({ node: child, state });
+		for (const child of [
+			...(node.childNodes ?? [])
+		].reverse()) pending.push({ node: child, state });
 	}
 	const words = iowaRenderedWords(bbox, geometry, page);
 	for (const glyph of glyphs.filter(glyph => glyph.box[3] - glyph.box[1] > 20)) {
 		if (
-			glyph.color.join(",") !== (county === "Monona" ? "176,0,0" : "211,211,211")
+			glyph.color.join(",") !== (county === "Monona"
+				? "176,0,0"
+				: "211,211,211")
 			|| glyph.alpha !== 1
 			|| glyph.filtered
 			|| (county === "Monona" && !glyph.masked)
@@ -800,8 +944,20 @@ export function inspectIowaSampleSvg(
 			const overlay = intersecting.some(item => item.overlay);
 			const blend = (value: Color): Color =>
 				value.map((component, index) => component * 0.77 + [176, 0, 0][index]! * 0.23) as Color;
-			const foregrounds: Color[] = overlay ? [[0, 0, 0], blend([0, 0, 0])] : [[0, 0, 0]];
-			const options = overlay ? backgrounds.flatMap(value => [value, blend(value)]) : backgrounds;
+			const foregrounds: Color[] = overlay
+				? [
+						[0, 0, 0],
+						blend([0, 0, 0])
+					]
+				: [
+						[0, 0, 0]
+					];
+			const options = overlay
+				? backgrounds.flatMap(value => [
+						value,
+						blend(value)
+					])
+				: backgrounds;
 			const ratio = Math.min(
 				...foregrounds.flatMap(foreground => options.map(background => contrast(foreground, background)))
 			);
@@ -815,7 +971,9 @@ export function inspectIowaSampleSvg(
 	for (const glyph of glyphs.filter(glyph => !glyph.assigned)) {
 		if (
 			glyph.box[3] - glyph.box[1] <= 20
-			|| glyph.color.join(",") !== (county === "Monona" ? "176,0,0" : "211,211,211")
+			|| glyph.color.join(",") !== (county === "Monona"
+				? "176,0,0"
+				: "211,211,211")
 			|| (county === "Monona" && !glyph.masked)
 		) {
 			return reject(

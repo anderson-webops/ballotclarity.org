@@ -116,7 +116,9 @@ function formatOrdinal(value: string) {
 }
 
 function formatPossessive(value: string) {
-	return value.endsWith("s") ? `${value}'` : `${value}'s`;
+	return value.endsWith("s")
+		? `${value}'`
+		: `${value}'s`;
 }
 
 function normalizeCountyName(value: string | null | undefined) {
@@ -133,7 +135,9 @@ function normalizeStateName(value: string | null | undefined) {
 	if (!trimmed)
 		return "";
 
-	return normalizeText(trimmed) === "united states" ? "" : trimmed;
+	return normalizeText(trimmed) === "united states"
+		? ""
+		: trimmed;
 }
 
 function getStateNameForAbbreviation(stateAbbreviation: string) {
@@ -189,7 +193,9 @@ function buildOfficeDisplayLabel(
 
 	switch (officeType) {
 		case "us_senate":
-			return stateName ? `U.S. Senator for ${stateName}` : "U.S. Senator";
+			return stateName
+				? `U.S. Senator for ${stateName}`
+				: "U.S. Senator";
 		case "us_house":
 			if (districtNumber && stateName)
 				return `U.S. Representative for ${formatPossessive(stateName)} ${formatOrdinal(districtNumber)} Congressional District`;
@@ -197,7 +203,9 @@ function buildOfficeDisplayLabel(
 			if (districtNumber)
 				return `U.S. Representative for the ${formatOrdinal(districtNumber)} Congressional District`;
 
-			return stateName ? `U.S. Representative for ${stateName}` : "U.S. Representative";
+			return stateName
+				? `U.S. Representative for ${stateName}`
+				: "U.S. Representative";
 		case "state_senate":
 			if (districtNumber && stateName)
 				return `${stateName} State Senator for District ${districtNumber}`;
@@ -205,7 +213,9 @@ function buildOfficeDisplayLabel(
 			if (districtNumber)
 				return `State Senator for District ${districtNumber}`;
 
-			return stateName ? `${stateName} State Senator` : "State Senator";
+			return stateName
+				? `${stateName} State Senator`
+				: "State Senator";
 		case "state_house":
 			if (districtNumber && stateName)
 				return `${stateName} State Representative for District ${districtNumber}`;
@@ -213,20 +223,46 @@ function buildOfficeDisplayLabel(
 			if (districtNumber)
 				return `State Representative for District ${districtNumber}`;
 
-			return stateName ? `${stateName} State Representative` : "State Representative";
+			return stateName
+				? `${stateName} State Representative`
+				: "State Representative";
 		case "county_commission": {
-			const role = /\bvice\s+chair\b/i.test(officeTitle || officeSought) ? "Commission Vice Chair" : /\bchair\b/i.test(officeTitle || officeSought) ? "Commission Chair" : "Commissioner";
-			return `${countyName ? `${countyName} County` : "County"} ${role}${districtNumber ? `, District ${districtNumber}` : ""}`;
+			const role = /\bvice\s+chair\b/i.test(officeTitle || officeSought)
+				? "Commission Vice Chair"
+				: /\bchair\b/i.test(officeTitle || officeSought)
+					? "Commission Chair"
+					: "Commissioner";
+			return `${countyName
+				? `${countyName} County`
+				: "County"} ${role}${districtNumber
+				? `, District ${districtNumber}`
+				: ""}`;
 		}
 		case "county_official": {
 			const role = officeTitle || officeSought;
-			if (["Sheriff", "District Attorney", "Solicitor General", "Tax Commissioner", "Clerk of Superior and Magistrate Courts"].includes(role)) return countyName ? `${countyName} County ${role}` : role;
-			return countyName ? `${countyName} County official` : "County official";
+			if ([
+				"Sheriff",
+				"District Attorney",
+				"Solicitor General",
+				"Tax Commissioner",
+				"Clerk of Superior and Magistrate Courts"
+			].includes(role)) {
+				return countyName
+					? `${countyName} County ${role}`
+					: role;
+			}
+			return countyName
+				? `${countyName} County official`
+				: "County official";
 		}
 		case "mayor":
-			return cityName ? `Mayor of ${cityName}` : "Mayor";
+			return cityName
+				? `Mayor of ${cityName}`
+				: "Mayor";
 		case "city_official":
-			return cityName ? `${cityName} city official` : "City official";
+			return cityName
+				? `${cityName} city official`
+				: "City official";
 		default:
 			return officeSought || officeTitle || districtLabel || "Public officeholder";
 	}
@@ -247,7 +283,12 @@ export function classifyRepresentative(input: RepresentativeClassificationInput)
 	const districtType = normalizeText(input.districtType);
 	const officeTitle = normalizeText(input.officeTitle);
 	const officeSought = normalizeText(input.officeSought);
-	const combined = [districtType, districtLabel, officeTitle, officeSought].filter(Boolean).join(" ");
+	const combined = [
+		districtType,
+		districtLabel,
+		officeTitle,
+		officeSought
+	].filter(Boolean).join(" ");
 	const hasCongressionalCue = combined.includes("congressional district")
 		|| congressionalCodePattern.test(districtLabel)
 		|| officeSought.includes("u.s. house");

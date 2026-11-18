@@ -25,7 +25,20 @@ interface PublicationFixture {
 }
 
 const fixtures = JSON.parse(readFileSync(new URL("./fixtures/state-ballots-county-publications.json", import.meta.url), "utf8")) as PublicationFixture[];
-const expected = [{ state: "OH", file: "ohio", count: 78, statewide: 26 }, { state: "MA", file: "massachusetts", count: 32, statewide: 15 }];
+const expected = [
+	{
+		state: "OH",
+		file: "ohio",
+		count: 78,
+		statewide: 26
+	},
+	{
+		state: "MA",
+		file: "massachusetts",
+		count: 32,
+		statewide: 15
+	}
+];
 
 function source(state: string) {
 	const item = stateBallotSources.find(source => source.stateCode === state);
@@ -38,7 +51,13 @@ function body(file: string) {
 }
 
 function district(districtType: string, districtCode: string): LocationDistrictMatch {
-	return { id: `${districtType}:${districtCode}`, districtType, districtCode, label: districtCode, sourceSystem: "Controlled geography fixture" };
+	return {
+		id: `${districtType}:${districtCode}`,
+		districtType,
+		districtCode,
+		label: districtCode,
+		sourceSystem: "Controlled geography fixture"
+	};
 }
 
 test("county publications load offline with original dated provenance and never silently refresh", async (context) => {
@@ -57,7 +76,20 @@ test("county publications load offline with original dated provenance and never 
 		assert.equal(snapshot.records.length, item.count);
 		assert.equal(snapshot.retrievedAt, fixture.retrievedAt);
 		const additional = fixture.additionalDocuments ?? [];
-		assert.deepEqual(snapshot.documents, [{ url: fixture.documentUrl, sha256: fixture.documentSha256, retrievedAt: fixture.retrievedAt, includedRecordCount: item.count - additional.reduce((total, document) => total + document.includedRecordCount, 0) }, ...additional.map(({ url, sha256, retrievedAt, includedRecordCount }) => ({ url, sha256, retrievedAt, includedRecordCount }))]);
+		assert.deepEqual(snapshot.documents, [
+			{
+				url: fixture.documentUrl,
+				sha256: fixture.documentSha256,
+				retrievedAt: fixture.retrievedAt,
+				includedRecordCount: item.count - additional.reduce((total, document) => total + document.includedRecordCount, 0)
+			},
+			...additional.map(({ url, sha256, retrievedAt, includedRecordCount }) => ({
+				url,
+				sha256,
+				retrievedAt,
+				includedRecordCount
+			}))
+		]);
 		const preview = buildStateBallotPreview(snapshot, { districtMatches: [] })!;
 		assert.equal(preview.candidateCount, item.statewide);
 		assert.equal(preview.generatedAt, fixture.retrievedAt);
@@ -82,13 +114,28 @@ test("all source rows reconcile with canonical records and retain independent st
 		const explicitEvidence = fixture.additionalDocuments?.flatMap(document => document.evidence) ?? [];
 		assert.deepEqual(fixture.rows.map(row => (explicitEvidence.find(evidence => evidence.name === row.name)?.party ?? row.party) || undefined), fixture.records.map(record => record.party));
 		for (const record of fixture.records) {
-			const identity = [fixture.state, "2026-11-03", record.office.toLowerCase(), record.district, record.name.toLowerCase(), (record.party ?? "").toLowerCase()];
+			const identity = [
+				fixture.state,
+				"2026-11-03",
+				record.office.toLowerCase(),
+				record.district,
+				record.name.toLowerCase(),
+				(record.party ?? "").toLowerCase()
+			];
 			if (record.jurisdiction) identity.push(record.jurisdiction.toLowerCase());
 			assert.equal(record.id, createHash("sha256").update(JSON.stringify(identity)).digest("hex").slice(0, 24));
 		}
 		assert.equal(new Set(fixture.records.map(record => record.id)).size, fixture.records.length);
 	}
-	assert.deepEqual(fixtures.map(fixture => [fixture.state, fixture.pages, fixture.rows.filter(row => row.page === 1).length, fixture.rows.filter(row => row.page === 2).length]), [["OH", 2, 48, 30], ["MA", 3, 19, 13]]);
+	assert.deepEqual(fixtures.map(fixture => [
+		fixture.state,
+		fixture.pages,
+		fixture.rows.filter(row => row.page === 1).length,
+		fixture.rows.filter(row => row.page === 2).length
+	]), [
+		["OH", 2, 48, 30],
+		["MA", 3, 19, 13]
+	]);
 });
 
 test("Ohio preserves eleven explicit write-ins, six governor tickets and uncertain source party labels", async (context) => {
@@ -112,7 +159,10 @@ test("Ohio reconciles only explicit FWAB evidence while preserving the original 
 	assert.equal(fixture.rows.filter(row => row.writeIn).length, 10);
 	assert.equal(fixture.rows.find(row => row.name === "Gary Josephson")?.writeIn, false);
 	assert.equal(fixture.rows.find(row => row.name === "Greg Levy")?.party, "Other-party c");
-	assert.deepEqual(fixture.additionalDocuments?.[0].evidence.map(evidence => [evidence.name, evidence.page]), [["Greg Levy", 2], ["Gary Josephson", 3]]);
+	assert.deepEqual(fixture.additionalDocuments?.[0].evidence.map(evidence => [evidence.name, evidence.page]), [
+		["Greg Levy", 2],
+		["Gary Josephson", 3]
+	]);
 	const snapshot = (await (await createReviewedFixtureRepository(context)).getSnapshot("OH"))!;
 	assert.deepEqual(snapshot.documents?.map(document => document.includedRecordCount), [76, 2]);
 	assert.equal(snapshot.records.find(record => record.name === "Gary Josephson")?.sourceStatus, "Registered write-in in county FWAB notice");
@@ -131,14 +181,33 @@ test("Ohio judicial terms and the Senate special term remain separate contests r
 	assert.equal(local.length, 13);
 	assert.equal(local.filter(record => record.office.includes("COURT OF APPEALS")).length, 2);
 	assert.equal(new Set(local.filter(record => record.office.includes("COMMON PLEAS")).map(record => record.office)).size, 7);
-	assert.equal(buildStateBallotPreview(snapshot, { districtMatches: [district("congressional", "10"), district("state-senate", "10")] })?.candidateCount, 26);
+	assert.equal(buildStateBallotPreview(snapshot, {
+		districtMatches: [
+			district("congressional", "10"),
+			district("state-senate", "10")
+		]
+	})?.candidateCount, 26);
 });
 
 test("Ohio previews add only explicitly matched Franklin-area legislative and congressional candidates", async (context) => {
 	const snapshot = (await (await createReviewedFixtureRepository(context)).getSnapshot("OH"))!;
-	assert.equal(buildStateBallotPreview(snapshot, { districtMatches: [district("congressional", "03")] })?.candidateCount, 28);
-	assert.equal(buildStateBallotPreview(snapshot, { districtMatches: [district("congressional", "15")] })?.candidateCount, 31);
-	assert.equal(buildStateBallotPreview(snapshot, { districtMatches: [district("congressional", "3"), district("state-senate", "03"), district("state-house", "01")] })?.candidateCount, 32);
+	assert.equal(buildStateBallotPreview(snapshot, {
+		districtMatches: [
+			district("congressional", "03")
+		]
+	})?.candidateCount, 28);
+	assert.equal(buildStateBallotPreview(snapshot, {
+		districtMatches: [
+			district("congressional", "15")
+		]
+	})?.candidateCount, 31);
+	assert.equal(buildStateBallotPreview(snapshot, {
+		districtMatches: [
+			district("congressional", "3"),
+			district("state-senate", "03"),
+			district("state-house", "01")
+		]
+	})?.candidateCount, 32);
 	assert.match(buildStateBallotPreview(snapshot, { districtMatches: [] })!.disclaimer, /limited to Franklin County/u);
 });
 
@@ -150,8 +219,20 @@ test("Massachusetts preserves named districts, council jurisdictions and printed
 	assert.ok(snapshot.records.some(record => record.name === "HEALEY AND DRISCOLL" && record.scope === "statewide"));
 	assert.ok(snapshot.records.some(record => record.district === "MIDDLESEX & SUFFOLK"));
 	assert.ok(snapshot.records.some(record => record.district === "SUFFOLK & MIDDLESEX"));
-	assert.equal(buildStateBallotPreview(snapshot, { districtMatches: [district("state-house", "24"), district("state-senate", "2"), district("congressional", "3")] })?.candidateCount, 15);
-	assert.equal(buildStateBallotPreview(snapshot, { districtMatches: [district("congressional", "7"), district("state-senate", "Suffolk & Middlesex"), district("state-house", "Twenty-Fifth Middlesex")] })?.candidateCount, 19);
+	assert.equal(buildStateBallotPreview(snapshot, {
+		districtMatches: [
+			district("state-house", "24"),
+			district("state-senate", "2"),
+			district("congressional", "3")
+		]
+	})?.candidateCount, 15);
+	assert.equal(buildStateBallotPreview(snapshot, {
+		districtMatches: [
+			district("congressional", "7"),
+			district("state-senate", "Suffolk & Middlesex"),
+			district("state-house", "Twenty-Fifth Middlesex")
+		]
+	})?.candidateCount, 19);
 	assert.ok(snapshot.records.filter(record => record.scope === "local").every(record => record.jurisdiction?.startsWith("Massachusetts, ")));
 });
 

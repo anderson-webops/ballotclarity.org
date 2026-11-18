@@ -12,13 +12,19 @@ import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery
 const api = useApiClient();
 const electionClock = useElectionClock();
 const route = useRoute();
-definePageMeta({ middleware: to => to.hash === "#change-location" ? navigateTo("/#location-lookup", { replace: true }) : undefined });
+definePageMeta({
+	middleware: to => to.hash === "#change-location"
+		? navigateTo("/#location-lookup", { replace: true })
+		: undefined
+});
 const civicStore = useCivicStore();
 const { data: coverageData } = useCoverage();
 const { isHydrated, nationwideLookupResult } = storeToRefs(civicStore);
 const storedNationwideLookupResult = computed(() => isHydrated.value ? nationwideLookupResult.value : null);
 const shouldRefreshBallotPreviews = computed(() => needsBallotPreviewRefresh(storedNationwideLookupResult.value, new Date(electionClock.value)));
-const lookupRefreshWindow = computed(() => shouldRefreshBallotPreviews.value ? `${Math.floor(electionClock.value / 86_400_000)}:${electionHasPassed(storedNationwideLookupResult.value?.election?.date, new Date(electionClock.value))}` : null);
+const lookupRefreshWindow = computed(() => shouldRefreshBallotPreviews.value
+	? `${Math.floor(electionClock.value / 86_400_000)}:${electionHasPassed(storedNationwideLookupResult.value?.election?.date, new Date(electionClock.value))}`
+	: null);
 const activeLookupQuery = computed(() => buildNationwideLookupRouteQuery(
 	buildLookupContextFromNationwideResult(storedNationwideLookupResult.value),
 	route.query
@@ -30,11 +36,15 @@ const { data: savedLookupResult } = await useAsyncData(
 			return null;
 
 		const response = await api<LocationLookupResponse | null>("/location/active");
-		return response ? normalizeLookupResponseForDisplay(response, null) : null;
+		return response
+			? normalizeLookupResponseForDisplay(response, null)
+			: null;
 	},
 	{
 		default: () => null,
-		getCachedData: (key, nuxtApp, context) => context.cause === "initial" ? nuxtApp.payload.data[key] : undefined,
+		getCachedData: (key, nuxtApp, context) => context.cause === "initial"
+			? nuxtApp.payload.data[key]
+			: undefined,
 		watch: [activeLookupQuery, lookupRefreshWindow]
 	}
 );
@@ -47,7 +57,9 @@ const { data: routeLookupResult } = await useAsyncData(
 		const response = await api<LocationLookupResponse>("/location", {
 			body: {
 				q: activeLookupQuery.value.lookup,
-				...(activeLookupQuery.value.selection ? { selectionId: activeLookupQuery.value.selection } : {})
+				...(activeLookupQuery.value.selection
+					? { selectionId: activeLookupQuery.value.selection }
+					: {})
 			},
 			method: "POST"
 		});
@@ -80,8 +92,12 @@ const resultsStatusItems = computed(() => {
 	return [
 		result.detectedFromIp
 			? "Approximate location"
-			: result.inputKind === "address" ? "Matched by street address" : "Matched by ZIP code",
-		...(result.guideContent?.verifiedContestPackage && !electionHasPassed(result.election?.date, new Date(electionClock.value)) ? ["Verified ballot guide"] : [])
+			: result.inputKind === "address"
+				? "Matched by street address"
+				: "Matched by ZIP code",
+		...(result.guideContent?.verifiedContestPackage && !electionHasPassed(result.election?.date, new Date(electionClock.value))
+			? ["Verified ballot guide"]
+			: [])
 	];
 });
 

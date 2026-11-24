@@ -5,9 +5,10 @@ import { createHash } from "node:crypto";
 import { once } from "node:events";
 import test from "node:test";
 import express from "express";
-import { reviewedMunicipalRunoffs } from "../src/state-ballot-municipal-runoffs.js";
+import { reviewedLocalDirectories } from "../src/state-ballot-local-directories.js";
 import { configuredStateBallotSources } from "../src/state-ballot-registry.js";
 import { attachStateBallotPreview, resolveStateBallotConfiguration } from "../src/state-ballot-repository.js";
+import { parseBundledStateSnapshot } from "../src/state-ballot-snapshot.js";
 import { stateBallotSourceIsCurrent } from "../src/state-ballot-source-state.js";
 import { registerStateRecordDetailRoutes } from "../src/state-record-detail.js";
 import { registerStateRecordRoutes } from "../src/state-records.js";
@@ -88,38 +89,76 @@ test("The actual state-records route honors the exact cutoff while explicit hist
 	}
 });
 
-test("Reviewed municipal runoff sources require individual enrollment and explicit public selection", async () => {
-	const statewide = resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "TX,GA" });
-	assert.ok(statewide.sources.every(item => !reviewedMunicipalRunoffs.some(city => city.id === item.id)));
-	for (const city of reviewedMunicipalRunoffs) {
-		assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_SOURCES: city.id }).sources, [city]);
-		assert.throws(() => resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "WA", STATE_BALLOT_ENABLED_SOURCES: city.id }));
-		assert.equal(city.ballotPreview, false);
+test("Reviewed local election directories require individual enrollment and explicit public selection", async () => {
+	const statewide = resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "TX,GA,AR,WI,AL,TN" });
+	assert.ok(statewide.sources.every(item => !reviewedLocalDirectories.some(local => local.id === item.id)));
+	for (const local of reviewedLocalDirectories) {
+		assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_SOURCES: local.id }).sources, [local]);
+		assert.throws(() => resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "WA", STATE_BALLOT_ENABLED_SOURCES: local.id }));
+		assert.equal(local.ballotPreview, false);
 		const clock = () => Date.parse("2026-12-01T12:00:00Z");
 		const record = {
 			...snapshot.records[0]!,
 			scope: "local" as const,
 			office: "Council",
-			jurisdiction: city.placeName
+			jurisdiction: local.placeName ?? local.countyName
 		};
 		const server = await serve(clock, {
 			...snapshot,
 			records: [record],
-			source: city
+			source: local
 		});
 		try {
 			const base = `${server.origin}/api/state-records`;
 			const directory = await (await fetch(base)).json();
-			const state = directory.states.find((entry: { stateCode: string }) => entry.stateCode === city.stateCode);
-			assert.deepEqual(state.sources.map((entry: { id: string }) => entry.id), [city.id]);
+			const state = directory.states.find((entry: { stateCode: string }) => entry.stateCode === local.stateCode);
+			assert.deepEqual(state.sources.map((entry: { id: string }) => entry.id), [local.id]);
 			assert.equal(state.electionDate, undefined);
-			assert.equal((await (await fetch(`${base}/${city.stateCode}`)).json()).available, false);
-			assert.equal((await fetch(`${base}/${city.stateCode}/${record.id}`)).status, 404);
+			assert.equal((await (await fetch(`${base}/${local.stateCode}`)).json()).available, false);
+			assert.equal((await fetch(`${base}/${local.stateCode}/${record.id}`)).status, 404);
 			assert.deepEqual(server.reads, []);
-			assert.equal((await (await fetch(`${base}/${city.stateCode}?scope=all&source=${city.id}`)).json()).total, 1);
-			assert.equal((await fetch(`${base}/${city.stateCode}/${record.id}?source=${city.id}`)).status, 200);
+			assert.equal((await (await fetch(`${base}/${local.stateCode}?scope=all&source=${local.id}`)).json()).total, 1);
+			assert.equal((await fetch(`${base}/${local.stateCode}/${record.id}?source=${local.id}`)).status, 200);
 		}
 		finally { await server.close(); }
+	}
+});
+
+test("Local directory imports enforce both the configured area and local contest scope", () => {
+	for (const source of reviewedLocalDirectories) {
+		const retrievedAt = snapshot.retrievedAt;
+		const record = { ...snapshot.records[0]!, scope: "local", jurisdiction: source.placeName ?? source.countyName };
+		const document = { url: source.url, sha256: snapshot.sha256 };
+		const data = {
+			schemaVersion: 1,
+			stateCode: source.stateCode,
+			sourceId: source.id,
+			electionDate: source.electionDate,
+			sourceUrl: source.pageUrl,
+			retrievalPolicy: "manual-snapshot",
+			retrievedAt,
+			sourceSha256: hash(JSON.stringify([document])),
+			documents: [
+				{ ...document, retrievedAt, includedRecordCount: 1 }
+			],
+			recordCount: 1,
+			records: [record]
+		};
+		assert.equal(parseBundledStateSnapshot(source, JSON.stringify(data)).records[0]?.jurisdiction, record.jurisdiction);
+		for (const change of [
+			{ jurisdiction: "Outside area" },
+			{ scope: "statewide" }
+		]) {
+			assert.throws(() => parseBundledStateSnapshot(source, JSON.stringify({
+				...data,
+				records: [
+					{
+						...record,
+						...change
+					}
+				]
+			})), /outside its configured jurisdiction/u);
+		}
 	}
 });
 

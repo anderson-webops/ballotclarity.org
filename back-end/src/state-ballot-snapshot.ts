@@ -584,8 +584,9 @@ export function parseBundledStateSnapshot(source: StateBallotSource, body: strin
 	});
 	if (new Set(records.map(record => record.id)).size !== records.length)
 		throw new Error("The bundled candidate snapshot has duplicate identities.");
-	if (source.selection === "explicit" && source.placeName && records.some(record => record.scope !== "local" || record.jurisdiction !== source.placeName))
-		throw new Error("The municipal roster contains a record outside its configured place.");
+	const localArea = source.placeName ?? source.countyName;
+	if (source.selection === "explicit" && localArea && records.some(record => record.scope !== "local" || record.jurisdiction !== localArea))
+		throw new Error("The local roster contains a record outside its configured jurisdiction.");
 	return {
 		source,
 		retrievedAt: data.retrievedAt,

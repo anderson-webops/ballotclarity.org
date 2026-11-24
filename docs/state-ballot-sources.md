@@ -1863,17 +1863,22 @@ establish disclosure receipt, not general-election qualification. The newer
 November 20 packet remains an unreviewed external publication. Hawaii's statewide
 candidate-portal permission hold and ballot-source configuration stay unchanged.
 
-## Municipal runoff directories
+## Local election directories
 
-Add each approved city ID to the existing `STATE_BALLOT_ENABLED_SOURCES` allowlist:
+Add each approved directory ID to the existing `STATE_BALLOT_ENABLED_SOURCES` allowlist:
 
-- December 1, 2026: `ga-doraville-runoff-20261201`.
+- December 1, 2026: `ga-doraville-runoff-20261201`, `ar-alexander-runoff-20261201`,
+  `ar-jacksonville-runoff-20261201`, `ar-north-little-rock-runoff-20261201`.
+- December 8, 2026: `al-tuscaloosa-council-special-20261208` (District 5),
+  `tn-collierville-runoff-20261208` (alderman positions 1 and 2).
 - December 12, 2026: `tx-corpus-christi-runoff-20261212`, `tx-el-paso-runoff-20261212`,
   `tx-austin-runoff-20261212`, `tx-manor-runoff-20261212`, `tx-pflugerville-runoff-20261212`.
+- December 15, 2026: `wi-waukesha-executive-special-20261215` (county executive).
 
 The Travis County consolidated ballot supplies separate Austin, Manor and
-Pflugerville snapshots. Each snapshot contains only that city's contests.
+Pflugerville snapshots. The Pulaski County notice similarly supplies three distinct
+city rosters. The Waukesha County roster covers the county executive contest.
 The normal reviewed-snapshot import validates the source and document metadata.
-Each enrolled city appears in the directory and remains readable by explicit
+Each enrolled roster appears in the directory and remains readable by explicit
 source ID after expiry. State-only selection and personal lookups do not select
-these municipal contests. These manually reviewed sources schedule no publisher requests.
+these local contests. These manually reviewed sources schedule no publisher requests.

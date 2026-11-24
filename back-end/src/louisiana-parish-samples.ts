@@ -27,6 +27,10 @@ const months = [
 const maximumBytes = 12 * 1024 * 1024;
 const parishNames = "Acadia|Allen|Ascension|Assumption|Avoyelles|Beauregard|Bienville|Bossier|Caddo|Calcasieu|Caldwell|Cameron|Catahoula|Claiborne|Concordia|De Soto|East Baton Rouge|East Carroll|East Feliciana|Evangeline|Franklin|Grant|Iberia|Iberville|Jackson|Jefferson|Jefferson Davis|Lafayette|Lafourche|La Salle|Lincoln|Livingston|Madison|Morehouse|Natchitoches|Orleans|Ouachita|Plaquemines|Pointe Coupee|Rapides|Red River|Richland|Sabine|St Bernard|St Charles|St Helena|St James|St John the Baptist|St Landry|St Martin|St Mary|St Tammany|Tangipahoa|Tensas|Terrebonne|Union|Vermilion|Vernon|Washington|Webster|West Baton Rouge|West Carroll|West Feliciana|Winn".split("|");
 export const parishSampleParishes: readonly string[] = parishNames;
+const parishLabelAliases = new Map([
+	["Lasalle", "La Salle"],
+	["DeSoto", "De Soto"]
+]);
 
 export interface ParishSampleAccessReview {
 	robots: string;
@@ -73,7 +77,7 @@ export function readParishSampleIndex(body: string) {
 		text: clean(stateHtmlText(node))
 	})).filter(item => /^[A-Z][a-z]+ \d{1,2}, 20\d{2} /u.test(item.text));
 	if (headings.length !== 1) throw new Error("Parish election heading is ambiguous.");
-	const heading = /^([A-Za-z]+) (\d{1,2}), (20\d{2}) (U\.S\. Representative Runoff & Municipal General)$/u.exec(headings[0]!.text);
+	const heading = /^([A-Za-z]+) (\d{1,2}), (20\d{2}) (U\.S\. Representative Runoff & (?:Municipal|Open) General)$/u.exec(headings[0]!.text);
 	if (!heading) throw new Error("Parish election type requires review.");
 	const electionDate = `${heading[3]}-${String(months.indexOf(heading[1]!) + 1).padStart(2, "0")}-${String(heading[2]).padStart(2, "0")}`;
 	if (!Number.isFinite(Date.parse(electionDate)) || new Date(electionDate).toISOString().slice(0, 10) !== electionDate) throw new Error("Parish election date is invalid.");
@@ -86,9 +90,7 @@ export function readParishSampleIndex(body: string) {
 		}
 		if (!active) continue;
 		const label = clean(stateHtmlText(node)).replace(/ \(opens in a new tab\)$/u, "");
-		const parish = label === "Lasalle"
-			? "La Salle"
-			: label;
+		const parish = parishLabelAliases.get(label) ?? label;
 		if (!parishNames.includes(parish)) throw new Error("Parish election section contains an unrecognized link.");
 		let downloadUrl: string | null = null;
 		try {
@@ -281,7 +283,8 @@ export function readParishSamplePages(text: string, parish: string, electionDate
 	const compact = text.replace(/\s+/gu, "").toLowerCase();
 	const dateLabel = `${months[Number(date[2]) - 1]}${Number(date[3])},${date[1]}`.toLowerCase();
 	const label = parish.replace(/\s+/gu, "").toLowerCase();
-	if (!compact.includes(dateLabel) || ![`${label}sampleballot`, `${label}parishsampleballot`].some(title => compact.includes(title)) || !["u.s.representativerunoff", "municipalgeneral"].some(title => compact.includes(title))) throw new Error("Parish sample identity or election date changed.");
+	const recognizedElection = ["u.s.representativerunoff", "municipalgeneral"].some(title => compact.includes(title)) || /^Open General[ \t]*$/mu.test(text);
+	if (!compact.includes(dateLabel) || ![`${label}sampleballot`, `${label}parishsampleballot`].some(title => compact.includes(title)) || !recognizedElection) throw new Error("Parish sample identity or election date changed.");
 	const pages = text.split("\f");
 	if (!pages.at(-1)?.trim()) pages.pop();
 	if (!pages.length || pages.length > 50) throw new Error("Parish sample page bound exceeded.");
@@ -299,7 +302,7 @@ export function readParishCandidateReferences(text: string, parish: string, elec
 		let voteFor: number | undefined;
 		let precedingJurisdiction = "";
 		for (const line of page.split(/\r?\n/u).map(clean).filter(Boolean)) {
-			if (/^(?:U\.\s*S\.\s*Representative|State Senator|Mayor|Alderm[ae]n(?: at Large)?|Councilm[ae]n(?: at Large)?|Councilwoman|Council ?[Mm]ember(?:\(s\))?(?: at Large)?|Chief of Police|Member of School Board|Justice of the Peace|Constable(?: Justice of the Peace)?|District Judge|City Judge|City Marshal|Judge|District Attorney|Assessor|Sheriff|Clerk of Court|Police Juror)(?:,| (?:District|Ward)\b)/u.test(line) && line.length <= 180) {
+			if (line === "Parish President" || (/^(?:U\.\s*S\.\s*Representative|State Senator|Mayor|Alderm[ae]n(?: at Large)?|Councilm[ae]n(?: at Large)?|Councilwoman|Council ?[Mm]ember(?:\(s\))?(?: at Large)?|Chief of Police|Member of Parish Council|Member of School Board|Justice of the Peace|Constable(?: Justice of the Peace)?|District Judge|City Judge|City Marshal|Judge|District Attorney|Assessor|Sheriff|Clerk of Court|Police Juror)(?:,| (?:District|Ward)\b)/u.test(line) && line.length <= 180)) {
 				office = precedingJurisdiction && !line.includes(precedingJurisdiction)
 					? `${line}, ${precedingJurisdiction}`
 					: line;
@@ -326,7 +329,7 @@ export function readParishCandidateReferences(text: string, parish: string, elec
 				headingOpen = false;
 				continue;
 			}
-			if (/^■\s*Yes\s*■\s*No$/u.test(line)) {
+			if (/^■\s*Yes\s*■\s*No(?: City of [\p{L} .’'-]+ Proposition No\.\s*\d+ of(?: \d+)?)?$/u.test(line)) {
 				adjacent = false;
 				continue;
 			}

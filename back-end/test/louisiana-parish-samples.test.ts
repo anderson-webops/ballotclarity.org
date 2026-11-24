@@ -117,10 +117,31 @@ test("parish discovery binds the dated section and retains malformed links as ex
 	assert.equal(readParishSampleIndex(index.replaceAll("2030", "2034").replace("December 14", "December 9")).electionDate, "2034-12-09");
 });
 
+test("standalone Open General samples retain parish offices and exclude adjacent proposition text", () => {
+	const sample = "Parish President\n■First Person – Republican\nMember of Parish Council,District 6\n■Second Person – Democrat\n■Yes ■No City of Example Proposition No.3 of 5\nDESOTO PARISH SAMPLE BALLOT\nOpen General\nDecember12,2030\f";
+	assert.deepEqual(readParishCandidateReferences(sample, "De Soto", "2030-12-12").map(record => record.office), ["Parish President", "Member of Parish Council,District 6"]);
+	assert.equal(readParishCandidateReferences(sample.replace("of 5", "of\n5"), "De Soto", "2030-12-12").length, 2);
+	for (const changed of [
+		sample.replace("December12", "November3"),
+		sample.replace("Open General", "Open Primary"),
+		sample.replace("Open General", "Read about the Open General")
+	]) assert.throws(() => readParishCandidateReferences(changed, "De Soto", "2030-12-12"), /identity or election date/u);
+	assert.throws(() => readParishCandidateReferences(sample.replace("City of Example Proposition No.3 of 5", "■Third Person – Democrat"), "De Soto", "2030-12-12"), /candidate row/u);
+});
+
+test("parish discovery preserves the Open General label and resolves the DeSoto publication name", () => {
+	const edition = index.replace("Municipal General", "Open General").replace("West Carroll (opens in a new tab)", "DeSoto (opens in a new tab)");
+	const result = readParishSampleIndex(edition);
+	assert.equal(result.electionLabel, "U.S. Representative Runoff & Open General");
+	assert.deepEqual(result.links[0], { parish: "De Soto", downloadUrl: firstControl, issue: null });
+	assert.throws(() => readParishSampleIndex(edition.replace("Caddo</a>", "De Soto</a>")), /inventory is inconsistent/u);
+});
+
 test("parish discovery holds ambiguous elections, unknown sections, duplicate controls and new policies", () => {
 	for (const body of [
 		index.replace("December 14", "December 32"),
 		index.replace("Municipal General", "Unknown Election"),
+		index.replace("Municipal General", "Open Primary"),
 		index.replace("West Carroll (opens in a new tab)", "Unknown Parish"),
 		index.replace(secondControl, firstControl),
 		index.replace("</main>", "<a href=\"/new-terms\">New terms</a></main>"),

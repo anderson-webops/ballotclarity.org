@@ -1,3 +1,4 @@
+import { defineNuxtPlugin, onNuxtReady, useCookie, useState } from "#app";
 import {
 	detectBrowserDisplayTimeZone,
 	displayTimeZoneCookieName,

@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import type { AdminContentHistoryItem, AdminContentSnapshot } from "~/types/civic";
 import { FetchError } from "ofetch";
+import { computed, ref } from "vue";
+import { useRoute } from "#app";
+import { definePageMeta } from "#app/composables/pages";
+import { $fetch } from "#build/fetch";
+import { NuxtLink } from "#components";
+import AdminEmptyState from "~/components/AdminEmptyState.vue";
+import TrustBadge from "~/components/TrustBadge.vue";
+import { useAdminContent, useAdminContentHistory } from "~/composables/useAdmin";
+import { usePageSeo } from "~/composables/usePageSeo";
 
 definePageMeta({
 	layout: "admin",

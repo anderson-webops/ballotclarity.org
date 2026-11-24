@@ -1,4 +1,7 @@
 import { storeToRefs } from "pinia";
+import { computed } from "vue";
+import { useRoute } from "#app";
+import { useCivicStore } from "~/stores/civic";
 import {
 	lookupAllowsGuideEntryPoints,
 	lookupBlocksGuideEntryPoints,

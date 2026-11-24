@@ -1,5 +1,13 @@
 <script setup lang="ts">
 import { FetchError } from "ofetch";
+import { ref } from "vue";
+import { navigateTo } from "#app";
+import { definePageMeta } from "#app/composables/pages";
+import { $fetch } from "#build/fetch";
+import { NuxtLink } from "#components";
+import AdminLoadState from "~/components/AdminLoadState.vue";
+import { useAdminGuidePackages } from "~/composables/useAdmin";
+import { usePageSeo } from "~/composables/usePageSeo";
 
 definePageMeta({ layout: "admin", middleware: "admin" });
 const { data, error, pending, refresh } = await useAdminGuidePackages();

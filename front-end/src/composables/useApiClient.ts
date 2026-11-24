@@ -1,3 +1,6 @@
+import { useRequestHeaders, useRuntimeConfig } from "#app";
+import { $fetch } from "#build/fetch";
+
 export function useApiClient() {
 	const config = useRuntimeConfig();
 

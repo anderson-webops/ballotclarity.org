@@ -1,6 +1,17 @@
 <script setup lang="ts">
 import type { AdminCorrectionStatus, AdminPriority } from "~/types/civic";
 import { FetchError } from "ofetch";
+import { computed, ref } from "vue";
+import { useRoute } from "#app";
+import { definePageMeta } from "#app/composables/pages";
+import { $fetch } from "#build/fetch";
+import { NuxtLink } from "#components";
+import AdminLoadState from "~/components/AdminLoadState.vue";
+import InfoCallout from "~/components/InfoCallout.vue";
+import TrustBadge from "~/components/TrustBadge.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useAdminContent, useAdminCorrections, useAdminSession } from "~/composables/useAdmin";
+import { usePageSeo } from "~/composables/usePageSeo";
 import { getAdminCorrectionsState } from "~/utils/admin-corrections-state";
 
 definePageMeta({

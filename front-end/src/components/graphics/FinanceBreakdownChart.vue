@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import type { FinanceCategoryBreakdown } from "~/types/civic";
+import { computed } from "vue";
 import HorizontalBarChart from "~/components/graphics/HorizontalBarChart.vue";
+import SourceDrawer from "~/components/SourceDrawer.vue";
+import { useFormatters } from "~/composables/useFormatters";
 
 const props = defineProps<{
 	breakdown: FinanceCategoryBreakdown;

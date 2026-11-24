@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import type { PersonProfile, PublicElectionReference } from "~/types/civic";
+import { computed } from "vue";
+import { NuxtLink } from "#components";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
+import SourceDrawer from "~/components/SourceDrawer.vue";
+import { useFormatters } from "~/composables/useFormatters";
 import { candidateReferenceFacts } from "~/utils/candidate-reference-facts";
 import { hasPersonFunding, hasPersonInfluence } from "~/utils/person-profile";
 import { substantiveBiography } from "~/utils/representative-presentation";

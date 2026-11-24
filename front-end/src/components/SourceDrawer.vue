@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { Source } from "~/types/civic";
+import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from "vue";
+import SourceList from "~/components/SourceList.vue";
 
 withDefaults(defineProps<{
 	buttonLabel?: string;

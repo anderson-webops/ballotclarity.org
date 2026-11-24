@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { FetchError } from "ofetch";
+import { reactive, ref } from "vue";
+import { useRoute } from "#app";
+import { NuxtLink } from "#components";
+import ProtectedEmailLink from "~/components/ProtectedEmailLink.vue";
+import { useApiClient } from "~/composables/useApiClient";
+import { usePageSeo } from "~/composables/usePageSeo";
 
 const api = useApiClient();
 const route = useRoute();

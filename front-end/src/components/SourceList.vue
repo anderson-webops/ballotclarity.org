@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import type { Source } from "~/types/civic";
+import { computed } from "vue";
+import { NuxtLink } from "#components";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
+import SourceAuthorityBadge from "~/components/SourceAuthorityBadge.vue";
+import { useFormatters } from "~/composables/useFormatters";
+import { useSourceDirectory } from "~/composables/useSourceDirectory";
 import { buildSourceRecordHref } from "~/utils/source-record-links";
 
 withDefaults(defineProps<{

@@ -1,6 +1,17 @@
 <script setup lang="ts">
 import type { LocationLookupResponse } from "~/types/civic";
 import { storeToRefs } from "pinia";
+import { computed } from "vue";
+import { useAsyncData, useRoute } from "#app";
+import { NuxtLink } from "#components";
+import PartyLabel from "~/components/PartyLabel.vue";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useApiClient } from "~/composables/useApiClient";
+import { useFormatters } from "~/composables/useFormatters";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useRouteStringParam } from "~/composables/useRouteStringParam";
+import { useCivicStore } from "~/stores/civic";
 import { ballotSourceNotes } from "~/utils/ballot-notices";
 import { ballotRecordStatusLabels, findBallotCandidate } from "~/utils/ballot-view";
 import { normalizeLookupResponseForDisplay } from "~/utils/nationwide-results";

@@ -1,4 +1,8 @@
+import type { MaybeRefOrGetter } from "vue";
 import type { Measure } from "~/types/civic";
+import { computed, toValue } from "vue";
+import { useAsyncData } from "#app";
+import { useApiClient } from "~/composables/useApiClient";
 
 export function useMeasure(measureSlug: MaybeRefOrGetter<string | undefined>, electionSlug?: MaybeRefOrGetter<string | undefined>) {
 	const api = useApiClient();

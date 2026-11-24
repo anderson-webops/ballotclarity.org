@@ -1,3 +1,4 @@
+import { defineNuxtPlugin, useRouter, useRuntimeConfig } from "#app";
 import {
 	hasBuildMismatch,
 	isLikelyStaleNuxtChunkError,

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { Election } from "~/types/civic";
+import OfficialResourceList from "~/components/OfficialResourceList.vue";
+import { useFormatters } from "~/composables/useFormatters";
 
 const props = defineProps<{
 	election: Election;

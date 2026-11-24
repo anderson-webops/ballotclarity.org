@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import { NuxtLink } from "#components";
+import InfoCallout from "~/components/InfoCallout.vue";
+import { useGuideEntryGate } from "~/composables/useGuideEntryGate";
+import { usePageSeo } from "~/composables/usePageSeo";
+
 const { allowsGuideEntryPoints } = useGuideEntryGate();
 const standards = [
 	{

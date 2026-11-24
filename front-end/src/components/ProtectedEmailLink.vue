@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed, onMounted, ref } from "vue";
 import { buildProtectedContactHref, requestProtectedContactAddress } from "~/utils/protected-contact";
 
 const props = withDefaults(defineProps<{

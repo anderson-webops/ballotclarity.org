@@ -1,4 +1,17 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import { NuxtLink } from "#components";
+import AppBreadcrumbs from "~/components/AppBreadcrumbs.vue";
+import GuideUnavailableState from "~/components/GuideUnavailableState.vue";
+import PageSummaryStrip from "~/components/PageSummaryStrip.vue";
+import SourceDrawer from "~/components/SourceDrawer.vue";
+import SourceList from "~/components/SourceList.vue";
+import { useCandidate } from "~/composables/useCandidates";
+import { useFormatters } from "~/composables/useFormatters";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useRouteLayerNavigation } from "~/composables/useRouteLayerNavigation";
+import { useRouteStringParam } from "~/composables/useRouteStringParam";
+
 const { openLayerLink, overviewLink } = useRouteLayerNavigation();
 const candidateSlug = useRouteStringParam("slug");
 const { formatDateTime } = useFormatters();

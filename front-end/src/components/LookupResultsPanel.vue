@@ -4,8 +4,18 @@ import type {
 	LookupAvailabilityStatus,
 	NationwideLookupResultContext
 } from "~/types/civic";
+import { computed, resolveComponent } from "vue";
+import { NuxtLink } from "#components";
+import BallotContentPreviews from "~/components/BallotContentPreviews.vue";
 import DistrictLadder from "~/components/graphics/DistrictLadder.vue";
 import RepresentativeGrid from "~/components/graphics/RepresentativeGrid.vue";
+import PartyLabel from "~/components/PartyLabel.vue";
+import ProfileImageStack from "~/components/ProfileImageStack.vue";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
+import VerificationBadge from "~/components/VerificationBadge.vue";
+import { useElectionClock } from "~/composables/useElectionClock";
+import { useFormatters } from "~/composables/useFormatters";
+import { useStateRecordStates } from "~/composables/useStateRecords";
 import { hasBallotInformation } from "~/utils/ballot-notices";
 import { buildElectionView, civicLookupNeedsRefresh, electionHasPassed } from "~/utils/ballot-view";
 import { buildRepresentativeCards } from "~/utils/graphics-schema";

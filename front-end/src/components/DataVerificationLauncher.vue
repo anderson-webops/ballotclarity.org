@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineAsyncComponent } from "vue";
+import { defineAsyncComponent, ref } from "vue";
 
 const hasLoadedDrawer = ref(false);
 const DeferredDataVerificationDrawer = defineAsyncComponent(() => import("~/components/DataVerificationDrawer.vue"));

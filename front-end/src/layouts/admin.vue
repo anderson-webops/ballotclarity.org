@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import { navigateTo, useRoute } from "#app";
+import { $fetch } from "#build/fetch";
+import { NuxtLink } from "#components";
+import { useAdminSession } from "~/composables/useAdmin";
+
 const route = useRoute();
 const { data: session } = await useAdminSession(`admin-layout-session-${route.fullPath}`);
 

@@ -1,8 +1,28 @@
 <script setup lang="ts">
 import type { Source } from "~/types/civic";
 import { storeToRefs } from "pinia";
+import { computed } from "vue";
+import { NuxtLink } from "#components";
+import ExpandableSection from "~/components/ExpandableSection.vue";
 import TimelineList from "~/components/graphics/TimelineList.vue";
-import { buildCompareLaunchSlugs, buildCompareRoute } from "~/stores/civic";
+import GuideUnavailableState from "~/components/GuideUnavailableState.vue";
+import IncumbentBadge from "~/components/IncumbentBadge.vue";
+import IssueChip from "~/components/IssueChip.vue";
+import PageSectionNav from "~/components/PageSectionNav.vue";
+import PageSummaryStrip from "~/components/PageSummaryStrip.vue";
+import PartyLabel from "~/components/PartyLabel.vue";
+import ProfileImageStack from "~/components/ProfileImageStack.vue";
+import ProvenanceBadge from "~/components/ProvenanceBadge.vue";
+import SourceDrawer from "~/components/SourceDrawer.vue";
+import SourceList from "~/components/SourceList.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useCandidate } from "~/composables/useCandidates";
+import { useFormatters } from "~/composables/useFormatters";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useRouteLayerNavigation } from "~/composables/useRouteLayerNavigation";
+import { useRouteStringParam } from "~/composables/useRouteStringParam";
+import { useSiteUrl } from "~/composables/useSiteUrl";
+import { buildCompareLaunchSlugs, buildCompareRoute, useCivicStore } from "~/stores/civic";
 import {
 	buildCandidateTimeline
 } from "~/utils/graphics-schema";

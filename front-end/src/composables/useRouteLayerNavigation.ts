@@ -1,4 +1,7 @@
 import { storeToRefs } from "pinia";
+import { computed } from "vue";
+import { useGuideEntryGate } from "~/composables/useGuideEntryGate";
+import { useCivicStore } from "~/stores/civic";
 import { buildRouteLayerNavigation } from "~/utils/route-layer-navigation";
 
 export function useRouteLayerNavigation() {

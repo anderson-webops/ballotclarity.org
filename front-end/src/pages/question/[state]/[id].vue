@@ -1,5 +1,13 @@
 <script setup lang="ts">
 import type { StateQuestionsResponse } from "~/types/civic";
+import { computed } from "vue";
+import { useAsyncData, useRoute } from "#app";
+import { NuxtLink } from "#components";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
+import { useApiClient } from "~/composables/useApiClient";
+import { useFormatters } from "~/composables/useFormatters";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useRouteStringParam } from "~/composables/useRouteStringParam";
 import { ballotQuestionDocument } from "~/utils/ballot-question-document";
 import { ballotQuestionAreaLabel } from "~/utils/ballot-question-groups";
 import { ballotQuestionHeading } from "~/utils/ballot-question-heading";

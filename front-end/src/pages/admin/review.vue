@@ -1,4 +1,12 @@
 <script setup lang="ts">
+import { definePageMeta } from "#app/composables/pages";
+import AdminEmptyState from "~/components/AdminEmptyState.vue";
+import AdminLoadState from "~/components/AdminLoadState.vue";
+import TrustBadge from "~/components/TrustBadge.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useAdminReview } from "~/composables/useAdmin";
+import { usePageSeo } from "~/composables/usePageSeo";
+
 definePageMeta({
 	layout: "admin",
 	middleware: "admin"

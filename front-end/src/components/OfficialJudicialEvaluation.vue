@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import type { PublicJudicialEvaluation } from "~/types/civic";
+import { computed } from "vue";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
+import { useFormatters } from "~/composables/useFormatters";
 
 const props = defineProps<{ evaluation: PublicJudicialEvaluation }>();
 const { formatDate } = useFormatters();

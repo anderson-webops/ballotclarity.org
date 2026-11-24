@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Measure } from "~/types/civic";
+import { NuxtLink } from "#components";
 import { measureCardSummary, measureDecisionEffectLabel, measureDetailPath } from "~/utils/measure-content";
 
 defineProps<{ electionSlug?: string; measure: Measure; viewMode?: "deep" | "quick" }>();

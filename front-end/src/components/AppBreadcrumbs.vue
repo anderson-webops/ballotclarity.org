@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { NuxtLink } from "#components";
+
 withDefaults(defineProps<{
 	compact?: boolean;
 	items: Array<{

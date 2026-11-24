@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { ChangeLogEntry, FreshnessMeta } from "~/types/civic";
+import { computed } from "vue";
+import { useFormatters } from "~/composables/useFormatters";
 
 const props = defineProps<{
 	changeLog?: ChangeLogEntry[];

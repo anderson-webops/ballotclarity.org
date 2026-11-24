@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { ProfileImage } from "~/types/civic";
+import { useScrollLock, useWindowSize } from "@vueuse/core";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
 const props = defineProps<{ image: ProfileImage; name: string }>();
 const emit = defineEmits<{ close: [] }>();

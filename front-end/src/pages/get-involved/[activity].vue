@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import { useRoute } from "#app";
+import { definePageMeta } from "#app/composables/pages";
+import { NuxtLink } from "#components";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { usePageSeo } from "~/composables/usePageSeo";
 import { findParticipationGuide, participationReviewedAt } from "~/data/civic-participation";
 
 definePageMeta({

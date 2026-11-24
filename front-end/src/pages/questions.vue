@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import type { StateQuestionsResponse } from "~/types/civic";
+import { computed } from "vue";
+import { useAsyncData, useRoute } from "#app";
+import BallotQuestionList from "~/components/BallotQuestionList.vue";
+import { useApiClient } from "~/composables/useApiClient";
+import { useFormatters } from "~/composables/useFormatters";
+import { usePageSeo } from "~/composables/usePageSeo";
 import { groupBallotQuestions } from "~/utils/ballot-question-groups";
 
 const route = useRoute();

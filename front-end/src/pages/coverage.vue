@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import { NuxtLink } from "#components";
+import InfoCallout from "~/components/InfoCallout.vue";
+import { useCoverage } from "~/composables/useCoverage";
+import { useFormatters } from "~/composables/useFormatters";
+import { usePageSeo } from "~/composables/usePageSeo";
+
 const { formatDate } = useFormatters();
 const { data, error, pending } = await useCoverage();
 

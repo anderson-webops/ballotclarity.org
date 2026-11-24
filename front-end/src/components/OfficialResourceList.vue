@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { OfficialResource } from "~/types/civic";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
 
 withDefaults(defineProps<{
 	compact?: boolean;

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { PublicBallotQuestion } from "~/types/civic";
+import { computed } from "vue";
+import { NuxtLink } from "#components";
 import { groupBallotQuestions } from "~/utils/ballot-question-groups";
 import { ballotQuestionHeading } from "~/utils/ballot-question-heading";
 

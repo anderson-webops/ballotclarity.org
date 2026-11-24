@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TrustBullet } from "~/types/civic";
+import SourceDrawer from "~/components/SourceDrawer.vue";
 
 withDefaults(defineProps<{
 	knownItems: TrustBullet[];

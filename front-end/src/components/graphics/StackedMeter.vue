@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { GraphicsTone } from "~/types/civic";
+import { computed } from "vue";
 
 interface StackedMeterSegment {
 	id: string;

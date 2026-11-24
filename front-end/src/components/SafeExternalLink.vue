@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import { useSiteUrl } from "~/composables/useSiteUrl";
 import { resolvePublicLink } from "~/utils/link";
 
 defineOptions({

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import AppBreadcrumbs from "~/components/AppBreadcrumbs.vue";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
+
 interface PageSectionNavItem {
 	badge?: string;
 	href: string;

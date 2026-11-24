@@ -1,3 +1,7 @@
+import { onMounted, onUnmounted } from "vue";
+import { useState } from "#app";
+import { setInterval } from "#app/compat/interval";
+
 export function useElectionClock() {
 	const now = useState<number>("election-view-clock", () => Date.now());
 	let timer: ReturnType<typeof setInterval> | undefined;

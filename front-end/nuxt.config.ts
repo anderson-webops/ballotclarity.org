@@ -65,10 +65,13 @@ export default defineNuxtConfig({
 		"@unocss/nuxt",
 		"@pinia/nuxt",
 		"@nuxtjs/color-mode",
-		"@nuxt/eslint"
+		"@nuxt/eslint",
+		"nuxt-explicit-imports"
 	],
 
 	srcDir: "src",
+
+	explicitImports: { mode: "strict" },
 
 	devtools: {
 		enabled: devtoolsEnabled

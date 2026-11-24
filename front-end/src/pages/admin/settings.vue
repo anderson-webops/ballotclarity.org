@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import { definePageMeta } from "#app/composables/pages";
+import { NuxtLink } from "#components";
+import AdminLoadState from "~/components/AdminLoadState.vue";
+import { useAdminOverview, useAdminSession } from "~/composables/useAdmin";
+import { usePageSeo } from "~/composables/usePageSeo";
+
 definePageMeta({ layout: "admin", middleware: "admin" });
 const { data: session } = await useAdminSession("admin-settings-session");
 const { data: overview, error, pending, refresh } = await useAdminOverview();

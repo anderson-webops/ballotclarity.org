@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { usePageSeo } from "~/composables/usePageSeo";
+
 const faqItems = [
 	{
 		answer: [

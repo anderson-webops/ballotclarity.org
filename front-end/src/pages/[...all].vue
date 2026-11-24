@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { setResponseStatus, useResponseHeader } from "#app";
+import { NuxtLink } from "#components";
+import { usePageSeo } from "~/composables/usePageSeo";
+
 if (import.meta.server) {
 	setResponseStatus(404);
 	useResponseHeader("X-Robots-Tag").value = "noindex, nofollow";

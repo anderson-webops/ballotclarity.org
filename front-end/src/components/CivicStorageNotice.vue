@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import InfoCallout from "~/components/InfoCallout.vue";
+import { useCivicStore } from "~/stores/civic";
+
 const civicStore = useCivicStore();
 </script>
 

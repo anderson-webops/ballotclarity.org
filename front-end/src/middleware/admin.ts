@@ -1,4 +1,6 @@
 import type { AdminSessionResponse } from "~/types/civic";
+import { abortNavigation, createError, defineNuxtRouteMiddleware, navigateTo, useRequestHeaders } from "#app";
+import { $fetch } from "#build/fetch";
 
 export default defineNuxtRouteMiddleware(async (to) => {
 	const session = await $fetch<AdminSessionResponse>("/api/admin/session", {

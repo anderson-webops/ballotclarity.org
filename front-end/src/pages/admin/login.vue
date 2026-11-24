@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import type { AdminSessionResponse } from "~/types/civic";
 import { FetchError } from "ofetch";
+import { computed, ref } from "vue";
+import { navigateTo, useRoute } from "#app";
+import { definePageMeta } from "#app/composables/pages";
+import { $fetch } from "#build/fetch";
+import { NuxtLink } from "#components";
+import { useAdminSession } from "~/composables/useAdmin";
+import { usePageSeo } from "~/composables/usePageSeo";
 
 definePageMeta({
 	layout: false

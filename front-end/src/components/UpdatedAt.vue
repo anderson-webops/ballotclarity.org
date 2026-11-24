@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useMounted } from "@vueuse/core";
+import { useFormatters } from "~/composables/useFormatters";
+
 defineOptions({ inheritAttrs: false });
 const props = withDefaults(defineProps<{
 	footer?: boolean;

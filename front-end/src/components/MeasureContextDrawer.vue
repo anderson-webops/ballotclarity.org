@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import type { Measure, OfficialResource } from "~/types/civic";
+import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from "vue";
+import OfficialResourceList from "~/components/OfficialResourceList.vue";
+import SourceList from "~/components/SourceList.vue";
 
 const props = defineProps<{
 	measure: Measure;

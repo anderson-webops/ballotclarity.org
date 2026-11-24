@@ -2,6 +2,17 @@
 import type { RepresentativesResponse } from "~/types/civic";
 import { storeToRefs } from "pinia";
 
+import { computed, resolveComponent, watch } from "vue";
+import { useRoute } from "#app";
+import { NuxtLink } from "#components";
+import InfoCallout from "~/components/InfoCallout.vue";
+import PartyLabel from "~/components/PartyLabel.vue";
+import ProfileImageStack from "~/components/ProfileImageStack.vue";
+import RepresentativeWebsite from "~/components/RepresentativeWebsite.vue";
+import { useGuideEntryGate } from "~/composables/useGuideEntryGate";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useRepresentatives } from "~/composables/useRepresentatives";
+import { useCivicStore } from "~/stores/civic";
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { isExternalHref } from "~/utils/link";
 import { buildNationwideDirectoryResponses, mergeNationwideDirectoryResponses } from "~/utils/nationwide-directory";

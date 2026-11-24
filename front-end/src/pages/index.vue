@@ -6,6 +6,17 @@ import type {
 	NationwideLookupResultContext
 } from "~/types/civic";
 import { useIntervalFn, useNow } from "@vueuse/core";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { navigateTo, useAsyncData, useRoute } from "#app";
+import { NuxtLink } from "#components";
+import AddressLookupForm from "~/components/AddressLookupForm.vue";
+import LookupResultsPanel from "~/components/LookupResultsPanel.vue";
+import { useApiClient } from "~/composables/useApiClient";
+import { useFormatters } from "~/composables/useFormatters";
+import { useGuideEntryGate } from "~/composables/useGuideEntryGate";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useSiteUrl } from "~/composables/useSiteUrl";
+import { useCivicStore } from "~/stores/civic";
 import { calendarDaysUntil, describeDaysAway } from "~/utils/election-timeline";
 import { buildPublishedGuideDestination } from "~/utils/location-lookup";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";

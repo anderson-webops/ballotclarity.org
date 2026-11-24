@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import type { AdminSourceHealth } from "~/types/civic";
 import { FetchError } from "ofetch";
+import { computed, ref } from "vue";
+import { definePageMeta } from "#app/composables/pages";
+import { $fetch } from "#build/fetch";
+import AdminEmptyState from "~/components/AdminEmptyState.vue";
+import AdminLoadState from "~/components/AdminLoadState.vue";
+import InfoCallout from "~/components/InfoCallout.vue";
+import TrustBadge from "~/components/TrustBadge.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useAdminSession, useAdminSourceMonitor } from "~/composables/useAdmin";
+import { usePageSeo } from "~/composables/usePageSeo";
 
 definePageMeta({
 	layout: "admin",

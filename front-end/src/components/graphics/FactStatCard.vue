@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import VerificationBadge from "~/components/VerificationBadge.vue";
+
 interface FactStatBadge {
 	label: string;
 	tone?: "accent" | "neutral" | "warning";

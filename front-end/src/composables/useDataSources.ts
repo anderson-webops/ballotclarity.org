@@ -1,4 +1,6 @@
 import type { DataSourcesResponse } from "~/types/civic";
+import { useAsyncData } from "#app";
+import { useApiClient } from "~/composables/useApiClient";
 
 export function useDataSources() {
 	const api = useApiClient();

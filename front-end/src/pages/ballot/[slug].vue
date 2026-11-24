@@ -1,7 +1,21 @@
 <script setup lang="ts">
 import type { BallotResponse, Contest } from "~/types/civic";
 import { storeToRefs } from "pinia";
-import { buildCompareRoute } from "~/stores/civic";
+import { computed, ref, watchEffect } from "vue";
+import { navigateTo, useRoute } from "#app";
+import { definePageMeta } from "#app/composables/pages";
+import { NuxtLink } from "#components";
+import BallotLogisticsPanel from "~/components/BallotLogisticsPanel.vue";
+import ContestSection from "~/components/ContestSection.vue";
+import ElectionHero from "~/components/ElectionHero.vue";
+import InfoCallout from "~/components/InfoCallout.vue";
+import PartyLabel from "~/components/PartyLabel.vue";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
+import { useApiClient } from "~/composables/useApiClient";
+import { useBallot } from "~/composables/useBallot";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useRouteStringParam } from "~/composables/useRouteStringParam";
+import { buildCompareRoute, useCivicStore } from "~/stores/civic";
 import { measureBallotOptions, measureCardSummary } from "~/utils/measure-content";
 
 definePageMeta({

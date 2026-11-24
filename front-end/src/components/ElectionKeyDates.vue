@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { KeyDateTimelineEntry } from "~/utils/election-timeline";
+import { useFormatters } from "~/composables/useFormatters";
 import { formatCivicDate, formatCivicDateTime } from "~/utils/display-time-zone";
 
 const props = defineProps<{ entries: KeyDateTimelineEntry[]; compact?: boolean; electionDate?: string; timeZone?: string | null }>();

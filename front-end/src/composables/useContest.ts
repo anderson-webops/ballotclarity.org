@@ -1,4 +1,8 @@
+import type { MaybeRefOrGetter } from "vue";
 import type { ContestRecordResponse } from "~/types/civic";
+import { computed, toValue } from "vue";
+import { useAsyncData } from "#app";
+import { useApiClient } from "~/composables/useApiClient";
 
 export function useContest(contestSlug: MaybeRefOrGetter<string | undefined>) {
 	const api = useApiClient();

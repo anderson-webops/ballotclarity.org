@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import { definePageMeta } from "#app/composables/pages";
+import { NuxtLink } from "#components";
+import AdminLoadState from "~/components/AdminLoadState.vue";
+import { useAdminGuidePackage } from "~/composables/useAdmin";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useRouteStringParam } from "~/composables/useRouteStringParam";
+
 definePageMeta({ layout: "admin", middleware: "admin" });
 const packageId = useRouteStringParam("id");
 const { data, error, pending, refresh } = await useAdminGuidePackage(packageId);

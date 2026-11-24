@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import type { Candidate } from "~/types/civic";
+import { NuxtLink } from "#components";
+import PartyLabel from "~/components/PartyLabel.vue";
+import ProfileImageStack from "~/components/ProfileImageStack.vue";
 
 defineProps<{ candidate: Candidate; viewMode?: "deep" | "quick" }>();
 </script>

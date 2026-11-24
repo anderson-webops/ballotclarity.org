@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import { computed, ref } from "vue";
+import { NuxtLink } from "#components";
+import SourceProviders from "~/components/SourceProviders.vue";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useSourceDirectory } from "~/composables/useSourceDirectory";
 import { groupSourceDirectoryItems } from "~/utils/source-directory";
 
 const searchQuery = ref("");

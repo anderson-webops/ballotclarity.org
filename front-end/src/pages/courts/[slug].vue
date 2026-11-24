@@ -1,5 +1,14 @@
 <script setup lang="ts">
 import type { CourtDirectoryResponse } from "~/types/civic";
+import { computed } from "vue";
+import { useAsyncData } from "#app";
+import { NuxtLink } from "#components";
+import InfoCallout from "~/components/InfoCallout.vue";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useApiClient } from "~/composables/useApiClient";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useRouteStringParam } from "~/composables/useRouteStringParam";
 
 const slug = useRouteStringParam("slug");
 const api = useApiClient();

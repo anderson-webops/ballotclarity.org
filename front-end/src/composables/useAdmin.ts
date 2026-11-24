@@ -1,3 +1,4 @@
+import type { MaybeRefOrGetter } from "vue";
 import type {
 	AdminAuditResponse,
 	AdminContentHistoryResponse,
@@ -12,6 +13,9 @@ import type {
 	GuidePackageListResponse,
 	GuidePackageRecordResponse,
 } from "~/types/civic";
+import { computed, toValue } from "vue";
+import { useAsyncData, useFetch, useRequestHeaders } from "#app";
+import { $fetch } from "#build/fetch";
 
 function adminRequestHeaders() {
 	return import.meta.server

@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import type { AdminContentItem, AdminPriority, AdminReviewStatus } from "~/types/civic";
 import { FetchError } from "ofetch";
+import { computed, ref } from "vue";
+import { definePageMeta } from "#app/composables/pages";
+import { $fetch } from "#build/fetch";
+import { NuxtLink } from "#components";
+import AdminEmptyState from "~/components/AdminEmptyState.vue";
+import AdminLoadState from "~/components/AdminLoadState.vue";
+import TrustBadge from "~/components/TrustBadge.vue";
+import { useAdminContent, useAdminSession } from "~/composables/useAdmin";
+import { usePageSeo } from "~/composables/usePageSeo";
 
 definePageMeta({
 	layout: "admin",

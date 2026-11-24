@@ -2,6 +2,19 @@
 import type { Source } from "~/types/civic";
 import { storeToRefs } from "pinia";
 
+import { computed } from "vue";
+import { useRoute } from "#app";
+import { NuxtLink } from "#components";
+import AppBreadcrumbs from "~/components/AppBreadcrumbs.vue";
+import InfoCallout from "~/components/InfoCallout.vue";
+import PageSummaryStrip from "~/components/PageSummaryStrip.vue";
+import SourceDrawer from "~/components/SourceDrawer.vue";
+import { useFormatters } from "~/composables/useFormatters";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useRepresentative } from "~/composables/useRepresentative";
+import { useRouteLayerNavigation } from "~/composables/useRouteLayerNavigation";
+import { useRouteStringParam } from "~/composables/useRouteStringParam";
+import { useCivicStore } from "~/stores/civic";
 import { buildNationwidePersonProfileResponse } from "~/utils/nationwide-person-profile";
 import { buildLookupContextFromNationwideResult, buildNationwideLookupRouteQuery, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 import { hasPersonInfluence } from "~/utils/person-profile";

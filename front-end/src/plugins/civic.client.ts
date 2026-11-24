@@ -1,4 +1,8 @@
 import type { CoverageResponse, LocationLookupResponse } from "~/types/civic";
+import { watch } from "vue";
+import { defineNuxtPlugin, useNuxtData } from "#app";
+import { useApiClient } from "~/composables/useApiClient";
+import { useCivicStore } from "~/stores/civic";
 import { canGuessLocationOnLoad } from "~/utils/location-guess";
 
 export default defineNuxtPlugin((nuxtApp) => {

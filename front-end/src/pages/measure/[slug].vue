@@ -1,5 +1,20 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
+import { computed } from "vue";
+import { useRoute } from "#app";
+import { NuxtLink } from "#components";
+import ExpandableSection from "~/components/ExpandableSection.vue";
+import GuideUnavailableState from "~/components/GuideUnavailableState.vue";
+import PageSectionNav from "~/components/PageSectionNav.vue";
+import SourceList from "~/components/SourceList.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useFormatters } from "~/composables/useFormatters";
+import { useMeasure } from "~/composables/useMeasures";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useRouteLayerNavigation } from "~/composables/useRouteLayerNavigation";
+import { useRouteStringParam } from "~/composables/useRouteStringParam";
+import { useSiteUrl } from "~/composables/useSiteUrl";
+import { useCivicStore } from "~/stores/civic";
 import { hasLongMeasureOptions, measureBallotOptions, measureContent, measureDecisionEffectLabel, measureGuideLink } from "~/utils/measure-content";
 
 const civicStore = useCivicStore();

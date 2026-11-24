@@ -1,4 +1,12 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import { useRoute } from "#app";
+import OfficialSampleBallot from "~/components/OfficialSampleBallot.vue";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useFormatters } from "~/composables/useFormatters";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useStateRecords, useStateRecordStates } from "~/composables/useStateRecords";
 import { isSampleBallotDocument, recordPublicationGroups, recordPublications, recordSourceNotice, recordSourceTitle } from "~/utils/record-publications";
 import { readRecoverableStateRecordQuery, stateRecordSourceMismatch } from "~/utils/state-record-query";
 

@@ -1,3 +1,7 @@
+import type { MaybeRefOrGetter } from "vue";
+import { computed, toValue } from "vue";
+import { useHead, useSeoMeta } from "#app";
+import { buildSiteUrl, useSiteUrl } from "~/composables/useSiteUrl";
 import { appDescription, appName, appSocialImageAlt, appSocialImagePath } from "~/constants";
 import { serializeJsonLd } from "~/utils/json-ld";
 

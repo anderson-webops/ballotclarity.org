@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import type { LocationLookupResponse, LocationLookupSelectionOption } from "~/types/civic";
 import { storeToRefs } from "pinia";
+import { computed } from "vue";
+import { navigateTo, useAsyncData, useRoute } from "#app";
+import { definePageMeta } from "#app/composables/pages";
+import { NuxtLink } from "#components";
+import LookupResultsPanel from "~/components/LookupResultsPanel.vue";
+import { useApiClient } from "~/composables/useApiClient";
+import { useCoverage } from "~/composables/useCoverage";
+import { useElectionClock } from "~/composables/useElectionClock";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useCivicStore } from "~/stores/civic";
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { needsBallotPreviewRefresh, restoreMatchingBallotPreviews } from "~/utils/ballot-preview-refresh";
 import { electionHasPassed } from "~/utils/ballot-view";

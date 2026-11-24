@@ -32,7 +32,7 @@ async function main() {
 	for (const source of sources) {
 		let snapshot = await repository.getSnapshot(source.stateCode, exactSources ? source.id : undefined);
 		if (!snapshot && !exactSources) {
-			const selectedIds = new Set(selected.filter(candidate => candidate.stateCode === source.stateCode).map(candidate => candidate.id));
+			const selectedIds = new Set(selected.filter(candidate => candidate.stateCode === source.stateCode && candidate.selection !== "explicit").map(candidate => candidate.id));
 			const retained = await repository.getStoredSnapshots?.(source.stateCode, [...selectedIds]) ?? [];
 			snapshot = retained.filter(candidate => selectedIds.has(candidate.source.id)).sort((first, second) => second.source.electionDate.localeCompare(first.source.electionDate) || second.retrievedAt.localeCompare(first.retrievedAt))[0] ?? null;
 		}

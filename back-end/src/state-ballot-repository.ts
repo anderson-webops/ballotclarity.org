@@ -67,10 +67,12 @@ import {
 	orderStateBallotSources,
 	StateBallotAwaitingRecordsError,
 	stateBallotSourceIsCurrent,
+	stateBallotSourceIsDefault,
 	supportsPendingStateBallotRecords
 } from "./state-ballot-source-state.js";
 import { createStateBallotStorage } from "./state-ballot-storage.js";
 import { applicableStateRecordSupplements, readStateRecordSupplements, stateRecordOfficeKey } from "./state-ballot-supplements.js";
+import { texasMunicipalRunoffs } from "./state-ballot-texas-runoffs.js";
 import { parseTexasCandidateCapture } from "./state-ballot-texas.js";
 import { parseTuscolaCandidateCapture } from "./state-ballot-tuscola-collection.js";
 import { parseVermontCandidateCapture } from "./state-ballot-vermont.js";
@@ -113,8 +115,10 @@ interface StateBallotRepositoryOptions {
 export function resolveStateBallotConfiguration(environment: NodeJS.ProcessEnv = process.env, now = Date.now()) {
 	const catalogs = readConfiguredStateBallotCycleCatalogs(environment, now);
 	const cycleSources = catalogs.flatMap(catalog => stateBallotCycleSources(catalog, now));
+	const requestedSources = environment.STATE_BALLOT_ENABLED_SOURCES?.split(",").map(value => value.trim());
 	const configuredSources = [
 		...configuredStateBallotSources,
+		...texasMunicipalRunoffs.filter(source => requestedSources?.includes(source.id)),
 		...cycleSources
 	];
 	if (new Set(configuredSources.map(source => source.id)).size !== configuredSources.length) throw new Error("Official source identifiers must be unique.");
@@ -126,7 +130,6 @@ export function resolveStateBallotConfiguration(environment: NodeJS.ProcessEnv =
 	const requested = environment.STATE_BALLOT_ENABLED_STATES?.split(",").map(value => value.trim().toUpperCase());
 	if (requested?.some(state => !configuredSources.some(source => source.stateCode === state)))
 		throw new Error("Every enabled state must have a configured official source.");
-	const requestedSources = environment.STATE_BALLOT_ENABLED_SOURCES?.split(",").map(value => value.trim());
 	const requestedFamilies = environment.STATE_BALLOT_ENABLED_FAMILIES?.split(",").map(value => value.trim());
 	const enabledFamilies = requestedFamilies?.map(getStateBallotCycleFamily);
 	if (enabledFamilies?.some(family => requested && !requested.includes(family.source.stateCode)))
@@ -602,7 +605,9 @@ export function createStateBallotRepository(options: StateBallotRepositoryOption
 			return snapshots;
 		},
 		async getSnapshot(stateCode, sourceId) {
-			const matching = currentSources().filter(source => source.stateCode === stateCode.toUpperCase() && (sourceId === undefined || source.id === sourceId));
+			const matching = currentSources().filter(source => source.stateCode === stateCode.toUpperCase() && (sourceId === undefined
+				? stateBallotSourceIsDefault(source, now())
+				: source.id === sourceId));
 			const ordered = sourceId === undefined
 				? orderStateBallotSources(matching, now())
 				: matching;

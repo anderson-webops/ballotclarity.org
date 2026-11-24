@@ -27,7 +27,7 @@ import { validateOrangeDocumentUrl } from "./state-ballot-orange-discovery.js";
 import { validatePimaDocumentUrl } from "./state-ballot-pima-discovery.js";
 import { isActiveStateCandidateRecord } from "./state-ballot-records.js";
 import { configuredStateBallotSources } from "./state-ballot-registry.js";
-import { orderStateBallotSources, stateBallotSourceIsCurrent } from "./state-ballot-source-state.js";
+import { orderStateBallotSources, stateBallotSourceIsDefault } from "./state-ballot-source-state.js";
 import { applicableStateRecordSupplements, readStateRecordSupplements } from "./state-ballot-supplements.js";
 import { validateTuscolaDocumentUrl, validateTuscolaSource } from "./state-ballot-tuscola-collection.js";
 import { containsControlCharacters } from "./text-validation.js";
@@ -328,7 +328,7 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 					stateCode,
 					stateName,
 					configured: Boolean(options.length),
-					electionDate: options.find(source => stateBallotSourceIsCurrent(source, now()))?.electionDate,
+					electionDate: options.find(source => stateBallotSourceIsDefault(source, now()))?.electionDate,
 					sources: options.map(({ id, label, electionDate }) => ({ id, label, electionDate }))
 				};
 			})
@@ -378,7 +378,7 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 			return;
 		}
 		const source = sources.find(source => source.stateCode === stateCode && (sourceId === undefined
-			? stateBallotSourceIsCurrent(source, now())
+			? stateBallotSourceIsDefault(source, now())
 			: source.id === sourceId));
 		const payload: StateRecordsResponse = {
 			available: false,
@@ -406,7 +406,7 @@ export function registerStateRecordRoutes(app: Express, repository: StateBallotR
 				: null;
 			if (snapshot) {
 				const selected = sources.find(item => item.id === snapshot.source.id && item.stateCode === stateCode && item.electionDate === snapshot.source.electionDate && (sourceId === undefined || item.id === sourceId));
-				if (!selected || snapshot.source.stateCode !== stateCode || (sourceId === undefined && (!stateBallotSourceIsCurrent(selected, now()) || (source && snapshot.source.electionDate !== source.electionDate))))
+				if (!selected || snapshot.source.stateCode !== stateCode || (sourceId === undefined && (!stateBallotSourceIsDefault(selected, now()) || (source && snapshot.source.electionDate !== source.electionDate))))
 					throw new Error("The repository returned a mismatched candidate source.");
 				payload.source = {
 					stateCode,

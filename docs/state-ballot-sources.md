@@ -1862,3 +1862,14 @@ research while preserving original names, dates and page evidence. These records
 establish disclosure receipt, not general-election qualification. The newer
 November 20 packet remains an unreviewed external publication. Hawaii's statewide
 candidate-portal permission hold and ballot-source configuration stay unchanged.
+
+## Texas municipal runoff directories
+
+For December 12, 2026 the Corpus Christi and El Paso city sources accept reviewed
+external snapshots. Add the approved city ID to the existing
+`STATE_BALLOT_ENABLED_SOURCES` allowlist, preserving its other entries:
+`tx-corpus-christi-runoff-20261212` or `tx-el-paso-runoff-20261212`.
+The normal reviewed-snapshot import validates the source and document metadata.
+Each enrolled city appears in the directory and remains readable by explicit
+source ID after expiry. State-only selection and personal lookups do not select
+these municipal contests. Neither source schedules publisher requests.

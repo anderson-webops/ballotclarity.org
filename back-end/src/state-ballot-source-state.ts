@@ -44,3 +44,7 @@ export function orderStateBallotSources(sources: readonly StateBallotSource[], n
 	const expired = (source: StateBallotSource) => !stateBallotSourceIsCurrent(source, now);
 	return [...sources].sort((first, second) => Number(expired(first)) - Number(expired(second)) || first.electionDate.localeCompare(second.electionDate) || (second.defaultPriority ?? 0) - (first.defaultPriority ?? 0));
 }
+
+export function stateBallotSourceIsDefault(source: StateBallotSource, now: number) {
+	return source.selection !== "explicit" && stateBallotSourceIsCurrent(source, now);
+}

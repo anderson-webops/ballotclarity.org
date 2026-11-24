@@ -5,7 +5,7 @@ import type { StateBallotRepository } from "./state-ballot-repository.js";
 import type { StateRecordDetailResponse } from "./types/civic.js";
 import { matchingCandidateReferences } from "./candidate-reference-matching.js";
 import { configuredStateBallotSources } from "./state-ballot-registry.js";
-import { orderStateBallotSources, stateBallotSourceIsCurrent } from "./state-ballot-source-state.js";
+import { orderStateBallotSources, stateBallotSourceIsDefault } from "./state-ballot-source-state.js";
 import { publicStateCandidateRecord, stateRecordDocumentLinks } from "./state-records.js";
 import { usStates } from "./us-states.js";
 
@@ -22,7 +22,7 @@ export function registerStateRecordDetailRoutes(app: Express, repository: StateB
 		}
 		try {
 			const preferred = sources.find(source => source.stateCode === stateCode && (sourceId === undefined
-				? stateBallotSourceIsCurrent(source, now())
+				? stateBallotSourceIsDefault(source, now())
 				: source.id === sourceId));
 			const snapshot = preferred && repository
 				? await repository.getSnapshot(stateCode, sourceId as string | undefined)
@@ -32,7 +32,7 @@ export function registerStateRecordDetailRoutes(app: Express, repository: StateB
 				return;
 			}
 			const selected = sources.find(source => source.id === snapshot.source.id && source.stateCode === stateCode && source.electionDate === snapshot.source.electionDate && (sourceId === undefined || source.id === sourceId));
-			if (!selected || (sourceId === undefined && (!stateBallotSourceIsCurrent(selected, now()) || snapshot.source.electionDate !== preferred?.electionDate))) throw new Error("The candidate repository returned a different election or source.");
+			if (!selected || (sourceId === undefined && (!stateBallotSourceIsDefault(selected, now()) || snapshot.source.electionDate !== preferred?.electionDate))) throw new Error("The candidate repository returned a different election or source.");
 			const record = snapshot.records.find(record => record.id === recordId);
 			if (!record) {
 				response.status(404).json({ message: "The candidate record is unavailable." });

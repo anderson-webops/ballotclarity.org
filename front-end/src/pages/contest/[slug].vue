@@ -1,5 +1,18 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import { NuxtLink } from "#components";
+import AppBreadcrumbs from "~/components/AppBreadcrumbs.vue";
+import CandidateCard from "~/components/CandidateCard.vue";
+import ContestRoleGuide from "~/components/ContestRoleGuide.vue";
 import ComparisonMatrix from "~/components/graphics/ComparisonMatrix.vue";
+import GuideUnavailableState from "~/components/GuideUnavailableState.vue";
+import MeasureCard from "~/components/MeasureCard.vue";
+import SourceList from "~/components/SourceList.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useContest } from "~/composables/useContest";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useRouteLayerNavigation } from "~/composables/useRouteLayerNavigation";
+import { useRouteStringParam } from "~/composables/useRouteStringParam";
 import { buildContestComparisonMatrix } from "~/utils/graphics-schema";
 
 const { openLayerLink: fallbackOpenLayerLink, overviewLink: fallbackOverviewLink } = useRouteLayerNavigation();

@@ -1,7 +1,22 @@
 <script setup lang="ts">
 import type { BallotPlanSelection, Contest } from "~/types/civic";
 import { storeToRefs } from "pinia";
-import { buildCompareRoute } from "~/stores/civic";
+import { computed } from "vue";
+import { navigateTo, useRoute } from "#app";
+import { definePageMeta } from "#app/composables/pages";
+import { NuxtLink } from "#components";
+import ExpandableSection from "~/components/ExpandableSection.vue";
+import InfoCallout from "~/components/InfoCallout.vue";
+import OfficialResourceList from "~/components/OfficialResourceList.vue";
+import PageSummaryStrip from "~/components/PageSummaryStrip.vue";
+import PartyLabel from "~/components/PartyLabel.vue";
+import TrustBadge from "~/components/TrustBadge.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useBallot } from "~/composables/useBallot";
+import { useFormatters } from "~/composables/useFormatters";
+import { useGuideEntryGate } from "~/composables/useGuideEntryGate";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { buildCompareRoute, useCivicStore } from "~/stores/civic";
 import { publicCoverageLimit } from "~/utils/ballot-notices";
 import { fullAreaGuideLabels } from "~/utils/guide-scope";
 import { measureDecisionEffectLabel, measureDecisionLabel, measureDetailPath } from "~/utils/measure-content";

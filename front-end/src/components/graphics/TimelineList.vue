@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import type { TimelineEvent } from "~/types/civic";
+import SourceDrawer from "~/components/SourceDrawer.vue";
+import VerificationBadge from "~/components/VerificationBadge.vue";
+import { useFormatters } from "~/composables/useFormatters";
 
 const props = withDefaults(defineProps<{
 	badgeLabel?: string;

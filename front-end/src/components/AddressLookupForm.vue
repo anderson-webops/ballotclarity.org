@@ -5,6 +5,11 @@ import type {
 	LocationLookupSelectionOption,
 	NationwideLookupResultContext
 } from "~/types/civic";
+import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from "vue";
+import { navigateTo } from "#app";
+import LookupResultsPanel from "~/components/LookupResultsPanel.vue";
+import { useApiClient } from "~/composables/useApiClient";
+import { useCivicStore } from "~/stores/civic";
 import { buildPublishedGuideDestination } from "~/utils/location-lookup";
 import { normalizeLookupResponseForDisplay, resolveLookupDestination } from "~/utils/nationwide-results";
 

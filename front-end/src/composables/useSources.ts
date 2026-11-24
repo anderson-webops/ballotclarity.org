@@ -1,4 +1,6 @@
+import type { MaybeRefOrGetter } from "vue";
 import type { Source } from "~/types/civic";
+import { computed, toValue } from "vue";
 
 export function useSources(sources: MaybeRefOrGetter<Source[] | undefined>) {
 	const list = computed(() => toValue(sources) ?? []);

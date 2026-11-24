@@ -1,4 +1,13 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import { NuxtLink } from "#components";
+import ElectionKeyDates from "~/components/ElectionKeyDates.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useBallot } from "~/composables/useBallot";
+import { useElectionClock } from "~/composables/useElectionClock";
+import { useFormatters } from "~/composables/useFormatters";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useRouteStringParam } from "~/composables/useRouteStringParam";
 import { electionTimeZone } from "~/utils/election-time-zone";
 import { buildKeyDateTimeline } from "~/utils/election-timeline";
 

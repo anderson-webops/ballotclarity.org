@@ -1,5 +1,19 @@
 <script setup lang="ts">
 import type { ElectionSectionLink } from "~/utils/election-candidates";
+import { computed, ref, watch } from "vue";
+import { NuxtLink } from "#components";
+import ElectionBallotQuestions from "~/components/ElectionBallotQuestions.vue";
+import ElectionCandidateRecords from "~/components/ElectionCandidateRecords.vue";
+import ElectionKeyDates from "~/components/ElectionKeyDates.vue";
+import InfoCallout from "~/components/InfoCallout.vue";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
+import { useBallot } from "~/composables/useBallot";
+import { useElectionClock } from "~/composables/useElectionClock";
+import { useFormatters } from "~/composables/useFormatters";
+import { useJurisdiction } from "~/composables/useJurisdictions";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useRouteStringParam } from "~/composables/useRouteStringParam";
+import { useCivicStore } from "~/stores/civic";
 import { publicCoverageLimit } from "~/utils/ballot-notices";
 import { electionContestPath } from "~/utils/election-contest-path";
 import { electionTimeZone } from "~/utils/election-time-zone";

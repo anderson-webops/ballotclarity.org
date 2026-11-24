@@ -1,3 +1,6 @@
+import { computed } from "vue";
+import { useRoute } from "#app";
+
 export function useRouteStringParam(key: string) {
 	const route = useRoute();
 

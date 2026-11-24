@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import type { AdminAuditEvent } from "~/types/civic";
+import { definePageMeta } from "#app/composables/pages";
+import InfoCallout from "~/components/InfoCallout.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useAdminAudit, useAdminSession } from "~/composables/useAdmin";
+import { usePageSeo } from "~/composables/usePageSeo";
 
 definePageMeta({
 	layout: "admin",

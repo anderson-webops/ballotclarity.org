@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import type { ProvenanceSummary } from "~/types/civic";
+import { computed } from "vue";
 import FactStatCard from "~/components/graphics/FactStatCard.vue";
 import HorizontalBarChart from "~/components/graphics/HorizontalBarChart.vue";
 import StackedMeter from "~/components/graphics/StackedMeter.vue";
+import SourceDrawer from "~/components/SourceDrawer.vue";
+import VerificationBadge from "~/components/VerificationBadge.vue";
 
 const props = defineProps<{
 	summary: ProvenanceSummary;

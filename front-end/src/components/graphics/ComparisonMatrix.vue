@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { ComparisonMatrixCell, ComparisonMatrixData, ComparisonMatrixRow } from "~/types/civic";
+import SourceDrawer from "~/components/SourceDrawer.vue";
+import VerificationBadge from "~/components/VerificationBadge.vue";
 
 const props = defineProps<{
 	matrix: ComparisonMatrixData;

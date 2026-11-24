@@ -1,4 +1,8 @@
+import type { MaybeRefOrGetter } from "vue";
 import type { ElectionReferencesResponse } from "~/types/civic";
+import { computed, toValue } from "vue";
+import { useAsyncData } from "#app";
+import { useApiClient } from "~/composables/useApiClient";
 
 export function useElectionReferences(input: MaybeRefOrGetter<{ stateCode: string; electionDate?: string; search: string; scope: string; offset: number }>) {
 	const api = useApiClient();

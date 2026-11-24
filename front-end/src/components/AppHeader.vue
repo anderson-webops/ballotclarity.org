@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useId, watch } from "vue";
+import { useRoute } from "#app";
+import { ClientOnly, NuxtLink, ThemeToggleButton } from "#components";
+import { useGuideEntryGate } from "~/composables/useGuideEntryGate";
 import { appName } from "~/constants";
-import { buildCompareRoute } from "~/stores/civic";
+import { buildCompareRoute, useCivicStore } from "~/stores/civic";
 import { buildLookupContextFromNationwideResult, buildNationwideRouteTarget } from "~/utils/nationwide-route-context";
 
 interface HeaderLink {

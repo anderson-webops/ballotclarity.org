@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import type { AdminMfaSetupResponse, AdminSessionResponse } from "~/types/civic";
 import { FetchError } from "ofetch";
+import { computed, reactive, ref } from "vue";
+import { definePageMeta } from "#app/composables/pages";
+import { $fetch } from "#build/fetch";
+import InfoCallout from "~/components/InfoCallout.vue";
+import TrustBadge from "~/components/TrustBadge.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useAdminSession } from "~/composables/useAdmin";
+import { usePageSeo } from "~/composables/usePageSeo";
 
 const { data: session, refresh } = await useAdminSession("admin-account-session");
 

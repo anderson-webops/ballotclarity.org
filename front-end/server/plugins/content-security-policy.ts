@@ -1,3 +1,4 @@
+import { defineNitroPlugin, useRuntimeConfig } from "nitropack/runtime";
 import { analyticsTrackers } from "../../src/constants/index";
 import {
 	buildContentSecurityPolicy,

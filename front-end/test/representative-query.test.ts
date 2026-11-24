@@ -1,40 +1,40 @@
 import type { WatchSource } from "vue";
 import assert from "node:assert/strict";
-import test from "node:test";
-import { computed, effectScope, nextTick, ref, toValue, watch } from "vue";
-import { useRepresentative } from "../src/composables/useRepresentative.ts";
+import { registerHooks } from "node:module";
+import test, { mock } from "node:test";
+import { effectScope, nextTick, ref, watch } from "vue";
+
+const representativePath = "../src/composables/useRepresentative.ts";
+const representativeUrl = new URL(representativePath, import.meta.url).href;
+
+export const useApiClient = () => async () => null;
+export const useAsyncData = mock.fn((_key: () => string, _handler: unknown, _options: { watch: WatchSource[] }) => undefined);
 
 test("representative fetch watches location values rather than recreated query objects", async () => {
-	const captured: { key?: () => string; watch?: WatchSource[] } = {};
-	const globals = {
-		computed,
-		toValue,
-		useApiClient: () => async () => null,
-		useAsyncData: (key: () => string, _handler: unknown, options: { watch: WatchSource[] }) => {
-			captured.key = key;
-			captured.watch = options.watch;
+	const hooks = registerHooks({
+		resolve(specifier, context, nextResolve) {
+			if (context.parentURL === representativeUrl && (specifier === "#app" || specifier === "~/composables/useApiClient"))
+				return { url: import.meta.url, shortCircuit: true };
+
+			return nextResolve(specifier, context);
 		}
-	};
-	const descriptors = Object.keys(globals).map(key => [
-		key,
-		Object.getOwnPropertyDescriptor(globalThis, key)
-	] as const);
-	Object.assign(globalThis, globals);
+	});
 	const scope = effectScope();
 	try {
+		const { useRepresentative } = await import("../src/composables/useRepresentative.ts");
 		const slug = ref("raphael-warnock");
 		const query = ref<{ lookup: string; selection?: string }>();
 		query.value = { lookup: "30022" };
 		scope.run(() => useRepresentative(slug, query));
-		assert.ok(captured.watch);
-		assert.ok(captured.key);
+		assert.equal(useAsyncData.mock.callCount(), 1);
+		const [key, , options] = useAsyncData.mock.calls[0]!.arguments;
 		let refreshes = 0;
-		scope.run(() => watch(captured.watch!, () => refreshes++));
+		scope.run(() => watch(options.watch, () => refreshes++));
 
 		query.value = { lookup: "30022" };
 		await nextTick();
 		assert.equal(refreshes, 0);
-		assert.equal(captured.key(), "representative:raphael-warnock:30022:none");
+		assert.equal(key(), "representative:raphael-warnock:30022:none");
 
 		query.value = { lookup: "98101" };
 		await nextTick();
@@ -48,18 +48,13 @@ test("representative fetch watches location values rather than recreated query o
 		slug.value = "another-official";
 		await nextTick();
 		assert.equal(refreshes, 3);
-		assert.equal(captured.key(), "representative:another-official:98101:zip:98101:fixture");
+		assert.equal(key(), "representative:another-official:98101:zip:98101:fixture");
 		query.value = undefined;
 		await nextTick();
 		assert.equal(refreshes, 4);
 	}
 	finally {
+		hooks.deregister();
 		scope.stop();
-		for (const [key, descriptor] of descriptors) {
-			if (descriptor)
-				Object.defineProperty(globalThis, key, descriptor);
-			else
-				Reflect.deleteProperty(globalThis, key);
-		}
 	}
 });

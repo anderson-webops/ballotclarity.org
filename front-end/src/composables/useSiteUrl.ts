@@ -1,3 +1,5 @@
+import { useRuntimeConfig } from "#app";
+
 const defaultSiteUrl = "https://ballotclarity.org";
 const trailingSlashPattern = /\/$/;
 

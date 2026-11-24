@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref } from "vue";
+
 const props = withDefaults(defineProps<{
 	placeholderClass?: string;
 	rootMargin?: string;

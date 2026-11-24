@@ -1,5 +1,13 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import DataFreshnessDashboard from "~/components/graphics/DataFreshnessDashboard.vue";
+import InfoCallout from "~/components/InfoCallout.vue";
+import SourceAuthorityBadge from "~/components/SourceAuthorityBadge.vue";
+import TrustBadge from "~/components/TrustBadge.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useFormatters } from "~/composables/useFormatters";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { usePublicStatus } from "~/composables/usePublicStatus";
 
 const { formatDateTime } = useFormatters();
 const { data, error, pending } = await usePublicStatus();

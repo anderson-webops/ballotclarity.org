@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { NuxtLink } from "#components";
+import { usePageSeo } from "~/composables/usePageSeo";
 import { participationGuides } from "~/data/civic-participation";
 
 usePageSeo({

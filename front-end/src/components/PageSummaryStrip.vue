@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { NuxtLink } from "#components";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
 import { isExternalHref } from "~/utils/link";
 
 defineProps<{

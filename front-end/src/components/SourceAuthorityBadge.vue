@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { SourceAuthority } from "~/types/civic";
+import { computed } from "vue";
+import VerificationBadge from "~/components/VerificationBadge.vue";
 
 const props = defineProps<{
 	authority: SourceAuthority;

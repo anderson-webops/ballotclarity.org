@@ -1,5 +1,12 @@
 <script setup lang="ts">
 import type { BallotContentPreview, NationwideLookupResultContext } from "~/types/civic";
+import { computed, resolveComponent } from "vue";
+import OfficialSampleBallot from "~/components/OfficialSampleBallot.vue";
+import PartyLabel from "~/components/PartyLabel.vue";
+import ProfileImageStack from "~/components/ProfileImageStack.vue";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useFormatters } from "~/composables/useFormatters";
 import { ballotSourceNotes } from "~/utils/ballot-notices";
 import { ballotRecordStatusLabels, buildBallotCandidateTarget } from "~/utils/ballot-view";
 

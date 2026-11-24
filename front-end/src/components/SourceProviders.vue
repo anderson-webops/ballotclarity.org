@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useDataSources } from "~/composables/useDataSources";
+
 const { data, error, pending } = await useDataSources();
 const activeProviders = computed(() => data.value?.ballotContentProviders?.filter(provider => provider.connectionStatus === "active") ?? []);
 </script>

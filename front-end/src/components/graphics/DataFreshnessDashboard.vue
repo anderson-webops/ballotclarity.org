@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import type { AdminSourceHealth, PublicStatusResponse } from "~/types/civic";
 import { useIntervalFn, useNow } from "@vueuse/core";
+import { computed } from "vue";
+import VerificationBadge from "~/components/VerificationBadge.vue";
+import { useFormatters } from "~/composables/useFormatters";
 import { orderScheduledSourceChecks } from "~/utils/source-checks";
 
 const props = defineProps<{

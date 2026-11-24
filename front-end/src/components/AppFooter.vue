@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { buildCompareRoute } from "~/stores/civic";
+import { computed } from "vue";
+import { ClientOnly, NuxtLink } from "#components";
+import DataVerificationLauncher from "~/components/DataVerificationLauncher.vue";
+import ProtectedEmailLink from "~/components/ProtectedEmailLink.vue";
+import ThemeSchemePicker from "~/components/ThemeSchemePicker.vue";
+import { useGuideEntryGate } from "~/composables/useGuideEntryGate";
+import { buildCompareRoute, useCivicStore } from "~/stores/civic";
 import { ballotInformationDisclaimer } from "~/utils/ballot-notices";
 
 const year = new Date().getFullYear();

@@ -1,4 +1,19 @@
 <script setup lang="ts">
+import { computed, watch } from "vue";
+import { navigateTo, useRoute } from "#app";
+import { NuxtLink } from "#components";
+import ElectionCandidateRecords from "~/components/ElectionCandidateRecords.vue";
+import InfoCallout from "~/components/InfoCallout.vue";
+import OfficialResourceList from "~/components/OfficialResourceList.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useBallot } from "~/composables/useBallot";
+import { useFormatters } from "~/composables/useFormatters";
+import { useJurisdiction } from "~/composables/useJurisdictions";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useRouteStringParam } from "~/composables/useRouteStringParam";
+import { useSiteUrl } from "~/composables/useSiteUrl";
+import { useCivicStore } from "~/stores/civic";
+
 const civicStore = useCivicStore();
 const siteUrl = useSiteUrl();
 const { formatDate } = useFormatters();

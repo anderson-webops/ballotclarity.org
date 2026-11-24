@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import type { ElectionReferencesResponse } from "~/types/civic";
+import { computed, nextTick, ref, watch } from "vue";
+import { navigateTo, useRoute } from "#app";
+import { NuxtLink } from "#components";
+import ProfileImageStack from "~/components/ProfileImageStack.vue";
+import { useFormatters } from "~/composables/useFormatters";
 import { referenceJurisdiction } from "~/utils/reference-context";
 
 const props = defineProps<{ stateCode: string; data: ElectionReferencesResponse | null; error: boolean; pending: boolean }>();

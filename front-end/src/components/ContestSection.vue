@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import type { Contest } from "~/types/civic";
+import { computed } from "vue";
+import { NuxtLink } from "#components";
+import CandidateCard from "~/components/CandidateCard.vue";
+import ExpandableSection from "~/components/ExpandableSection.vue";
+import MeasureCard from "~/components/MeasureCard.vue";
 
 const props = withDefaults(defineProps<{
 	contest: Contest;

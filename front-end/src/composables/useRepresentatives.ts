@@ -1,4 +1,8 @@
+import type { MaybeRefOrGetter } from "vue";
 import type { RepresentativesResponse } from "~/types/civic";
+import { computed, toValue } from "vue";
+import { useAsyncData } from "#app";
+import { useApiClient } from "~/composables/useApiClient";
 
 interface NationwideLookupApiQuery {
 	area?: string;

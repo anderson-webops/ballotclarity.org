@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import type { Election, GuideContentSummary, LocationSelection } from "~/types/civic";
+import { computed } from "vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useFormatters } from "~/composables/useFormatters";
 import { publicCoverageLimit } from "~/utils/ballot-notices";
 import { fullAreaGuideLabels } from "~/utils/guide-scope";
 import { limitedBallotNotice } from "~/utils/results-summary";

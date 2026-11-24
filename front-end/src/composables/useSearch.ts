@@ -1,4 +1,8 @@
+import type { MaybeRefOrGetter } from "vue";
 import type { SearchResponse } from "~/types/civic";
+import { computed, toValue } from "vue";
+import { useAsyncData } from "#app";
+import { useApiClient } from "~/composables/useApiClient";
 
 export function useSearchResults(queryInput: MaybeRefOrGetter<string | undefined>) {
 	const api = useApiClient();

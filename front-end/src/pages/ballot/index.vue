@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import type { ElectionsResponse } from "~/types/civic";
 import { storeToRefs } from "pinia";
+import { navigateTo, useAsyncData } from "#app";
+import { useApiClient } from "~/composables/useApiClient";
+import { useGuideEntryGate } from "~/composables/useGuideEntryGate";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useCivicStore } from "~/stores/civic";
 import { nationwideResultsPath } from "~/utils/nationwide-results";
 
 const api = useApiClient();

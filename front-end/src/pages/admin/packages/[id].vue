@@ -5,6 +5,15 @@ import type {
 	GuidePackageStatus,
 } from "~/types/civic";
 import { FetchError } from "ofetch";
+import { computed, reactive, ref } from "vue";
+import { definePageMeta } from "#app/composables/pages";
+import { $fetch } from "#build/fetch";
+import { NuxtLink } from "#components";
+import AdminLoadState from "~/components/AdminLoadState.vue";
+import TrustBadge from "~/components/TrustBadge.vue";
+import { useAdminGuidePackage, useAdminSession } from "~/composables/useAdmin";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useRouteStringParam } from "~/composables/useRouteStringParam";
 
 definePageMeta({
 	layout: "admin",

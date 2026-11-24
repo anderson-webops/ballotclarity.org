@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import type { RepresentativeCard } from "~/types/civic";
+import { computed } from "vue";
+import { NuxtLink } from "#components";
 import StackedMeter from "~/components/graphics/StackedMeter.vue";
+import PartyLabel from "~/components/PartyLabel.vue";
+import ProfileImageStack from "~/components/ProfileImageStack.vue";
+import RepresentativeWebsite from "~/components/RepresentativeWebsite.vue";
+import SourceDrawer from "~/components/SourceDrawer.vue";
+import VerificationBadge from "~/components/VerificationBadge.vue";
 import { isExternalHref } from "~/utils/link";
 
 const props = withDefaults(defineProps<{

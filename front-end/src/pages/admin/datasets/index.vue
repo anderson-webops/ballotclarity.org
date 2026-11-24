@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import { computed, ref } from "vue";
+import { definePageMeta } from "#app/composables/pages";
+import { NuxtLink } from "#components";
+import AdminLoadState from "~/components/AdminLoadState.vue";
+import { useAdminOperations } from "~/composables/useAdmin";
+import { usePageSeo } from "~/composables/usePageSeo";
 import { adminDatasetCount, adminDatasetStatus } from "~/utils/admin-dataset";
 
 definePageMeta({ layout: "admin", middleware: "admin" });

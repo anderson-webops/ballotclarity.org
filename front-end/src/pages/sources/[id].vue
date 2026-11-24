@@ -1,4 +1,15 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import { createError } from "#app";
+import { NuxtLink } from "#components";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
+import SourceAuthorityBadge from "~/components/SourceAuthorityBadge.vue";
+import TrustBadge from "~/components/TrustBadge.vue";
+import { useFormatters } from "~/composables/useFormatters";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useRouteStringParam } from "~/composables/useRouteStringParam";
+import { useSiteUrl } from "~/composables/useSiteUrl";
+import { useSourceRecord } from "~/composables/useSourceDirectory";
 import { formatSourceCitationType, formatSourcePublicationKind, formatSourcePublisherType, sourceDisplayDate } from "~/utils/source-directory";
 
 const siteUrl = useSiteUrl();

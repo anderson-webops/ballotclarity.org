@@ -1,4 +1,12 @@
 <script setup lang="ts">
+import { NuxtLink } from "#components";
+import InfoCallout from "~/components/InfoCallout.vue";
+import TrustBadge from "~/components/TrustBadge.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useCorrectionsLog } from "~/composables/useCorrectionsLog";
+import { useFormatters } from "~/composables/useFormatters";
+import { usePageSeo } from "~/composables/usePageSeo";
+
 const { formatDateTime } = useFormatters();
 const { data, error, pending } = await useCorrectionsLog();
 

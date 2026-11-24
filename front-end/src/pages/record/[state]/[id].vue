@@ -1,5 +1,18 @@
 <script setup lang="ts">
 import type { ElectionReferencesResponse, PersonProfileResponse, PublicElectionReference, PublicJudicialEvaluation, StateRecordDetailResponse } from "~/types/civic";
+import { computed } from "vue";
+import { useAsyncData, useRoute } from "#app";
+import { NuxtLink } from "#components";
+import OfficialJudicialEvaluation from "~/components/OfficialJudicialEvaluation.vue";
+import PartyLabel from "~/components/PartyLabel.vue";
+import PersonRecordDetails from "~/components/PersonRecordDetails.vue";
+import ProfileImageStack from "~/components/ProfileImageStack.vue";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useApiClient } from "~/composables/useApiClient";
+import { useFormatters } from "~/composables/useFormatters";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useRouteStringParam } from "~/composables/useRouteStringParam";
 import { findRecordDetail } from "~/utils/record-detail";
 import { matchingRecordPerson } from "~/utils/record-person";
 import { referenceJurisdiction } from "~/utils/reference-context";

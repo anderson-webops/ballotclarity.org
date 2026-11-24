@@ -1,7 +1,26 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { groupCountyOfficeholders } from "~/utils/county-officeholder-groups";
+import { computed } from "vue";
 
+import { useRoute } from "#app";
+import { NuxtLink } from "#components";
+import AppBreadcrumbs from "~/components/AppBreadcrumbs.vue";
+import CandidateCard from "~/components/CandidateCard.vue";
+import InfoCallout from "~/components/InfoCallout.vue";
+import OfficialResourceList from "~/components/OfficialResourceList.vue";
+import PageSectionNav from "~/components/PageSectionNav.vue";
+import PartyLabel from "~/components/PartyLabel.vue";
+import ProfileImageStack from "~/components/ProfileImageStack.vue";
+import RepresentativeWebsite from "~/components/RepresentativeWebsite.vue";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
+import SourceList from "~/components/SourceList.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useDistrict } from "~/composables/useDistricts";
+import { useGuideEntryGate } from "~/composables/useGuideEntryGate";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useRouteStringParam } from "~/composables/useRouteStringParam";
+import { useCivicStore } from "~/stores/civic";
+import { groupCountyOfficeholders } from "~/utils/county-officeholder-groups";
 import { buildDistrictRepresentativeSection, buildDistrictResponsibilitiesHeading } from "~/utils/district-availability";
 import { buildGuideDistrictPageRecord, buildNationwideDistrictPageRecord } from "~/utils/district-page";
 import { isExternalHref } from "~/utils/link";

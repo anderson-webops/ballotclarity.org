@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { LocationDistrictMatch } from "~/types/civic";
+import { computed } from "vue";
+import { NuxtLink } from "#components";
 import { classifyDistrictLevel } from "~/utils/district-level";
 
 const props = withDefaults(defineProps<{

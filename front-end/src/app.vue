@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import { useHead, useRoute } from "#app";
+import { NuxtLayout, NuxtPage } from "#components";
+import { useSiteUrl } from "~/composables/useSiteUrl";
+import { useThemeScheme } from "~/composables/useThemeScheme";
 import { appDescription, appName } from "~/constants";
 import { serializeJsonLd } from "~/utils/json-ld";
 import { themeSchemeStyleContent } from "~/utils/theme-schemes";

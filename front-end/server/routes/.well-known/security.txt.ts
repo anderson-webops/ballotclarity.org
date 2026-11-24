@@ -1,3 +1,6 @@
+import { defineEventHandler, setHeader } from "h3";
+import { useRuntimeConfig } from "nitropack/runtime";
+
 const securityTxtTtlMs = 180 * 24 * 60 * 60 * 1000;
 const trailingSlashesPattern = /\/+$/u;
 const productionSiteUrl = "https://ballotclarity.org";

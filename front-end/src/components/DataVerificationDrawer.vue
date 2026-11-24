@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from "vue";
+import { NuxtLink } from "#components";
+
 const props = withDefaults(defineProps<{
 	openOnMount?: boolean;
 }>(), {

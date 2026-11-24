@@ -1,3 +1,5 @@
+import { defineEventHandler, getRequestURL, setHeader } from "h3";
+import { useRuntimeConfig } from "nitropack/runtime";
 import { resolveRequestTimeoutMs } from "~/utils/request-timeout";
 
 interface ElectionSummaryResponse {

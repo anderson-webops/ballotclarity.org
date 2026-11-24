@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { GraphicsTone, Source } from "~/types/civic";
+import { computed } from "vue";
+import SourceDrawer from "~/components/SourceDrawer.vue";
 
 interface HorizontalBarChartItem {
 	id: string;

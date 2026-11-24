@@ -1,4 +1,13 @@
 <script setup lang="ts">
+import { computed, ref, watch } from "vue";
+import { navigateTo, useRoute } from "#app";
+import { NuxtLink } from "#components";
+import CandidateDirectory from "~/components/CandidateDirectory.vue";
+import PartyLabel from "~/components/PartyLabel.vue";
+import ProfileImageStack from "~/components/ProfileImageStack.vue";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useSearchResults } from "~/composables/useSearch";
+
 const route = useRoute();
 const directory = computed(() => route.query.type === "candidate");
 const searchInput = ref(typeof route.query.q === "string"

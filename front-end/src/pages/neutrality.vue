@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { navigateTo } from "#app";
+import { definePageMeta } from "#app/composables/pages";
+import { usePageSeo } from "~/composables/usePageSeo";
+
 usePageSeo({ path: "/about", title: "About" });
 definePageMeta({
 	middleware: to => navigateTo({ path: "/about", query: to.query, hash: "#neutrality" }, { redirectCode: 301 })

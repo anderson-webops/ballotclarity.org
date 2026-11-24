@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
 import { normalizeExternalHref } from "~/utils/link";
 
 defineOptions({ inheritAttrs: false });

@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import type { DistrictsResponse, RepresentativesResponse } from "~/types/civic";
 import { storeToRefs } from "pinia";
+import { computed, watch } from "vue";
+import { useRoute } from "#app";
+import { NuxtLink } from "#components";
+import InfoCallout from "~/components/InfoCallout.vue";
+import { useDistricts } from "~/composables/useDistricts";
+import { useGuideEntryGate } from "~/composables/useGuideEntryGate";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useRepresentatives } from "~/composables/useRepresentatives";
+import { useCivicStore } from "~/stores/civic";
 import { buildActiveLookupSummary } from "~/utils/active-lookup";
 import { groupDistrictSummaries } from "~/utils/district-groups";
 import { buildNationwideDirectoryResponses, mergeNationwideDirectoryResponses } from "~/utils/nationwide-directory";

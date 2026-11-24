@@ -1,4 +1,6 @@
 import type { ThemeSchemeId } from "~/utils/theme-schemes";
+import { computed } from "vue";
+import { useCookie } from "#app";
 import { defaultThemeScheme, normalizeThemeScheme, themeSchemeOptions } from "~/utils/theme-schemes";
 
 export const themeSchemeCookieName = "ballot-clarity-theme-scheme";

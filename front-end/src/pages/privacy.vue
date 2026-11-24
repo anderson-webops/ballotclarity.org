@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import { useRuntimeConfig } from "#app";
+import { NuxtLink } from "#components";
+import InfoCallout from "~/components/InfoCallout.vue";
+import ProtectedEmailLink from "~/components/ProtectedEmailLink.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useSiteUrl } from "~/composables/useSiteUrl";
 import { analyticsTrackers, appName } from "~/constants";
 
 const effectiveAt = "2026-07-29T00:00:00-04:00";

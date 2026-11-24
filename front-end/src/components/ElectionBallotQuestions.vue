@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import type { BallotResponse, StateQuestionsResponse } from "~/types/civic";
 import type { ElectionSectionLink } from "~/utils/election-candidates";
+import { useMounted } from "@vueuse/core";
+import { computed, watch } from "vue";
+import { useAsyncData } from "#app";
+import BallotQuestionList from "~/components/BallotQuestionList.vue";
+import { useApiClient } from "~/composables/useApiClient";
 import { electionQuestions } from "~/utils/election-questions";
 
 const props = defineProps<{ source: NonNullable<BallotResponse["candidateRecordSource"]>; electionDate: string }>();

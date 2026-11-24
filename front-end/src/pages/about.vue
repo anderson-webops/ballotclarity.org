@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { NuxtLink } from "#components";
+import { usePageSeo } from "~/composables/usePageSeo";
+
 usePageSeo({
 	description: "About Ballot Clarity, its sources, editorial standards, and corrections.",
 	path: "/about",

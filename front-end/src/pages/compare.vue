@@ -1,6 +1,17 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { buildCompareRoute, normalizeCompareSlugs, parseCompareQuerySlugs } from "~/stores/civic";
+import { computed, ref, watch, watchEffect } from "vue";
+import { useRoute, useRouter } from "#app";
+import { NuxtLink } from "#components";
+import AppBreadcrumbs from "~/components/AppBreadcrumbs.vue";
+import CompareTable from "~/components/CompareTable.vue";
+import IncumbentBadge from "~/components/IncumbentBadge.vue";
+import PartyLabel from "~/components/PartyLabel.vue";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
+import { useCandidates } from "~/composables/useCandidates";
+import { usePageSeo } from "~/composables/usePageSeo";
+import { useRouteLayerNavigation } from "~/composables/useRouteLayerNavigation";
+import { buildCompareRoute, normalizeCompareSlugs, parseCompareQuerySlugs, useCivicStore } from "~/stores/civic";
 
 const civicStore = useCivicStore();
 const route = useRoute();

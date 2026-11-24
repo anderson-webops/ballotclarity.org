@@ -1,4 +1,16 @@
 <script setup lang="ts">
+import { computed, ref, watch } from "vue";
+import { navigateTo, useRoute } from "#app";
+import { NuxtLink } from "#components";
+import ElectionReferences from "~/components/ElectionReferences.vue";
+import OfficialSampleBallot from "~/components/OfficialSampleBallot.vue";
+import PartyLabel from "~/components/PartyLabel.vue";
+import ProfileImageStack from "~/components/ProfileImageStack.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useElectionReferenceCatalog, useElectionReferences } from "~/composables/useElectionReferences";
+import { useFormatters } from "~/composables/useFormatters";
+import { useStateRecords, useStateRecordStates } from "~/composables/useStateRecords";
+import { useCivicStore } from "~/stores/civic";
 import { isSampleBallotDocument, recordPublications, recordSourceNotice } from "~/utils/record-publications";
 import { readReferenceElection, referenceElectionControl, referenceElectionQuery } from "~/utils/reference-election";
 import { readRecoverableStateRecordQuery, stateRecordSourceMismatch, stateRecordSourceSelectionRequired } from "~/utils/state-record-query";

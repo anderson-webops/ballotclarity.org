@@ -1,5 +1,14 @@
 <script setup lang="ts">
 import type { Candidate, ComparableStatement, QuestionnaireResponse } from "~/types/civic";
+import { computed } from "vue";
+import { NuxtLink } from "#components";
+import IncumbentBadge from "~/components/IncumbentBadge.vue";
+import InfoCallout from "~/components/InfoCallout.vue";
+import PartyLabel from "~/components/PartyLabel.vue";
+import ProvenanceBadge from "~/components/ProvenanceBadge.vue";
+import SafeExternalLink from "~/components/SafeExternalLink.vue";
+import SourceDrawer from "~/components/SourceDrawer.vue";
+import { useFormatters } from "~/composables/useFormatters";
 
 const props = withDefaults(defineProps<{
 	candidates: Candidate[];

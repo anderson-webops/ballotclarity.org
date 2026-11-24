@@ -42,7 +42,8 @@ test("nuxt config uses srcDir and expected civic modules", async () => {
 			"@nuxtjs/color-mode",
 			"@pinia/nuxt",
 			"@unocss/nuxt",
-			"@vueuse/nuxt"
+			"@vueuse/nuxt",
+			"nuxt-explicit-imports"
 		].sort()
 	);
 	assert.equal(config.runtimeConfig?.public?.apiBase, "http://127.0.0.1:3001/api");

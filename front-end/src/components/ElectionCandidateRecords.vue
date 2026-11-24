@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import type { BallotResponse, StateRecordsResponse } from "~/types/civic";
 import type { ElectionSectionLink } from "~/utils/election-candidates";
+import { useMounted } from "@vueuse/core";
+import { computed, ref, watch } from "vue";
+import { useAsyncData } from "#app";
+import { NuxtLink } from "#components";
+import OfficialSampleBallot from "~/components/OfficialSampleBallot.vue";
+import PartyLabel from "~/components/PartyLabel.vue";
+import ProfileImageStack from "~/components/ProfileImageStack.vue";
+import UpdatedAt from "~/components/UpdatedAt.vue";
+import { useApiClient } from "~/composables/useApiClient";
 import { loadElectionCandidatePages } from "~/utils/election-candidate-pages";
 import { electionOfficeLabel, groupElectionCandidates } from "~/utils/election-candidates";
 import { isSampleBallotDocument, recordPublications } from "~/utils/record-publications";

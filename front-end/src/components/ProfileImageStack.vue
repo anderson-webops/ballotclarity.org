@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { ProfileImage } from "~/types/civic";
+import { computed, ref, watch } from "vue";
+import PhotoViewer from "~/components/PhotoViewer.vue";
 import { normalizeImageHref } from "~/utils/link";
 
 const props = withDefaults(defineProps<{

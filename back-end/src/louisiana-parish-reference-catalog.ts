@@ -4,6 +4,7 @@ import { dirname, isAbsolute } from "node:path";
 import process from "node:process";
 import { electionReferenceSources } from "./election-reference-sources.js";
 import { parishSampleParishes, resolveParishSampleDocument } from "./louisiana-parish-samples.js";
+import { addReviewedReferenceSources } from "./reviewed-reference-catalog.js";
 import { assertExternalStateDataDirectory, readBoundedStateDataBytes } from "./state-ballot-storage.js";
 
 export interface ParishReferencePublication {
@@ -47,7 +48,7 @@ export function parseParishReferenceCatalog(value: unknown) {
 	return sources;
 }
 
-export async function configuredElectionReferenceSources(catalogPath: string | null | undefined = process.env.LOUISIANA_PARISH_REFERENCE_CATALOG_PATH, stateCode?: string) {
+async function configuredParishSources(catalogPath: string | null | undefined, stateCode?: string) {
 	if (!catalogPath || (stateCode && stateCode.toUpperCase() !== "LA")) return electionReferenceSources;
 	if (!isAbsolute(catalogPath)) throw new Error("Parish reference catalogs require an absolute external path.");
 	assertExternalStateDataDirectory(await realpath(dirname(catalogPath)));
@@ -59,4 +60,8 @@ export async function configuredElectionReferenceSources(catalogPath: string | n
 		...electionReferenceSources,
 		...sources
 	];
+}
+
+export async function configuredElectionReferenceSources(catalogPath: string | null | undefined = process.env.LOUISIANA_PARISH_REFERENCE_CATALOG_PATH, stateCode?: string) {
+	return addReviewedReferenceSources(await configuredParishSources(catalogPath, stateCode), process.env.ELECTION_REFERENCE_CATALOG_DIR, stateCode);
 }

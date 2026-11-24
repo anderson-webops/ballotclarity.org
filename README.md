@@ -436,6 +436,8 @@ These endpoints live on the Express service, but they are intended to be reached
 
 ## Production mode
 
+[Reviewed election reference catalogs](docs/reviewed-reference-catalog.md) support optional, state-specific enrollment and manual snapshot imports.
+
 Current election deployment, external-data import, source-policy and future-election
 instructions for the protected server operator are in [`docs/server-ai-current.md`](docs/server-ai-current.md).
 

@@ -50,6 +50,7 @@ import { parseJuneauCandidateCapture } from "./state-ballot-juneau.js";
 import { parseKanawhaCandidateCapture } from "./state-ballot-kanawha-collection.js";
 import { parseLosRanchosCandidateCapture } from "./state-ballot-los-ranchos.js";
 import { parseMaineHouseCapture } from "./state-ballot-maine-house.js";
+import { reviewedMunicipalRunoffs } from "./state-ballot-municipal-runoffs.js";
 import { parseNycCandidateCapture } from "./state-ballot-nyc-collection.js";
 import { parseOklahomaCandidateCapture } from "./state-ballot-oklahoma-collection.js";
 import { parseOrangeCandidateCapture } from "./state-ballot-orange-collection.js";
@@ -72,7 +73,6 @@ import {
 } from "./state-ballot-source-state.js";
 import { createStateBallotStorage } from "./state-ballot-storage.js";
 import { applicableStateRecordSupplements, readStateRecordSupplements, stateRecordOfficeKey } from "./state-ballot-supplements.js";
-import { texasMunicipalRunoffs } from "./state-ballot-texas-runoffs.js";
 import { parseTexasCandidateCapture } from "./state-ballot-texas.js";
 import { parseTuscolaCandidateCapture } from "./state-ballot-tuscola-collection.js";
 import { parseVermontCandidateCapture } from "./state-ballot-vermont.js";
@@ -118,7 +118,7 @@ export function resolveStateBallotConfiguration(environment: NodeJS.ProcessEnv =
 	const requestedSources = environment.STATE_BALLOT_ENABLED_SOURCES?.split(",").map(value => value.trim());
 	const configuredSources = [
 		...configuredStateBallotSources,
-		...texasMunicipalRunoffs.filter(source => requestedSources?.includes(source.id)),
+		...reviewedMunicipalRunoffs.filter(source => requestedSources?.includes(source.id)),
 		...cycleSources
 	];
 	if (new Set(configuredSources.map(source => source.id)).size !== configuredSources.length) throw new Error("Official source identifiers must be unique.");

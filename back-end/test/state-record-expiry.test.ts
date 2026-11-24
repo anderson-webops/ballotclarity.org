@@ -5,10 +5,10 @@ import { createHash } from "node:crypto";
 import { once } from "node:events";
 import test from "node:test";
 import express from "express";
+import { reviewedMunicipalRunoffs } from "../src/state-ballot-municipal-runoffs.js";
 import { configuredStateBallotSources } from "../src/state-ballot-registry.js";
 import { attachStateBallotPreview, resolveStateBallotConfiguration } from "../src/state-ballot-repository.js";
 import { stateBallotSourceIsCurrent } from "../src/state-ballot-source-state.js";
-import { texasMunicipalRunoffs } from "../src/state-ballot-texas-runoffs.js";
 import { registerStateRecordDetailRoutes } from "../src/state-record-detail.js";
 import { registerStateRecordRoutes } from "../src/state-records.js";
 
@@ -88,12 +88,12 @@ test("The actual state-records route honors the exact cutoff while explicit hist
 	}
 });
 
-test("Reviewed Texas municipal runoff sources require individual enrollment and explicit public selection", async () => {
-	const statewide = resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "TX" });
-	assert.ok(statewide.sources.every(item => !texasMunicipalRunoffs.some(city => city.id === item.id)));
-	for (const city of texasMunicipalRunoffs) {
+test("Reviewed municipal runoff sources require individual enrollment and explicit public selection", async () => {
+	const statewide = resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "TX,GA" });
+	assert.ok(statewide.sources.every(item => !reviewedMunicipalRunoffs.some(city => city.id === item.id)));
+	for (const city of reviewedMunicipalRunoffs) {
 		assert.deepEqual(resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_SOURCES: city.id }).sources, [city]);
-		assert.throws(() => resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "GA", STATE_BALLOT_ENABLED_SOURCES: city.id }));
+		assert.throws(() => resolveStateBallotConfiguration({ STATE_BALLOT_ENABLED_STATES: "WA", STATE_BALLOT_ENABLED_SOURCES: city.id }));
 		assert.equal(city.ballotPreview, false);
 		const clock = () => Date.parse("2026-12-01T12:00:00Z");
 		const record = {
@@ -110,14 +110,14 @@ test("Reviewed Texas municipal runoff sources require individual enrollment and 
 		try {
 			const base = `${server.origin}/api/state-records`;
 			const directory = await (await fetch(base)).json();
-			const texas = directory.states.find((entry: { stateCode: string }) => entry.stateCode === "TX");
-			assert.deepEqual(texas.sources.map((entry: { id: string }) => entry.id), [city.id]);
-			assert.equal(texas.electionDate, undefined);
-			assert.equal((await (await fetch(`${base}/TX`)).json()).available, false);
-			assert.equal((await fetch(`${base}/TX/${record.id}`)).status, 404);
+			const state = directory.states.find((entry: { stateCode: string }) => entry.stateCode === city.stateCode);
+			assert.deepEqual(state.sources.map((entry: { id: string }) => entry.id), [city.id]);
+			assert.equal(state.electionDate, undefined);
+			assert.equal((await (await fetch(`${base}/${city.stateCode}`)).json()).available, false);
+			assert.equal((await fetch(`${base}/${city.stateCode}/${record.id}`)).status, 404);
 			assert.deepEqual(server.reads, []);
-			assert.equal((await (await fetch(`${base}/TX?scope=all&source=${city.id}`)).json()).total, 1);
-			assert.equal((await fetch(`${base}/TX/${record.id}?source=${city.id}`)).status, 200);
+			assert.equal((await (await fetch(`${base}/${city.stateCode}?scope=all&source=${city.id}`)).json()).total, 1);
+			assert.equal((await fetch(`${base}/${city.stateCode}/${record.id}?source=${city.id}`)).status, 200);
 		}
 		finally { await server.close(); }
 	}

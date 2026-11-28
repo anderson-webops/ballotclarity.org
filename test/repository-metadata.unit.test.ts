@@ -54,19 +54,21 @@ test("repository package descriptions no longer use pre-launch MVP framing", () 
 test("repository install-script approvals are explicit and version-scoped", () => {
 	const rootPackage = readJson("package.json");
 	const rootAllowScripts = rootPackage.allowScripts as Record<string, boolean> | undefined;
+	const expectedApprovals = (lockPath: string, approvedPackages: string[]) => {
+		const packages = readJson(lockPath).packages as Record<string, { version?: string }>;
+		return Object.fromEntries(approvedPackages.map((name) => {
+			const version = packages[`node_modules/${name}`]?.version;
+			assert.ok(version, `Missing locked version for ${name} in ${lockPath}`);
+			return [`${name}@${version}`, true];
+		}));
+	};
 
-	assert.deepEqual(rootAllowScripts, {
-		"@parcel/watcher@2.5.6": true,
-		"esbuild@0.28.2": true,
-		"fsevents@2.3.3": true,
-		"puppeteer@25.18.1": true,
-		"unrs-resolver@1.12.2": true
-	});
+	assert.deepEqual(rootAllowScripts, expectedApprovals("package-lock.json", [
+		"esbuild", "fsevents", "puppeteer"
+	]));
 	assert.match(readText(".npmrc"), /^strict-allow-scripts=true$/mu);
-	assert.deepEqual(readJson("back-end/package.json").allowScripts, {
-		"esbuild@0.28.2": true,
-		"fsevents@2.3.3": true
-	});
+	assert.deepEqual(readJson("back-end/package.json").allowScripts,
+		expectedApprovals("back-end/package-lock.json", ["esbuild", "fsevents"]));
 	assert.match(readText("back-end/.npmrc"), /^strict-allow-scripts=true$/mu);
 	assert.match(
 		rootPackage.scripts["verify:backend-lockfile"],

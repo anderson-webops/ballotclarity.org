@@ -92,22 +92,22 @@
 		"@antfu/eslint-config": "^10.0.0",
 		"@devframes/agentic": "1.4.0",
 		"@unocss/eslint-plugin": "^66.13.0",
-		"@vitejs/devtools-kit": "0.7.6",
+		"@vitejs/devtools-kit": "0.8.3",
 		"axe-core": "^4.14.1",
 		"braces": "file:vendor/braces",
 		"commander": "15.1.0",
 		"devframe": "1.4.0",
-		"eslint": "^10.15.0",
-		"eslint-config-prettier": "^10.1.8",
+		"eslint": "^10.16.0",
+		"eslint-config-prettier": "^10.1.9",
 		"eslint-plugin-prettier": "^5.5.7",
 		"eslint-plugin-vue": "^10.12.1",
 		"globals": "^17.14.0",
 		"listhen": "file:vendor/listhen-1.10.1-webops.3.tgz",
 		"prettier": "^3.10.1",
-		"puppeteer": "^25.18.1",
+		"puppeteer": "^25.19.0",
 		"tsx": "^4.23.15",
 		"typescript": "^6.0.3",
-		"typescript-eslint": "^8.73.0",
+		"typescript-eslint": "^8.74.0",
 		"picomatch": "file:vendor/picomatch-4.0.7-webops.1.tgz",
 		"unimport": "file:vendor/unimport-7.0.3-webops.2.tgz",
 		"vite-plugin-vue-devtools": "9.0.0-rc.4"
@@ -148,9 +148,7 @@
 	},
 	"allowScripts": {
 		"esbuild@0.28.2": true,
-		"@parcel/watcher@2.5.6": true,
-		"unrs-resolver@1.12.2": true,
 		"fsevents@2.3.3": true,
-		"puppeteer@25.18.1": true
+		"puppeteer@25.19.0": true
 	}
 }

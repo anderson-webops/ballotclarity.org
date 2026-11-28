@@ -37,11 +37,11 @@
 		"pinia": "^4.1.0",
 		"unocss": "^66.13.0",
 		"vue": "^3.5.45",
-		"vue-router": "^5.5.1"
+		"vue-router": "^5.5.3"
 	},
 	"devDependencies": {
-		"@nuxt/devtools": "4.2.0",
-		"@types/node": "^26.6.6",
+		"@nuxt/devtools": "4.2.2",
+		"@types/node": "^26.6.11",
 		"@vitejs/devtools": "0.8.3",
 		"@vitejs/devtools-kit": "0.8.3",
 		"@vueuse/nuxt": "^15.0.0",

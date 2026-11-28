@@ -33,6 +33,8 @@ jobs:
 
       - name: Prepare the verified locked build toolchain
         run: |
+          node_bin="$(bash scripts/prepare-hosted-node.sh)"
+          export PATH="$node_bin:$PATH"
           printf '/.ai-work/\n' >> "$(git rev-parse --git-path info/exclude)"
           bin="$(node scripts/build-toolchain.mjs --print-bin)"
           printf '%s\n' "$bin" >> "$GITHUB_PATH"
